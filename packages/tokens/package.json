@@ -1,0 +1,24 @@
+{
+  "name": "@ds/tokens",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Design tokens. DTCG JSON in, CSS custom properties and TypeScript constants out.",
+  "exports": {
+    "./css": "./build/css/variables.css",
+    ".": {
+      "types": "./build/ts/index.d.ts",
+      "default": "./build/ts/index.js"
+    }
+  },
+  "files": [
+    "build"
+  ],
+  "scripts": {
+    "build": "node style-dictionary.config.mjs",
+    "watch": "node style-dictionary.config.mjs --watch"
+  },
+  "devDependencies": {
+    "style-dictionary": "^4.4.0"
+  }
+}

@@ -1,0 +1,13 @@
+node_modules/
+dist/
+storybook-static/
+.vite/
+*.tsbuildinfo
+
+# Generated token output. The DTCG JSON under packages/tokens/tokens/ is the source of truth.
+packages/tokens/build/
+
+.DS_Store
+Thumbs.db
+.env
+.env.local

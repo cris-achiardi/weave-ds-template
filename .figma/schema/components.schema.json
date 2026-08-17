@@ -1,0 +1,68 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "ds/figma/components.schema.json",
+  "title": "Code component <-> Figma node map",
+  "description": "The running record of which code components have a Figma representation, and where. A component ABSENT from this map has no Figma representation yet — that absence is the signal, which is why entries are added when the work is done and never in advance.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["_schema", "lastScanned", "source", "components"],
+
+  "properties": {
+    "_schema": { "type": "string" },
+    "_doc": { "type": "string" },
+    "lastScanned": { "type": ["string", "null"] },
+    "source": { "type": "string", "description": "A key in manifest.json -> sources." },
+    "components": {
+      "type": "object",
+      "description": "Keyed by the code component name in PascalCase.",
+      "additionalProperties": { "$ref": "#/definitions/entry" }
+    },
+    "icons": {
+      "type": "object",
+      "description": "Optional. Icons are usually one component set with many variants rather than one entry each.",
+      "additionalProperties": { "$ref": "#/definitions/entry" }
+    }
+  },
+
+  "definitions": {
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "assetType"],
+      "properties": {
+        "source": { "type": "string", "description": "A key in manifest.json -> sources." },
+        "codePath": {
+          "type": ["string", "null"],
+          "description": "Repo-relative path to the component directory, e.g. packages/react/src/components/Button."
+        },
+        "pageId": {
+          "type": ["string", "null"],
+          "description": "EPHEMERAL. Source-file local; refreshable, never a durable join."
+        },
+        "componentSetId": { "type": ["string", "null"], "description": "EPHEMERAL. As above." },
+        "componentId": { "type": ["string", "null"], "description": "EPHEMERAL. As above." },
+        "componentKey": {
+          "type": ["string", "null"],
+          "description": "Publish-time stable key — the DURABLE join. Null until the source file is published as a library. Never rewrite a non-null key from a scan; a changed key means a different component, not a moved one."
+        },
+        "assetType": {
+          "enum": ["component_set", "component", "not-modelled", null],
+          "description": "`not-modelled` is the sentinel for a component deliberately not built in Figma. Put the reason in `note` — an empty entry reads as unfinished work."
+        },
+        "variantCount": { "type": ["integer", "null"], "minimum": 0 },
+        "axes": {
+          "type": "object",
+          "description": "Figma variant property -> its values, TitleCase property with prop-exact values. Must agree with the component's extracted prop value sets; a disagreement means the two surfaces describe different components.",
+          "additionalProperties": { "type": "array", "items": { "type": "string" } }
+        },
+        "dependsOn": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "DIRECT dependencies only — components instanced inside this one. Not transitive."
+        },
+        "generatedAt": { "type": ["string", "null"] },
+        "note": { "type": "string" }
+      }
+    }
+  }
+}

@@ -1,0 +1,85 @@
+/*
+ * Sandbox chrome only. Deliberately NOT built from design tokens: this is the harness, not the
+ * system, and styling it with the system's tokens would make a token bug look like a layout bug.
+ */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
+  background: #141414;
+  color: #f2f2f2;
+}
+
+.sandbox {
+  max-width: 60rem;
+  margin: 0 auto;
+  padding: 3rem 1.5rem 6rem;
+}
+
+.sandbox header h1 {
+  margin: 0 0 0.25rem;
+  font-size: 1.5rem;
+}
+
+.sandbox header p {
+  margin: 0 0 2.5rem;
+  color: #a3a3a3;
+  font-size: 0.9rem;
+}
+
+.specimen {
+  border-top: 1px solid #2b2b2b;
+  padding: 1.5rem 0;
+}
+
+.specimen h2 {
+  margin: 0 0 1rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8f8f8f;
+}
+
+.specimen-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+}
+
+.empty {
+  border: 1px dashed #333;
+  border-radius: 0.75rem;
+  padding: 2rem;
+  color: #a3a3a3;
+}
+
+.empty h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  color: #f2f2f2;
+}
+
+.empty p {
+  margin: 0 0 0.75rem;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85em;
+  background: #202020;
+  border-radius: 0.25rem;
+  padding: 0.1em 0.35em;
+}

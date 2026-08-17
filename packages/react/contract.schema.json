@@ -1,0 +1,260 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/component-contract-1.json",
+  "title": "Component contract",
+  "description": "Per-component contract, colocated at src/components/<Name>/<Name>.contract.json. Governed by ADR 0001. Declares ONLY what cannot be derived from the component's TypeScript source. Prop names, value sets, defaults, required-ness, JSDoc descriptions, and the inventory of data-ds-part / data-ds-state names are all extracted from source at read time and MUST NOT be restated here. Before adding a field, establish that the extractor cannot already answer it — if it can, the field belongs in the composer, not in this file.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["component", "status", "semantics", "anatomy"],
+
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Relative pointer to this schema, so editors validate on save."
+    },
+
+    "component": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Za-z0-9]*$",
+      "description": "The exported component name in PascalCase. The only field duplicated from source, present so the file is self-describing; the gate asserts it matches the directory name, an export in <Name>.tsx, and a re-export from src/index.ts."
+    },
+
+    "status": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["level", "since"],
+      "description": "Lifecycle status. A structured object rather than a bare string, so a deprecation cannot exist without somewhere to migrate to. Unlike the system this is drawn from there is no second copy of this fact anywhere, so there is nothing for it to drift against — this file is the source of truth.",
+      "properties": {
+        "level": {
+          "enum": ["experimental", "stable", "deprecated"],
+          "description": "`experimental` is the honest default for a new component: the API may still move. Promote to `stable` when you would accept the cost of a breaking change to alter it."
+        },
+        "since": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "description": "ISO 8601 date this component entered this level."
+        },
+        "replacedBy": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Za-z0-9]*$",
+          "description": "The component to migrate to. Required when level is `deprecated`; the gate asserts it exists on disk."
+        },
+        "migrationUrl": {
+          "type": "string",
+          "description": "Migration guide or tracking issue. Required when level is `deprecated`."
+        },
+        "note": { "type": "string", "description": "One-line rationale." }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "level": { "const": "deprecated" } }, "required": ["level"] },
+          "then": {
+            "required": ["level", "since", "replacedBy", "migrationUrl"],
+            "description": "A bare `deprecated` with nowhere to go is not a valid state, it is how you strand consumers."
+          }
+        }
+      ]
+    },
+
+    "semantics": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "What the component renders and means. All of this lives inside the function body, where no type-level extraction can see it.",
+      "properties": {
+        "element": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9-]*$",
+          "description": "The element rendered at the root of the component. Use the resting value when it varies, and describe the variation in elementByProp. A capitalised value names another component (e.g. `Slot`)."
+        },
+        "role": {
+          "type": "string",
+          "description": "ARIA role, when set explicitly rather than implied by `element`. Omit when the native element already conveys it — a redundant role is a defect, not documentation."
+        },
+        "elementByProp": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["prop", "map"],
+          "description": "For polymorphic components — a Button that renders <a> when `as=\"a\"`.",
+          "properties": {
+            "prop": { "type": "string" },
+            "map": {
+              "type": "object",
+              "minProperties": 1,
+              "additionalProperties": { "type": "string" },
+              "description": "Prop value (or `present`/`absent` for a boolean or optional prop) -> rendered element."
+            }
+          }
+        },
+        "roleByProp": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["prop", "map"],
+          "description": "For components whose ARIA role varies by prop while the rendered element does not. Distinct from elementByProp: that changes the element, this changes only what the element means.",
+          "properties": {
+            "prop": { "type": "string" },
+            "map": {
+              "type": "object",
+              "minProperties": 1,
+              "additionalProperties": { "type": "string" }
+            }
+          }
+        },
+        "refTarget": {
+          "type": "string",
+          "pattern": "^[a-z][a-zA-Z0-9]*$",
+          "description": "Which node in `anatomy` the forwarded ref lands on. React has no delegatesFocus; where the ref goes is the equivalent load-bearing fact, it is decided inside the component, and a consumer calling .focus() on the wrong node has no way to find out except by trying. Names a key in the anatomy tree — usually `root`."
+        },
+        "classNamePassthrough": {
+          "type": "string",
+          "pattern": "^[a-z][a-zA-Z0-9]*$",
+          "description": "Which node the consumer's `className` prop is merged into. This is the React analogue of a style that a host application's CSS can reach: every declaration on that node is overridable from outside, whether or not you intended it. Recording it makes the blast radius reviewable. Omit only if the component genuinely drops className, which is itself worth stating in `description`."
+        }
+      }
+    },
+
+    "a11y": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Accessibility commitments. Not derivable, and not fully checkable either — a wrong ARIA role or an optimistic contrast claim passes every gate in this repo. This is a statement of intent that a human reviews, and it should be written as one.",
+      "properties": {
+        "focusVisible": {
+          "type": "boolean",
+          "description": "Whether the component renders its own focus indicator."
+        },
+        "minHitArea": {
+          "type": "number",
+          "description": "Minimum interactive target in CSS px (44 for WCAG 2.5.5 AAA, 24 for 2.5.8 AA)."
+        },
+        "contrast": {
+          "enum": ["AA", "AAA", "not-applicable"],
+          "description": "Contrast level the component's own token choices are intended to meet."
+        },
+        "keyboard": {
+          "type": "string",
+          "description": "One line on the keyboard model, e.g. \"Arrow keys move between tabs; Home/End jump to the ends.\""
+        },
+        "notes": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Anything a reviewer or consumer has to know. Prefer naming what the component CANNOT enforce — an icon-only usage needing an aria-label from the caller is exactly the kind of fact that belongs here."
+        }
+      }
+    },
+
+    "composition": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Constraints on composed content. The extractor reports that a prop is a ReactNode; what may legally go in it is stated nowhere else.",
+      "properties": {
+        "children": {
+          "$ref": "#/$defs/slot",
+          "description": "Constraints on the default `children` prop."
+        },
+        "slots": {
+          "type": "object",
+          "description": "Keyed by prop name. Every key must be a prop the extractor reports whose type accepts a ReactNode — that check is what keeps this from being a free-text escape hatch.",
+          "propertyNames": { "pattern": "^[a-z][a-zA-Z0-9]*$" },
+          "additionalProperties": { "$ref": "#/$defs/slot" }
+        }
+      }
+    },
+
+    "anatomy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["root"],
+      "description": "The node tree and the token policy for each node. Which node paints which channel exists only in the stylesheet, where it cannot be checked against intent.\n\nUnlike a shadow-DOM system there is no host/base split to preserve: with no shadow boundary, the root element IS the component's box and it carries a part like any other node.",
+      "properties": { "root": { "$ref": "#/$defs/part" } }
+    }
+  },
+
+  "$defs": {
+    "slot": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "accepts": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Component names or content kinds this slot expects, e.g. [\"Icon\"] or [\"text\"]. Advisory for authors; not enforced at runtime."
+        },
+        "min": { "type": "integer", "minimum": 0 },
+        "max": { "type": "integer", "minimum": 1 },
+        "required": { "type": "boolean" },
+        "description": { "type": "string" }
+      }
+    },
+
+    "tokenPolicyAtom": {
+      "description": "One permitted source for a CSS channel — a namespace PREFIX, not a value. The concrete prefix for this system comes from /ds.config.json; the gate reads it there rather than hard-coding it, so `pnpm init-ds` never has to rewrite this schema.",
+      "oneOf": [
+        { "type": "string", "pattern": "^--[a-z][a-z0-9-]*-$" },
+        { "enum": ["component-property", "literal"] }
+      ]
+    },
+
+    "tokenPolicy": {
+      "description": "Which token family is permitted to supply this CSS channel — a namespace PREFIX, never a value. The contract states policy and the stylesheet keeps the concrete token, so the two cannot drift into being two copies of one fact. `pnpm report:paints` resolves each declaration, following var() fallback chains to their last resort, and reports what it lands on against this prefix.\n\nPrefer group-less role families (--ds-color-fill-, --ds-color-border-, --ds-color-on-): those are the slots a `variant` prop re-points, so a component styled against them picks up every variant for free. Naming a branded family such as --ds-color-brand- pins the component to one colour and is almost always a mistake.\n\n`component-property` means an unprefixed component knob (--button-width), the documented customization channel. `literal` means a deliberate non-token value — transparent, 0, currentColor, a 1px hairline — and always wants a reason in the node's `description`.\n\nAn ARRAY means the channel legitimately draws from more than one source across states and variants: a border-color that is `transparent` at rest and a token under an outlined treatment declares [\"--ds-color-border-\", \"literal\"]. It is a permitted SET, not an ordered preference. Keep these short — a channel listing three or more sources usually means the node decomposition is wrong.",
+      "oneOf": [
+        { "$ref": "#/$defs/tokenPolicyAtom" },
+        {
+          "type": "array",
+          "items": { "$ref": "#/$defs/tokenPolicyAtom" },
+          "minItems": 2,
+          "uniqueItems": true
+        }
+      ]
+    },
+
+    "paints": {
+      "type": "object",
+      "description": "CSS property -> token policy, for the declarations this node is responsible for. NOT exhaustive: list the channels that carry design intent (colour, spacing, radius, type, elevation, motion), not every layout declaration. A contract that lists `display: literal` on every node is noise.",
+      "propertyNames": { "pattern": "^[a-z-]+$" },
+      "additionalProperties": { "$ref": "#/$defs/tokenPolicy" }
+    },
+
+    "whenProp": {
+      "type": "object",
+      "description": "Paint overrides driven by a PROP rather than an interaction state, keyed `name` or `name=value` — `fullWidth`, `hierarchy=secondary`.\n\nThe distinction matters because the two look alike in a stylesheet and conflating them produces contracts describing styling nobody can trigger. A prop is an input the author sets; a state is something the component enters.\n\nEvery key must name a prop the extractor reports, AND for `name=value` keys the value must be in that prop's extracted value set. That second check is only possible because variant value sets are read from the CVA call — it catches `hierarchy=tertiary` when `tertiary` was never an axis value.",
+      "propertyNames": { "pattern": "^[a-zA-Z][a-zA-Z0-9]*(=[a-zA-Z0-9-]+)?$" },
+      "additionalProperties": { "$ref": "#/$defs/paints" }
+    },
+
+    "part": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "One node in the rendered tree.",
+      "properties": {
+        "part": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$",
+          "description": "The value of this node's `data-ds-part` attribute — the stable, unhashed styling handle a consumer targets, since CSS Modules hashes class names out of reach. The gate asserts the TSX actually renders it. Required on every node except one explicitly marked internalOnly."
+        },
+        "element": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9-]*$",
+          "description": "The rendered element or component for this node, when it is not obvious."
+        },
+        "description": { "type": "string" },
+        "internalOnly": {
+          "type": "boolean",
+          "description": "True for a structural node carrying no data-ds-part, so a consumer cannot target it. Recording it is still worth doing: it says the omission is deliberate rather than forgotten."
+        },
+        "paints": { "$ref": "#/$defs/paints" },
+        "states": {
+          "type": "object",
+          "description": "Per-state overrides, keyed by a native pseudo-class (hover, focus, focus-visible, focus-within, active, disabled, checked) or by a value the component sets on `data-ds-state`. The gate checks the key against both sources — a state nothing can enter is styling nobody will see. Prop-driven variation is not a state; use whenProp.",
+          "propertyNames": { "pattern": "^[a-z][a-z0-9-]*$" },
+          "additionalProperties": { "$ref": "#/$defs/paints" }
+        },
+        "whenProp": { "$ref": "#/$defs/whenProp" },
+        "parts": {
+          "type": "object",
+          "description": "Child nodes, keyed by a camelCase identifier local to this contract.",
+          "propertyNames": { "pattern": "^[a-z][a-zA-Z0-9]*$" },
+          "additionalProperties": { "$ref": "#/$defs/part" }
+        }
+      }
+    }
+  }
+}

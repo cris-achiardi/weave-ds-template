@@ -1,0 +1,45 @@
+{
+  "name": "ds-template",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.28.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "init-ds": "node scripts/init-ds.mjs",
+    "dev": "pnpm --filter sandbox dev",
+    "dev:storybook": "pnpm --filter storybook dev",
+    "build": "pnpm build:tokens && pnpm build:react",
+    "build:tokens": "pnpm --filter @ds/tokens build",
+    "build:react": "pnpm --filter @ds/react build",
+    "tokens:watch": "pnpm --filter @ds/tokens watch",
+    "contract": "node packages/react/scripts/contract.mjs",
+    "prop-map": "node packages/react/scripts/build-prop-map.mjs",
+    "prop-map:check": "node packages/react/scripts/build-prop-map.mjs --check",
+    "report:paints": "node packages/react/scripts/report-paints.mjs",
+    "verify": "pnpm format:check && pnpm typecheck && pnpm verify:contract && pnpm prop-map:check && pnpm verify:figma && pnpm build && pnpm test",
+    "verify:contract": "node packages/react/scripts/verify-contract.mjs",
+    "verify:figma": "node scripts/verify-figma.mjs",
+    "typecheck": "tsc --noEmit -p packages/react/tsconfig.json",
+    "test": "vitest run --passWithNoTests",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "clean": "node -e \"for (const p of ['packages/tokens/build','packages/react/dist','node_modules/.vite']) require('fs').rmSync(p,{recursive:true,force:true})\""
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "ajv": "^8.17.1",
+    "prettier": "^3.4.2",
+    "react-docgen-typescript": "^2.4.0",
+    "typescript": "~5.9.3",
+    "vitest": "^3.0.0"
+  },
+  "pnpm": {
+    "//typescript": "PINNED WITH A TILDE ON PURPOSE. Under typescript@6.x, react-docgen-typescript stops classifying VariantProps-derived props as enums: the literal value arrays come back empty and every contract answer silently thins out. docgen's peer range is '>= 4.3.x', so nothing warns you. See docs/ADR/0001 Consequences. Do not widen this to ^5 or ^6 without re-running the extraction check and reading the report.",
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  }
+}

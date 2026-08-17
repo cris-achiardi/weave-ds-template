@@ -1,0 +1,11 @@
+node_modules
+pnpm-lock.yaml
+packages/tokens/build
+packages/react/dist
+apps/*/dist
+apps/storybook/storybook-static
+
+# Generated. Byte-stability is asserted by `pnpm prop-map:check`, so reformatting these
+# would make the check fail against its own generator.
+.ai/maps/prop-map.json
+.ai/maps/prop-map.md

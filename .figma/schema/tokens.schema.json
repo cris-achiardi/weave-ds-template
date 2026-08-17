@@ -1,0 +1,66 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "ds/figma/tokens.schema.json",
+  "title": "Figma variable <-> code token map",
+  "description": "Records the correspondence between Figma variables and the DTCG tokens under packages/tokens/tokens/. CODE IS CANONICAL for token VALUES — this map does not carry them. A variable whose `code` is null is drift: Figma has a variable with no token behind it.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["_schema", "lastScanned", "source", "collections", "variables"],
+
+  "properties": {
+    "_schema": { "type": "string" },
+    "_doc": { "type": "string" },
+    "lastScanned": {
+      "type": ["string", "null"],
+      "description": "ISO date of the last read, or null if never scanned. Null is an honest state and is what this template ships with."
+    },
+    "source": {
+      "type": "string",
+      "description": "A key in manifest.json -> sources. Never a raw file key."
+    },
+    "collections": {
+      "type": "object",
+      "description": "Figma collection name -> what was found in it.",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["variableCount"],
+        "properties": {
+          "collectionId": { "type": ["string", "null"] },
+          "modes": { "type": "array", "items": { "type": "string" } },
+          "variableCount": { "type": "integer", "minimum": 0 },
+          "codeSource": {
+            "type": ["string", "null"],
+            "description": "The DTCG file under packages/tokens/tokens/ this collection maps to. Null means unmapped — every variable in it will report as drift."
+          }
+        }
+      }
+    },
+    "variables": {
+      "type": "object",
+      "description": "Keyed by the Figma variable name exactly as it appears in the file.",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["collection", "resolvedType", "code"],
+        "properties": {
+          "variableId": {
+            "type": ["string", "null"],
+            "description": "File-local and EPHEMERAL. Refreshable, never a join key."
+          },
+          "variableKey": {
+            "type": ["string", "null"],
+            "description": "Publish-time stable key — the DURABLE join, once the file is published as a library."
+          },
+          "collection": { "type": "string" },
+          "resolvedType": { "enum": ["COLOR", "FLOAT", "STRING", "BOOLEAN"] },
+          "code": {
+            "type": ["string", "null"],
+            "description": "Verified dotted DTCG path into the collection's codeSource, e.g. `space.3`. NULL = drift: a Figma variable with no code token. Do not invent a path to clear a null — the null is the finding."
+          },
+          "note": { "type": "string" }
+        }
+      }
+    }
+  }
+}

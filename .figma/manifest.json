@@ -1,0 +1,109 @@
+{
+  "_schema": "1.0",
+  "_doc": "Project anchor for this design system's Figma integration. Single source of truth for which Figma file we read from, and for the identity that generation needs. Maps in maps/*.json resolve their `source` keys against this file. Never hard-code a file key in a script or a skill — read it from here, so pointing the system at a different file is one edit.",
+  "lastUpdated": "2026-08-17",
+
+  "bridge": {
+    "_doc": "Read-only, via the OFFICIAL Figma MCP connector. No daemon, no plugin, no Figma Desktop. Tools: get_metadata (structure), get_variable_defs (variables on a node), get_design_context (a node as reference code), get_screenshot. Chosen over the alternatives because everything the exploration -> report -> decide -> build arc needs is a READ, and every other bridge adds a local install and a background process to fail. Write-back is deliberately not wired — see README.md.",
+    "kind": "figma-mcp",
+    "direction": "read"
+  },
+
+  "sources": {
+    "weave": {
+      "key": "eUO2kF0A3tJXdVTcvEPQjW",
+      "name": "weave — Mokkap masterclass",
+      "url": "https://www.figma.com/design/eUO2kF0A3tJXdVTcvEPQjW/weave---Mokkap-masterclass-29-08-2026",
+      "purpose": "The design source. A dark screen-recorder UI. Variables, text styles and component sets live here.",
+      "published": false,
+      "libraryKey": null,
+      "_publishedNote": "Not published as a library, so component instances have no durable componentKey yet. Until it is published the only join available is pageId + componentSetId, and those are file-local and change. Record them, but treat them as refreshable — see schema/components.schema.json.",
+      "data": ["file", "variables", "styles", "components"]
+    }
+  },
+
+  "identity": {
+    "prefix": {
+      "_doc": "Set once in /ds.config.json via `pnpm init-ds <name>`. Repeated here only so a Figma script has one file to read; ds.config.json is authoritative and init-ds rewrites both.",
+      "name": "ds",
+      "scope": "@ds",
+      "token": "--ds",
+      "data": "data-ds"
+    },
+
+    "variableNaming": {
+      "_doc": "MEASURED, NOT ASSUMED. These are variables observed on real nodes in the source file. Note the `-ds` INFIX: it is part of the Figma name and must NOT survive into the CSS custom property. The group separator has not been confirmed, so `separatorUnknown` is true — resolve it with a live read before generating tokens, because it decides the DTCG nesting.",
+      "figmaPattern": "weave-ds-{path}",
+      "cssPattern": "--{tokenPrefix}-{path}",
+      "separatorUnknown": true,
+      "observed": [
+        "weave-ds-surface-primary",
+        "weave-ds-brand-primary",
+        "weave-ds-border-primary",
+        "weave-ds-text-primary",
+        "weave-ds-text-disabled",
+        "weave-ds-interactive-hover",
+        "weave-ds-interactive-selectedbg",
+        "weave-ds-control-waveform",
+        "weave-ds-space-0",
+        "weave-ds-space-1",
+        "weave-ds-space-3",
+        "weave-ds-space-5",
+        "weave-ds-radius-m"
+      ],
+      "examples": [
+        "weave-ds-space-3          -> --ds-space-3          -> space.3",
+        "weave-ds-radius-m         -> --ds-radius-m         -> radius.m",
+        "weave-ds-surface-primary  -> --ds-surface-primary  -> surface.primary"
+      ],
+      "knownProblems": [
+        "`space-0/1/3/5` is a numeric index (0, 2, 8, 16) while `radius-m` is a t-shirt scale — two naming systems in one file. Decide which one wins before generating; do not reproduce both.",
+        "`interactive-selectedbg` is a run-on word; every other token is dash-separated.",
+        "`control-waveform` is component-specific but sits in the global namespace."
+      ]
+    },
+
+    "font": {
+      "_doc": "Observed in the source file. Confirm the weights actually used before writing type tokens — the observed styles disagree with each other (see knownProblems).",
+      "family": "Lexend Deca",
+      "fallback": "sans-serif",
+      "observedTextStyles": [
+        "UI/Button",
+        "UI/Label",
+        "UI/Label-emphasis",
+        "UI/Description",
+        "Display/Heading"
+      ],
+      "knownProblems": [
+        "Line height disagrees between styles: UI/Button uses 1.2487 while every other style uses 100. One of the two is wrong and it must be resolved before type tokens are generated."
+      ]
+    },
+
+    "themes": {
+      "_doc": "The source file has no light/dark axis — it is dark-only. Recorded here because dark-only BY DECISION and dark-only BY OMISSION are different states, and only one of them is safe to build on.",
+      "modes": ["dark"],
+      "decided": false
+    },
+
+    "variableCollections": {
+      "_doc": "Figma collection -> canonical DTCG source file under packages/tokens/tokens/. EMPTY: ds-explore fills this from a live read. A Figma variable whose collection has no entry here resolves to `code: null` in maps/tokens.json and is reported as drift — that is the signal, not a silent gap."
+    },
+
+    "variantConventions": {
+      "_doc": "A Figma variant property value must match the component's prop value exactly, or the two surfaces describe different components. The canon lives in .ai/maps/prop-map.md §1 and packages/react/prop-map.config.json — THOSE ARE AUTHORITATIVE; this is a pointer, not a copy.",
+      "canonSource": [".ai/maps/prop-map.md", "packages/react/prop-map.config.json"],
+      "propertyCase": "TitleCase property name, prop-exact value — Hierarchy=secondary, Size=m",
+      "statesAreNotVariants": "Hover / Pressed / Focused are runtime states the browser owns. They must not become a variant property that maps to a prop. See .ai/maps/proposals/README.md."
+    },
+
+    "codePathConvention": {
+      "pattern": "packages/react/src/components/<Name>/",
+      "files": ["<Name>.tsx", "<Name>.module.css", "<Name>.contract.json", "index.ts"]
+    }
+  },
+
+  "maps": {
+    "tokens": "maps/tokens.json",
+    "components": "maps/components.json"
+  }
+}

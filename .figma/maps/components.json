@@ -1,0 +1,7 @@
+{
+  "_schema": "1.0",
+  "_doc": "Code component <-> Figma node, and the running record of what has been reconciled. `componentKey` stays null until the source file is published as a library; until then the join is pageId + componentSetId, both of which are file-local and refreshable. A component absent from this map has no Figma representation yet — the absence is the signal, so add an entry when the work is done, never in advance.",
+  "lastScanned": null,
+  "source": "weave",
+  "components": {}
+}

@@ -1,0 +1,15 @@
+{
+  "_doc": "Single source of truth for this design system's identity. Set ONCE per project via `pnpm init-ds <name>`, which rewrites this file and every reference to it. Never rename by find-and-replace: the codemod also moves the package scope, the CSS custom-property prefix and the data-attribute prefix, and missing one of them leaves the repo half-renamed in a way no build error catches.",
+
+  "name": "ds",
+  "scope": "@ds",
+  "tokenPrefix": "ds",
+  "dataPrefix": "ds",
+
+  "_names": {
+    "name": "Human/short name of the system. Used in generated headings.",
+    "scope": "npm scope for the workspace packages, e.g. `@ds` -> @ds/react, @ds/tokens.",
+    "tokenPrefix": "CSS custom-property namespace: `ds` -> --ds-color-fill-loud. Every custom property the system declares or reads must carry it, so a bare --spacing cannot inherit into a consumer's markup and collide with a property of theirs by the same name.",
+    "dataPrefix": "Data-attribute namespace for component anatomy: `ds` -> data-ds-part, data-ds-state. Namespaced for the same reason as tokenPrefix — an unprefixed data-part can collide with a consumer's own."
+  }
+}

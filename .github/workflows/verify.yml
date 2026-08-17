@@ -1,0 +1,67 @@
+name: verify
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # ---- gates: a non-zero exit reddens the build -----------------------------------
+      #
+      # Each of these catches something whose breach produces NO error anywhere else. That is
+      # the whole reason they are here rather than only in `pnpm verify`: a contract enforced
+      # only by `verify` is enforced on whichever machine happens to run it.
+
+      - run: pnpm format:check
+
+      - run: pnpm typecheck
+
+      # Style Dictionary skips a file with zero tokens rather than erroring, so a broken glob
+      # would otherwise look exactly like an empty token set. The build script covers that case
+      # explicitly and exits non-zero on a real failure.
+      - run: pnpm build:tokens
+
+      # A contract can name a part that never renders, a state nothing can enter, or a prop
+      # value that was never in the axis — and the app still compiles, the tests still pass,
+      # and the component still works. Nothing but this step notices.
+      - run: pnpm verify:contract
+
+      # The glossary only catches a synonym by comparing value sets ACROSS components, which no
+      # per-component review can see. Nothing about an off-canon prop breaks a build, so without
+      # this the glossary silently goes stale and stops being worth consulting.
+      - run: pnpm prop-map:check
+
+      # .figma/ is read by no build step, so a malformed entry is invisible until someone
+      # trusts it. An unmapped collection claiming a code path is the specific lie to catch.
+      - run: pnpm verify:figma
+
+      - run: pnpm build:react
+
+      - run: pnpm test
+
+      # ---- reports: printed, never fail ------------------------------------------------
+      #
+      # These would fail on everything the day a system starts, and a gate that fails on
+      # everything gets switched off. Promoting one is deliberate work against a clean baseline.
+
+      - name: contract coverage (report)
+        run: pnpm contract --coverage
+
+      - name: token policy vs stylesheet (report)
+        run: pnpm report:paints
