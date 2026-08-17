@@ -25,7 +25,16 @@ import { dirname, resolve, join, relative } from 'node:path';
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
-const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', 'build', '.vite', 'storybook-static']);
+const SKIP_DIRS = new Set([
+  'node_modules',
+  '.git',
+  'dist',
+  'build',
+  '.vite',
+  '.turbo',
+  'storybook-static',
+  'coverage',
+]);
 
 /**
  * Two files must not be rewritten:
@@ -99,16 +108,15 @@ function* walk(dir) {
   for (const entry of readdirSync(dir, { withFileTypes: true }).sort((a, b) =>
     a.name < b.name ? -1 : 1,
   )) {
-    if (
-      entry.name.startsWith('.') &&
-      entry.name !== '.figma' &&
-      entry.name !== '.ai' &&
-      entry.name !== '.claude' &&
-      entry.name !== '.github'
-    ) {
-      continue;
-    }
+    // Skip by DENYLIST, never by an allowlist of dot-directories.
+    //
+    // This was an allowlist once (.figma, .ai, .claude, .github) and it silently missed
+    // apps/storybook/.storybook — so a renamed repo shipped Storybook config importing a package
+    // scope that no longer existed, and nothing failed until someone switched Storybook on weeks
+    // later. A denylist fails the safe way: a new dot-directory gets renamed by default rather
+    // than skipped by default.
     if (SKIP_DIRS.has(entry.name)) continue;
+
     const full = join(dir, entry.name);
     if (entry.isDirectory()) yield* walk(full);
     else if (EXTENSIONS.has(entry.name.slice(entry.name.lastIndexOf('.')))) yield full;

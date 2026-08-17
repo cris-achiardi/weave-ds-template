@@ -5,6 +5,15 @@ on:
     branches: [main]
   pull_request:
 
+# Least privilege: nothing here writes to the repo.
+permissions:
+  contents: read
+
+# A newer push supersedes an in-flight run on the same ref.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   verify:
     runs-on: ubuntu-latest
@@ -70,3 +79,53 @@ jobs:
 
       - name: token policy vs stylesheet (report)
         run: pnpm report:paints
+
+  # ---------------------------------------------------------------------------------------
+  # The first command every user of this template runs is `pnpm init-ds <name>`. If that leaves
+  # the repo in a state that fails `pnpm verify`, the first thing a newcomer sees is a red gate
+  # they did not cause — which is worse than no gate, because it teaches them the gates lie.
+  #
+  # This is not hypothetical: renaming changes string widths inside markdown tables, so Prettier's
+  # column alignment went stale and format:check failed. It was found by hand and fixed once.
+  # Nothing but this job stops it coming back.
+  #
+  # The matrix covers a name shorter and a name much longer than the default `ds`, because the
+  # failure was width-dependent and only shows up when columns actually shift.
+  init-ds:
+    name: init-ds (${{ matrix.name }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        name: [weave, acmedesignsystem]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: rename
+        run: pnpm init-ds ${{ matrix.name }}
+
+      # The scope moved, so the workspace links have to be re-resolved. No --frozen-lockfile:
+      # the lockfile legitimately changes here, and that is the point of the step.
+      - run: pnpm install --no-frozen-lockfile
+
+      - name: the renamed repo must still be green
+        run: pnpm verify
+
+      # A half-rename is the failure this whole codemod exists to prevent, and it produces no
+      # build error — so assert directly that nothing kept the old prefix.
+      - name: no stragglers left behind
+        run: |
+          if grep -rIn --exclude-dir=node_modules --exclude-dir=.git \
+               --exclude=init-ds.mjs --exclude=pnpm-lock.yaml \
+               -e '--ds-' -e '@ds/' -e 'data-ds-' . ; then
+            echo "::error::Found references to the old prefix after init-ds."
+            exit 1
+          fi
+          echo "No stragglers."
