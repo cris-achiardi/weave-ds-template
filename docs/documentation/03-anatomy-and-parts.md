@@ -4,28 +4,20 @@
 
 ---
 
-## This one is basically layer naming
+## This is layer naming, with consequences
 
-A button is not one thing. It is a box, with an icon slot, a label, and sometimes a spinner:
+A button is a box, an icon slot, a label, sometimes a spinner:
 
 ```mermaid
 flowchart TD
-  R["<b>root</b><br/><i>the button box itself</i><br/>fill · border · radius · padding"]
-  R --> I["<b>icon-start</b><br/><i>the icon before the label</i>"]
-  R --> L["<b>label</b><br/><i>the text</i>"]
+  R["<b>root</b><br/>fill · border · radius · padding"]
+  R --> I["<b>icon-start</b>"]
+  R --> L["<b>label</b>"]
   R --> S["<b>spinner</b><br/><i>only when loading</i>"]
   style R fill:#3a3a4a,stroke:#5146e6,color:#fff
-  style I fill:#2b2b2b,stroke:#666,color:#fff
-  style L fill:#2b2b2b,stroke:#666,color:#fff
-  style S fill:#2b2b2b,stroke:#666,color:#fff
 ```
 
-In Figma you would name those layers. Same instinct, same reason: so people can find them, and so
-the thing is legible to someone who did not build it.
-
-The difference is that here, a name is a **promise**.
-
-## Every named piece carries a label in the markup
+Same instinct as naming layers in Figma. The difference: here a name is a **promise**.
 
 ```html
 <button data-ds-part="root">
@@ -34,25 +26,11 @@ The difference is that here, a name is a **promise**.
 </button>
 ```
 
-`data-ds-part` is just an attribute. Think of it as a layer name that ships.
+## Why it earns its keep
 
-## Why bother — three reasons
-
-### 1. Real class names are unreadable
-
-Behind the scenes, styling gets scrambled to avoid collisions. The class you wrote as `.root`
-becomes something like:
-
-```
-Button__root___a1b2c
-```
-
-That `a1b2c` changes when the file changes. Nobody can target it, and nobody should try.
-
-`[data-ds-part="root"]` is stable, readable, and does not move. **It is the part of the component
-we actually promise to keep.**
-
-So if you need to nudge a component in one specific place:
+**1. Real class names are unreadable.** Behind the scenes `.root` becomes
+`Button__root___a1b2c`, and the `a1b2c` changes when the file changes. `[data-ds-part="root"]`
+does not move — it is the part we actually promise to keep. So this is supported:
 
 ```css
 .myToolbar [data-ds-part='label'] {
@@ -60,84 +38,57 @@ So if you need to nudge a component in one specific place:
 }
 ```
 
-That is a supported thing to do. Reaching for the scrambled class name is not.
+**2. It lets the contract be checked.** Because every piece is labelled, a checker can compare
+what the contract claims against what actually renders:
 
-### 2. It lets the contract be checked
+| Situation                                         | What happens                                 |
+| ------------------------------------------------- | -------------------------------------------- |
+| Contract names a piece that isn't rendered        | **Fails.** It describes fiction.             |
+| A piece renders that the contract doesn't mention | **Reported, not failed.** Untidy, not a lie. |
 
-The contract describes the anatomy. Because every piece is labelled in the markup, a checker can
-compare the two:
+**3. It makes the token rules enforceable.** A piece called `label` is styled by a rule called
+`label`, so a tool can follow the thread from promise to actual CSS. That is normally impossible —
+[next page](./04-tokens-and-paint.md).
 
-```mermaid
-flowchart LR
-  C["Contract says:<br/>there is a piece<br/>called <b>spinner</b>"] --> Q{check}
-  M["Markup renders:<br/>root, icon-start, label"] --> Q
-  Q --> F["❌ FAIL<br/><i>the contract describes<br/>something that does not exist</i>"]
-  style F fill:#3a2020,stroke:#e56161,color:#fff
-```
-
-Without labels there is no way to compare, and the contract becomes a document nobody verifies —
-which is how it starts drifting.
-
-This runs in both directions, but only one of them fails:
-
-| Situation                                               | What happens                                                              |
-| ------------------------------------------------------- | ------------------------------------------------------------------------- |
-| Contract names a piece the component does not render    | **Fails.** It is describing fiction.                                      |
-| Component renders a piece the contract does not mention | **Reported, not failed.** Probably an oversight, occasionally deliberate. |
-
-That asymmetry is deliberate. Describing something that does not exist is a lie; forgetting to
-document something is just untidy.
-
-### 3. It makes the token rules enforceable
-
-This is the big one, and it gets its own page. Short version: because a piece called `label` is
-_also_ styled by a rule called `label`, a tool can follow the thread from the contract's promise
-all the way to the actual CSS and check they agree.
-
-That is normally impossible. It is only possible here because of the naming rule.
-
-## The rule, stated plainly
+## The rule
 
 > **A named piece carries `data-ds-part="x"` and is styled by a rule with the same name.**
 
-Break the pairing and nothing crashes. The component works. Tests pass. All that happens is the
-token check quietly stops being able to see that piece — it degrades from a check into a comment,
-and nobody notices for months.
+Break the pairing and nothing crashes. The component works, tests pass. The token check just
+quietly stops being able to see that piece — it degrades from a check into a comment, and nobody
+notices for months.
 
-That is the kind of failure this repo spends most of its energy on: **the ones that produce no
+That is the failure mode this repo spends most of its energy on: **the ones that produce no
 error.**
 
 ## States are not pieces
 
-A common mix-up. Two different things:
-
 |           | What it is                        | Example                    |
 | --------- | --------------------------------- | -------------------------- |
-| **Piece** | a thing that exists in the layout | `label`, `icon-start`      |
+| **Piece** | exists in the layout              | `label`, `icon-start`      |
 | **State** | a condition the whole thing is in | hovered, disabled, loading |
 
-And within states, another split that matters:
+And within states:
 
-- **The browser already owns some states.** Hover, focus, pressed, disabled. You do not track
-  these. They are free.
-- **A few are yours.** `loading`, `current` — things the browser has no concept of.
+- **The browser owns most of them** — hover, focus, pressed, disabled. Free. You do nothing.
+- **A few are yours** — `loading`, `current`. Things the browser has no concept of.
 
-So: never build a "hover" property. Hover is not something you set, it is something that happens.
+So never build a "hover" property. Hover is not something you set, it is something that happens.
 Making it a property means writing code to follow the mouse around to do a job the browser has
-been doing for free since 1996.
+done for free since the nineties — and it breaks on touchscreens and gets stuck.
 
-This sounds obvious written down. It is one of the most common mistakes in a design system built
-from a Figma file, because in Figma hover genuinely _is_ a variant — there is nowhere else to put
-it. [Page 6](./06-from-figma-to-component.md) is about that translation.
+Obvious written down. Extremely common in practice, because in Figma hover genuinely _is_ a
+variant — there is nowhere else to put it. [Page 6](./06-from-figma-to-component.md) covers that
+translation.
 
-## What this means for you in practice
+## In practice
 
-| You want to                                 | Do this                                                |
-| ------------------------------------------- | ------------------------------------------------------ |
-| Restyle one bit of a component from outside | Target `[data-ds-part="…"]`                            |
-| Know what pieces a component has            | `pnpm contract Button`                                 |
-| Suggest a component be split up             | Talk about pieces by name — they are shared vocabulary |
-| Style a hover state                         | Nothing. It already works.                             |
+| You want to                       | Do this                                          |
+| --------------------------------- | ------------------------------------------------ |
+| Restyle one bit from outside      | target `[data-ds-part="…"]`                      |
+| Know what pieces exist            | `pnpm contract Button`                           |
+| Argue a component should be split | talk in piece names — they are shared vocabulary |
+| Style a hover state               | nothing. It already works.                       |
 
 ---
 

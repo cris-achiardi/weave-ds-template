@@ -1,84 +1,107 @@
-# 1. What this whole thing is
+# 1. How this is meant to work
 
 ← [Index](./README.md) · Next: [The two halves →](./02-the-two-halves.md)
 
 ---
 
-## The short version
+## The one sentence
 
-This repo is a design system with **no components in it**.
+> **You don't fix the output. You fix the system that produced it.**
 
-That is not an oversight. It ships everything _around_ the components — the token pipeline, the
-rules, the checks, the record of decisions — and leaves the components for you to build.
+Every solved problem compounds instead of evaporating. That is the whole idea; everything below is
+machinery for making it true.
 
-## Why on earth would you ship it empty
+## What that means in practice
 
-Because a component is the _last_ step, not the first.
+A button has the wrong padding. Two ways to respond:
 
-Most design systems get built the other way round. Someone draws a button, someone else codes it,
-and six months later the team is arguing about why there are three greys called "surface" and
-whether `emphasis="high"` and `hierarchy="primary"` are the same thing. All those questions
-existed on day one. Nobody wrote them down, so they got answered by accident, one commit at a
-time.
+|        | What you do                                                           | What you get                                           |
+| ------ | --------------------------------------------------------------------- | ------------------------------------------------------ |
+| Normal | Edit the button                                                       | A fixed button. The next one has the same bug.         |
+| Here   | Fix whatever let the wrong padding through — a token, a rule, a check | Every button, forever, including ones nobody has built |
 
-This template makes you answer them first:
+The second is slower once and free every time after.
+
+## The pipeline
+
+A component is not written. It is **produced**, from a stack of contracts that each answer one
+question:
+
+```mermaid
+flowchart TD
+  U["<b>Use case</b><br/><i>why does this exist?</i><br/>behaviour · intent · the states<br/>we must show"]
+  C["<b>Component contract</b><br/><i>what it is</i><br/>anatomy · promises · semantics"]
+  P["<b>Prop map</b><br/><i>what we call things</i><br/>inherited + authored"]
+  S["<b>Token policy</b><br/><i>what paints it</i>"]
+  G["<b>Code standards</b><br/><i>what good looks like here</i><br/>structure · tests · exports"]
+  B["🧩 <b>The component</b>"]
+  D["📖 Documentation"]
+  F["🎨 Figma component"]
+
+  U --> C --> P --> S --> G --> B --> D --> F
+
+  style U fill:#3a3a4a,stroke:#5146e6,color:#fff
+  style C fill:#3a3a4a,stroke:#5146e6,color:#fff
+  style B fill:#1f3a2a,stroke:#26e589,color:#fff
+  style F fill:#1f3a2a,stroke:#26e589,color:#fff
+```
+
+The first two are **framework-agnostic**. A use case and a component contract describe a thing that
+has behaviour and states — not a React thing. Same contract, built in React today and something
+else later, without re-deciding what the component _is_.
+
+Only from the prop map down does the framework matter.
+
+## Figma is an output, not the source
+
+The surprising part: **the canonical component is machine-generated, and so is its Figma version.**
 
 ```mermaid
 flowchart LR
-  F["🎨 Figma file"] --> R["📄 Report<br/><i>what is actually there</i>"]
-  R --> A["⚖️ Decision<br/><i>what we chose, and why</i>"]
-  A --> C["🧩 Component<br/><i>built to that decision</i>"]
-  C -.->|"checked against"| A
-  style F fill:#3a3a4a,stroke:#5146e6,color:#fff
-  style R fill:#2b2b2b,stroke:#666,color:#fff
-  style A fill:#2b2b2b,stroke:#666,color:#fff
-  style C fill:#3a3a4a,stroke:#26e589,color:#fff
+  E["🎨 Designer explores<br/><i>variants, approaches,<br/>what it should feel like</i>"] -->|"informs"| D["⚖️ Decisions"]
+  D --> M["⚙️ Machinery"]
+  M --> CODE["🧩 Component"]
+  M --> FIG["🎨 Canonical<br/>Figma component"]
+  style E fill:#3a3a4a,stroke:#5146e6,color:#fff
+  style FIG fill:#1f3a2a,stroke:#26e589,color:#fff
+  style CODE fill:#1f3a2a,stroke:#26e589,color:#fff
 ```
 
-1. **Explore** — read the design file and write down what is measurably there. Not opinions. How
-   many colours, what the spacing steps actually are, where two things contradict each other.
-2. **Report** — that write-up ends in open questions, never in answers.
-3. **Decide** — each question becomes a short record: what we chose, what it costs, what it rules
-   out. These are called ADRs, and they are just markdown files.
-4. **Build** — the component is built against a decision that already exists. And the tooling
-   checks that it was.
+This does **not** mean designers stop working in Figma. Explore freely — that is what Figma is
+for, and a decision made without exploring is a guess.
 
-The dotted line matters most. The component is not just _inspired by_ the decision — it is
-**checked against** it, mechanically, every time anyone pushes.
+It means the _published_ component in the library is generated from the same contracts the code
+comes from. Two artifacts, one source. They cannot drift, because neither is copied from the
+other.
 
-## An analogy
+Hand-maintaining both is the drift everyone has lived through: the code gains a size, the Figma
+library does not, and six months later nobody knows which one is lying.
 
-Think of a Figma library file that has been set up properly before anyone draws anything.
+## Where today's repo actually is
 
-The variable collections exist and are named consistently. The page structure is agreed. There is
-a doc page saying what "surface" means and when to use it instead of "background". The naming
-convention is written down where people will actually see it.
+Being straight about this, because a diagram of an intended system reads exactly like a diagram of
+a real one:
 
-**The canvas is still empty.** But the first component someone draws in that file will be better
-than the first component drawn in a blank file, and the hundredth will be _far_ better.
+| Piece              | Today                                                                         |
+| ------------------ | ----------------------------------------------------------------------------- |
+| Component contract | **Built.** Schema, gate, composer. Currently React-shaped, not yet agnostic.  |
+| Prop map           | **Built** as authored canon vs measured reality. No inheritance layering yet. |
+| Token policy       | **Built**, and checkable.                                                     |
+| Code standards     | **Written as prose**, not yet a contract a machine can check.                 |
+| Use case contract  | **Not built.**                                                                |
+| Docs generation    | **Not built.**                                                                |
+| Figma generation   | **Not built.** The Figma link is read-only today.                             |
 
-That is what this repo is, for code.
+So: the middle of the pipeline exists and works. The ends do not yet.
 
-## What is actually in the box
+## Why bother with contracts at all
 
-|                   | What it is                   | Designer translation                                                        |
-| ----------------- | ---------------------------- | --------------------------------------------------------------------------- |
-| `packages/tokens` | Token pipeline               | Your Figma variables, turned into something code can use                    |
-| `packages/react`  | The component library        | Empty. You fill it.                                                         |
-| `apps/sandbox`    | A preview page               | A blank artboard to drop a component onto                                   |
-| `apps/storybook`  | A component browser          | Off by default; switch it on when there is enough to browse                 |
-| `docs/ADR`        | Decision records             | The "why we did it this way" file that usually only lives in someone's head |
-| `docs/research`   | Findings                     | What we measured, before anyone decided anything                            |
-| `.ai/maps`        | The vocabulary               | A shared dictionary of prop names, so nobody invents a synonym              |
-| `.figma`          | The link to your design file | Which file, and how its names map to code names                             |
-| `.claude/skills`  | Agent instructions           | How an AI agent is told to do each of the four steps                        |
+Because the alternative is that all these decisions still get made — just invisibly, by whoever
+happens to be typing, and never written down.
 
-## The part you will actually care about
-
-Most of this you can ignore. The bit worth understanding is the **contract** — a small file next
-to every component that records the things the code cannot say for itself.
-
-That is what the rest of these pages are about.
+Ask a normal design system "why is this a button and not a link", "which token is this background
+_supposed_ to be", "is this finished" — and the answer lives in one person's memory. Contracts are
+just those answers, written where a machine can check them.
 
 ---
 
