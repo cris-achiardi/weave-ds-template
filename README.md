@@ -68,6 +68,13 @@ or a prop value that was never in the axis.
 
 See [`docs/ADR/0001`](./docs/ADR/0001-component-contracts-carry-what-the-source-cannot.md).
 
+## New here? Start with the illustrated version
+
+**[`docs/documentation/`](./docs/documentation/)** explains the whole system in plain language,
+with diagrams, for people who do not read code. Six short pages: what this is, the two halves of a
+component, naming its pieces, which token paints what, the shared vocabulary, and how a Figma file
+becomes a component.
+
 ## Working in it
 
 - **[`CLAUDE.md`](./CLAUDE.md)** — the entry map. Start here.
