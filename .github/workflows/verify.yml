@@ -9,15 +9,20 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      # These majors run on Node 24. Older ones (checkout@v4, setup-node@v4,
+      # pnpm/action-setup@v4) target the deprecated Node 20 runtime and make every run carry a
+      # deprecation annotation, which trains people to ignore annotations.
+      - uses: actions/checkout@v7
 
       # No `version:` here on purpose — `packageManager` in package.json pins pnpm, and
-      # specifying it in both places makes the action fail with a version-mismatch error.
-      - uses: pnpm/action-setup@v4
+      # specifying it in both places fails with ERR_PNPM_BAD_PM_VERSION.
+      - uses: pnpm/action-setup@v6
 
-      - uses: actions/setup-node@v4
+      # Node version comes from .nvmrc, so CI and a contributor's shell cannot disagree.
+      # One fact, one place — the same rule the rest of this repo runs on.
+      - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version-file: .nvmrc
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
