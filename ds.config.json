@@ -7,9 +7,10 @@
   "dataPrefix": "ds",
 
   "_names": {
+    "_note": "These descriptions avoid spelling out the current prefix, so they stay accurate after `pnpm init-ds` renames it. Read them against the values above.",
     "name": "Human/short name of the system. Used in generated headings.",
-    "scope": "npm scope for the workspace packages, e.g. `@ds` -> @ds/react, @ds/tokens.",
-    "tokenPrefix": "CSS custom-property namespace: `ds` -> --ds-color-fill-loud. Every custom property the system declares or reads must carry it, so a bare --spacing cannot inherit into a consumer's markup and collide with a property of theirs by the same name.",
-    "dataPrefix": "Data-attribute namespace for component anatomy: `ds` -> data-ds-part, data-ds-state. Namespaced for the same reason as tokenPrefix — an unprefixed data-part can collide with a consumer's own."
+    "scope": "npm scope for the workspace packages — the library resolves as <scope>/react and <scope>/tokens.",
+    "tokenPrefix": "CSS custom-property namespace: every property is --<tokenPrefix>-*. Every custom property the system declares or reads must carry it, so a bare --spacing cannot inherit into a consumer's markup and collide with a property of theirs by the same name.",
+    "dataPrefix": "Data-attribute namespace for component anatomy: data-<dataPrefix>-part and data-<dataPrefix>-state. Namespaced for the same reason as tokenPrefix — an unprefixed data-part can collide with a consumer's own."
   }
 }

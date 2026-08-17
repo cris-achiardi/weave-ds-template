@@ -18,7 +18,8 @@
  * Run it ONCE, before writing any components. It is not a migration tool.
  */
 
-import { readFileSync, writeFileSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve, join, relative } from 'node:path';
 
@@ -141,6 +142,28 @@ cfg.dataPrefix = name;
 if (!dry) writeFileSync(cfgPath, JSON.stringify(cfg, null, 2) + '\n');
 
 // ---------------------------------------------------------------------------------------
+
+// A longer or shorter name changes string widths inside markdown tables, so Prettier's column
+// alignment goes stale and `pnpm verify` fails on format:check. Reformatting here is not a
+// nicety: the first command a new user runs must leave the repo green, or the first thing they
+// see is a red gate they did not cause.
+if (!dry && changed.length) {
+  try {
+    execFileSync(
+      'npx',
+      ['prettier', '--write', '--log-level', 'warn', ...changed.map((c) => c.file)],
+      {
+        cwd: REPO_ROOT,
+        stdio: 'pipe',
+        shell: process.platform === 'win32',
+      },
+    );
+  } catch {
+    console.warn(
+      '\nNote: could not run Prettier automatically. Run `pnpm format` before `pnpm verify`.',
+    );
+  }
+}
 
 const total = changed.reduce((n, c) => n + c.hits, 0);
 console.log(
