@@ -24,33 +24,44 @@ The second is slower once and free every time after.
 
 ## The pipeline
 
-A component is not written. It is **produced**, from a stack of contracts that each answer one
-question:
+A component is not written. It is **produced** — from a thinking step, then three contracts that
+each answer one question:
 
 ```mermaid
 flowchart TD
-  U["<b>Use case</b><br/><i>why does this exist?</i><br/>behaviour · intent · the states<br/>we must show"]
-  C["<b>Component contract</b><br/><i>what it is</i><br/>anatomy · promises · semantics"]
-  P["<b>Prop map</b><br/><i>what we call things</i><br/>inherited + authored"]
-  S["<b>Token policy</b><br/><i>what paints it</i>"]
-  G["<b>Code standards</b><br/><i>what good looks like here</i><br/>structure · tests · exports"]
+  U["🧠 <b>The use case</b><br/><i>not a file — the thinking</i><br/>why does this exist · what<br/>behaviour · which states must be visible"]
+  C["<b>Component contract</b><br/><i>agnostic, and complete<br/>enough to build from</i><br/>anatomy · semantics · behaviour · token policy"]
+  P["<b>Prop map</b><br/><i>one per framework</i><br/>react · react-native · +library"]
+  G["<b>Code standards</b><br/><i>which files, and what<br/>each must contain</i>"]
   B["🧩 <b>The component</b>"]
-  D["📖 Documentation"]
+  D["📖 Docs"]
   F["🎨 Figma component"]
 
-  U --> C --> P --> S --> G --> B --> D --> F
+  U -->|"articulated as"| C
+  C --> B
+  P --> B
+  G --> B
+  B --> D --> F
 
-  style U fill:#3a3a4a,stroke:#5146e6,color:#fff
+  style U fill:#2b2b2b,stroke:#888,color:#fff,stroke-dasharray: 4 4
   style C fill:#3a3a4a,stroke:#5146e6,color:#fff
   style B fill:#1f3a2a,stroke:#26e589,color:#fff
   style F fill:#1f3a2a,stroke:#26e589,color:#fff
 ```
 
-The first two are **framework-agnostic**. A use case and a component contract describe a thing that
-has behaviour and states — not a React thing. Same contract, built in React today and something
-else later, without re-deciding what the component _is_.
+**The use case is a mental model, not an artifact.** Nobody writes a "use case file". But without
+articulating why the component exists, what it must do, and which states have to be visible, there
+is nothing to lay the anatomy out _from_ — the contract becomes someone's opinion, well formatted.
 
-Only from the prop map down does the framework matter.
+**The component contract is framework-agnostic**, and the bar is higher than "describes a
+component": it has to carry enough that you could **build** from it. Same contract, React today,
+something else later, without re-deciding what the thing _is_.
+
+**The prop map is per framework** — and sometimes per framework _and_ library. React and React
+Native need different ones. If the library sits on an unstyled base like Base UI or Radix, that
+combination gets its own, because what you inherit changes what you are allowed to author.
+
+**Figma comes last, and only from code.** It cannot be generated before a component exists.
 
 ## Figma is an output, not the source
 
@@ -82,17 +93,17 @@ library does not, and six months later nobody knows which one is lying.
 Being straight about this, because a diagram of an intended system reads exactly like a diagram of
 a real one:
 
-| Piece              | Today                                                                         |
-| ------------------ | ----------------------------------------------------------------------------- |
-| Component contract | **Built.** Schema, gate, composer. Currently React-shaped, not yet agnostic.  |
-| Prop map           | **Built** as authored canon vs measured reality. No inheritance layering yet. |
-| Token policy       | **Built**, and checkable.                                                     |
-| Code standards     | **Written as prose**, not yet a contract a machine can check.                 |
-| Use case contract  | **Not built.**                                                                |
-| Docs generation    | **Not built.**                                                                |
-| Figma generation   | **Not built.** The Figma link is read-only today.                             |
+| Piece              | Today                                                                                                                       |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| Component contract | **Built** — schema, gate, composer. But React-shaped, and it describes rather than specifies: not yet enough to build from. |
+| Prop map           | **Built**, for one framework, as authored canon vs measured reality. Not yet one per framework.                             |
+| Token policy       | **Built**, and checkable.                                                                                                   |
+| Code standards     | **Prose plus a scaffolding skill.** No machine-readable file spec, so nothing validates the shape deterministically.        |
+| The use case       | Nothing prompts for it. The proposal template should, and doesn't.                                                          |
+| Docs → Figma       | **Correctly absent.** Both need a component in code first, and there are none.                                              |
 
-So: the middle of the pipeline exists and works. The ends do not yet.
+So: the middle of the pipeline exists and works. The framing at the top and the enforcement at the
+bottom are the gaps.
 
 ## Why bother with contracts at all
 

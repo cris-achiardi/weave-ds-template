@@ -32,16 +32,20 @@ flowchart BT
 ```
 
 Why it matters: **you cannot rename what you inherited, and you must not re-invent it.** If the
-platform already gives you `disabled`, adding `isDisabled` means two ways to say one thing.
-If you build on an unstyled library and it already exposes `open` / `onOpenChange`, inventing
-`isVisible` puts your component permanently out of step with every other consumer of that library.
+platform already gives you `disabled`, adding `isDisabled` means two ways to say one thing. If you
+build on an unstyled library that already exposes `open` / `onOpenChange`, inventing `isVisible`
+puts you permanently out of step with every other consumer of that library.
 
 So the useful question when naming is not _"what should this be called?"_ but _"do I already have
 one, and where did it come from?"_
 
-> **Today's repo shows the authored layer only** — it filters the inherited ones out to keep the
-> list readable. Making the layers visible, so an inherited name can't be shadowed by accident, is
-> known work that hasn't been done.
+Which means **there is no single prop map.** React and React Native inherit different things, so
+they get different maps. Add an unstyled base library and that combination gets its own, because
+what you inherit changes what you are free to author.
+
+> **Today's repo has one map, showing the authored layer only** — it filters the inherited props
+> out to keep the list readable. One map per supported framework, with the inherited surface
+> visible, is known work that hasn't been done.
 
 ## The dictionary
 
