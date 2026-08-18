@@ -49,7 +49,10 @@ export function componentPaths(name) {
     dir,
     tsx: join(dir, `${name}.tsx`),
     css: join(dir, `${name}.module.css`),
+    // The agnostic half — what the component IS, on any framework.
     contract: join(dir, `${name}.contract.json`),
+    // The React half — what it becomes here. See contracts/README.md for the dividing line.
+    binding: join(dir, `${name}.react.json`),
     index: join(dir, 'index.ts'),
   };
 }
@@ -62,14 +65,18 @@ export function isExported(name) {
 }
 
 /**
- * Merge the derived half (read from source) with the authored half (the contract) into the
- * answer to "what is this component".
+ * Merge the three descriptions of a component into one answer.
  *
- * The rule that keeps this honest: anything derivable is composed HERE at read time and is never
- * committed. A contract restating a prop, a value set or a default is a defect, not redundancy —
- * see docs/ADR/0001 §3.
+ *   contract  — what it IS, on any framework          (authored, agnostic)
+ *   binding   — what it becomes in React              (authored, framework-specific)
+ *   source    — what the implementation actually does (derived, read on demand)
+ *
+ * None of the three is authoritative alone. The contract says what should be true, the source says
+ * what is true, and where they overlap `verify:contract` asserts they agree (ADR 0002). Nothing
+ * derived is ever committed — this runs at read time, which is why it works on a fresh clone with
+ * no build.
  */
-export function compose({ name, props, cvaAxes, parts, contract, warnings, degraded }) {
+export function compose({ name, props, cvaAxes, parts, contract, binding, warnings, degraded }) {
   const merged = {};
 
   for (const [prop, info] of Object.entries(props)) {
@@ -96,18 +103,34 @@ export function compose({ name, props, cvaAxes, parts, contract, warnings, degra
   return {
     component: name,
     _doc:
-      'Composed at read time from the component source (derivable half) and its contract ' +
-      '(authored half). Not committed anywhere. Regenerate with `pnpm contract ' +
+      'Composed at read time from the agnostic contract, the React binding, and the ' +
+      'implementation. Not committed anywhere. Regenerate with `pnpm contract ' +
       name +
       '`.',
+    // --- what it IS (agnostic) ---
     status: contract?.status ?? null,
+    intent: contract?.intent ?? null,
+    states: contract?.states ?? null,
+    axes: contract?.axes ?? null,
     semantics: contract?.semantics ?? null,
     a11y: contract?.a11y ?? null,
     composition: contract?.composition ?? null,
     anatomy: contract?.anatomy ?? null,
+    // --- what it becomes in React ---
+    react: binding
+      ? {
+          element: binding.element,
+          elementByProp: binding.elementByProp ?? null,
+          refTarget: binding.refTarget ?? null,
+          classNamePassthrough: binding.classNamePassthrough ?? null,
+          propOverrides: binding.propOverrides ?? null,
+        }
+      : null,
+    // --- what the implementation actually does ---
     props: merged,
     rendered: parts,
     contracted: Boolean(contract),
+    bound: Boolean(binding),
     extraction: {
       propsResolved: Object.keys(merged).length,
       degraded: Boolean(degraded),

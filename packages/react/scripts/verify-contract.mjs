@@ -2,28 +2,31 @@
 /**
  * `pnpm verify:contract` — the contract gate.
  *
- * Enforces the mechanically decidable half of ADR 0001. Everything it checks is something whose
- * breach produces NO build error and NO failing test: a contract can name a part that does not
- * render, a state nothing can enter, or a prop value that was never an axis value, and every
- * other tool in this repo will stay green. That is exactly why this exists, and why it runs in
- * CI rather than only in `pnpm verify` — otherwise it is enforced on whichever machine happens
- * to run verify.
+ * Enforces ADR 0001 + ADR 0002. Everything it checks is something whose breach produces NO build
+ * error and NO failing test: a contract can promise an axis the code does not expose, name a part
+ * that never renders, or style a state nothing can enter, and every other tool stays green.
  *
- * FAILURE CLASSES
- *   1  shape          contract does not validate against contract.schema.json
- *   2  identity       component name vs directory vs export vs barrel
- *   3  invented       contract names a part / state / slot the source does not have
- *   4  status         a `deprecated` level whose replacedBy does not exist
- *   5  whenProp       names a prop that does not exist, or a value not in that prop's set
- *   6  phantom        contract declares a part the TSX never renders
+ * THE SHAPE OF THE CHECKING CHANGED IN ADR 0002.
+ * The contract used to be forbidden from restating anything derivable. It now SPECIFIES the axes
+ * and their values, because a file that omits them cannot be built from. Duplication is safe here
+ * only because of what this script does: it asserts the two are equal. Remove these parity checks
+ * and the contract silently becomes a stale second opinion.
  *
- * REPORTED, NEVER FAILED
- *   - a component with no contract              (ADR 0001 §5)
- *   - a rendered part the contract omits
- *   - extraction warnings
+ * FAILS
+ *   shape      contract or binding does not validate against its schema
+ *   identity   name vs directory vs export vs barrel vs binding
+ *   parity     contract and implementation disagree about axes, values or defaults
+ *   invented   contract names a part / state / slot / axis value the implementation lacks
+ *   phantom    contract declares a part the TSX never renders
+ *   status     a `deprecated` level whose replacedBy does not exist
  *
- * That split is not softness. A gate that failed on every uncontracted component on day one
- * would be switched off within the week, and a switched-off gate protects nothing.
+ * REPORTS, NEVER FAILS
+ *   a component with no contract          (ADR 0001 §5)
+ *   a rendered part the contract omits
+ *   extraction warnings
+ *
+ * That split is not softness: a gate that failed on every uncontracted component on day one would
+ * be switched off within the week, and a switched-off gate protects nothing.
  */
 
 import { existsSync, readFileSync } from 'node:fs';
@@ -33,7 +36,7 @@ import { extractProps } from './extract/props.mjs';
 import { extractCvaAxes, flattenAxes } from './extract/cva.mjs';
 import { extractParts, extractStyleKeys } from './extract/parts.mjs';
 import {
-  PKG_ROOT,
+  REPO_ROOT,
   listComponents,
   componentPaths,
   readJson,
@@ -43,8 +46,8 @@ import {
   byCodePoint,
 } from './lib.mjs';
 
-/** Interaction states the browser owns. A contract may key `states` on any of these. */
-const NATIVE_STATES = [
+/** Interaction states a platform provides. A contract may declare these as `intrinsic`. */
+const INTRINSIC = [
   'active',
   'checked',
   'disabled',
@@ -68,35 +71,31 @@ const report = (component, detail) => reports.push({ component, detail });
 
 function main() {
   const cfg = dsConfig();
-  const schemaPath = join(PKG_ROOT, 'contract.schema.json');
+  const ajv = new Ajv({ allErrors: true, strict: false });
 
-  // Compiling the schema is itself a check, and the ONLY one that can fail on day one with zero
+  // Compiling both schemas is itself a check, and the only one that can fail on day one with zero
   // components. A malformed schema would otherwise sit undetected until the first contract.
-  let validate;
+  let validateContract, validateBinding;
   try {
-    const ajv = new Ajv({ allErrors: true, strict: false });
-    validate = ajv.compile(readJson(schemaPath));
+    validateContract = ajv.compile(readJson(join(REPO_ROOT, 'contracts/component.schema.json')));
+    validateBinding = ajv.compile(readJson(join(REPO_ROOT, 'contracts/react-binding.schema.json')));
   } catch (err) {
-    console.error(`contract.schema.json does not compile: ${err.message}`);
+    console.error(`a schema in contracts/ does not compile: ${err.message}`);
     process.exit(1);
   }
 
   const components = listComponents();
+  for (const name of components) check(name, validateContract, validateBinding, cfg);
 
-  for (const name of components) check(name, validate, cfg);
-
-  // ---- output -------------------------------------------------------------------------
   const contracted = components.filter((n) => existsSync(componentPaths(n).contract));
   console.log(`contracts: ${contracted.length}/${components.length} components contracted.`);
-
   if (components.length === 0) {
     console.log('No components exist yet — the template’s intended starting state, not a gap.');
   }
 
   const uncontracted = components.filter((n) => !existsSync(componentPaths(n).contract));
-  if (uncontracted.length) {
+  if (uncontracted.length)
     console.log(`\nUncontracted (reported, not failed): ${uncontracted.join(', ')}`);
-  }
 
   if (reports.length) {
     console.log('\nReports — not failures:');
@@ -120,11 +119,11 @@ function main() {
   console.log('\nverify:contract OK.');
 }
 
-function check(name, validate, cfg) {
+function check(name, validateContract, validateBinding, cfg) {
   const paths = componentPaths(name);
   const source = readFileSync(paths.tsx, 'utf8');
 
-  // --- 2 identity (applies with or without a contract) ---------------------------------
+  // --- identity (applies with or without a contract) -----------------------------------
   if (!new RegExp(`export\\s+(const|function|class)\\s+${name}\\b`).test(source)) {
     fail(name, 'identity', `${name}.tsx does not export a symbol named ${name}.`);
   }
@@ -136,23 +135,37 @@ function check(name, validate, cfg) {
     );
   }
 
-  if (!existsSync(paths.contract)) return; // uncontracted: reported above, never failed
+  if (!existsSync(paths.contract)) return; // uncontracted: reported, never failed
 
   const contract = readJson(paths.contract);
-
-  // --- 1 shape --------------------------------------------------------------------------
-  if (!validate(contract)) {
-    for (const e of validate.errors ?? []) {
-      fail(name, 'shape', `${e.instancePath || '/'} ${e.message}`);
-    }
+  if (!validateContract(contract)) {
+    for (const e of validateContract.errors ?? [])
+      fail(name, 'shape', `contract ${e.instancePath || '/'} ${e.message}`);
     return; // a contract that does not validate cannot be reasoned about further
   }
-
   if (contract.component !== name) {
     fail(name, 'identity', `contract declares component "${contract.component}".`);
   }
 
-  // --- 4 status -------------------------------------------------------------------------
+  // --- the binding ---------------------------------------------------------------------
+  let binding = null;
+  if (existsSync(paths.binding)) {
+    binding = readJson(paths.binding);
+    if (!validateBinding(binding)) {
+      for (const e of validateBinding.errors ?? [])
+        fail(name, 'shape', `binding ${e.instancePath || '/'} ${e.message}`);
+      binding = null;
+    } else if (binding.component !== name) {
+      fail(name, 'identity', `binding declares component "${binding.component}".`);
+    }
+  } else {
+    report(
+      name,
+      `no ${name}.react.json — the React binding is undeclared (element, ref target, className target).`,
+    );
+  }
+
+  // --- status ---------------------------------------------------------------------------
   if (contract.status.level === 'deprecated') {
     const target = contract.status.replacedBy;
     if (target && !existsSync(componentPaths(target).tsx)) {
@@ -160,92 +173,154 @@ function check(name, validate, cfg) {
     }
   }
 
-  // --- derive the source-side truth -----------------------------------------------------
+  // --- what the implementation actually says --------------------------------------------
   const { props } = extractProps(paths.tsx);
-  const { axes } = flattenAxes(extractCvaAxes(source, paths.tsx));
+  const { axes: implAxes } = flattenAxes(extractCvaAxes(source, paths.tsx));
   const rendered = extractParts(source, cfg.dataPrefix);
   const styleKeys = extractStyleKeys(source);
 
-  const valuesOf = (prop) => axes[prop]?.values ?? props[prop]?.values ?? null;
+  // --- PARITY: the heart of ADR 0002 ----------------------------------------------------
+  //
+  // The contract specifies the axes. The implementation expresses them. Neither is allowed to
+  // be right on its own — they have to agree, and this is the only place that is checked.
+  const declaredAxes = contract.axes ?? {};
+  const renames = binding?.propOverrides ?? {};
 
-  // --- 3 invented: slots ----------------------------------------------------------------
+  for (const axis of Object.keys(declaredAxes).sort(byCodePoint)) {
+    const spec = declaredAxes[axis];
+    const implName = renames[axis]?.prop ?? axis;
+    const impl = implAxes[implName];
+
+    if (!impl) {
+      fail(
+        name,
+        'parity',
+        `contract declares axis "${axis}"${implName !== axis ? ` (bound to prop "${implName}")` : ''}, but the implementation exposes no such variant axis.`,
+      );
+      continue;
+    }
+
+    const want = [...spec.values].sort(byCodePoint).join(' | ');
+    const got = [...impl.values].sort(byCodePoint).join(' | ');
+    if (want !== got) {
+      fail(
+        name,
+        'parity',
+        `axis "${axis}" — contract says [${want}], implementation says [${got}].`,
+      );
+    }
+
+    const wantDefault = spec.default ?? null;
+    if (wantDefault !== null && impl.default !== wantDefault) {
+      fail(
+        name,
+        'parity',
+        `axis "${axis}" — contract says the default is "${wantDefault}", implementation says ${impl.default === null ? 'there is none' : `"${impl.default}"`}.`,
+      );
+    }
+  }
+
+  for (const implName of Object.keys(implAxes).sort(byCodePoint)) {
+    const declared = Object.keys(declaredAxes).some((a) => (renames[a]?.prop ?? a) === implName);
+    if (!declared) {
+      fail(
+        name,
+        'parity',
+        `the implementation exposes variant axis "${implName}", which the contract does not declare.`,
+      );
+    }
+  }
+
+  // --- composition ----------------------------------------------------------------------
   for (const slot of Object.keys(contract.composition?.slots ?? {}).sort(byCodePoint)) {
     const p = props[slot];
-    if (!p) {
-      fail(name, 'invented', `composition.slots names "${slot}", which is not a prop.`);
-    } else if (!p.acceptsNode) {
+    if (!p) fail(name, 'invented', `composition.slots names "${slot}", which is not a prop.`);
+    else if (!p.acceptsNode)
       fail(
         name,
         'invented',
         `composition.slots names "${slot}", whose type is \`${p.type}\` and cannot hold rendered content.`,
       );
+  }
+
+  // --- states -----------------------------------------------------------------------------
+  const declaredStates = contract.states ?? {};
+  for (const state of Object.keys(declaredStates).sort(byCodePoint)) {
+    const kind = declaredStates[state].kind;
+    if (kind === 'intrinsic' && !INTRINSIC.includes(state)) {
+      fail(
+        name,
+        'invented',
+        `state "${state}" is declared intrinsic, but no platform provides it. An authored state has to be tracked by the implementation.`,
+      );
+    }
+    if (
+      kind === 'authored' &&
+      !rendered.states.includes(state) &&
+      props[state]?.type !== 'boolean'
+    ) {
+      fail(
+        name,
+        'invented',
+        `state "${state}" is declared authored, but nothing sets data-${cfg.dataPrefix}-state="${state}" and there is no boolean prop of that name.`,
+      );
     }
   }
 
-  // --- 6 phantom parts, 3 invented states, 5 whenProp -----------------------------------
+  // --- anatomy ------------------------------------------------------------------------------
   const contractedParts = new Set();
+  const anatomyKeys = new Set();
 
   for (const [path, node] of walkAnatomy(contract.anatomy.root)) {
-    if (node.part) {
-      contractedParts.add(node.part);
-      if (!rendered.parts.includes(node.part)) {
-        fail(
-          name,
-          'phantom',
-          `anatomy.${path} declares part "${node.part}", which ${name}.tsx never renders as data-${cfg.dataPrefix}-part.`,
-        );
-      }
-      // The invariant that makes report:paints possible at all.
-      const key = node.part.replace(/-([a-z0-9])/g, (_, c) => c.toUpperCase());
-      if (!styleKeys.includes(key) && !styleKeys.includes(node.part) && !node.internalOnly) {
-        report(
-          name,
-          `part "${node.part}" has no matching styles.${key} — report:paints cannot resolve its token policy.`,
-        );
-      }
-    } else if (!node.internalOnly) {
-      fail(name, 'shape', `anatomy.${path} has no \`part\` and is not marked internalOnly.`);
+    anatomyKeys.add(path.split('.').pop());
+    contractedParts.add(node.part);
+
+    if (!node.internalOnly && !rendered.parts.includes(node.part)) {
+      fail(
+        name,
+        'phantom',
+        `anatomy.${path} declares part "${node.part}", which ${name}.tsx never renders as data-${cfg.dataPrefix}-part.`,
+      );
+    }
+
+    const key = node.part.replace(/-([a-z0-9])/g, (_, c) => c.toUpperCase());
+    if (!node.internalOnly && !styleKeys.includes(key) && !styleKeys.includes(node.part)) {
+      report(
+        name,
+        `part "${node.part}" has no matching styles.${key} — report:paints cannot resolve its token policy.`,
+      );
     }
 
     for (const state of Object.keys(node.states ?? {}).sort(byCodePoint)) {
-      const known =
-        NATIVE_STATES.includes(state) ||
-        rendered.states.includes(state) ||
-        axes[state] !== undefined ||
-        props[state]?.type === 'boolean';
-      if (!known) {
+      if (!(state in declaredStates)) {
         fail(
           name,
           'invented',
-          `anatomy.${path}.states declares "${state}", which is not a native pseudo-class, not a data-${cfg.dataPrefix}-state value, and not a boolean prop. Nothing can enter it.`,
+          `anatomy.${path}.states styles "${state}", which the contract's top-level \`states\` does not declare.`,
         );
       }
     }
 
-    for (const key of Object.keys(node.whenProp ?? {}).sort(byCodePoint)) {
-      const [prop, value] = key.split('=');
-      if (!(prop in props) && !(prop in axes)) {
+    for (const key2 of Object.keys(node.whenAxis ?? {}).sort(byCodePoint)) {
+      const [axis, value] = key2.split('=');
+      if (!(axis in declaredAxes)) {
         fail(
           name,
-          'whenProp',
-          `anatomy.${path}.whenProp["${key}"] names prop "${prop}", which does not exist.`,
+          'invented',
+          `anatomy.${path}.whenAxis["${key2}"] names axis "${axis}", which the contract does not declare.`,
         );
         continue;
       }
-      if (value !== undefined) {
-        const allowed = valuesOf(prop);
-        if (allowed && !allowed.includes(value)) {
-          fail(
-            name,
-            'whenProp',
-            `anatomy.${path}.whenProp["${key}"] — "${value}" is not a value of ${prop} (${allowed.join(' | ')}).`,
-          );
-        }
+      if (value !== undefined && !declaredAxes[axis].values.includes(value)) {
+        fail(
+          name,
+          'invented',
+          `anatomy.${path}.whenAxis["${key2}"] — "${value}" is not one of this component's ${axis} values (${declaredAxes[axis].values.join(' | ')}).`,
+        );
       }
     }
   }
 
-  // --- reported: rendered but undocumented ----------------------------------------------
   for (const part of rendered.parts) {
     if (!contractedParts.has(part)) {
       report(
@@ -255,17 +330,14 @@ function check(name, validate, cfg) {
     }
   }
 
-  // --- reported: refTarget / classNamePassthrough point at real nodes --------------------
-  const anatomyKeys = new Set(
-    [...walkAnatomy(contract.anatomy.root)].map(([p]) => p.split('.').pop()),
-  );
+  // --- the binding points at real nodes -------------------------------------------------
   for (const field of ['refTarget', 'classNamePassthrough']) {
-    const target = contract.semantics?.[field];
+    const target = binding?.[field];
     if (target && !anatomyKeys.has(target)) {
       fail(
         name,
         'invented',
-        `semantics.${field} names "${target}", which is not a node in anatomy.`,
+        `binding.${field} names "${target}", which is not a node in the contract's anatomy.`,
       );
     }
   }

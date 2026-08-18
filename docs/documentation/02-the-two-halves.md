@@ -23,44 +23,55 @@ and the only way to find out is to read the code and guess.
 
 ```mermaid
 flowchart TD
-  subgraph SRC ["🤖 Read from the code — cannot be wrong"]
-    S1["properties · values · defaults · pieces it renders"]
-  end
-  subgraph CON ["✍️ Written by a human — the only place these exist"]
-    C1["what it really is · accessibility promises<br/>what may go inside · which token paints what · is it finished"]
-  end
-  SRC --> M["🔗 merged on demand"]
+  CON["✍️ <b>Contract</b> — what it IS<br/><i>any framework</i><br/>purpose · behaviour · states<br/>axes · anatomy · token policy"]
+  BIN["✍️ <b>Binding</b> — what it becomes in React<br/><i>small</i><br/>element · ref target · className target"]
+  SRC["🤖 <b>The code</b> — what it actually does<br/><i>read on demand, never written down</i>"]
+  M["🔗 merged"]
   CON --> M
+  BIN --> M
+  SRC --> M
   M --> OUT["<b>what is this component</b>"]
-  style SRC fill:#2b2b2b,stroke:#666,color:#fff
   style CON fill:#3a3a4a,stroke:#5146e6,color:#fff
+  style BIN fill:#2b2b2b,stroke:#888,color:#fff
+  style SRC fill:#2b2b2b,stroke:#666,color:#fff
   style OUT fill:#1f3a2a,stroke:#26e589,color:#fff
 ```
 
-Nobody writes the left half down, so it cannot go stale. The right half lives in a small file next
-to the component. Ask a question and a tool merges them:
+Three descriptions, none authoritative alone. Ask a question and a tool merges them:
 
 ```bash
 pnpm contract Button
 ```
 
+The split between the first two matters more than it looks. **The contract describes a thing with
+behaviour and states — not a React thing.** Build the same contract on React Native later and you
+write a new binding, not a new contract. What the component _is_ stops being re-decided every time
+the platform changes.
+
 ## The rule that makes it work
 
-> **Writing something in the contract that the code already knows is a mistake, not helpfulness.**
+The danger with two files is that they say different things. You have seen it: a Figma component
+description saying _"use the Small variant for compact rows"_, written when there were three sizes,
+still sitting there now there are five and Small was renamed. The properties panel is always right,
+because Figma generates it. The description is right until someone forgets.
 
-Let the contract list the sizes and that list now exists twice. Someone adds a size, updates the
-code — because that is what makes the button work — and forgets the file.
+So the rule is not "never repeat yourself". It is sharper than that:
 
-Now you have something that looks authoritative, is wrong, and gives no sign of it. **Worse than
-no file**, because before you knew to go and look.
+> **The contract may say anything. Anything it says that the code also says must be checked equal.**
 
-You have seen this exact failure: a Figma component description saying _"use the Small variant for
-compact rows"_, written when there were three sizes, still sitting there now there are five and
-Small was renamed. The panel above it is always right, because Figma generates it. The description
-is right until someone forgets.
+The contract _does_ list the sizes — it has to, or you couldn't build from it. And because the
+sizes can be read straight out of the code, a check compares the two on every run:
 
-So the contract is built so it can only ever hold description-shaped things, never panel-shaped
-ones. Try it and a check fails.
+```
+[parity] Button: axis "size" — contract says [l | m | s | xl], implementation says [l | m | s]
+```
+
+Two copies are not dangerous because they are two copies. They are dangerous when nothing compares
+them. Here something does, so a disagreement is a failed build rather than a file that quietly
+became a lie.
+
+**Where a check is impossible, the old rule still applies.** Nothing can verify a stated purpose or
+an accessibility promise, so those are written once, in the contract, and a human reviews them.
 
 ## What one looks like
 
@@ -68,7 +79,18 @@ ones. Try it and a check fails.
 {
   "component": "Button",
   "status": { "level": "experimental", "since": "2026-08-17" },
-  "semantics": { "element": "button", "classNamePassthrough": "root" },
+  "intent": {
+    "purpose": "Triggers an action in place. The only control that performs rather than navigates.",
+    "notFor": ["Navigation — use Link."]
+  },
+  "states": {
+    "hover": { "kind": "intrinsic", "visual": "fill lightens" },
+    "loading": { "kind": "authored", "visual": "busy cursor, label stays" }
+  },
+  "axes": {
+    "size": { "values": ["s", "m", "l"], "default": "m" }
+  },
+  "semantics": { "role": "button" },
   "a11y": {
     "contrast": "AA",
     "notes": ["Icon-only usage needs a label from whoever uses it. Nothing here can enforce that."]
@@ -79,10 +101,13 @@ ones. Try it and a check fails.
 }
 ```
 
-Five statements: it is still experimental · it is really a `<button>` · your styles land on `root`
-· there is a hole it cannot plug · the background must come from the fill tokens.
+Note what is **not** in it: no mention of `<button>`, no React. It says the _role_ is a button —
+what element that becomes is a separate, much smaller file, because `<button>` and React Native's
+`Pressable` are the same meaning on two platforms.
 
-No sizes, no defaults. All derivable, so all banned.
+`states` is worth a second look. Every state is classified: **intrinsic** means the platform gives
+it to you and you only style it; **authored** means the component has to track it. That single
+distinction is what stops someone building a `hover` property.
 
 ## The best line in the file
 

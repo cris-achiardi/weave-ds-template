@@ -40,6 +40,7 @@ export function composeComponent(name) {
   const { axes, conflicts } = flattenAxes(extractCvaAxes(source, paths.tsx));
   const parts = extractParts(source, dsConfig().dataPrefix);
   const contract = existsSync(paths.contract) ? readJson(paths.contract) : null;
+  const binding = existsSync(paths.binding) ? readJson(paths.binding) : null;
 
   return compose({
     name,
@@ -47,6 +48,7 @@ export function composeComponent(name) {
     cvaAxes: axes,
     parts,
     contract,
+    binding,
     warnings: [...warnings, ...conflicts.map((c) => `${c.axis}: ${c.detail}`)],
     degraded,
   });
@@ -80,8 +82,37 @@ function coverage() {
 
 function pretty(view) {
   const lines = [`# ${view.component}`, ''];
-  if (!view.contracted) lines.push('**Uncontracted** — no .contract.json. Derived half only.', '');
+  if (!view.contracted)
+    lines.push('**Uncontracted** — no .contract.json. Implementation only.', '');
   if (view.status) lines.push(`Status: ${view.status.level} since ${view.status.since}`, '');
+
+  if (view.intent?.purpose) lines.push(`## Purpose`, '', view.intent.purpose, '');
+  if (view.intent?.behaviour?.length) {
+    lines.push('## Behaviour', '');
+    for (const b of view.intent.behaviour) lines.push(`- ${b}`);
+    lines.push('');
+  }
+  if (view.intent?.notFor?.length) {
+    lines.push('## Not for', '');
+    for (const b of view.intent.notFor) lines.push(`- ${b}`);
+    lines.push('');
+  }
+  if (view.states) {
+    lines.push('## States', '');
+    for (const [s, d] of Object.entries(view.states))
+      lines.push(`- \`${s}\` (${d.kind})${d.visual ? ` — ${d.visual}` : ''}`);
+    lines.push('');
+  }
+  if (view.react) {
+    lines.push('## In React', '');
+    lines.push(`- renders \`<${view.react.element}>\``);
+    if (view.react.refTarget) lines.push(`- ref lands on \`${view.react.refTarget}\``);
+    if (view.react.classNamePassthrough)
+      lines.push(`- className merges into \`${view.react.classNamePassthrough}\``);
+    lines.push('');
+  } else if (view.contracted) {
+    lines.push('_No React binding declared._', '');
+  }
 
   const props = Object.entries(view.props);
   lines.push(`## Props (${props.length})`, '');

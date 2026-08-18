@@ -1,6 +1,6 @@
 ---
 name: ds-component
-description: Build a React component from an accepted decision — the four files, its contract, the barrel entry, and every gate. Use when asked to "create the Button", "scaffold a component", "implement ADR NNNN", "add a component to the design system", or when given a component name plus a design intent. Requires a governing ADR or a prop-map proposal to work from.
+description: Build a React component from an accepted decision — the five files, its agnostic contract and React binding, the barrel entry, and every gate. Use when asked to "create the Button", "scaffold a component", "implement ADR NNNN", "add a component to the design system", or when given a component name plus a design intent. Requires a governing ADR or a prop-map proposal to work from.
 ---
 
 # ds-component
@@ -19,22 +19,23 @@ visibly.
 
 ## Read these when you are in their territory
 
-| When                       | Read                                                                           |
-| -------------------------- | ------------------------------------------------------------------------------ |
-| **Always, first**          | `packages/react/src/components/README.md` — the authoring contract             |
-| **Before naming any prop** | `.ai/maps/prop-map.md` §1–2 — reuse an axis, do not coin a synonym             |
-| Writing the contract       | `references/authoring-the-contract.md` + `packages/react/contract.schema.json` |
-| The file shapes            | `references/component-anatomy.md`                                              |
-| Choosing a `paints` policy | `references/token-policy.md`                                                   |
-| What the gate will check   | `packages/react/scripts/verify-contract.mjs` header                            |
+| When                       | Read                                                                                       |
+| -------------------------- | ------------------------------------------------------------------------------------------ |
+| **Always, first**          | `packages/react/src/components/README.md` — the authoring contract                         |
+| **Before naming any prop** | `.ai/maps/prop-map.md` §1–2 — reuse an axis, do not coin a synonym                         |
+| Writing the contract       | `references/authoring-the-contract.md` + `contracts/*.schema.json` + `contracts/README.md` |
+| The file shapes            | `references/component-anatomy.md`                                                          |
+| Choosing a `paints` policy | `references/token-policy.md`                                                               |
+| What the gate will check   | `packages/react/scripts/verify-contract.mjs` header                                        |
 
-## The four files
+## The five files
 
 ```
 packages/react/src/components/<Name>/
 ├── <Name>.tsx             component: cva + clsx + forwardRef
 ├── <Name>.module.css      styles: tokens only, no raw values
-├── <Name>.contract.json   the authored half — what source cannot state
+├── <Name>.contract.json   agnostic — what it IS, on any framework
+├── <Name>.react.json      the React binding — element, ref target, className target
 └── index.ts               local barrel
 ```
 
@@ -96,7 +97,9 @@ usage needs an aria-label from the caller" is exactly the kind of fact that belo
 ## Order of work
 
 1. Read the governing ADR or proposal, and `prop-map.md` §1.
-2. Write the four files. Props come from the proposal; names come from the canon.
+2. Write the five files. Start with `intent` in the contract — purpose, behaviour, what it is
+   not for. Everything else is a consequence of it. Props come from the proposal; names come from
+   the canon.
 3. Add the barrel entry.
 4. `pnpm contract <Name>` — **read it back.** Does the merged view say what you meant? This is the
    step people skip, and it is the one that catches a wrong contract before the gate does.

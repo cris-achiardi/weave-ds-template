@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/react-binding-1.json",
+  "title": "React binding",
+  "description": "How one agnostic component contract is realised in React. Governed by ADR 0002.\n\nEverything here is a fact that stops being true the moment you build the same contract on a different framework: which DOM element carries the role, where a forwarded ref lands, which node a consumer's className merges into. React Native would have its own binding beside this one, answering the same questions with `Pressable` and `style`.\n\nKeep it SMALL. If a field here would be equally true in React Native, it belongs in the contract instead.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["component", "contract", "framework", "element"],
+
+  "properties": {
+    "$schema": { "type": "string" },
+
+    "component": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Za-z0-9]*$",
+      "description": "Must match the contract's `component`, the directory name, an export in <Name>.tsx, and a re-export from the package barrel."
+    },
+
+    "contract": {
+      "type": "string",
+      "description": "Relative path to the agnostic contract this realises, e.g. `./Button.contract.json`."
+    },
+
+    "framework": {
+      "const": "react",
+      "description": "Named explicitly so a directory can hold more than one binding without ambiguity."
+    },
+
+    "element": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9-]*$",
+      "description": "The element or component rendered at the root — what the contract's `semantics.role` becomes in the DOM. `button` for a role of button; a capitalised value names another component."
+    },
+
+    "elementByProp": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["prop", "map"],
+      "description": "For polymorphic components — renders <a> when `as=\"a\"`, <button> otherwise. Genuinely React-shaped: the mechanism does not exist on other platforms.",
+      "properties": {
+        "prop": { "type": "string" },
+        "map": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": { "type": "string" },
+          "description": "Prop value, or `present`/`absent` for a boolean, -> rendered element."
+        }
+      }
+    },
+
+    "refTarget": {
+      "type": "string",
+      "pattern": "^[a-z][a-zA-Z0-9]*$",
+      "description": "Which node in the contract's anatomy the forwarded ref lands on. React has no delegatesFocus, so this is the equivalent load-bearing fact — and a consumer calling .focus() on the wrong node has no way to discover it except by trying. Names a key in the anatomy tree, usually `root`."
+    },
+
+    "classNamePassthrough": {
+      "type": "string",
+      "pattern": "^[a-z][a-zA-Z0-9]*$",
+      "description": "Which node the consumer's `className` merges into. Every declaration on that node becomes overridable from outside whether or not you intended it, so recording it makes the blast radius reviewable. Omit only if the component genuinely drops className — which is itself worth saying in `notes`."
+    },
+
+    "propOverrides": {
+      "type": "object",
+      "description": "Where a contract axis is exposed under a different prop name in React, because the framework or an underlying library already owns the canonical one. Keyed by axis name. Use sparingly: a rename here is a place the two surfaces disagree, and every one of them is a thing somebody has to learn.",
+      "propertyNames": { "pattern": "^[a-z][a-zA-Z0-9]*$" },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["prop", "reason"],
+        "properties": {
+          "prop": { "type": "string" },
+          "reason": {
+            "type": "string",
+            "description": "Required. A rename with no reason is drift with paperwork."
+          }
+        }
+      }
+    },
+
+    "notes": { "type": "array", "items": { "type": "string" } }
+  }
+}

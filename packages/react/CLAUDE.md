@@ -25,7 +25,7 @@ Which of those are gates and which are reports is not a detail — see [Enforcem
 JSDoc, and the inventory of parts and states rendered. It is read on demand; nothing is committed,
 and nothing needs building first.
 
-**The contract (`<Name>.contract.json`, [ADR 0001](../../docs/ADR/0001-component-contracts-carry-what-the-source-cannot.md))
+**The contract (`<Name>.contract.json`, agnostic) plus its React binding (`<Name>.react.json`) — [ADR 0002](../../docs/ADR/0002-the-contract-specifies-and-the-gate-asserts-parity.md) —
 owns only what the source cannot state** — the rendered element, ARIA role, where the ref lands,
 which node absorbs `className`, accessibility commitments, what a slot accepts, lifecycle status,
 and the token policy per node.

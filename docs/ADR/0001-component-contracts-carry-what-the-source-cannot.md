@@ -1,9 +1,15 @@
 # ADR 0001 — Component contracts carry only what the source cannot state
 
-- **Status:** Accepted
+- **Status:** Accepted — **amended by [ADR 0002](./0002-the-contract-specifies-and-the-gate-asserts-parity.md)**
 - **Date:** 2026-08-17
 - **Deciders:** Design Systems
 - **Tags:** components, metadata, contracts, ai-consumption, governance, determinism
+
+> **Read 0002 alongside this.** Decision §3 below forbids restating anything derivable. ADR 0002
+> narrows that: the contract now _specifies_ the axes, their values and their defaults, because a
+> file that omits them cannot be built from — and duplication is safe **exactly where a gate
+> asserts equality**. The rule below still holds in full for everything a gate cannot check.
+> Decisions 1, 2, 4, 5, 6 and 7 are unchanged.
 
 ## Context
 

@@ -94,15 +94,16 @@ Working against an accepted ADR without updating it is a defect, not a shortcut.
 
 ## The other contracts, and when to read them
 
-| Read it when                                 | File                                                                                                                     |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| Explaining any of this to a designer         | `docs/documentation/` — plain language + diagrams. Explanation, not spec: where it disagrees with a spec, the spec wins. |
-| Authoring or changing a component            | `packages/react/src/components/README.md` — **the** authoring contract                                                   |
-| Naming a prop or a value                     | `.ai/maps/prop-map.md` §1–2                                                                                              |
-| Writing a token                              | `packages/tokens/tokens/README.md`                                                                                       |
-| Reading the design source                    | `.figma/README.md`                                                                                                       |
-| Writing up what you found                    | `docs/research/README.md`                                                                                                |
-| Proposing an API for something not yet built | `.ai/maps/proposals/README.md`                                                                                           |
+| Read it when                                    | File                                                                                                                     |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Explaining any of this to a designer            | `docs/documentation/` — plain language + diagrams. Explanation, not spec: where it disagrees with a spec, the spec wins. |
+| Authoring or changing a component               | `packages/react/src/components/README.md` — **the** authoring contract                                                   |
+| Deciding what is agnostic vs framework-specific | `contracts/README.md` — the two schemas and where the line falls                                                         |
+| Naming a prop or a value                        | `.ai/maps/prop-map.md` §1–2                                                                                              |
+| Writing a token                                 | `packages/tokens/tokens/README.md`                                                                                       |
+| Reading the design source                       | `.figma/README.md`                                                                                                       |
+| Writing up what you found                       | `docs/research/README.md`                                                                                                |
+| Proposing an API for something not yet built    | `.ai/maps/proposals/README.md`                                                                                           |
 
 ## Two rules about enforcement
 

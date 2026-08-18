@@ -22,9 +22,10 @@ good.
 That bar is worth stating plainly, because it is the one that keeps this folder honest: _a
 decision nobody has implemented is a Draft, however confident it sounds._
 
-| #                                                                  | Title                                                       | Status   |
-| ------------------------------------------------------------------ | ----------------------------------------------------------- | -------- |
-| [0001](./0001-component-contracts-carry-what-the-source-cannot.md) | Component contracts carry only what the source cannot state | Accepted |
+| #                                                                    | Title                                                         | Status                                                                                     |
+| -------------------------------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| [0001](./0001-component-contracts-carry-what-the-source-cannot.md)   | Component contracts carry only what the source cannot state   | Accepted — amended by [0002](./0002-the-contract-specifies-and-the-gate-asserts-parity.md) |
+| [0002](./0002-the-contract-specifies-and-the-gate-asserts-parity.md) | The contract is agnostic and specifies; a gate asserts parity | Accepted                                                                                   |
 
 ## Adding an ADR
 

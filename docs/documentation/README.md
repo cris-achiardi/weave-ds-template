@@ -33,7 +33,7 @@ is right and this one is stale.** Say so and we'll fix it.
 
 | Topic                       | The real spec                                                                      |
 | --------------------------- | ---------------------------------------------------------------------------------- |
-| What a contract may contain | `packages/react/contract.schema.json`                                              |
+| What a contract may contain | `contracts/` — the schemas and where the line falls                                |
 | The decision behind it      | [`docs/ADR/0001`](../ADR/0001-component-contracts-carry-what-the-source-cannot.md) |
 | How to author a component   | `packages/react/src/components/README.md`                                          |
 | The prop vocabulary         | `.ai/maps/prop-map.md`                                                             |

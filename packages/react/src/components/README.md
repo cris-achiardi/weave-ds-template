@@ -6,13 +6,14 @@ If you are about to write a component, this is the file to have read.
 This directory is **empty on purpose.** Components are built against an accepted decision, not
 scaffolded in advance — see `docs/ADR/README.md`, then use the `ds-component` skill.
 
-## 1. The four files
+## 1. The five files
 
 ```
 <Name>/
 ├── <Name>.tsx             cva + clsx + forwardRef
 ├── <Name>.module.css      tokens only, no raw values
-├── <Name>.contract.json   the authored half — what source cannot state
+├── <Name>.contract.json   agnostic — what it IS, on any framework
+├── <Name>.react.json      the React binding — element, ref target, className target
 └── index.ts               local barrel
 ```
 
@@ -96,10 +97,23 @@ Three hard rules, each with a reason you can check:
 3. **No generic wrapper around a variant type.** `ResponsiveValue<Size>` resolves to a bare name
    with no values, and every downstream artifact silently gets thinner without failing.
 
-## 6. What goes in the contract
+## 6. What goes in the contract, and what goes in the binding
 
-Only what the source cannot state. Restating a prop, a value set or a default is a **defect**, not
-redundancy — see `docs/ADR/0001` §3 and `.claude/skills/ds-component/references/authoring-the-contract.md`.
+Two files. The line between them is one question:
+
+> **If it would still be true in React Native, it goes in the contract.**
+
+`<Name>.contract.json` holds purpose, behaviour, states, axes, semantics, accessibility, anatomy
+and token policy. `<Name>.react.json` holds the handful of facts that stop being true off React:
+the rendered element, where the ref lands, which node `className` merges into.
+
+The contract **does** specify the axes, their values and their defaults — otherwise you could not
+build from it. That duplication is safe because `pnpm verify:contract` asserts the two agree; a
+mismatch fails the build. Where a check is impossible (purpose, a11y claims, token policy), the
+fact is stated once and a human reviews it.
+
+See `contracts/README.md`, `docs/ADR/0002`, and
+`.claude/skills/ds-component/references/authoring-the-contract.md`.
 
 ## 7. Before you call it done
 
