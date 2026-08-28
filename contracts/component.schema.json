@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://example.invalid/schemas/component-contract-2.json",
   "title": "Component contract (framework-agnostic)",
-  "description": "Describes ONE component completely enough to build it, in any framework. Governed by ADR 0002.\n\nThis file lives at contracts/ rather than inside a package on purpose: it belongs to no framework. It says what the component IS — its purpose, its behaviour, the states it must be able to show, the axes it exposes, its anatomy, and which family of token paints each part. It does NOT say how any of that is expressed in React, or in React Native, or in a web component. That is a binding, and bindings live beside the implementation.\n\nBuildable means: someone handed this file, the prop map for their framework, and the code standards should be able to produce the component without asking what it is for.",
+  "description": "Describes ONE component completely enough to build it, in any framework. The reasoning is in contracts/README.md.\n\nThis file lives at contracts/ rather than inside a package on purpose: it belongs to no framework. It says what the component IS — its purpose, its behaviour, the states it must be able to show, the axes it exposes, its anatomy, and which family of token paints each part. It does NOT say how any of that is expressed in React, or in React Native, or in a web component. That is a binding, and bindings live beside the implementation.\n\nBuildable means: someone handed this file, the prop map for their framework, and the code standards should be able to produce the component without asking what it is for.",
   "type": "object",
   "additionalProperties": false,
   "required": ["component", "status", "intent", "anatomy"],
@@ -80,7 +80,7 @@
 
     "axes": {
       "type": "object",
-      "description": "The canonical axes this component exposes, and the SUBSET of values it takes. Axis names and their canonical values come from the prop map — a component narrows an axis, it never invents a value.\n\nThis is specified here, and the implementation also expresses it. That duplication is deliberate and safe, because a gate asserts the two are equal (ADR 0002). It is what makes the contract something you can build FROM rather than only describe with.",
+      "description": "The canonical axes this component exposes, and the SUBSET of values it takes. Axis names and their canonical values come from the prop map — a component narrows an axis, it never invents a value.\n\nThis is specified here, and the implementation also expresses it. That duplication is deliberate and safe, because a gate asserts the two are equal. It is what makes the contract something you can build FROM rather than only describe with.",
       "propertyNames": { "pattern": "^[a-z][a-zA-Z0-9]*$" },
       "additionalProperties": {
         "type": "object",

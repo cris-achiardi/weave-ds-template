@@ -112,7 +112,7 @@ build from it. That duplication is safe because `pnpm verify:contract` asserts t
 mismatch fails the build. Where a check is impossible (purpose, a11y claims, token policy), the
 fact is stated once and a human reviews it.
 
-See `contracts/README.md`, `docs/ADR/0002`, and
+See `contracts/README.md` and
 `.claude/skills/ds-component/references/authoring-the-contract.md`.
 
 ## 7. Before you call it done

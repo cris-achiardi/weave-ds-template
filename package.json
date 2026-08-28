@@ -37,7 +37,7 @@
     "vitest": "^3.0.0"
   },
   "pnpm": {
-    "//typescript": "PINNED WITH A TILDE ON PURPOSE. Under typescript@6.x, react-docgen-typescript stops classifying VariantProps-derived props as enums: the literal value arrays come back empty and every contract answer silently thins out. docgen's peer range is '>= 4.3.x', so nothing warns you. See docs/ADR/0001 Consequences. Do not widen this to ^5 or ^6 without re-running the extraction check and reading the report.",
+    "//typescript": "PINNED WITH A TILDE ON PURPOSE. Under typescript@6.x, react-docgen-typescript stops classifying VariantProps-derived props as enums: the literal value arrays come back empty and every contract answer silently thins out. docgen's peer range is '>= 4.3.x', so nothing warns you. Do not widen this to ^5 or ^6 without re-running the extraction check and reading the report.",
     "onlyBuiltDependencies": [
       "esbuild"
     ]

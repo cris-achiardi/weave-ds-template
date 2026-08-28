@@ -40,7 +40,7 @@ pnpm dev                   # sandbox at localhost:4300
 | `packages/react`  | The library. React 19, CSS Modules, CVA. Empty.                                |
 | `apps/sandbox`    | A one-page Vite harness pointed at component source. Boots in ~1s.             |
 | `apps/storybook`  | Complete on disk, deliberately **not installed** — one line to switch on       |
-| `docs/ADR`        | Decision records, with a template and one worked example                       |
+| `docs/ADR`        | Decision records. A template and the rules; no records — they are yours        |
 | `docs/research`   | Pre-decision space: what is measurably true, ending in open questions          |
 | `.ai/maps`        | The prop glossary. Generated, descriptive, CI-gated. Useful while still empty. |
 | `.figma`          | Which design file we read, how names map, what has been reconciled             |
@@ -71,7 +71,8 @@ once and reviewed by a person.
 The gate also enforces the plain half: a contract cannot name a part that never renders, a state
 nothing can enter, or a prop value that was never in the axis.
 
-See [`docs/ADR/0001`](./docs/ADR/0001-component-contracts-carry-what-the-source-cannot.md).
+See [`contracts/README.md`](./contracts/README.md) for where the line falls, and what the gate costs
+you if it is ever switched off.
 
 ## New here? Start with the illustrated version
 
@@ -92,5 +93,6 @@ territory; follow the pointer rather than reading everything at once.
 
 ## Requirements
 
-Node ≥ 20, pnpm 10. `typescript` is tilde-pinned deliberately — see the comment in
-`package.json`, and the Consequences section of ADR 0001.
+Node ≥ 20, pnpm 10. `typescript` is tilde-pinned deliberately — the reason is in the `//typescript`
+comment in `package.json`, and it is not cosmetic: widening it silently thins every contract answer
+without any warning.

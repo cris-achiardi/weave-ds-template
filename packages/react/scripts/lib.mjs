@@ -72,7 +72,7 @@ export function isExported(name) {
  *   source    — what the implementation actually does (derived, read on demand)
  *
  * None of the three is authoritative alone. The contract says what should be true, the source says
- * what is true, and where they overlap `verify:contract` asserts they agree (ADR 0002). Nothing
+ * what is true, and where they overlap `verify:contract` asserts they agree. Nothing
  * derived is ever committed — this runs at read time, which is why it works on a fresh clone with
  * no build.
  */

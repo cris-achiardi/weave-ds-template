@@ -9,9 +9,8 @@ Button.react.json      the binding — what it becomes here
 
 > **If it would still be true in React Native, it goes in the contract.**
 
-Schemas: `contracts/component.schema.json` and `contracts/react-binding.schema.json`. Reasoning in
-[ADR 0002](../../../../docs/ADR/0002-the-contract-specifies-and-the-gate-asserts-parity.md);
-`contracts/README.md` has a worked table of which facts land where.
+Schemas: `contracts/component.schema.json` and `contracts/react-binding.schema.json`. The reasoning,
+and a worked table of which facts land where, is in `contracts/README.md`.
 
 ## The rule about repetition
 

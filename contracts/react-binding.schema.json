@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://example.invalid/schemas/react-binding-1.json",
   "title": "React binding",
-  "description": "How one agnostic component contract is realised in React. Governed by ADR 0002.\n\nEverything here is a fact that stops being true the moment you build the same contract on a different framework: which DOM element carries the role, where a forwarded ref lands, which node a consumer's className merges into. React Native would have its own binding beside this one, answering the same questions with `Pressable` and `style`.\n\nKeep it SMALL. If a field here would be equally true in React Native, it belongs in the contract instead.",
+  "description": "How one agnostic component contract is realised in React. The reasoning is in contracts/README.md.\n\nEverything here is a fact that stops being true the moment you build the same contract on a different framework: which DOM element carries the role, where a forwarded ref lands, which node a consumer's className merges into. React Native would have its own binding beside this one, answering the same questions with `Pressable` and `style`.\n\nKeep it SMALL. If a field here would be equally true in React Native, it belongs in the contract instead.",
   "type": "object",
   "additionalProperties": false,
   "required": ["component", "contract", "framework", "element"],

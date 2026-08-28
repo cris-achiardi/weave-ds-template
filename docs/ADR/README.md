@@ -7,9 +7,10 @@ ADR rather than editing the old one.
 **An ADR records the decision and stays agnostic; it does not restate the specifics that realize
 it.** Those specifics — schemas, scripts, generated files, code snippets, or reference docs — are
 the decision's **contracts**, and they live with the code they govern. An ADR _links_ its
-contracts in a `## Contract` table (see ADR 0001 for the shape); it does not inline them. This is
-deliberate: contracts evolve with the implementation, so keeping them out of the record is what
-lets an Accepted ADR stay stable instead of being rewritten every time the details move.
+contracts in a `## Contract` table; it does not inline them. The shape is in
+[`0000-template.md`](./0000-template.md). This is deliberate: contracts evolve with the
+implementation, so keeping them out of the record is what lets an Accepted ADR stay stable instead
+of being rewritten every time the details move.
 
 **Statuses:** `Draft` → `Proposed` → `Accepted` → (`Superseded by NNNN` | `Deprecated`)
 
@@ -22,10 +23,31 @@ good.
 That bar is worth stating plainly, because it is the one that keeps this folder honest: _a
 decision nobody has implemented is a Draft, however confident it sounds._
 
-| #                                                                    | Title                                                         | Status                                                                                     |
-| -------------------------------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| [0001](./0001-component-contracts-carry-what-the-source-cannot.md)   | Component contracts carry only what the source cannot state   | Accepted — amended by [0002](./0002-the-contract-specifies-and-the-gate-asserts-parity.md) |
-| [0002](./0002-the-contract-specifies-and-the-gate-asserts-parity.md) | The contract is agnostic and specifies; a gate asserts parity | Accepted                                                                                   |
+## The records
+
+**This directory ships empty**, like `docs/research/`, `.ai/maps/proposals/` and
+`packages/react/src/components/`. That is the same design decision as everywhere else in this
+template: you get the machinery, not somebody else's conclusions.
+
+It is worth being explicit about why, because an ADR folder is exactly the place where inherited
+decisions do the most damage. A record you did not make, about a system you have not built yet,
+still reads as binding — and the first thing it binds is the reasoning you were about to do
+yourself. Worse, a template's own construction decisions are not architecture decisions for the
+system you are about to build with it.
+
+Where the template has already settled something mechanically, it is documented **next to the code
+that enforces it**, not here:
+
+| What                                                  | Where                                     |
+| ----------------------------------------------------- | ----------------------------------------- |
+| What a component contract may contain, and why        | `contracts/README.md`                     |
+| How to author a component, and the gates it must pass | `packages/react/src/components/README.md` |
+| Token naming and tiers                                | `packages/tokens/tokens/README.md`        |
+| What Figma is, and what it is not                     | `.figma/README.md`                        |
+
+| #   | Title            | Status |
+| --- | ---------------- | ------ |
+| —   | _no records yet_ | —      |
 
 ## Adding an ADR
 

@@ -2,15 +2,15 @@
 /**
  * `pnpm verify:contract` — the contract gate.
  *
- * Enforces ADR 0001 + ADR 0002. Everything it checks is something whose breach produces NO build
- * error and NO failing test: a contract can promise an axis the code does not expose, name a part
- * that never renders, or style a state nothing can enter, and every other tool stays green.
+ * Everything it checks is something whose breach produces NO build error and NO failing test: a
+ * contract can promise an axis the code does not expose, name a part that never renders, or style
+ * a state nothing can enter, and every other tool stays green.
  *
- * THE SHAPE OF THE CHECKING CHANGED IN ADR 0002.
- * The contract used to be forbidden from restating anything derivable. It now SPECIFIES the axes
- * and their values, because a file that omits them cannot be built from. Duplication is safe here
- * only because of what this script does: it asserts the two are equal. Remove these parity checks
- * and the contract silently becomes a stale second opinion.
+ * WHY PARITY IS THE HEART OF IT — see contracts/README.md.
+ * The contract SPECIFIES the axes and their values, because a file that omits them cannot be built
+ * from. That duplication is safe only because of what this script does: it asserts the two are
+ * equal. Remove these parity checks and the contract silently becomes a stale second opinion —
+ * one that still looks authoritative.
  *
  * FAILS
  *   shape      contract or binding does not validate against its schema
@@ -21,7 +21,7 @@
  *   status     a `deprecated` level whose replacedBy does not exist
  *
  * REPORTS, NEVER FAILS
- *   a component with no contract          (ADR 0001 §5)
+ *   a component with no contract          (uncontracted is a reportable state, not a failure)
  *   a rendered part the contract omits
  *   extraction warnings
  *
@@ -179,7 +179,7 @@ function check(name, validateContract, validateBinding, cfg) {
   const rendered = extractParts(source, cfg.dataPrefix);
   const styleKeys = extractStyleKeys(source);
 
-  // --- PARITY: the heart of ADR 0002 ----------------------------------------------------
+  // --- PARITY: the heart of the gate ----------------------------------------------------
   //
   // The contract specifies the axes. The implementation expresses them. Neither is allowed to
   // be right on its own — they have to agree, and this is the only place that is checked.

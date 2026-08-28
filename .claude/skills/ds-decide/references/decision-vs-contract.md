@@ -21,13 +21,14 @@ Ask: **if this changed, would the decision have changed?**
 - No → it is a contract. Link it.
 - Yes → it is part of the decision. Write it.
 
-Adding a field to `contract.schema.json` does not change the decision "contracts carry only what
-the source cannot state". So the schema is a contract. Deciding that contracts are _machine-readable
-rather than prose_ does change the decision, so it is Decision item 2.
+Adding a field to `contracts/component.schema.json` does not change the decision "a component
+carries a contract". So the schema is a contract. Deciding that contracts are _machine-readable
+rather than prose_ does change the decision, so it belongs in the record.
 
 ## Worked example
 
-From `docs/ADR/0001`:
+Illustrative — this repo ships no records, so there is nothing to quote. A record deciding how
+component contracts work would split like this:
 
 | Belongs in the **record**                                                        | Belongs in the **contract table**                           |
 | -------------------------------------------------------------------------------- | ----------------------------------------------------------- |
