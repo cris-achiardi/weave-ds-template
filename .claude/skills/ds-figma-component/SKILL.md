@@ -16,17 +16,20 @@ silently baked in.
 
 ## Read this before your first run — the template is not ready for this skill
 
-This skill was ported from a mature design system into a **starter template**, and three of its
-preconditions do not hold yet. None of them is a bug in the skill; each is a decision this repo has
-not taken. Do not paper over them.
+This skill was ported from a mature design system into a **starter template**, and two of its
+preconditions do not hold yet. Neither is a bug in the skill; each is a decision this repo has not
+taken. Do not paper over them.
 
-| Precondition                        | State here                                                                                                          | What to do                                                                                                                                                  |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The bridge may write to Figma       | `.figma/manifest.json` → `bridge.direction` is **`read`**, and `bridge.kind` is the official read-only connector    | This skill writes through a _different_ bridge (figma-console MCP). Reconcile that in an ADR before generating. Running it anyway makes the manifest wrong. |
-| Semantic tokens exist to bind to    | `identity.variableCollections` in the manifest is **empty**; `packages/tokens/tokens/` holds no generated token set | Run `ds-explore`, then `ds-decide`. Binding cannot be checked against a mapping that does not exist.                                                        |
-| A component exists to generate from | `packages/react/src/components/` is **empty by design**                                                             | Build one with `ds-component` first. This skill reads a component; it does not invent one.                                                                  |
+| Precondition                        | State here                                                                                                          | What to do                                                                                                          |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Semantic tokens exist to bind to    | `identity.variableCollections` in the manifest is **empty**; `packages/tokens/tokens/` holds no generated token set | Measure the source and decide the token set first. Binding cannot be checked against a mapping that does not exist. |
+| A component exists to generate from | `packages/react/src/components/` is **empty by design**                                                             | Build one with `ds-component` first. This skill reads a component; it does not invent one.                          |
 
-There is a fourth, smaller one: the source file has **no light/dark axis**
+The bridge question is **settled**: `.figma/manifest.json` → `bridges` records a `read` bridge and a
+`write` bridge separately, and this skill runs on the write one. It is opt-in and unwired by design
+— nothing gates it, which is a known hole recorded in `bridges.write._gatedNote`.
+
+There is a third, smaller one: the source file has **no light/dark axis**
 (`identity.themes.decided: false`, `modes: ["dark"]`). The mode-flip verification below is the
 strongest check in the whole workflow and it **cannot run yet**. When a theme axis is decided,
 turn it back on — until then, say in the report that this check did not run rather than implying
@@ -84,13 +87,14 @@ component writing `--ds-color-purple-500` instead of `--ds-color-fill-brand`.
 `find()` can bind you to the wrong tier without any error.
 
 **This tier split is measured, not decided.** `identity.variableCollections` in the manifest is the
-place where collection → token-source mapping becomes canonical, and it is empty. Until
-`ds-explore` fills it, treat the table above as an observation with a date on it, and re-measure
-before you rely on it.
+place where collection → token-source mapping becomes canonical, and it is empty. Until it is
+filled, treat the table above as an observation with a date on it, and re-measure before you rely
+on it.
 
-Type binds to a **text style**, never a hand-set `fontName` + `fontSize`. The file has
-`UI/Button`, `UI/Label`, `UI/Label-emphasis`, `UI/Description`, `Display/Heading`. Note the recorded
-defect: **line height disagrees between styles** (`UI/Button` is 1.2487, the rest are 100). One of
+Type binds to a **text style**, never a hand-set `fontName` + `fontSize`. The file has eight, all
+Lexend Deca, all binding `fontSize`/`fontFamily`/`fontWeight` to variables — the full table is in
+`references/figma-file.md`. Note the recorded defect: **only `UI/Button` has a controlled line
+height** (124.875%); the other seven are `AUTO`, Figma's font-metric default. One of
 them is wrong. Do not resolve it by hand inside a component — record it and let `ds-decide` settle
 it, or every set you generate inherits the same inconsistency.
 

@@ -68,8 +68,8 @@ So the kit degrades on purpose:
 - Fallback numbers exist so a board can be built at all. They are last-resort, not defaults to
   settle for.
 
-Filling `CONFIG` is a one-time job that belongs after `ds-explore` → `ds-decide` have produced a
-token set. Do it there, not inline in a board script.
+Filling `CONFIG` is a one-time job that belongs after the token set is decided and built. Do it
+there, not inline in a board script.
 
 The collections measured in the source file on 2026-08-28 — `Color Tokens`, `Type Tokens`,
 `Spacing Tokens` for the token tier, `Color Primitives` and `Type Primitives` for the primitive tier

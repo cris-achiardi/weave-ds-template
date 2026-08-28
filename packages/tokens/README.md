@@ -3,8 +3,8 @@
 DTCG JSON in, CSS custom properties and TypeScript constants out.
 
 **This package ships with no tokens.** That is the intended starting state — the token set is
-pulled from the design source by the `ds-explore` skill, reviewed, and committed as JSON. Until
-then the build emits an empty `:root {}` and says so.
+measured from the design source by hand, reviewed, and committed as JSON. Until then the build
+emits an empty `:root {}` and says so.
 
 ## Where things are documented
 

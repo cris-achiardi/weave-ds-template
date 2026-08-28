@@ -26,7 +26,9 @@ decision; the arc that produces one is:
 
 > **explore → report → decide (ADR) → build**
 
-with a skill for each of the first three steps and a gate behind the fourth.
+Exploring the design source and writing up what is there are **done by hand** — Figma is a canvas to
+read, not a pipeline stage, and no skill sweeps it. `ds-decide` turns a report's open questions into
+a record, `ds-component` builds against that record, and a gate sits behind the build.
 
 ```
 packages/tokens/   @ds/tokens — DTCG JSON -> CSS custom properties + TS constants

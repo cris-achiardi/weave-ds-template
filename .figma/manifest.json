@@ -12,7 +12,8 @@
       "direction": "read",
       "requires": [],
       "tools": ["get_metadata", "get_variable_defs", "get_design_context", "get_screenshot"],
-      "usedBy": [".claude/skills/ds-explore"]
+      "usedBy": [],
+      "_usedByNote": "No skill. Reading the design source is a person's job, done when reference is needed — a scheduled sweep would imply an authority the canvas does not have. The call sequences live in README.md."
     },
 
     "write": {
@@ -142,7 +143,7 @@
     },
 
     "variableCollections": {
-      "_doc": "Figma collection -> canonical DTCG source file under packages/tokens/tokens/. EMPTY: ds-explore fills this from a live read. A Figma variable whose collection has no entry here resolves to `code: null` in maps/tokens.json and is reported as drift — that is the signal, not a silent gap."
+      "_doc": "Figma collection -> canonical DTCG source file under packages/tokens/tokens/. EMPTY: filled by hand from a live read, once the token set is decided. A Figma variable whose collection has no entry here resolves to `code: null` in maps/tokens.json and is reported as drift — that is the signal, not a silent gap."
     },
 
     "variantConventions": {

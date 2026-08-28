@@ -6,7 +6,9 @@ canonical vocabulary in [`../prop-map.md`](../prop-map.md) §1 _before_ anything
 This is where the interesting argument happens. By the time there is TSX, the API is a fact and
 changing it costs something; here it costs nothing.
 
-**This directory ships empty.** `ds-explore` fills it.
+**This directory ships empty.** You fill it — one proposal per component, written by whoever is
+about to argue for that API. There is no skill that generates them: the translation below is a
+judgement call, and a mechanized guess at it is the exact defect this document exists to prevent.
 
 ## Why the translation is not mechanical
 
