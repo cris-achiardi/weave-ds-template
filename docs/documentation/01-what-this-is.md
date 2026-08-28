@@ -93,14 +93,14 @@ library does not, and six months later nobody knows which one is lying.
 Being straight about this, because a diagram of an intended system reads exactly like a diagram of
 a real one:
 
-| Piece              | Today                                                                                                                       |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------------- |
-| Component contract | **Built** — schema, gate, composer. But React-shaped, and it describes rather than specifies: not yet enough to build from. |
-| Prop map           | **Built**, for one framework, as authored canon vs measured reality. Not yet one per framework.                             |
-| Token policy       | **Built**, and checkable.                                                                                                   |
-| Code standards     | **Prose plus a scaffolding skill.** No machine-readable file spec, so nothing validates the shape deterministically.        |
-| The use case       | Nothing prompts for it. The proposal template should, and doesn't.                                                          |
-| Docs → Figma       | **Correctly absent.** Both need a component in code first, and there are none.                                              |
+| Piece              | Today                                                                                                                                                                                  |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Component contract | **Built and framework-agnostic** — schema, gate, composer, with React specifics split into a separate binding file. It specifies rather than describes, so it is enough to build from. |
+| Prop map           | **Built**, for one framework, as authored canon vs measured reality. Not yet one per framework.                                                                                        |
+| Token policy       | **Built**, and checkable.                                                                                                                                                              |
+| Code standards     | **Prose plus a scaffolding skill.** No machine-readable file spec, so nothing validates the shape deterministically.                                                                   |
+| The use case       | Nothing prompts for it. The proposal template should, and doesn't.                                                                                                                     |
+| Docs → Figma       | **Machinery built, nothing generated.** Three skills can write component sets, pages and diagrams into Figma. They need a component in code first, and there are none.                 |
 
 So: the middle of the pipeline exists and works. The framing at the top and the enforcement at the
 bottom are the gaps.

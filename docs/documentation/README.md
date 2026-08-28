@@ -18,7 +18,8 @@ Written for designers. No knowledge of the code assumed. Six short pages.
 > to it holding what the code cannot say: what it really is, what it promises about accessibility,
 > and which family of token is allowed to paint each part. Neither half is complete alone, and a
 > tool merges them on demand. Writing something in the contract that the code already knows is
-> treated as a mistake, because two copies of one fact always drift.
+> treated as a mistake — **unless a check compares the two**, in which case it is allowed on
+> purpose, because a contract that left out the settings could never be the thing you build from.
 
 And the idea behind that: **you don't fix the output, you fix the system that produced it.**
 

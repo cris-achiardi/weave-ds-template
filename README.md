@@ -61,10 +61,15 @@ commitments, and **which family of token is allowed to paint which channel of wh
 pnpm contract Button    # the two halves, merged, in well under a second — no build
 ```
 
-Restating a derivable fact in the contract is a _defect_, not redundancy. That single rule is what
-stops the file becoming a stale copy of the code, and `pnpm verify:contract` enforces the
-mechanical half of it: a contract cannot name a part that never renders, a state nothing can enter,
-or a prop value that was never in the axis.
+Restating a derivable fact in the contract is a _defect_, not redundancy — **except where a gate
+asserts the two are equal.** That exception is deliberate and narrow: the contract does specify the
+axes, their values and their defaults, because a file that omitted them could never be the thing you
+build _from_. `pnpm verify:contract` then asserts they match the code, and a disagreement fails the
+build. Everywhere a check is impossible — purpose, accessibility, token policy — the fact is stated
+once and reviewed by a person.
+
+The gate also enforces the plain half: a contract cannot name a part that never renders, a state
+nothing can enter, or a prop value that was never in the axis.
 
 See [`docs/ADR/0001`](./docs/ADR/0001-component-contracts-carry-what-the-source-cannot.md).
 

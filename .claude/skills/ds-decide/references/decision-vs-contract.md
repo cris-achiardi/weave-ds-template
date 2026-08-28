@@ -32,7 +32,7 @@ From `docs/ADR/0001`:
 | Belongs in the **record**                                                        | Belongs in the **contract table**                           |
 | -------------------------------------------------------------------------------- | ----------------------------------------------------------- |
 | "Every component may carry exactly one contract file, colocated with its source" | `packages/react/src/components/<Name>/<Name>.contract.json` |
-| "Machine-readable, not prose"                                                    | `packages/react/contract.schema.json`                       |
+| "Machine-readable, not prose"                                                    | `contracts/component.schema.json`                           |
 | "Restating a derivable fact is a defect, not redundancy"                         | `packages/react/scripts/verify-contract.mjs`                |
 | "The contract states token policy, not token values"                             | the `tokenPolicy` definition inside the schema              |
 | "Absence is a reportable state, not a failure"                                   | the coverage output of the gate                             |
@@ -49,7 +49,7 @@ The realizing specifics live with the code they govern, not here:
 
 | Concern         | Where                                                                              |
 | --------------- | ---------------------------------------------------------------------------------- |
-| Contract schema | `packages/react/contract.schema.json`                                              |
+| Contract schema | `contracts/component.schema.json`                                                  |
 | Enforcement     | `packages/react/scripts/verify-contract.mjs` (`pnpm verify:contract`, gated in CI) |
 | Authoring rules | `packages/react/src/components/README.md`                                          |
 ```

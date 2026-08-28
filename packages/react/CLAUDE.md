@@ -32,9 +32,24 @@ and the token policy per node.
 
 **Read them merged:** `pnpm contract Button`. Reading either alone is misleading.
 
-**Restating a derivable fact in a contract is a defect, not redundancy.** `pnpm verify:contract`
-enforces the mechanical part of that: a contract cannot name a part the TSX never renders, a state
-nothing can enter, or a prop value that was never in the axis.
+**Restating a derivable fact in a contract is a defect, not redundancy — _except where a gate
+asserts equality._** That exception is ADR 0002 §5–6 and it is not a loophole, it is the whole
+reason the contract is buildable-from:
+
+- **The contract DOES specify the axes it exposes**, with their value subsets and defaults, in
+  canonical vocabulary from the prop map. Those are derivable facts, deliberately duplicated.
+- **`verify:contract` asserts they match the implementation** — every declared axis exists, the
+  value sets agree, the defaults agree, and no axis exists in code that the contract failed to
+  declare. A disagreement fails the build.
+- **Everywhere a check is impossible, ADR 0001's rule still holds unamended** (ADR 0002 §7):
+  purpose, accessibility commitments and token policy are stated once and reviewed by a person.
+
+So the test is not "is this derivable?" but **"is this checked?"** A file that omitted the axes
+could only ever annotate something that already exists, which is backwards for a system whose
+premise is that a component is produced _from_ contracts.
+
+`pnpm verify:contract` also enforces the plain half: a contract cannot name a part the TSX never
+renders, a state nothing can enter, or a prop value that was never in the axis.
 
 Components without a contract are **reported, not failed**. Backfilling is deliberate work.
 
