@@ -12,7 +12,7 @@ Convert an open question into a decision somebody can comply with or violate.
 | When                                         | Read                                                                                       |
 | -------------------------------------------- | ------------------------------------------------------------------------------------------ |
 | **Always, first**                            | `docs/ADR/README.md` — the status ladder, the pre-v0 policy, the decision-vs-contract rule |
-| Writing the file                             | `docs/ADR/0000-template.md`, and `docs/ADR/0001-*.md` as a worked example                  |
+| Writing the file                             | `docs/ADR/0000-template.md` — the shape, and the rules inline as comments                  |
 | Deciding what goes in the record vs the code | `references/decision-vs-contract.md`                                                       |
 | Choosing a status                            | `references/status-ladder.md`                                                              |
 

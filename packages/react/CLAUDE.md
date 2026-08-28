@@ -25,24 +25,25 @@ Which of those are gates and which are reports is not a detail — see [Enforcem
 JSDoc, and the inventory of parts and states rendered. It is read on demand; nothing is committed,
 and nothing needs building first.
 
-**The contract (`<Name>.contract.json`, agnostic) plus its React binding (`<Name>.react.json`) — [ADR 0002](../../docs/ADR/0002-the-contract-specifies-and-the-gate-asserts-parity.md) —
-owns only what the source cannot state** — the rendered element, ARIA role, where the ref lands,
-which node absorbs `className`, accessibility commitments, what a slot accepts, lifecycle status,
-and the token policy per node.
+**The contract (`<Name>.contract.json`, agnostic) plus its React binding (`<Name>.react.json`) owns
+what the source cannot state** — the rendered element, ARIA role, where the ref lands, which node
+absorbs `className`, accessibility commitments, what a slot accepts, lifecycle status, and the token
+policy per node. The full reasoning, and the line between the two files, is in `contracts/README.md`.
 
 **Read them merged:** `pnpm contract Button`. Reading either alone is misleading.
 
 **Restating a derivable fact in a contract is a defect, not redundancy — _except where a gate
-asserts equality._** That exception is ADR 0002 §5–6 and it is not a loophole, it is the whole
-reason the contract is buildable-from:
+asserts equality._** That exception is not a loophole; it is the whole reason the contract is
+buildable-from:
 
 - **The contract DOES specify the axes it exposes**, with their value subsets and defaults, in
   canonical vocabulary from the prop map. Those are derivable facts, deliberately duplicated.
 - **`verify:contract` asserts they match the implementation** — every declared axis exists, the
   value sets agree, the defaults agree, and no axis exists in code that the contract failed to
   declare. A disagreement fails the build.
-- **Everywhere a check is impossible, ADR 0001's rule still holds unamended** (ADR 0002 §7):
-  purpose, accessibility commitments and token policy are stated once and reviewed by a person.
+- **Everywhere a check is impossible, the no-restating rule still holds in full:** purpose,
+  accessibility commitments and token policy are stated once and reviewed by a person, because
+  there is nothing to compare them against.
 
 So the test is not "is this derivable?" but **"is this checked?"** A file that omitted the axes
 could only ever annotate something that already exists, which is backwards for a system whose

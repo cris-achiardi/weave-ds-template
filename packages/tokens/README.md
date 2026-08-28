@@ -15,7 +15,7 @@ Each fact lives in exactly one authoritative place. Go there rather than trustin
 | How to name a token, and the tier it belongs to          | [`tokens/README.md`](./tokens/README.md)                                                                                        |
 | How a Figma variable becomes a token                     | [`tokens/README.md`](./tokens/README.md) §3, and `.figma/manifest.json → identity.variableNaming` for the measured mapping rule |
 | How tokens become pixels in a component                  | `packages/react/src/components/README.md` §4                                                                                    |
-| Why the contract states a token _prefix_ and not a value | `docs/ADR/0001` §4                                                                                                              |
+| Why the contract states a token _family_ and not a value | `contracts/README.md`, and `packages/react/src/components/README.md` §4                                                         |
 | The custom-property prefix                               | `/ds.config.json` — never hard-code it                                                                                          |
 
 ## Commands

@@ -34,7 +34,7 @@ Earlier versions held only what the code could not state, and forbade restating 
 That rule bought safety and cost buildability. A file that deliberately omits the axes and their
 values cannot be the thing you build _from_; it can only annotate something that already exists.
 
-So the rule changed, in one specific way ([ADR 0002](../docs/ADR/0002-the-contract-specifies-and-the-gate-asserts-parity.md)):
+So the rule changed, in one specific way:
 
 > **The contract may specify anything. Anything it specifies that the implementation also expresses
 > must be asserted equal by a gate.**
@@ -47,6 +47,21 @@ becoming a lie.
 The old rule survives wherever a check is _not_ possible: an accessibility claim, a purpose, a
 token policy. Those are still stated once, in the contract, because there is nothing to compare
 them against.
+
+### What this costs, and it is not small
+
+**The safety now rests entirely on the gate.** The earlier rule was self-enforcing: if the contract
+was forbidden from restating anything derivable, it could not drift from the code, because it never
+claimed anything the code claimed.
+
+That is no longer true. If `verify:contract` is skipped, disabled, or has its parity checks removed,
+the contract degrades into precisely the stale second opinion the old rule existed to prevent — and
+**it will look authoritative while doing it.** A file that specifies the axes is more useful than
+one that does not, and more dangerous when unchecked.
+
+So `pnpm verify:contract` is not optional tidiness. It is the thing that makes the rest of this
+directory safe, which is why it runs in `pnpm verify` and again in CI rather than on whichever
+machine happens to remember.
 
 ## Per component
 
