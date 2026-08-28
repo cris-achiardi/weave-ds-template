@@ -10,7 +10,7 @@ Build one component, correctly, against a decision that already exists.
 ## Refuse to start without a governing decision
 
 Name the ADR or the proposal file you are working from. If neither exists, **stop and say so** —
-run `ds-explore` and `ds-decide` first.
+the evidence has to be written down first, then `ds-decide` turns it into a record.
 
 This is not ceremony. A component built without one bakes a dozen unrecorded decisions into code
 where nobody will find them again: which axis this prop belongs to, what the token policy is, what

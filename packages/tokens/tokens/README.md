@@ -3,9 +3,10 @@
 **Authoring format: [DTCG](https://tr.designtokens.org/format/)** — every token is `$value` +
 `$type`, and a token that references another uses `{dot.path}`.
 
-This directory is **empty on purpose.** The token set is measured from the design source by
-`ds-explore`, reviewed, then committed here. An invented token set is worse than none: it looks
-authoritative and nobody re-checks it.
+This directory is **empty on purpose.** The token set is measured from the design source by hand,
+reviewed, then committed here — see [`../../../.figma/README.md`](../../../.figma/README.md) for
+how to read the file and what it can and cannot tell you. An invented token set is worse than none:
+it looks authoritative and nobody re-checks it.
 
 ## 1. File naming
 

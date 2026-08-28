@@ -43,7 +43,7 @@
 // kit's clothes. Saying so is the difference between a known-provisional
 // artefact and a misleading one.
 //
-// Fill CONFIG once, after ds-explore -> ds-decide have produced a token set.
+// Fill CONFIG once, after the token set has been decided and built.
 // Do not patch role names inline in a board script.
 //
 // Measured against "weave DS - Mokkap masterclass" (eUO2kF0A3tJXdVTcvEPQjW) on

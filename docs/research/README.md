@@ -6,7 +6,10 @@ A document here reports what is _true_ about a design source, a codebase, or a c
 in open questions. It never ends in "we will" — that sentence belongs in an ADR, and moving it
 there is `ds-decide`'s job.
 
-**This directory ships empty.** `ds-explore` fills it.
+**This directory ships empty.** You fill it — there is no skill that produces reports, because
+reading a design source is something a person does when they need to look, not a pipeline stage.
+See [`../../.figma/README.md`](../../.figma/README.md) for what Figma is and is not, and for the
+call sequences that answer each kind of question.
 
 ## The rule that makes a report worth trusting
 

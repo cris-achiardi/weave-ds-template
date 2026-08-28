@@ -30,8 +30,8 @@ match the file.** Measured live on 2026-08-28:
 Every one of the manifest's `observed` names carries a `weave-ds-` prefix and dashes; every real
 variable in the file is a bare slash path. The prefix is almost certainly introduced downstream — it
 is what Dev Mode emits, not what the variable is called — but **do not write that into the manifest
-on my say-so.** It is a `ds-explore` job to establish where the prefix enters, and a `ds-decide` job
-to record which spelling the pipeline consumes.
+on my say-so.** Establishing where the prefix enters is a measurement someone has to make, and
+recording which spelling the pipeline consumes is a `ds-decide` job.
 
 What this means for you today: **look variables up by their slash path.** A lookup for
 `weave-ds-surface-primary` returns `undefined`, and the temptation at that point is to fall back to a
@@ -76,8 +76,8 @@ the collection → token-file mapping — is **empty**. So the middle column of 
 does not exist yet.
 
 Practically: you can bind a component to `surface/primary` today and it will work, but you cannot yet
-say which `--ds-*` property that is, because nothing has generated one. Until `ds-explore` →
-`ds-decide` → the token build have run, **write the Figma variable name into the report and leave the
+say which `--ds-*` property that is, because nothing has generated one. Until the token set has been
+measured, decided and built, **write the Figma variable name into the report and leave the
 CSS column blank.** A blank is honest; a guessed `--ds-surface-primary` becomes the name everyone
 copies.
 

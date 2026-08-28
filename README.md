@@ -44,7 +44,7 @@ pnpm dev                   # sandbox at localhost:4300
 | `docs/research`   | Pre-decision space: what is measurably true, ending in open questions          |
 | `.ai/maps`        | The prop glossary. Generated, descriptive, CI-gated. Useful while still empty. |
 | `.figma`          | Which design file we read, how names map, what has been reconciled             |
-| `.claude/skills`  | `ds-explore`, `ds-decide`, `ds-component` — one per step of the arc            |
+| `.claude/skills`  | `ds-decide`, `ds-component`, and three that write to Figma. Exploring is yours |
 
 ## The idea worth stealing
 
