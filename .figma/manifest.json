@@ -1,12 +1,44 @@
 {
   "_schema": "1.0",
   "_doc": "Project anchor for this design system's Figma integration. Single source of truth for which Figma file we read from, and for the identity that generation needs. Maps in maps/*.json resolve their `source` keys against this file. Never hard-code a file key in a script or a skill — read it from here, so pointing the system at a different file is one edit.",
-  "lastUpdated": "2026-08-17",
+  "lastUpdated": "2026-08-28",
 
-  "bridge": {
-    "_doc": "Read-only, via the OFFICIAL Figma MCP connector. No daemon, no plugin, no Figma Desktop. Tools: get_metadata (structure), get_variable_defs (variables on a node), get_design_context (a node as reference code), get_screenshot. Chosen over the alternatives because everything the exploration -> report -> decide -> build arc needs is a READ, and every other bridge adds a local install and a background process to fail. Write-back is deliberately not wired — see README.md.",
-    "kind": "figma-mcp",
-    "direction": "read"
+  "bridges": {
+    "_doc": "TWO bridges, recorded separately. The READ bridge is the only one anything depends on: the explore -> report -> decide -> build arc completes without the write bridge, and `pnpm verify` is green on a machine with neither Figma Desktop nor a plugin installed — which is what keeps the template's fresh-clone promise intact. The WRITE bridge is opt-in and unwired: no pnpm script, no gate and no CI job invokes it. Code stays canonical for token values in both directions; a difference is drift in Figma, never a change to adopt back.",
+
+    "read": {
+      "_doc": "The OFFICIAL Figma MCP connector. No daemon, no plugin, no Figma Desktop. Chosen because everything the arc needs is a READ, and every other bridge adds a local install and a background process that can fail.",
+      "kind": "figma-mcp",
+      "direction": "read",
+      "requires": [],
+      "tools": ["get_metadata", "get_variable_defs", "get_design_context", "get_screenshot"],
+      "usedBy": [".claude/skills/ds-explore"]
+    },
+
+    "write": {
+      "_doc": "figma-console MCP driving the Desktop Bridge plugin. OPT-IN: nothing in this repo depends on it. Every write must first compare `figma.fileKey` against sources.<key>.key and pin the target with `figma_navigate({ url, lock: true })` — the active file drifts between open documents, and an unpinned write lands wherever the user last clicked. First exercised against this source on 2026-08-28.",
+      "kind": "figma-console-mcp",
+      "direction": "write",
+      "requires": [
+        "Figma Desktop running",
+        "Desktop Bridge plugin open in the target file",
+        "local figma-console MCP server (FIGMA_ACCESS_TOKEN only for the REST-backed tools)"
+      ],
+      "tools": [
+        "figma_get_status",
+        "figma_navigate",
+        "figma_execute",
+        "figma_capture_screenshot",
+        "figma_get_variables"
+      ],
+      "usedBy": [
+        ".claude/skills/ds-figma-component",
+        ".claude/skills/ds-figma-document",
+        ".claude/skills/ds-figma-explain"
+      ],
+      "gated": false,
+      "_gatedNote": "NO gate exercises this bridge, so a generated Figma set can drift from its component with nothing failing anywhere. maps/components.json is a record, not a check. This is a known hole and it contradicts the repo's own enforcement rule — a contract whose breach produces no build error has to be gated in CI, or it is enforced on whichever machine happens to run it. Accepted at template stage because nothing has been generated yet; it should not survive contact with a real component library. The related quiet failure: every collection in this source has ONE mode, so a bound value and a baked literal render identically and a mis-bound component passes visual review. Read boundVariables back rather than trusting the render."
+    }
   },
 
   "sources": {
@@ -32,50 +64,74 @@
     },
 
     "variableNaming": {
-      "_doc": "MEASURED, NOT ASSUMED. These are variables observed on real nodes in the source file. Note the `-ds` INFIX: it is part of the Figma name and must NOT survive into the CSS custom property. The group separator has not been confirmed, so `separatorUnknown` is true — resolve it with a live read before generating tokens, because it decides the DTCG nesting.",
-      "figmaPattern": "weave-ds-{path}",
+      "_doc": "RE-MEASURED 2026-08-28 through the write bridge, correcting an earlier reading. A Figma variable carries TWO names and the previous entry conflated them: `name` is the slash path the API returns and the one you must look variables up by; `codeSyntax.WEB` is a separate author-set string that Figma emits in Dev Mode. The earlier `observed` list recorded codeSyntax values and labelled them names — which is where the phantom `weave-ds-` prefix came from. Both fields are real. All 87 variables carry both.",
+      "figmaNamePattern": "{path}",
+      "figmaCodeSyntaxPattern": "weave-ds-{path-flattened-to-dashes}",
       "cssPattern": "--{tokenPrefix}-{path}",
-      "separatorUnknown": true,
+      "separator": "/",
+      "separatorUnknown": false,
+      "_separatorNote": "Confirmed by live read: group paths are slash-separated, which settles the DTCG nesting.",
       "observed": [
-        "weave-ds-surface-primary",
-        "weave-ds-brand-primary",
-        "weave-ds-border-primary",
-        "weave-ds-text-primary",
-        "weave-ds-text-disabled",
-        "weave-ds-interactive-hover",
-        "weave-ds-interactive-selectedbg",
-        "weave-ds-control-waveform",
-        "weave-ds-space-0",
-        "weave-ds-space-1",
-        "weave-ds-space-3",
-        "weave-ds-space-5",
-        "weave-ds-radius-m"
+        "brand/primary",
+        "brand/hover",
+        "surface/primary",
+        "surface/overlay",
+        "surface/subtle",
+        "surface/ghost",
+        "border/primary",
+        "text/primary",
+        "text/secondary",
+        "text/disabled",
+        "text/inverted",
+        "interactive/hover",
+        "interactive/selectedBg",
+        "control/waveform",
+        "control/off",
+        "color/purple/500",
+        "color/gray/900",
+        "space/0",
+        "space/3",
+        "radius/m",
+        "radius/full"
+      ],
+      "observedCodeSyntax": [
+        "brand/primary          -> codeSyntax.WEB: weave-ds-brand-primary",
+        "surface/primary        -> codeSyntax.WEB: weave-ds-surface-primary",
+        "color/purple/500       -> codeSyntax.WEB: weave-ds-color-purple-500",
+        "interactive/selectedBg -> codeSyntax.WEB: weave-ds-interactive-selectedbg"
       ],
       "examples": [
-        "weave-ds-space-3          -> --ds-space-3          -> space.3",
-        "weave-ds-radius-m         -> --ds-radius-m         -> radius.m",
-        "weave-ds-surface-primary  -> --ds-surface-primary  -> surface.primary"
+        "space/3          -> --ds-space-3          -> space.3",
+        "radius/m         -> --ds-radius-m         -> radius.m",
+        "surface/primary  -> --ds-surface-primary  -> surface.primary"
       ],
       "knownProblems": [
-        "`space-0/1/3/5` is a numeric index (0, 2, 8, 16) while `radius-m` is a t-shirt scale — two naming systems in one file. Decide which one wins before generating; do not reproduce both.",
-        "`interactive-selectedbg` is a run-on word; every other token is dash-separated.",
-        "`control-waveform` is component-specific but sits in the global namespace."
+        "PREFIX CONFLICT, UNDECIDED. `codeSyntax.WEB` carries a `weave-ds-` prefix while /ds.config.json declares tokenPrefix `ds`, i.e. `--ds-*`. Running `pnpm init-ds weave` would make it `--weave-*`, which still does not equal `weave-ds-*`. Three candidate prefixes, no decision. Settle which is canonical before generating tokens, and settle it in ds.config.json — never by hand-editing one side.",
+        "`space/0..9` is a numeric index while `radius/m` is a t-shirt scale — two naming systems in one file. Decide which one wins before generating; do not reproduce both.",
+        "`interactive/selectedBg` is camelCase; every other token path is lowercase.",
+        "`control/waveform` and `control/off` are component-specific but sit in the global namespace.",
+        "Primitive variables have `scopes: []` while token variables carry `ALL_SCOPES`. Unscoped primitives are still offered everywhere in the picker, so nothing stops a designer binding straight to `color/purple/500`."
       ]
     },
 
     "font": {
-      "_doc": "Observed in the source file. Confirm the weights actually used before writing type tokens — the observed styles disagree with each other (see knownProblems).",
+      "_doc": "RE-MEASURED 2026-08-28: all 8 local text styles enumerated, not just the 5 seen on nodes. Every style is Lexend Deca and binds fontSize, fontFamily and fontWeight to variables — so type must be applied as a STYLE, never as a hand-set fontName + fontSize, or that linkage is thrown away.",
       "family": "Lexend Deca",
       "fallback": "sans-serif",
-      "observedTextStyles": [
-        "UI/Button",
-        "UI/Label",
-        "UI/Label-emphasis",
-        "UI/Description",
-        "Display/Heading"
+      "textStyles": [
+        "UI/Button — Medium 16, lineHeight 124.875%",
+        "UI/Label — Light 16, lineHeight AUTO",
+        "UI/Label-emphasis — Medium 16, lineHeight AUTO",
+        "UI/Description — Light 14, lineHeight AUTO",
+        "UI/Caption — Light 12, lineHeight AUTO",
+        "Display/Heading — Medium 20, lineHeight AUTO",
+        "Display/Time — Medium 16, lineHeight AUTO",
+        "Display/Title — Medium 24, lineHeight AUTO"
       ],
       "knownProblems": [
-        "Line height disagrees between styles: UI/Button uses 1.2487 while every other style uses 100. One of the two is wrong and it must be resolved before type tokens are generated."
+        "CORRECTS AN EARLIER READING. This previously said 'UI/Button uses 1.2487 while every other style uses 100'. The 100 was wrong: measured, the other seven styles are AUTO. AUTO is Figma's font-metric default, so seven of eight styles have NO controlled line height at all — the defect is larger than first recorded, not a disagreement between two values.",
+        "`UI/Button`'s 124.87499713897705% is a dragged handle, not a designed value. Treat it as evidence when the type scale is decided, never as a number to reproduce.",
+        "Decide whether the type scale owns line height before generating type tokens. Every component set generated before that is settled inherits the inconsistency."
       ]
     },
 
