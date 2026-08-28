@@ -91,7 +91,7 @@ describing it. With a single dark mode there is nothing to flip, so build this s
 axis is decided, and until then leave it out rather than shipping a row that demonstrates nothing.
 
 **Say which axes do nothing.** Sweep every mode and every axis before writing the section (the
-recipe is in `ds-figma-component/references/wrapper-pattern.md`). An axis that quietly does nothing
+recipe is in `../ds-figma-component/references/wrapper-pattern.md`). An axis that quietly does nothing
 is the same failure as a baked literal: the board implies a capability that is not there.
 
 Align every table's left edge by giving all row labels one width, or the page reads as ragged even
@@ -220,7 +220,7 @@ place. A bake made under that reasoning is wrong twice over — it freezes the v
 change, and a measured literal can simply be incorrect in a direction the note can never reveal.
 
 Before annotating anything as unbindable, ask what the CSS is _composing_, not what it _computes_.
-`references/extension-tables.md` and `ds-figma-component/references/wrapper-pattern.md` carry the
+`references/extension-tables.md` and `../ds-figma-component/references/wrapper-pattern.md` carry the
 state-layer recipe.
 
 ## Housekeeping

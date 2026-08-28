@@ -66,7 +66,7 @@ rather than to the column-label strip above it.
 > **Superseded 2026-08-24.** This section used to say a `color-mix()` state had to be measured in a
 > browser and baked as a literal. That was wrong, and it produced a Button board whose primary hover
 > was a colour the component never renders. **Build states from their bound inputs instead** — the
-> recipe is `ds-figma-component/references/wrapper-pattern.md`.
+> recipe is `../../ds-figma-component/references/wrapper-pattern.md`.
 >
 > The reasoning that misled: no token holds the _result_ of `color-mix(in oklab, fill, highlight
 20%)`, so nothing can bind it. True, and irrelevant. The CSS is not computing an opaque colour —
@@ -127,7 +127,7 @@ Put a note row under the table naming which cells are literals, which mode they 
 that they will not follow a mode flip, and what they were measured against. Button's note read:
 
 > … fills are BAKED LITERALS, light scheme only … these cells will not follow a colour-scheme flip.
-> Measured against `dist/css/tokens.css`.
+> Measured against `packages/tokens/build/css/variables.css`.
 
 It was accurate, prominent, and still not enough — it could not reveal that one of the literals it
 was vouching for was simply wrong. **A note buys disclosure, not correctness.** That asymmetry is

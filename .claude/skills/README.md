@@ -60,12 +60,15 @@ governing decision.
 If the output is meant to be _used_ as a component, it is `ds-figma-component`. If it is meant to be
 _read_, it is `ds-figma-explain`.
 
-## Readiness — three of these cannot run yet
+## Readiness — one is blocked, one is partial
 
 `ds-figma-component`, `ds-figma-document` and `ds-figma-explain` were ported on **2026-08-28** from a
 mature design system into a repo that ships **no tokens and no components by design**. That gap is
 recorded inside each skill rather than smoothed over, because a skill that assumes a token set it
 cannot find will invent one.
+
+`ds-decide` and `ds-component` are ready in the sense that matters — they refuse to start without
+their input, which is a working state, not a blocked one.
 
 | Skill                | State          | Blocked on                                                                                      |
 | -------------------- | -------------- | ----------------------------------------------------------------------------------------------- |
