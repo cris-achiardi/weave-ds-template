@@ -20,15 +20,32 @@ than trusting a restatement.
 | The variant naming law                       | `.ai/maps/prop-map.md` §1 — **authoritative**; the manifest only points at it |
 | How to translate a Figma variant into a prop | `.ai/maps/proposals/README.md`                                                |
 
-## The bridge: the official Figma MCP
+## Two bridges — and only one of them is a dependency
 
-Read-only, through the **official Figma MCP connector**. No local install, no daemon, no plugin,
-no Figma Desktop.
+The wiring is [`manifest.json`](./manifest.json) → `bridges`, which is authoritative; this table is
+the orientation.
 
-That choice is about the work, not the tooling: **everything in the arc this repo is built for —
-explore, report, decide, build — is a read.** The two more capable bridges (a `figma-cli` daemon
-on a local port, or a console MCP driving a Desktop plugin) each add an install and a background
-process that can fail, in exchange for a write capability the read-only arc never uses.
+| Bridge    | What it is                                  | Needs                                                          | Used by                                       |
+| --------- | ------------------------------------------- | -------------------------------------------------------------- | --------------------------------------------- |
+| **read**  | The official Figma MCP connector            | nothing — no install, no daemon, no plugin                     | `ds-explore`                                  |
+| **write** | figma-console MCP + a Desktop Bridge plugin | Figma Desktop, the plugin open in the file, a local MCP server | `ds-figma-component`, `-document`, `-explain` |
+
+**The read bridge is the only one anything depends on.** Everything in the arc this repo is built
+for — explore, report, decide, build — is a read, and it completes with the read bridge alone.
+
+**The write bridge is opt-in and unwired.** No `pnpm` script, no gate and no CI job invokes it, so
+`pnpm verify` is green on a machine with neither Figma Desktop nor the plugin installed. That is not
+an accident: green on a fresh clone with nothing installed is this template's one acceptance test,
+and a bridge that needs a local process running must never sit on that path.
+
+The cost is worth stating plainly: **nothing gates the write side.** A generated Figma set can drift
+from its component and no build fails — `maps/components.json` is a record, not a check. That
+contradicts the repo's own enforcement rule, and it is accepted only because nothing has been
+generated yet. It should not survive contact with a real component library.
+
+The quiet failure to know about: every collection in the source file has **one mode**, so a bound
+value and a baked literal render identically. A mis-bound component passes visual review. Read
+`boundVariables` back rather than trusting the render.
 
 ### Reading the file
 
@@ -64,16 +81,36 @@ a checked state rather than an unchecked one.
   which, and it matters: joining on an ephemeral id produces a map that silently rots.
 - **Add an entry when the work is done, not before.** The map's value as a record comes from it
   being empty where the work has not happened. A speculative entry destroys that.
-- **A null is a finding.** `code: null`, `componentKey: null`, `separatorUnknown: true` — these
-  say "not measured yet", and that is more useful than a confident guess, because a guess never
-  gets revisited.
+- **A null is a finding.** `code: null`, `componentKey: null` — these say "not measured yet", and
+  that is more useful than a confident guess, because a guess never gets revisited. The mechanism
+  works: `separatorUnknown` was one of these, it was resolved to `/` by a live read on 2026-08-28,
+  and the flag is now `false`. Had it been guessed, nobody would have gone back.
+- **Correct a measurement in place, and say that you did.** `identity.variableNaming` and
+  `identity.font` both carry a note naming what the previous reading got wrong. A silently corrected
+  fact teaches nobody which readings are safe to trust.
 
-## If you want the reverse direction
+## The reverse direction: writing to Figma
 
-Generating Figma component sets _from_ code is a real and useful workflow, and it is deliberately
-**not wired here**. It needs a write bridge — a local CLI daemon or a Desktop plugin — which is a
-separate setup with its own failure modes, and it only becomes worth it once components exist and
-have stabilised.
+Generating Figma content _from_ code runs on the write bridge, through three skills — see
+[`.claude/skills/README.md`](../.claude/skills/README.md) for the index and their readiness state.
 
-When that time comes: keep this manifest as the anchor, add a `maps/` entry per generated
-component, and make every mutating script **dry-run by default** with an explicit `--apply`.
+| Skill                | Produces                                                             |
+| -------------------- | -------------------------------------------------------------------- |
+| `ds-figma-component` | a component set generated from a component's source and contract     |
+| `ds-figma-document`  | the page around a set — description, labelled grid, extension tables |
+| `ds-figma-explain`   | explanatory boards: node graphs, spec tables, annotated anatomy      |
+
+Three rules bind every write, and they exist because the failure modes are quiet:
+
+- **Check the file, then lock it.** Compare `figma.fileKey` against `sources.<key>.key` from this
+  manifest, then pin the target with `figma_navigate({ url, lock: true })`. The active file drifts
+  between open documents; an unpinned write lands wherever the user last clicked.
+- **Never type a file key.** It comes from this manifest, which is why pointing the system at a
+  different file stays one edit.
+- **Record after, never before.** An entry in `maps/components.json` means the work is done.
+
+Two of the three cannot do their full job yet: `ds-figma-component` needs a component to generate
+from and a decided token set to bind to, and both skills' strongest check — flipping a mode to prove
+a binding is real — has nothing to flip, because every collection in the source file has a single
+mode. `ds-figma-explain` is usable today. Each skill states its own gaps at the top rather than
+assuming them away.

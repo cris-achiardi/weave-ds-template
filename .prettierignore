@@ -9,3 +9,8 @@ apps/storybook/storybook-static
 # would make the check fail against its own generator.
 .ai/maps/prop-map.json
 .ai/maps/prop-map.md
+
+# Machine-local and git-ignored — written by the agent harness, never committed. Checking it
+# means `pnpm verify` goes red on a file that is not part of the repo, which breaks the
+# template's one acceptance test: green on a fresh clone.
+.claude/settings.local.json
