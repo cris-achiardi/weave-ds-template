@@ -79,6 +79,17 @@ const PNPM_BUILTINS = new Set(['install', 'add', 'remove', 'run', 'exec', 'dlx',
 const isPlaceholder = (s) =>
   s.includes('<') || s.includes('>') || s.includes('NNNN') || s.includes('*');
 
+// Neither is a reference to BUILD OUTPUT. `packages/tokens/build/css/variables.css` is the file a
+// consumer imports and absolutely belongs in the docs — but it is generated and gitignored, so on a
+// fresh clone it does not exist yet. Its absence means "not built", not "broken pointer".
+//
+// This gate checks AUTHORED pointers. Requiring generated ones to exist would make `pnpm verify`
+// depend on having already run `pnpm build` — which it does not, because `build` comes later in the
+// chain. That is exactly how this was caught: CI's verify job runs `build:tokens` early and passed,
+// while the init-ds job runs the real `pnpm verify` on a clean checkout and failed.
+const GENERATED_DIRS = ['build', 'dist', 'node_modules', 'storybook-static'];
+const isGenerated = (s) => s.split('/').some((seg) => GENERATED_DIRS.includes(seg));
+
 const problems = [];
 const add = (kind, file, line, detail, hint) =>
   problems.push({ kind, where: `${rel(file)}:${line}`, detail, hint });
@@ -94,7 +105,7 @@ for (const file of mdFiles) {
     // ---- relative markdown links -------------------------------------------------------
     for (const m of line.matchAll(/\[[^\]]*\]\(([^)\s]+)\)/g)) {
       const raw = m[1].trim();
-      if (/^(https?:|mailto:|#)/.test(raw) || isPlaceholder(raw)) continue;
+      if (/^(https?:|mailto:|#)/.test(raw) || isPlaceholder(raw) || isGenerated(raw)) continue;
       const target = raw.split('#')[0];
       if (!target) continue;
       // A leading slash means repo root, not filesystem root.
@@ -118,7 +129,7 @@ for (const file of mdFiles) {
       /`([a-zA-Z0-9_.@/-]*\/[a-zA-Z0-9_.@/-]+\.(md|json|mjs|cjs|js|ts|tsx|css|yml|yaml))`/g,
     )) {
       const p = m[1];
-      if (p.startsWith('http') || isPlaceholder(p)) continue;
+      if (p.startsWith('http') || isPlaceholder(p) || isGenerated(p)) continue;
       const candidates = [
         resolve(REPO_ROOT, p.replace(/^\//, '')), // leading slash = repo root
         resolve(dirname(file), p),
