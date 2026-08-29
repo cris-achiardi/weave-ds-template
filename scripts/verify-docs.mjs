@@ -16,13 +16,13 @@
  *   link       a relative markdown link that resolves to no file
  *   command    a `pnpm <script>` named in prose that no package.json defines
  *   path       a backticked repo path that does not exist
+ *   coverage   a directory holding content that no entry doc covers
  *
- * REPORTS, NEVER FAILS
- *   a directory holding content that no entry doc covers
- *
- * That split is deliberate. The report is non-empty today and some of what it lists legitimately
- * never needs a doc, so gating it would fail on day one — and a gate that fails on everything on
- * day one gets switched off, which protects nothing.
+ * `coverage` was a report until the baseline was clean. It named four directories — `scripts/`,
+ * `packages/react/scripts/`, its `extract/`, and `.github/workflows/` — all holding machinery
+ * nothing indexed. Those got entry docs, the report went empty, and only then was it promoted.
+ * That order matters: a gate that fails on everything on day one gets switched off, and a
+ * switched-off gate protects nothing.
  *
  * "Covered" is deliberately generous, because the rule is that a reader can FIND the layer, not
  * that every folder carries a file. A directory is covered when it holds its own entry doc
@@ -165,29 +165,34 @@ const uncovered = [...dirsWithContent]
   .map(rel)
   .sort();
 
-// ---- output ----------------------------------------------------------------------------
-if (uncovered.length) {
-  console.log(`verify:docs — ${uncovered.length} director(ies) no entry doc covers:\n`);
-  for (const d of uncovered) console.log(`  ${d}/`);
-  console.log(
-    '\n  Reported, not failed. Some of these never need a doc; others are a real gap.\n' +
-      '  Either add an entry doc, or name the directory in the one above it.\n',
+for (const d of uncovered) {
+  add(
+    'coverage',
+    join(REPO_ROOT, d),
+    0,
+    `${d}/`,
+    'no entry doc covers it: add a README.md, or name it in the entry doc above',
   );
 }
 
+// ---- output ----------------------------------------------------------------------------
 if (problems.length) {
-  console.error(`verify:docs failed — ${problems.length} broken pointer(s):\n`);
-  const order = { link: 0, command: 1, path: 2 };
+  console.error(`verify:docs failed — ${problems.length} problem(s):\n`);
+  const order = { link: 0, command: 1, path: 2, coverage: 3 };
   for (const p of problems.sort(
     (a, b) => order[a.kind] - order[b.kind] || a.where.localeCompare(b.where),
   )) {
-    console.error(`  [${p.kind}] ${p.where}\n           ${p.detail} — ${p.hint}`);
+    const where = p.kind === 'coverage' ? p.detail : `${p.where}\n           ${p.detail}`;
+    console.error(`  [${p.kind}] ${where} — ${p.hint}`);
   }
   console.error(
     '\nA pointer that goes nowhere is worse than no pointer: the reader trusted it.\n' +
-      'Fix the target, or remove the reference.',
+      'Fix the target, remove the reference, or document the layer.',
   );
   process.exit(1);
 }
 
-console.log(`verify:docs OK — ${mdFiles.length} markdown files, every pointer resolves.`);
+console.log(
+  `verify:docs OK — ${mdFiles.length} markdown files, ` +
+    `${dirsWithContent.size} directories, every pointer resolves and every layer is covered.`,
+);

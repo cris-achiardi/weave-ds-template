@@ -82,7 +82,7 @@ entry doc that already governs that territory.
 | ------------------------------------- | --------------------------------------------------------------------------- |
 | The rule, stated for agents at entry  | `CLAUDE.md` — "First rule: modular context, loaded on demand"               |
 | Pointer enforcement                   | `scripts/verify-docs.mjs` (`pnpm verify:docs`, in `pnpm verify` **and** CI) |
-| Entry-doc coverage                    | the same script — **reported, never failed** (see Consequences)             |
+| Entry-doc coverage enforcement        | the same script — every directory holding content must be covered           |
 | ADR index generation                  | `scripts/adr-index.mjs` (`pnpm adr-index`)                                  |
 | ADR index enforcement                 | the same script with `--check` (`pnpm adr-index:check`, in `verify` and CI) |
 | The generated region                  | `docs/ADR/README.md`, between `adr-index:start` and `adr-index:end`         |
@@ -106,11 +106,12 @@ entry doc that already governs that territory.
 - **More files, and more indirection.** Answering a question can mean following two or three
   pointers. That is a real cost paid on every read, in exchange for not paying the drift cost on
   every write.
-- **Entry-doc coverage is reported, not gated, and reports get ignored.** The report is non-empty on
-  the day this record was written — `scripts/`, `packages/react/scripts/` and `.github/workflows/`
-  all hold machinery nothing indexes — so gating it would fail immediately, and a gate that fails on
-  everything on day one gets switched off. The honest consequence is that this half of the decision
-  relies on somebody reading the report.
+- **Entry-doc coverage is now a gate, which means adding a directory costs a document.** It began as
+  a report naming four uncovered directories — `scripts/`, `packages/react/scripts/`, its
+  `extract/`, and `.github/workflows/`. Those were documented, the report went empty, and only then
+  was it promoted; that order is the point, because a gate that fails on everything on day one gets
+  switched off. The standing cost is that a new folder of anything now reddens CI until someone
+  either writes its entry doc or names it in the one above.
 - **`verify:docs` checks that a pointer resolves, not that it points somewhere useful.** A link to
   the wrong existing file passes. The failure it cannot catch is a reference that is confidently
   aimed at the wrong place.
@@ -122,10 +123,11 @@ entry doc that already governs that territory.
 
 ## Alternatives considered
 
-**Gate entry-doc coverage as well.** Rejected on the repo's own rule: it fails immediately on
-directories that hold machinery nobody has documented yet, and the first response to a red gate you
-disagree with is to disable it. Promoting the report to a gate is deliberate work against a clean
-baseline — document the four it names, confirm the report is empty, then flip it.
+**Ship entry-doc coverage as a gate immediately.** Rejected at first, then done properly. Gating it
+on day one would have failed on four directories nobody had documented, and the first response to a
+red gate you disagree with is to disable it. So it shipped as a report, the four were documented,
+the report went empty, and the gate was switched on against a clean baseline. The sequence is the
+reusable part: **report → clear the baseline → gate.**
 
 **Byte-equality on the ADR index, matching `prop-map:check`.** Rejected because this index is a
 region inside a hand-written README that Prettier also formats, and Prettier owns table alignment —
