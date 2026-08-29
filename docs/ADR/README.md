@@ -25,18 +25,18 @@ decision nobody has implemented is a Draft, however confident it sounds._
 
 ## The records
 
-**This directory ships empty**, like `docs/research/`, `.ai/maps/proposals/` and
-`packages/react/src/components/`. That is the same design decision as everywhere else in this
-template: you get the machinery, not somebody else's conclusions.
+**This directory ships almost empty**, like `docs/research/`, `.ai/maps/proposals/` and
+`packages/react/src/components/`. You get the machinery, not somebody else's conclusions.
 
-It is worth being explicit about why, because an ADR folder is exactly the place where inherited
-decisions do the most damage. A record you did not make, about a system you have not built yet,
-still reads as binding — and the first thing it binds is the reasoning you were about to do
-yourself. Worse, a template's own construction decisions are not architecture decisions for the
-system you are about to build with it.
+That is worth being explicit about, because an ADR folder is exactly where inherited decisions do
+the most damage. A record you did not make, about a system you have not built yet, still reads as
+binding — and the first thing it binds is the reasoning you were about to do yourself. A template's
+own construction decisions are not architecture decisions for the system built with it.
 
-Where the template has already settled something mechanically, it is documented **next to the code
-that enforces it**, not here:
+The one record that ships is the exception that proves it: **0001 describes how this repository is
+organised**, which is a property of the template itself and therefore genuinely inherited when you
+adopt it. Anything the template settled _mechanically_ is documented next to the code that enforces
+it, not here:
 
 | What                                                  | Where                                     |
 | ----------------------------------------------------- | ----------------------------------------- |
@@ -45,16 +45,28 @@ that enforces it**, not here:
 | Token naming and tiers                                | `packages/tokens/tokens/README.md`        |
 | What Figma is, and what it is not                     | `.figma/README.md`                        |
 
-| #   | Title            | Status |
-| --- | ---------------- | ------ |
-| —   | _no records yet_ | —      |
+> **The table below is generated** by `pnpm adr-index` from the records themselves — the number from
+> the filename, the title from the H1, the status from each record's `Status:` line. Do not edit it
+> by hand; `pnpm adr-index:check` fails the build when it drifts. That is also why a record's status
+> is only ever changed **in the record**.
+
+<!-- adr-index:start -->
+
+| #                                                | Title                                                                    | Status   |
+| ------------------------------------------------ | ------------------------------------------------------------------------ | -------- |
+| [0001](./0001-every-layer-is-self-describing.md) | Every layer is self-describing, and context is pulled rather than pushed | Accepted |
+
+<!-- adr-index:end -->
 
 ## Adding an ADR
 
 1. Copy [`0000-template.md`](./0000-template.md); number it sequentially (`NNNN-kebab-title.md`).
-2. Start at **Draft**; promote as the decision firms up and lands in code.
-3. **Add a row to the table above.** An ADR that is not in the index does not exist — nobody
-   browses a directory listing.
+2. Start at **Draft**; promote as the decision firms up and lands in code. The status lives in the
+   record and nowhere else.
+3. Run **`pnpm adr-index`**, and commit the regenerated table. Never edit it by hand.
+
+`pnpm adr-index:check` fails the build if you skip step 3 — an ADR that is not in the index does not
+exist, because nobody browses a directory listing.
 
 The `ds-decide` skill does all three, and will refuse to bundle two separable decisions into one
 record.

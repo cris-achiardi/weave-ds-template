@@ -61,6 +61,15 @@ jobs:
       # this the glossary silently goes stale and stops being worth consulting.
       - run: pnpm prop-map:check
 
+      # The index is derived from the records. Forget to regenerate it and the record becomes
+      # invisible — nobody browses a directory listing — while every other tool stays green.
+      - run: pnpm adr-index:check
+
+      # This repo points instead of restating, so its characteristic defect is a pointer that
+      # resolves to nothing: a moved schema, a deleted skill, a `pnpm` script that was never
+      # added. Docs still render, the build still passes, the reader lands on nothing.
+      - run: pnpm verify:docs
+
       # .figma/ is read by no build step, so a malformed entry is invisible until someone
       # trusts it. An unmapped collection claiming a code path is the specific lie to catch.
       - run: pnpm verify:figma
