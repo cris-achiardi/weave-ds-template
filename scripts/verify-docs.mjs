@@ -61,11 +61,14 @@ function walk(dir, out = []) {
 const files = walk(REPO_ROOT);
 const mdFiles = files.filter((f) => f.endsWith('.md'));
 
-// Every pnpm script defined anywhere in the workspace.
+// Every pnpm script, and every workspace package name, defined anywhere in the repo.
 const scripts = new Set();
+const packageNames = new Set();
 for (const pj of files.filter((f) => f.endsWith('package.json'))) {
   try {
-    for (const s of Object.keys(JSON.parse(readFileSync(pj, 'utf8')).scripts ?? {})) scripts.add(s);
+    const parsed = JSON.parse(readFileSync(pj, 'utf8'));
+    for (const s of Object.keys(parsed.scripts ?? {})) scripts.add(s);
+    if (parsed.name) packageNames.add(parsed.name);
   } catch {
     /* a package.json that does not parse is typecheck's problem, not ours */
   }
@@ -89,6 +92,16 @@ const isPlaceholder = (s) =>
 // while the init-ds job runs the real `pnpm verify` on a clean checkout and failed.
 const GENERATED_DIRS = ['build', 'dist', 'node_modules', 'storybook-static'];
 const isGenerated = (s) => s.split('/').some((seg) => GENERATED_DIRS.includes(seg));
+
+// Nor is a MODULE SPECIFIER a repo path. `@ds/react/styles.css` is the exact string a consumer
+// writes in an import; it is resolved through that package's `exports` map, and no file lives at
+// that path in the repo. Documenting it is correct and the gate must not call it broken.
+//
+// This is checked against real workspace package names rather than "starts with @", so a genuine
+// broken path can never hide behind an @-prefixed folder. `@ds/tokens/css` happened to pass
+// already, but only because the pattern below needs a file extension and it has none — luck, not
+// a rule. This makes it a rule.
+const isModuleSpecifier = (s) => [...packageNames].some((n) => s === n || s.startsWith(n + '/'));
 
 const problems = [];
 const add = (kind, file, line, detail, hint) =>
@@ -129,7 +142,8 @@ for (const file of mdFiles) {
       /`([a-zA-Z0-9_.@/-]*\/[a-zA-Z0-9_.@/-]+\.(md|json|mjs|cjs|js|ts|tsx|css|yml|yaml))`/g,
     )) {
       const p = m[1];
-      if (p.startsWith('http') || isPlaceholder(p) || isGenerated(p)) continue;
+      if (p.startsWith('http') || isPlaceholder(p) || isGenerated(p) || isModuleSpecifier(p))
+        continue;
       const candidates = [
         resolve(REPO_ROOT, p.replace(/^\//, '')), // leading slash = repo root
         resolve(dirname(file), p),

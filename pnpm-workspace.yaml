@@ -6,4 +6,4 @@ packages:
   # It is ~350 MB and a config stack to prove nothing the sandbox does not, and it is the
   # single biggest thing between `git clone` and a working repo on a slow connection.
   # To switch it on: uncomment the line below, then `pnpm install && pnpm dev:storybook`.
-  # - 'apps/storybook'
+  - 'apps/storybook'

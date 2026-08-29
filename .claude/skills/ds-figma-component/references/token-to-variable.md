@@ -8,9 +8,9 @@ carrying design intent is `var(--ds-*)` — which is what makes this mapping mec
 judgement call. A raw `#5146e6` or `12px` in there is a defect `pnpm report:paints` exists to find,
 not a value for you to translate.
 
-## The naming chain — and the part that is currently wrong
+## The naming chain — resolved
 
-Three spellings of one path:
+Three spellings of one path, and **all three now exist**:
 
 ```
 Figma variable        surface/primary
@@ -18,36 +18,41 @@ CSS custom property   --ds-surface-primary
 DTCG token            surface.primary
 ```
 
-`.figma/manifest.json` → `identity.variableNaming` is the record of this. **It does not currently
-match the file.** Measured live on 2026-08-28:
+`.figma/manifest.json` → `identity.variableNaming` records this and, since 2026-08-28, **matches the
+file**. The earlier disagreement was real and is worth remembering, because it is the kind that
+recurs: a Figma variable carries **two** names, and the manifest had conflated them.
 
-|                        | Manifest says              | Actually measured      |
-| ---------------------- | -------------------------- | ---------------------- |
-| Variable name shape    | `weave-ds-surface-primary` | `surface/primary`      |
-| Group separator        | `separatorUnknown: true`   | `/` — slash, confirmed |
-| Prefix on the variable | `weave-ds-` infix present  | **no prefix at all**   |
+|                  | What it is                                                              | Example                    |
+| ---------------- | ----------------------------------------------------------------------- | -------------------------- |
+| `name`           | The slash path. **This is what you look a variable up by.**             | `surface/primary`          |
+| `codeSyntax.WEB` | An author-set display string Figma emits in Dev Mode. Nothing reads it. | `weave-ds-surface-primary` |
 
-Every one of the manifest's `observed` names carries a `weave-ds-` prefix and dashes; every real
-variable in the file is a bare slash path. The prefix is almost certainly introduced downstream — it
-is what Dev Mode emits, not what the variable is called — but **do not write that into the manifest
-on my say-so.** Establishing where the prefix enters is a measurement someone has to make, and
-recording which spelling the pipeline consumes is a `ds-decide` job.
+**Look variables up by the slash path.** A lookup for `weave-ds-surface-primary` returns `undefined`,
+and the temptation at that point is to fall back to a literal. Don't.
 
-What this means for you today: **look variables up by their slash path.** A lookup for
-`weave-ds-surface-primary` returns `undefined`, and the temptation at that point is to fall back to a
-literal. Don't.
+Still open, and recorded in the manifest's `knownProblems`: `codeSyntax.WEB` emits `weave-ds-*`
+while the repo settled on the `ds` prefix, so a property copied out of the Figma inspector does not
+exist in the stylesheet. Cosmetic — no build reads it — but it misleads whoever copies it.
+
+The transform between the outer two columns is one mechanical rule (ADR 0002, decision 4): split on
+`/`, split each segment at a lowercase-to-uppercase boundary, lowercase. So `interactive/selectedBg`
+is `interactive.selected-bg` and `--ds-interactive-selected-bg`.
 
 ## The two tiers, by name shape
 
-Measured 2026-08-28. The tier is legible from the name, which is a good sign about the file:
+Re-measured 2026-08-29. The tier is legible from the name, which is a good sign about the file:
 
-| Tier      | Collection         | Name shape               | Examples                                                                                                                                          |
-| --------- | ------------------ | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **token** | `Color Tokens`     | role path                | `brand/primary`, `text/primary`, `text/disabled`, `surface/primary`, `surface/overlay`, `border/primary`, `interactive/hover`, `control/waveform` |
-| primitive | `Color Primitives` | `color/<family>/<step>`  | `color/purple/500`, `color/red/500`, `color/gray/900`, `color/pure/white`                                                                         |
-| **token** | `Spacing Tokens`   | scale path               | `space/1`, `radius/m`, `border/thin`                                                                                                              |
-| **token** | `Type Tokens`      | `<Group>/<Role>/<facet>` | `UI/Button/size`, `UI/Label/weight`, `Display/Heading/fontFamily`                                                                                 |
-| primitive | `Type Primitives`  | scale path               | `font/size/xs`, `font/weight/medium`, `font/fontFamily/primary`                                                                                   |
+| Tier      | Collection           | Count | Name shape               | Examples                                                                                                                        |
+| --------- | -------------------- | ----- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| **token** | `Color Tokens`       | 17    | role path                | `brand/primary`, `text/primary`, `text/disabled`, `surface/primary`, `border/primary`, `focus/ring`, `interactive/hoverSurface` |
+| primitive | `Color Primitives`   | 71    | `color/<family>/<step>`  | `color/purple/500`, `color/base/white`, `color/light/500`, `color/dark/1000`                                                    |
+| **token** | `Spacing Tokens`     | 23    | scale path               | `space/3`, `radius/s`, `border/thin`, `border/thick`                                                                            |
+| **token** | `Type Tokens`        | 24    | `<Group>/<Role>/<facet>` | `UI/Button/size`, `UI/Label/weight`, `Display/Heading/fontFamily`                                                               |
+| primitive | `Type Primitives`    | 10    | scale path               | `font/size/base`, `font/weight/regular`, `font/fontFamily/primary`                                                              |
+| primitive | `Opacity Primitives` | 11    | `opacity/<step>`         | `opacity/100`, `opacity/600` — **bindable, by design; see SKILL.md**                                                            |
+
+The colour ramps grew from 15 to 71 primitives in one sitting, and `color/pure/*` was renamed
+`color/base/*`. Treat every name here as re-checkable, not as a constant.
 
 **Bind to the token tier. Never to the primitive tier.** `brand/primary` is an alias onto
 `color/purple/500`; binding the primitive directly gives you a component that keeps the colour when
@@ -69,17 +74,20 @@ const SP = scoped('Spacing Tokens');
 const TY = scoped('Type Tokens');
 ```
 
-## There is no token set on the code side yet
+## The code side now exists — so fill the CSS column
 
-`packages/tokens/tokens/` holds no DTCG source, and `identity.variableCollections` in the manifest —
-the collection → token-file mapping — is **empty**. So the middle column of the naming chain above
-does not exist yet.
+`packages/tokens/tokens/` holds **6 DTCG files, 156 tokens**, and
+`identity.variableCollections.map` names the file behind every collection. `.figma/maps/tokens.json`
+records every variable against its dotted code path and its Figma id.
 
-Practically: you can bind a component to `surface/primary` today and it will work, but you cannot yet
-say which `--ds-*` property that is, because nothing has generated one. Until the token set has been
-measured, decided and built, **write the Figma variable name into the report and leave the
-CSS column blank.** A blank is honest; a guessed `--ds-surface-primary` becomes the name everyone
-copies.
+So the middle column is real: **write all three spellings into the report.** Look the code path up in
+`.figma/maps/tokens.json` rather than deriving it — a `code: null` there means the variable has no
+token behind it, which is drift you should report rather than paper over with a guess.
+
+**But the two surfaces are not gated against each other** (ADR 0002). `text/disabled` moved in Figma
+after transcription and nothing failed. If a variable resolves to a colour that disagrees with the
+committed JSON, the Figma file is what the component will render — report the difference, do not
+silently follow one side.
 
 ## Traps this file has not hit yet, but the family is prone to
 
@@ -160,6 +168,51 @@ prevent.
 | `:hover` / `:focus-visible` / `:active`                         | Runtime states the browser owns; not props in this repo                                                                           | Not variant values that map to props. A `State` axis is design-only and the description must say so                                                              |
 | `disabled`                                                      | `opacity` on the host plus non-visual behaviour                                                                                   | Set the variant frame's opacity to match. But see the opacity note in `SKILL.md` — the 0–1 vs 0–100 convention is undecided here                                 |
 
+### A bound paint's `opacity` does NOT survive into an instance — found the hard way, 2026-08-29
+
+The worst trap met so far, because every inspection reports success and only a screenshot shows it.
+
+A translucent wash — white at 10% — is naturally expressed as a paint with `opacity: 0.1`. Bind the
+paint's colour to a token, set the opacity, read it back: `0.1`, still bound. Correct on the
+component. **Then instance it and the opacity is `1`.** Figma rebuilds a variable-bound paint on the
+instance sublayer from the variable alone, and the paint-level opacity is not part of what it
+carries. A 10% wash renders as a solid white block.
+
+```js
+// WRONG — reads back as 0.1 on the component, renders as 1 in every instance
+let p = { type: 'SOLID', color: r.value, opacity: 1 };
+p = figma.variables.setBoundVariableForPaint(p, 'color', v);
+node.fills = [{ ...p, opacity: 0.1 }];
+```
+
+**Use a separate layer and bind its NODE opacity instead** — which is also what the CSS does, since
+layer opacity there would fade the text along with the wash:
+
+```js
+const wash = figma.createRectangle();
+label.insertChild(0, wash); // behind the content
+wash.layoutPositioning = 'ABSOLUTE';
+wash.constraints = { horizontal: 'STRETCH', vertical: 'STRETCH' };
+wash.resize(label.width, label.height);
+wash.fills = [
+  figma.variables.setBoundVariableForPaint(seeded, 'color', C('interactive/hoverSurface')),
+];
+wash.setBoundVariable('opacity', OP('opacity/100')); // node opacity — survives into instances
+```
+
+Node opacity is a real node property, so it is inherited, **and** it binds — which turns an
+unbindable literal into a bound token. Strictly better on both counts.
+
+**Verify on an INSTANCE, never on the component.** The component was right the whole time.
+
+### `strokeWeight` does not accept a variable binding
+
+Measured 2026-08-29: `node.setBoundVariable('strokeWeight', SP('border/regular'))` neither throws
+nor binds — `boundVariables.strokeWeight` stays undefined. Border _widths_ are therefore literals in
+Figma while `border/thin` and `border/thick` bind fine as a rectangle's `height`. Where a border
+width carries meaning, prefer a bound rectangle over a stroke; where a stroke is right, write the
+literal and report it.
+
 ### Overriding a composite's line-height detaches the style — but keeps its bindings
 
 A single-line pill should hug its glyphs rather than carry a composite's leading, so a badge or chip
@@ -194,8 +247,10 @@ Inherited from the system this skill was ported from, and directly relevant here
 and the _variable_ was holding Figma's placeholder for a STRING created without a value. Two dozen
 variables were in that state and every apply had reported success.
 
-This file has STRING variables of exactly that kind (`font/fontFamily/primary`,
-`UI/Button/fontFamily`, and seven more). Check their values before trusting a type binding.
+This file has nine STRING variables of exactly that kind. **Checked 2026-08-29 and all nine are
+sound**: `font/fontFamily/primary` holds `"Lexend Deca"`, and the other eight are aliases onto it.
+No placeholder values. Re-check if a new STRING variable appears — one created without a value is
+the failure mode, and it reports success at every step.
 
 **This file makes verification harder, not easier.** With a single mode, a bound value and a baked
 literal render identically — there is no flip that separates them. Reading the node back is not one

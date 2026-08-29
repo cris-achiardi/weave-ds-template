@@ -83,3 +83,36 @@ code {
   border-radius: 0.25rem;
   padding: 0.1em 0.35em;
 }
+
+/* Icon specimens. Sandbox-only styling — not part of the library. */
+.icon-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 12px;
+  width: 100%;
+}
+
+.icon-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 12px 4px;
+  border-radius: 8px;
+  background: rgb(255 255 255 / 4%);
+}
+
+.icon-cell figcaption {
+  font-size: 11px;
+  line-height: 1.3;
+  text-align: center;
+  overflow-wrap: anywhere;
+  opacity: 0.65;
+}
+
+/* Shows the box the size axis controls, so the ink inside it can be compared. */
+.icon-box {
+  display: inline-flex;
+  outline: 1px dashed rgb(255 255 255 / 35%);
+}

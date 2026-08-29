@@ -1,0 +1,15 @@
+{
+  "$schema": "../../../../../contracts/react-binding.schema.json",
+  "component": "Tabs",
+  "contract": "./Tabs.contract.json",
+  "framework": "react",
+  "element": "div",
+  "refTarget": "root",
+  "classNamePassthrough": "root",
+  "notes": [
+    "The contract's `semantics.role` of `tablist` lands on the `list` part, not on the rendered root. The root is an unlabelled div wrapping the list and the panels, because a tablist may contain only tabs and the panels have to be siblings of it.",
+    "Selection is shared through React context (./TabsContext.ts). That is a React mechanism, not a contract fact — another framework would satisfy the same contract with whatever it uses for ambient state.",
+    "Items and panels are separated with `Children.toArray` and an identity check against the imported TabItem and TabPanel. That makes Tabs import both, so the three are one module graph rather than three independent components.",
+    "`value` is deliberately typed as `string` rather than a generic, so the type does not widen to a bare name in extraction. See the authoring contract's rule against generic wrappers around variant types."
+  ]
+}

@@ -1,0 +1,96 @@
+{
+  "border": {
+    "primary": {
+      "$type": "color",
+      "$value": "{color.gray.700}"
+    }
+  },
+  "brand": {
+    "hover": {
+      "$type": "color",
+      "$value": "{color.purple.600}"
+    },
+    "primary": {
+      "$type": "color",
+      "$value": "{color.purple.500}"
+    }
+  },
+  "control": {
+    "off": {
+      "$description": "Component-specific, sitting in the global namespace. Belongs to the mic and camera off state, not the system.",
+      "$type": "color",
+      "$value": "{color.red.500}"
+    },
+    "waveform": {
+      "$description": "Component-specific, sitting in the global namespace. Belongs to the recorder waveform, not the system.",
+      "$type": "color",
+      "$value": "{color.green.300}"
+    }
+  },
+  "focus": {
+    "ring": {
+      "$description": "The focus indicator, as its own role rather than a reach into the brand family. A component must not name brand/* directly — the ring is the one thing most likely to be re-pointed independently of the brand colour, and every focusable component needs it.",
+      "$type": "color",
+      "$value": "{color.purple.500}"
+    }
+  },
+  "interactive": {
+    "hover": {
+      "$description": "A hover that DARKENS, for light-on-dark surfaces that sit above the page. Not what a tab uses — see interactive.hover-surface.",
+      "$type": "color",
+      "$value": "{color.gray.900}"
+    },
+    "hover-surface": {
+      "$description": "Solid fill for the wash under a hovered item. Bind layer opacity to opacity/100 where this is used — never apply it to a node that also holds text, or the label fades with the wash. Introduced for Tabs; it is a systemic role, not a tab-specific one.",
+      "$type": "color",
+      "$value": "{color.base.white}"
+    },
+    "selected-bg": {
+      "$description": "Still carries baked alpha through its primitive. Outstanding: split into a solid plus opacity/400.",
+      "$type": "color",
+      "$value": "{color.purple.500-40}"
+    }
+  },
+  "surface": {
+    "ghost": {
+      "$description": "Solid fill. Bind layer opacity to opacity/100 where this is used. Previously baked at 10 per cent.",
+      "$type": "color",
+      "$value": "{color.gray.900}"
+    },
+    "overlay": {
+      "$description": "Solid fill. Bind layer opacity to opacity/400 where this is used. Previously baked at 40 per cent.",
+      "$type": "color",
+      "$value": "{color.gray.900}"
+    },
+    "primary": {
+      "$description": "Still carries baked alpha through its primitive. Outstanding: split into a solid plus an opacity token.",
+      "$type": "color",
+      "$value": "{color.gray.800-90}"
+    },
+    "subtle": {
+      "$description": "Solid fill. Bind layer opacity to opacity/200 where this is used. Previously baked as white at 20 per cent.",
+      "$type": "color",
+      "$value": "{color.base.white}"
+    }
+  },
+  "text": {
+    "disabled": {
+      "$description": "A solid step off the light ramp rather than white at an opacity, so disabled text reads the same over any surface and needs no second binding at the point of use. Changed in the design source on 2026-08-29 and adopted here.",
+      "$type": "color",
+      "$value": "{color.light.500}"
+    },
+    "inverted": {
+      "$type": "color",
+      "$value": "{color.gray.900}"
+    },
+    "primary": {
+      "$type": "color",
+      "$value": "{color.base.white}"
+    },
+    "secondary": {
+      "$description": "Solid fill. Bind layer opacity to opacity/600 where this is used. Previously baked as white at 60 per cent.",
+      "$type": "color",
+      "$value": "{color.base.white}"
+    }
+  }
+}

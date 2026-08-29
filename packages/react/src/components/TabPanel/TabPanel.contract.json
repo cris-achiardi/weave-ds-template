@@ -1,0 +1,59 @@
+{
+  "$schema": "../../../../../contracts/component.schema.json",
+  "component": "TabPanel",
+
+  "status": {
+    "level": "experimental",
+    "since": "2026-08-29",
+    "note": "Built against ADR 0006. No panel was drawn in the design source — the mock shows only the tab row — so its padding is the one value here with no measured original behind it."
+  },
+
+  "intent": {
+    "purpose": "The content one tab reveals. It exists so the tab list has something real to control: a tab that announces it opens a panel, with no panel wired to it, describes an interaction that does not happen.",
+    "behaviour": [
+      "Matches its `value` against the selection on the surrounding Tabs and hides itself when it does not match. Visibility is the `hidden` attribute, not a styled state — the panel is either present or removed from the page outright, never faded, so there is no `states` block here to declare.",
+      "Stays mounted while hidden, using the `hidden` attribute. Scroll position, form state and anything a consumer measured survive switching away and back.",
+      "Is focusable in its own right, so a keyboard user moving on from the tab has somewhere to land even when the panel holds nothing focusable.",
+      "Names itself from its tab, via aria-labelledby, so the panel is announced with the tab's label rather than needing its own.",
+      "Throws if rendered outside a Tabs."
+    ],
+    "notFor": [
+      "Content that should unmount when hidden. This panel stays in the DOM by design; anything expensive enough to need unmounting should be guarded by the consumer inside the panel.",
+      "Lazy loading. Nothing here defers rendering, and activation follows focus on the parent, so arrowing across the tabs renders every panel in turn.",
+      "Use outside a Tabs, or without a TabItem of the same value — the panel would have no accessible name and no way to be shown."
+    ]
+  },
+
+  "semantics": {
+    "role": "tabpanel",
+    "focusable": true
+  },
+
+  "a11y": {
+    "focusVisible": false,
+    "contrast": "not-applicable",
+    "keyboard": "Reachable with Tab immediately after the selected tab. It shows no focus ring of its own.",
+    "notes": [
+      "`tabIndex={0}` is unconditional, which is the WAI-ARIA practice for a panel that may hold no focusable content. The cost is a Tab stop on every panel, including ones that are full of focusable content and did not need it.",
+      "The panel takes no focus ring, so a keyboard user landing on it gets no visible confirmation. That is the common convention for tab panels and it is still a real gap for anyone who cannot infer position from the scroll.",
+      "The accessible name comes entirely from the matching TabItem. If no item carries the same `value`, aria-labelledby points at a missing id and the panel is announced unnamed. Nothing detects that pairing.",
+      "Contrast is not applicable: the panel paints no colour of its own and inherits whatever it is placed on."
+    ]
+  },
+
+  "composition": {
+    "children": {
+      "description": "Anything. The panel makes no assumptions about its content and applies no layout beyond the space above it."
+    }
+  },
+
+  "anatomy": {
+    "root": {
+      "part": "root",
+      "description": "The panel region. Its only paint is the space separating it from the tab row.",
+      "paints": {
+        "padding-block-start": "--ds-space-"
+      }
+    }
+  }
+}

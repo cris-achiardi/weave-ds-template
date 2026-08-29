@@ -1,0 +1,19 @@
+/*
+ * Tabs — see Tabs.contract.json for what this component is, and ADR 0006 for why selection lives
+ * here rather than on the items.
+ */
+
+.root {
+  display: block;
+}
+
+/*
+ * The `track`: a hairline the whole width of the list, which the selected item's indicator sits
+ * on top of. Both are bottom borders, so they share a baseline without either one having to know
+ * the other's thickness.
+ */
+.list {
+  display: flex;
+  padding-inline: var(--ds-space-5);
+  border-block-end: var(--ds-border-thin) solid var(--ds-border-primary);
+}

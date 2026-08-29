@@ -1,0 +1,129 @@
+{
+  "$schema": "../../../../../contracts/component.schema.json",
+  "component": "TabItem",
+
+  "status": {
+    "level": "experimental",
+    "since": "2026-08-29",
+    "note": "Built against ADR 0006. Only meaningful inside a Tabs; it has no standalone life and is not intended to grow one."
+  },
+
+  "intent": {
+    "purpose": "One tab in a tab list: a label that selects a panel when chosen. It carries its own identity and its own disabled state, and nothing else — whether it is selected is a comparison, not a property it holds.",
+    "behaviour": [
+      "Compares its `value` against the selection on the surrounding Tabs to decide whether it is selected. It cannot be told directly.",
+      "Selects itself on click, unless a caller's own onClick called preventDefault first.",
+      "Shows an indicator along its bottom edge when selected. It is rendered only while selected and is out of flow, so selecting never changes the row's height.",
+      "Shows a wash behind its label on hover, drawn as its own layer so the label does not fade with it.",
+      "Renders a heavier label while pressed, and the resting weight otherwise.",
+      "Throws if rendered outside a Tabs. There is no selection to compare against, and looking unselected would hide the mistake."
+    ],
+    "notFor": [
+      "Use outside a Tabs. It has no fallback behaviour and deliberately fails loudly instead.",
+      "Carrying an icon or a count badge. Neither is designed; adding one would be inventing a component nobody has reviewed.",
+      "Acting as a link. It renders a button and changes no URL — a tab that navigates is a nav item.",
+      "Holding the panel's content. That is TabPanel's job, and keeping them apart is what lets the panels live outside the tablist."
+    ]
+  },
+
+  "states": {
+    "selected": {
+      "kind": "authored",
+      "description": "Derived from the surrounding Tabs by comparing `value`. Not settable on this component. Reaches the DOM as both `aria-selected` and a `data-ds-state` on the indicator.",
+      "visual": "An indicator bar appears along the bottom edge."
+    },
+    "disabled": {
+      "kind": "intrinsic",
+      "description": "Set by the `disabled` prop, and rendered as a natively disabled button.",
+      "visual": "The label takes the disabled text colour and the pointer cursor is dropped."
+    },
+    "hover": {
+      "kind": "intrinsic",
+      "description": "The pointer is over the item and it is not disabled.",
+      "visual": "A rounded wash appears behind the label."
+    },
+    "focus-visible": {
+      "kind": "intrinsic",
+      "description": "Focused in a way the browser judges worth showing a ring for — keyboard, not a mouse click.",
+      "visual": "A dashed ring is drawn inside the item's box. The indicator is unaffected, so a focused selected tab still reads as selected."
+    },
+    "active": {
+      "kind": "intrinsic",
+      "description": "A pointer or key is held down on the item — the CSS `:active` state. Note the collision of vocabulary: the design source labels its SELECTED specimen 'Active'. This is not that; this is the press.",
+      "visual": "The label switches to the medium weight. That is wider than the resting weight, so the row shifts for the duration of the press — a known and accepted cost, recorded in ADR 0006."
+    }
+  },
+
+  "semantics": {
+    "role": "tab",
+    "focusable": true
+  },
+
+  "a11y": {
+    "focusVisible": true,
+    "contrast": "AA",
+    "keyboard": "Reachable with Tab only when selected; the arrow keys on the parent move focus here and select in one action. Space and Enter activate, as they do on any button.",
+    "notes": [
+      "`disabled` renders a native disabled button, so the tab is removed from the focus order and cannot be reached at all. A keyboard user therefore cannot land on it to discover it exists. The alternative, `aria-disabled`, keeps it discoverable but leaves it clickable unless every handler guards; the native form was chosen because the authoring contract says to use the pseudo-class the browser owns.",
+      "The accessible name is whatever is passed as children. An item given a non-text child — an icon alone, say — has no name and nothing here detects that.",
+      "`aria-controls` always points at the id its matching TabPanel would use, whether or not that panel is rendered. A tab with no panel therefore references a missing id, which some assistive technology reports. Rendering a panel per item is the caller's obligation.",
+      "Contrast is claimed as AA for the resting label against the app's surface: `text/primary` is white on the dark ground the design source uses. It is NOT claimed for the disabled label, which is intentionally low contrast, nor for any other background a consumer places this on.",
+      "The whole item is the hit target, not just the label, so the target is the full 52px row height."
+    ]
+  },
+
+  "composition": {
+    "children": {
+      "accepts": ["text"],
+      "required": true,
+      "description": "The label. Text only in every designed example; nothing enforces that."
+    }
+  },
+
+  "anatomy": {
+    "root": {
+      "part": "root",
+      "description": "The button. Owns the focus ring, the pressed weight and the disabled colour, and stretches to share the row equally with its siblings.",
+      "paints": {
+        "padding": "--ds-space-",
+        "color": "--ds-text-",
+        "font-family": "--ds-font-",
+        "font-size": "--ds-font-",
+        "font-weight": "--ds-font-",
+        "line-height": "literal",
+        "border-radius": "--ds-radius-",
+        "outline": ["--ds-border-", "--ds-focus-"]
+      },
+      "states": {
+        "disabled": { "color": "--ds-text-" },
+        "active": { "font-weight": "--ds-font-" },
+        "focus-visible": { "outline": ["--ds-border-", "--ds-focus-"] }
+      },
+      "parts": {
+        "label": {
+          "part": "label",
+          "description": "The text, and the box the hover wash is drawn behind. Truncates with an ellipsis rather than widening the row.",
+          "paints": {
+            "padding": "--ds-space-",
+            "border-radius": "--ds-radius-"
+          },
+          "states": {
+            "hover": {
+              "background": "--ds-interactive-",
+              "opacity": "--ds-opacity-"
+            }
+          }
+        },
+        "indicator": {
+          "part": "indicator",
+          "description": "The bar along the bottom edge that marks the selected tab. Present only while selected — it is out of flow, so its arrival and departure move nothing. Pulled down over the list's track so the two share an edge rather than stacking.",
+          "paints": {
+            "block-size": "--ds-border-",
+            "background": "--ds-brand-",
+            "inset-block-end": "--ds-border-"
+          }
+        }
+      }
+    }
+  }
+}

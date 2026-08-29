@@ -1,0 +1,16 @@
+/*
+ * TabPanel — see TabPanel.contract.json.
+ */
+
+.root {
+  padding-block-start: var(--ds-space-5);
+}
+
+/*
+ * `hidden` is an attribute the browser already honours, but any `display` on this element would
+ * override it. Restating it here means the panel cannot be accidentally un-hidden by the rule
+ * above ever gaining a `display`.
+ */
+.root[hidden] {
+  display: none;
+}

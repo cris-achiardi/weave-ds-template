@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react';
 import dts from 'vite-plugin-dts';
 
 export default defineConfig({
-  plugins: [react(), dts({ include: ['src'], rollupTypes: false })],
+  plugins: [react(), dts({ include: ['src'], exclude: ['**/*.stories.tsx'], rollupTypes: false })],
   css: {
     modules: {
       // Readable in devtools, stable enough to debug, still scoped.

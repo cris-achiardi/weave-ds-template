@@ -76,14 +76,23 @@ function customPropsIn(value) {
 
 const camel = (s) => s.replace(/-([a-z0-9])/g, (_, c) => c.toUpperCase());
 
-function satisfies(policy, value) {
+/**
+ * A component property is a custom property OUTSIDE the token namespace — `--button-width`,
+ * `--icon-size`. The test is therefore against the configured token prefix and nothing else.
+ *
+ * It used to be `!/^--[a-z]+-/`, i.e. "has no dashed prefix at all". That rejected
+ * `--button-width` — the very example `src/components/README.md` §4 gives for a component
+ * property — and admitted only single-word names like `--width`. The first component to declare
+ * one surfaced it as two findings against a correct stylesheet.
+ */
+function satisfies(policy, value, tokenPrefix) {
   const atoms = Array.isArray(policy) ? policy : [policy];
   const props = customPropsIn(value);
+  const isToken = (p) => p.startsWith(`--${tokenPrefix}-`);
 
   for (const atom of atoms) {
     if (atom === 'literal' && props.length === 0) return true;
-    if (atom === 'component-property' && props.some((p) => !p.startsWith('--'))) return true;
-    if (atom === 'component-property' && props.length && props.every((p) => !/^--[a-z]+-/.test(p)))
+    if (atom === 'component-property' && props.length && props.every((p) => !isToken(p)))
       return true;
     if (atom.startsWith('--') && props.some((p) => p.startsWith(atom))) return true;
   }
@@ -130,7 +139,7 @@ function main() {
             component: name,
             detail: `${path}: contract declares a policy for \`${prop}\` but .${camel(node.part)} never sets it.`,
           });
-        } else if (!satisfies(policy, value)) {
+        } else if (!satisfies(policy, value, cfg.tokenPrefix)) {
           const want = Array.isArray(policy) ? policy.join(' | ') : policy;
           findings.push({
             component: name,

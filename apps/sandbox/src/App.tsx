@@ -1,20 +1,12 @@
 /**
  * The sandbox page.
  *
- * There is nothing to render yet, because the library ships with no components. When you build
- * one, import it and drop it in — that is the whole workflow.
- *
- *   import { Button } from '@ds/react';
- *   ...
- *   <Specimen name="Button">
- *     <Button hierarchy="primary">Start recording</Button>
- *     <Button hierarchy="secondary">Cancel</Button>
- *   </Specimen>
- *
  * The alias in vite.config.ts points @ds/react at SOURCE, so edits hot-reload with no build.
  */
 
 import type { ReactNode } from 'react';
+
+import { Icon, glyphNames } from '@ds/react';
 
 function Specimen({ name, children }: { name: string; children: ReactNode }) {
   return (
@@ -26,8 +18,6 @@ function Specimen({ name, children }: { name: string; children: ReactNode }) {
 }
 
 export function App() {
-  const specimens: ReactNode[] = [];
-
   return (
     <main className="sandbox">
       <header>
@@ -38,22 +28,51 @@ export function App() {
         </p>
       </header>
 
-      {specimens.length > 0 ? (
-        specimens
-      ) : (
-        <div className="empty">
-          <h2>No components yet</h2>
-          <p>
-            That is this template&rsquo;s intended starting state, not a gap. Components are built
-            against an accepted decision — see <code>docs/ADR/README.md</code>, then use the{' '}
-            <code>ds-component</code> skill.
-          </p>
-          <p>
-            Once one exists, import it in <code>src/App.tsx</code> and wrap it in a{' '}
-            <code>&lt;Specimen&gt;</code>.
-          </p>
+      <Specimen name={`Icon — the whole set (${glyphNames.length})`}>
+        <div className="icon-grid">
+          {glyphNames.map((name) => (
+            <figure key={name} className="icon-cell">
+              <Icon name={name} size="l" />
+              <figcaption>{name}</figcaption>
+            </figure>
+          ))}
         </div>
-      )}
+      </Specimen>
+
+      <Specimen name="Icon — the size axis">
+        {(['xs', 's', 'm', 'l', 'xl'] as const).map((size) => (
+          <figure key={size} className="icon-cell">
+            <Icon name="videocam" size={size} />
+            <figcaption>{size}</figcaption>
+          </figure>
+        ))}
+      </Specimen>
+
+      <Specimen name="Icon — colour comes from the context, never the glyph">
+        {[
+          ['inherited', undefined],
+          ['brand', 'var(--ds-brand-primary)'],
+          ['off', 'var(--ds-control-off)'],
+          ['waveform', 'var(--ds-control-waveform)'],
+          ['secondary', 'var(--ds-text-secondary)'],
+        ].map(([label, color]) => (
+          <figure key={label} className="icon-cell" style={{ color }}>
+            <Icon name="mic-off" size="l" />
+            <figcaption>{label}</figcaption>
+          </figure>
+        ))}
+      </Specimen>
+
+      <Specimen name="Icon — optical size is a property of the artwork, not the size prop">
+        {(['close', 'close-small', 'crop', 'check-small', 'mobile'] as const).map((name) => (
+          <figure key={name} className="icon-cell">
+            <span className="icon-box">
+              <Icon name={name} size="l" />
+            </span>
+            <figcaption>{name}</figcaption>
+          </figure>
+        ))}
+      </Specimen>
     </main>
   );
 }

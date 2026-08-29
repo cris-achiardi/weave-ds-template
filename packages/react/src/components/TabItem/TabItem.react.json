@@ -1,0 +1,15 @@
+{
+  "$schema": "../../../../../contracts/react-binding.schema.json",
+  "component": "TabItem",
+  "contract": "./TabItem.contract.json",
+  "framework": "react",
+  "element": "button",
+  "refTarget": "root",
+  "classNamePassthrough": "root",
+  "notes": [
+    "`type=\"button\"` is set and cannot be overridden. A tab inside a form that defaulted to `submit` would submit the form on selection.",
+    "Props spread onto the button BEFORE role, id, aria-selected, aria-controls, tabIndex, disabled and onClick, so none of those can be replaced from outside. They are what makes the element a tab.",
+    "The selected state reaches CSS as `aria-selected`, not as a `data-ds-state`. The attribute is already there for assistive technology, and a second copy could disagree with it.",
+    "The `disabled` prop maps to the native attribute rather than `aria-disabled`, so `:disabled` styles it and the browser enforces it. The consequence for discoverability is recorded in the contract's a11y notes."
+  ]
+}

@@ -3,20 +3,34 @@
 **Authoring format: [DTCG](https://tr.designtokens.org/format/)** — every token is `$value` +
 `$type`, and a token that references another uses `{dot.path}`.
 
-This directory is **empty on purpose.** The token set is measured from the design source by hand,
-reviewed, then committed here — see [`../../../.figma/README.md`](../../../.figma/README.md) for
-how to read the file and what it can and cannot tell you. An invented token set is worse than none:
-it looks authoritative and nobody re-checks it.
+The token set is measured from the design source by hand, reviewed, then committed here — see
+[`../../../.figma/README.md`](../../../.figma/README.md) for how to read the file and what it can
+and cannot tell you. An invented token set is worse than none: it looks authoritative and nobody
+re-checks it.
+
+**These files are the source of truth for token values.** Figma is read by a person; no build
+reads it. That decision, and what it costs, is
+[ADR 0002](../../../docs/ADR/0002-token-source-of-truth-is-dtcg-json-transcribed-per-figma-collection.md).
 
 ## 1. File naming
 
-One file per group: `<group>.json`. Split by _what the token is_, never by _where it is used_.
+**One Figma collection, one file.** The collection is the only boundary both surfaces already
+agree on — Figma enforces that a variable belongs to exactly one collection, and DTCG has no
+equivalent — so any other split needs a hand-maintained mapping that nothing checks. The map lives
+in `.figma/manifest.json → variableCollections` and nowhere else.
 
 ```
-color.palette.json     primitives — raw ramps, no meaning
-color.semantic.json    roles — aliases into the palette
-space.json  radius.json  typography.json  border.json  shadow.json  motion.json
+color.palette.json          Color Primitives    ramps and bases, no meaning
+color.semantic.json         Color Tokens        roles — aliases into the palette
+typography.palette.json     Type Primitives     the size, weight and family scales
+typography.semantic.json    Type Tokens         named styles — aliases into the scales
+spacing.json                Spacing Tokens      space, radius and border
+opacity.json                Opacity Primitives  the transparency scale
 ```
+
+`spacing.json` carries three groups rather than one because Figma models them as a single
+collection. That is the cost of deferring the file split to the design source, and it is recorded
+as a trade-off in ADR 0002 rather than worked around here.
 
 ## 2. Tiers — and the rule that makes them worth having
 
@@ -51,9 +65,12 @@ weave-ds-space-3           ->  --ds-space-3           ->  space.3
 
 - **kebab-case** for every segment. `interactive-selected-bg`, never `interactiveSelectedBg` and
   never the run-on `interactiveselectedbg`.
-- **One scale vocabulary per dimension.** If radius is a t-shirt scale (`s`/`m`/`l`), spacing does
-  not get to be a numeric index. Two naming systems in one file is a defect the exploration report
-  should raise, not a thing to reproduce.
+- **Numeric by amount, t-shirt by intent.** A scale you pick a point on because you want _more or
+  less_ of something is a numeric index: `space.3`, `opacity.600`, `color.purple.500`. A small
+  closed set you pick from because you mean a particular thing is a t-shirt scale: `radius.m`,
+  `border.thin`. That is one rule with two shapes, not two conventions — and the test for a new
+  scale is which of those two sentences describes it. Mixing the shapes _within_ one scale is
+  still a defect.
 - **A numeric step is an index, not a value.** If `space.3` is `8px`, say so in `$description` —
   otherwise every reader guesses, and half of them guess `3px`.
 - **No component-specific tokens in the global namespace.** A token used by exactly one component

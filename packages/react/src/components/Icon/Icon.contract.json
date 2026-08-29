@@ -1,0 +1,72 @@
+{
+  "$schema": "../../../../../contracts/component.schema.json",
+  "component": "Icon",
+
+  "status": {
+    "level": "stable",
+    "since": "2026-08-29",
+    "note": "The API is settled. The SET is not: two names were removed under ADR 0004, and the Figma variants still carry snake_case names that ADR 0005 renames."
+  },
+
+  "intent": {
+    "purpose": "Draws one glyph from the system's icon set at a size from the shared ladder. It is the only sanctioned way to render an icon, so that every glyph in the product comes from one reviewed set and inherits colour the same way.",
+    "behaviour": [
+      "Renders the single path registered under `name`. The set is fixed at build time; there is no loading, no fetch and no runtime registration.",
+      "Paints with `currentColor`, so it takes the colour in effect where it is placed. It never selects a colour itself — see ADR 0004.",
+      "Is decorative by default and hidden from assistive technology. Passing `label` makes it an image with that accessible name.",
+      "Takes no part in the focus order, and holds no interactive behaviour of its own. A clickable icon is an icon inside a button.",
+      "Accepts no children. The glyph is the whole content.",
+      "Renders nothing at all if `name` is not in the set. There is no fallback glyph."
+    ],
+    "notFor": [
+      "Illustrations, spot art or logos. Those are not part of a set that has to stay visually uniform at 16px, and they usually carry their own colour, which this component forbids.",
+      "Anything interactive. Wrap it in a button or a link, which own the role, the focus behaviour and the hit area.",
+      "Product or brand marks that must keep a fixed colour, since every glyph here is repainted by its context.",
+      "Arbitrary user-supplied SVG. The set is closed on purpose; adding a glyph is a change to the artwork directory, not a prop."
+    ]
+  },
+
+  "axes": {
+    "size": {
+      "values": ["xs", "s", "m", "l", "xl"],
+      "default": "m",
+      "description": "The rendered box, 12 / 16 / 24 / 32 from the spacing ladder with 20 borrowed from the type scale for `m`. Note that this sizes the CANVAS, not the ink: optical fill across the set ranges from 42% to 92%, so two glyphs at one size can still differ in visual weight. Measured in docs/research/0001-icon-set-audit.md."
+    }
+  },
+
+  "semantics": {
+    "focusable": false
+  },
+
+  "a11y": {
+    "focusVisible": false,
+    "contrast": "not-applicable",
+    "notes": [
+      "There is no role when the icon is decorative — the default — because it is removed from the accessibility tree entirely. It becomes an image only when `label` is passed. That is why no single `semantics.role` is declared here.",
+      "The component CANNOT tell whether it is decorative. It assumes so unless `label` is given, which means an icon that is the only carrier of meaning is silently unlabelled if the caller forgets. Nothing in this repo catches that; it is the failure to look for in review of an icon-only button.",
+      "`label` is the supported labelling channel. A raw `aria-label` passed through will land on the element, but `aria-hidden` is still applied alongside it and wins, so the icon stays hidden. Use `label`.",
+      "Contrast is not applicable to the component: it paints with `currentColor`, so the contrast of any icon is a property of the colour chosen where it was placed. Meeting a contrast ratio is the caller's obligation and cannot be discharged here.",
+      "The rendered box is as small as 12px at `size=\"xs\"`, well under any minimum target size. This component makes no hit-area commitment because it is not a target; the interactive ancestor owns that."
+    ]
+  },
+
+  "anatomy": {
+    "root": {
+      "part": "root",
+      "description": "The SVG canvas, always a 24x24 viewBox. Its rendered box is driven by the `--icon-size` component property, which the size axis sets; a consumer may set it directly for a size the ladder does not offer.",
+      "paints": {
+        "inline-size": "component-property",
+        "block-size": "component-property"
+      },
+      "parts": {
+        "glyph": {
+          "part": "glyph",
+          "description": "The single path that is the drawing. `fill` is `literal` and always `currentColor`: under ADR 0004 a glyph carries no colour of its own, so naming a token family here would be wrong rather than merely unnecessary.",
+          "paints": {
+            "fill": "literal"
+          }
+        }
+      }
+    }
+  }
+}

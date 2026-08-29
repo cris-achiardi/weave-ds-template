@@ -4,33 +4,50 @@ What is actually in the design source, measured rather than assumed.
 
 **Source:** `.figma/manifest.json` → `sources.weave`. Read the key from there; never hard-code it.
 
-Everything below was measured live on **2026-08-28** through the Desktop Bridge. Collection and
-style **names** are the stable join; node ids are not. Re-derive before relying on any of it — this
-file is a snapshot, and the source is a working design file, not a frozen library.
+Measured live through the Desktop Bridge — variables, styles, pages and sets re-measured
+**2026-08-29**; the type and effect-style sections still carry their **2026-08-28** reading and were
+unchanged at the later scan. Collection and style **names** are the stable join; node ids are not.
+Re-derive before relying on any of it — this file is a snapshot, and the source is a working design
+file, not a frozen library. It went stale inside 24 hours once already.
 
 > The file is **not published as a library** (`sources.weave.published: false`), so nothing here has
 > a durable `componentKey`. Every id is file-local and refreshable.
 
-## Variable collections — 5, and every one has a single mode
+## Variable collections — 6, and every one has a single mode
 
-| Collection         | Modes     | Variables | Types         | Tier      |
-| ------------------ | --------- | --------- | ------------- | --------- |
-| `Color Primitives` | `Mode 1`  | 15        | COLOR         | primitive |
-| `Color Tokens`     | `Mode 1`  | 15        | COLOR         | **token** |
-| `Type Primitives`  | `Default` | 10        | FLOAT, STRING | primitive |
-| `Type Tokens`      | `Mode 1`  | 24        | STRING, FLOAT | **token** |
-| `Spacing Tokens`   | `Mode 1`  | 23        | FLOAT         | **token** |
+Re-measured **2026-08-29**. The previous reading, five collections and 87 variables, is what this
+file said one day earlier — the delta is the whole reason to re-measure rather than trust the table.
 
-87 variables in total.
+| Collection           | Modes     | Variables | Types         | Tier      | DTCG file                  |
+| -------------------- | --------- | --------- | ------------- | --------- | -------------------------- |
+| `Color Primitives`   | `Mode 1`  | 71        | COLOR         | primitive | `color.palette.json`       |
+| `Color Tokens`       | `Mode 1`  | 17        | COLOR         | **token** | `color.semantic.json`      |
+| `Type Primitives`    | `Default` | 10        | FLOAT, STRING | primitive | `typography.palette.json`  |
+| `Type Tokens`        | `Mode 1`  | 24        | STRING, FLOAT | **token** | `typography.semantic.json` |
+| `Spacing Tokens`     | `Mode 1`  | 23        | FLOAT         | **token** | `spacing.json`             |
+| `Opacity Primitives` | `Mode 1`  | 11        | FLOAT         | primitive | `opacity.json`             |
 
-**Bind to the token tier. Never to the primitive tier.** A primitive is a raw value with no role;
-binding one produces a component that silently opts out of every axis the token layer will carry.
-Scope every lookup by collection id — names repeat across the two tiers.
+156 variables in total.
 
-**The tier split above is observed, not decided.** `.figma/manifest.json` →
-`identity.variableCollections` is the place where collection → DTCG source file becomes canonical,
-and it is **empty**. Until it is filled, a variable's collection tells you which tier it is in and
-nothing about which token file it should become.
+**Bind to the token tier. Never to the primitive tier** — with one deliberate exception,
+`Opacity Primitives`, because there is no semantic opacity layer and the architecture composes a
+solid colour with an opacity step at the point of use. Scope every lookup by collection id; names
+repeat across tiers.
+
+**The collection → DTCG file mapping is now canonical**, in `.figma/manifest.json` →
+`identity.variableCollections.map`, and every variable is recorded against its code path in
+`.figma/maps/tokens.json`. Neither is gated against the file (ADR 0002), so a count that disagrees
+with this table means the file moved — trust the file.
+
+## Component sets that already exist
+
+| Set    | Page      | Variants | Notes                                                                                          |
+| ------ | --------- | -------- | ---------------------------------------------------------------------------------------------- |
+| `icon` | `├ Icons` | 52       | The system icon set, one property named `icon`. Instance it; never build per-glyph components. |
+
+Everything else on `Starter UI kit` is **mock furniture** — `button`, `settings-tabs`, `options` and
+some forty more. They predate the library, none is generated from a contract, and none should be
+instanced or extended by this skill. Build alongside them, not on top of them.
 
 ### Single mode is the fact that shapes everything
 
@@ -95,20 +112,24 @@ This matters more than it looks:
 
 ## Pages
 
-20 pages. The structure is a taxonomy that has been laid out but not filled.
+27 pages. The taxonomy under `Components` is being filled, one component at a time.
 
 ```
-Starter UI kit          ← everything actually lives here
+Starter UI kit           ← the mocks; everything predating the library lives here
+Component API Examples   ← the tab/tabItem anatomy section and the prop-table frames
+Token System Examples
+Cheat Sheet
+Pipeline
 -----------
 Design Language
-├ Primitives
-├ Color                 ← the ramp/opacity exploration boards
+├ Primitives             ← spacing / radius / border / size / elevation board
+├ Color                  ← the ramp and opacity boards
 ├ Typography
-├ Icons
+├ Icons                  ← the `icon` component set, 52 variants
 ---
 Components
 > Primitives
-   ├ Component
+   ├ Component           ← naming TEMPLATE, deliberately empty
          └ Component Item
 > Forms & Input
 > Images
@@ -116,12 +137,19 @@ Components
 > Layout & Structure
 > Loading
 > Navigation
+   ├ Tabs                ← spec frame
+         └ TabItem       ← spec frame
+         └ TabPanel      ← spec frame
 > Status Indicators
 > Overlays & Layering
 ```
 
-**Every `>` and `├` page under `Components` is empty.** They are the intended destination, not a
-record of work done. Putting a generated set on the right one is part of the job.
+**The naming convention is load-bearing.** A component page is `   ├ Name` (three leading spaces);
+a sub-component is `         └ Name` (nine). `   ├ Component` and `         └ Component Item` are the
+template showing the pattern — leave them alone.
+
+A category page (`>`) is a heading, not a destination. Put a generated set on the component's own
+`├` page, creating it under the right category if it does not exist.
 
 ## Components — 44 sets and 35 loose components, all on one page
 

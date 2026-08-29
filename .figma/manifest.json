@@ -107,8 +107,9 @@
         "surface/primary  -> --ds-surface-primary  -> surface.primary"
       ],
       "knownProblems": [
-        "PREFIX CONFLICT, UNDECIDED. `codeSyntax.WEB` carries a `weave-ds-` prefix while /ds.config.json declares tokenPrefix `ds`, i.e. `--ds-*`. Running `pnpm init-ds weave` would make it `--weave-*`, which still does not equal `weave-ds-*`. Three candidate prefixes, no decision. Settle which is canonical before generating tokens, and settle it in ds.config.json — never by hand-editing one side.",
-        "`space/0..9` is a numeric index while `radius/m` is a t-shirt scale — two naming systems in one file. Decide which one wins before generating; do not reproduce both.",
+        "PREFIX: DECIDED 2026-08-29 — `ds` stays. /ds.config.json remains `tokenPrefix: ds`, so tokens are `--ds-*` and packages are `@ds/*`; `pnpm init-ds` has deliberately NOT been run. Consequence: `codeSyntax.WEB` in Figma still emits `weave-ds-*`, which matches nothing in code. codeSyntax is an author-set display string that no build reads, so this is cosmetic in Dev Mode only — but it will mislead anyone copying from the Figma inspector. Fix it in Figma, never by hand-editing ds.config.json.",
+        "SCALE VOCABULARY: DECIDED 2026-08-29 — numeric by amount, t-shirt by intent. `space/0..9`, `opacity/50..1000` and the colour steps are indexes; `radius/none..full` and `border/none..thick` are intents. One rule, two shapes. Recorded in packages/tokens/tokens/README.md §4 and ADR 0002; no Figma renames were needed.",
+        "ICON SET NAMING: OUTSTANDING 2026-08-29 — ADR 0005 makes glyph names kebab-case in code (`graphic-eq`, `crop-16-9`), because .ai/maps/prop-map.md §2 requires kebab-case values. The 52 variants of the `icon` component set (2122:3051) are still snake_case, so the exact-match rule in variantConventions is BROKEN for every one of them until they are renamed in Figma. Two of the 52 are also slated for deletion under ADR 0004 — `graphic_eq_active` and `close_small_danger` are pure recolours. Nothing gates this; see maps/components.json -> icons.Icon.",
         "`interactive/selectedBg` is camelCase; every other token path is lowercase.",
         "`control/waveform` and `control/off` are component-specific but sit in the global namespace.",
         "Primitive variables have `scopes: []` while token variables carry `ALL_SCOPES`. Unscoped primitives are still offered everywhere in the picker, so nothing stops a designer binding straight to `color/purple/500`."
@@ -143,7 +144,22 @@
     },
 
     "variableCollections": {
-      "_doc": "Figma collection -> canonical DTCG source file under packages/tokens/tokens/. EMPTY: filled by hand from a live read, once the token set is decided. A Figma variable whose collection has no entry here resolves to `code: null` in maps/tokens.json and is reported as drift — that is the signal, not a silent gap."
+      "_doc": "Figma collection -> canonical DTCG source file under packages/tokens/tokens/. Filled by hand from a live read on 2026-08-29; 154 variables transcribed and diffed name-by-name against the source, zero drift at that moment. One collection, one file — see ADR 0002. A Figma variable whose collection has no entry here resolves to `code: null` in maps/tokens.json and is reported as drift; that is the signal, not a silent gap.",
+      "_driftWarning": "NOTHING GATES THIS. No script compares the JSON against Figma, so a variable edited, added or deleted in the design source produces no failure anywhere and the two surfaces simply disagree. The name-by-name diff that validated the first transcription was run by hand, once. Re-run it by hand whenever the design source moves. This is the known hole in ADR 0002 and it contradicts the repo's own rule that an ungated contract is enforced on whichever machine happens to run it.",
+      "_transcribed": "2026-08-29",
+      "map": {
+        "Color Primitives": { "file": "color.palette.json", "tier": "primitive", "count": 71 },
+        "Color Tokens": { "file": "color.semantic.json", "tier": "semantic", "count": 15 },
+        "Type Primitives": { "file": "typography.palette.json", "tier": "primitive", "count": 10 },
+        "Type Tokens": { "file": "typography.semantic.json", "tier": "semantic", "count": 24 },
+        "Spacing Tokens": {
+          "file": "spacing.json",
+          "tier": "primitive",
+          "count": 23,
+          "note": "Carries three groups — space, radius, border — because Figma models them as one collection. The file split defers to the design source; see ADR 0002 trade-offs."
+        },
+        "Opacity Primitives": { "file": "opacity.json", "tier": "primitive", "count": 11 }
+      }
     },
 
     "variantConventions": {

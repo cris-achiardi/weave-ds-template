@@ -1,0 +1,54 @@
+/*
+ * Icon — see Icon.contract.json for what this component is, and ADR 0004 for why it has no colour
+ * of its own.
+ */
+
+.root {
+  /*
+   * The size axis always applies one of the .size* rules below, so this only covers a caller who
+   * explicitly clears the axis. Same token as .sizeM on purpose — a raw fallback here would be a
+   * second, unmaintained copy of the default step.
+   */
+  --icon-size: var(--ds-font-size-xl);
+
+  display: inline-block;
+  /* Never let a flex parent squash a glyph: an icon that is 18px wide in one row and 20px in the
+     next is a bug nobody reports, they just see a wobbly row. */
+  flex: none;
+  inline-size: var(--icon-size);
+  block-size: var(--icon-size);
+  vertical-align: middle;
+}
+
+.glyph {
+  /*
+   * `literal`, deliberately: the whole point of ADR 0004 is that the glyph does NOT name a colour
+   * token. It inherits whatever `color` is in effect where the icon was placed.
+   */
+  fill: currentColor;
+}
+
+/*
+ * The size ladder. 12 / 16 / 24 / 32 come from the spacing ladder; 20 has no `space` step — the
+ * ladder jumps 16 -> 24 — so `m` borrows the type scale. Recorded as a trade-off in ADR 0005.
+ */
+
+.sizeXs {
+  --icon-size: var(--ds-space-4);
+}
+
+.sizeS {
+  --icon-size: var(--ds-space-5);
+}
+
+.sizeM {
+  --icon-size: var(--ds-font-size-xl);
+}
+
+.sizeL {
+  --icon-size: var(--ds-space-6);
+}
+
+.sizeXl {
+  --icon-size: var(--ds-space-7);
+}

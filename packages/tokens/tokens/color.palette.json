@@ -1,0 +1,306 @@
+{
+  "color": {
+    "base": {
+      "black": {
+        "$type": "color",
+        "$value": "#000000"
+      },
+      "transparent": {
+        "$description": "Fully transparent, built on black so a gradient fades to nothing without a pale fringe on dark grounds.",
+        "$type": "color",
+        "$value": "#00000000"
+      },
+      "white": {
+        "$type": "color",
+        "$value": "#ffffff"
+      }
+    },
+    "dark": {
+      "50": {
+        "$type": "color",
+        "$value": "#505050"
+      },
+      "100": {
+        "$type": "color",
+        "$value": "#4c4c4c"
+      },
+      "200": {
+        "$type": "color",
+        "$value": "#464646"
+      },
+      "300": {
+        "$type": "color",
+        "$value": "#3f3f3f"
+      },
+      "400": {
+        "$type": "color",
+        "$value": "#373737"
+      },
+      "500": {
+        "$type": "color",
+        "$value": "#2e2e2e"
+      },
+      "600": {
+        "$type": "color",
+        "$value": "#262626"
+      },
+      "700": {
+        "$type": "color",
+        "$value": "#1e1e1e"
+      },
+      "800": {
+        "$type": "color",
+        "$value": "#151515"
+      },
+      "900": {
+        "$type": "color",
+        "$value": "#0d0d0d"
+      },
+      "1000": {
+        "$description": "Stops short of pure black on purpose: 8-bit sRGB cannot hold eleven distinct steps down to zero. True black is color/base/black.",
+        "$type": "color",
+        "$value": "#050505"
+      }
+    },
+    "gray": {
+      "50": {
+        "$type": "color",
+        "$value": "#f7f7f7"
+      },
+      "100": {
+        "$type": "color",
+        "$value": "#eaeaea"
+      },
+      "200": {
+        "$type": "color",
+        "$value": "#d1d1d1"
+      },
+      "300": {
+        "$type": "color",
+        "$value": "#b5b5b5"
+      },
+      "400": {
+        "$type": "color",
+        "$value": "#959595"
+      },
+      "500": {
+        "$type": "color",
+        "$value": "#737373"
+      },
+      "600": {
+        "$type": "color",
+        "$value": "#545454"
+      },
+      "700": {
+        "$type": "color",
+        "$value": "#363636"
+      },
+      "800": {
+        "$type": "color",
+        "$value": "#232323"
+      },
+      "900": {
+        "$type": "color",
+        "$value": "#111111"
+      },
+      "1000": {
+        "$type": "color",
+        "$value": "#020202"
+      },
+      "800-90": {
+        "$description": "Baked alpha. Left in place because surface/primary still points at it; splitting it into a solid plus an opacity token is outstanding work.",
+        "$type": "color",
+        "$value": "#1e1e1ee5"
+      }
+    },
+    "green": {
+      "50": {
+        "$type": "color",
+        "$value": "#e7fdee"
+      },
+      "100": {
+        "$type": "color",
+        "$value": "#cff9dc"
+      },
+      "200": {
+        "$type": "color",
+        "$value": "#a0eebb"
+      },
+      "300": {
+        "$type": "color",
+        "$value": "#26e589"
+      },
+      "400": {
+        "$type": "color",
+        "$value": "#07c573"
+      },
+      "500": {
+        "$type": "color",
+        "$value": "#00a15d"
+      },
+      "600": {
+        "$type": "color",
+        "$value": "#008149"
+      },
+      "700": {
+        "$type": "color",
+        "$value": "#006035"
+      },
+      "800": {
+        "$type": "color",
+        "$value": "#003f21"
+      },
+      "900": {
+        "$type": "color",
+        "$value": "#00200e"
+      },
+      "1000": {
+        "$type": "color",
+        "$value": "#000401"
+      }
+    },
+    "light": {
+      "50": {
+        "$type": "color",
+        "$value": "#ffffff"
+      },
+      "100": {
+        "$type": "color",
+        "$value": "#f9f9f9"
+      },
+      "200": {
+        "$type": "color",
+        "$value": "#ececec"
+      },
+      "300": {
+        "$type": "color",
+        "$value": "#dddddd"
+      },
+      "400": {
+        "$type": "color",
+        "$value": "#cccccc"
+      },
+      "500": {
+        "$type": "color",
+        "$value": "#bababa"
+      },
+      "600": {
+        "$type": "color",
+        "$value": "#a9a9a9"
+      },
+      "700": {
+        "$type": "color",
+        "$value": "#979797"
+      },
+      "800": {
+        "$type": "color",
+        "$value": "#848484"
+      },
+      "900": {
+        "$type": "color",
+        "$value": "#727272"
+      },
+      "1000": {
+        "$type": "color",
+        "$value": "#5d5d5d"
+      }
+    },
+    "purple": {
+      "50": {
+        "$type": "color",
+        "$value": "#f5f6ff"
+      },
+      "100": {
+        "$type": "color",
+        "$value": "#e3e7ff"
+      },
+      "200": {
+        "$type": "color",
+        "$value": "#c1c9ff"
+      },
+      "300": {
+        "$type": "color",
+        "$value": "#9ba6ff"
+      },
+      "400": {
+        "$type": "color",
+        "$value": "#7379ff"
+      },
+      "500": {
+        "$type": "color",
+        "$value": "#5146e6"
+      },
+      "600": {
+        "$type": "color",
+        "$value": "#401aca"
+      },
+      "700": {
+        "$type": "color",
+        "$value": "#2e00a4"
+      },
+      "800": {
+        "$type": "color",
+        "$value": "#1d0072"
+      },
+      "900": {
+        "$type": "color",
+        "$value": "#0d0042"
+      },
+      "1000": {
+        "$type": "color",
+        "$value": "#020014"
+      },
+      "500-40": {
+        "$description": "Baked alpha. Left in place because interactive/selectedBg still points at it; splitting it into a solid plus opacity/400 is outstanding work.",
+        "$type": "color",
+        "$value": "#5146e666"
+      }
+    },
+    "red": {
+      "50": {
+        "$type": "color",
+        "$value": "#fff4f2"
+      },
+      "100": {
+        "$type": "color",
+        "$value": "#ffe5e0"
+      },
+      "200": {
+        "$type": "color",
+        "$value": "#ffc5bc"
+      },
+      "300": {
+        "$type": "color",
+        "$value": "#ff9e90"
+      },
+      "400": {
+        "$type": "color",
+        "$value": "#ff6858"
+      },
+      "500": {
+        "$type": "color",
+        "$value": "#ef1313"
+      },
+      "600": {
+        "$type": "color",
+        "$value": "#c20006"
+      },
+      "700": {
+        "$type": "color",
+        "$value": "#930003"
+      },
+      "800": {
+        "$type": "color",
+        "$value": "#630001"
+      },
+      "900": {
+        "$type": "color",
+        "$value": "#360000"
+      },
+      "1000": {
+        "$type": "color",
+        "$value": "#0b0000"
+      }
+    }
+  }
+}

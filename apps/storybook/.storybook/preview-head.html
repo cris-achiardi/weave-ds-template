@@ -1,0 +1,19 @@
+<!--
+  The webfont, loaded by the HARNESS.
+
+  The library deliberately does not load it: `@ds/react/styles.css` must import cleanly into an
+  Electron renderer under a CSP with no remote origins, and a stylesheet that reaches out to
+  fonts.googleapis.com does not. So the type tokens name the family and the consuming app is
+  responsible for making it available — see packages/react/README.md.
+
+  Storybook and the sandbox are consuming apps, so they each load it themselves.
+
+  Weights are the three the type scale actually uses: 300 light, 400 regular, 500 medium.
+  Offline this simply fails and the tokens' `sans-serif` fallback takes over.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Lexend+Deca:wght@300;400;500&display=swap"
+/>

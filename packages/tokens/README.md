@@ -2,9 +2,14 @@
 
 DTCG JSON in, CSS custom properties and TypeScript constants out.
 
-**This package ships with no tokens.** That is the intended starting state — the token set is
-measured from the design source by hand, reviewed, and committed as JSON. Until then the build
-emits an empty `:root {}` and says so.
+**154 tokens across 6 files**, transcribed from the design source on 2026-08-29 — one file per
+Figma collection. The source of truth is the JSON under [`tokens/`](./tokens/), not Figma: no
+build reads the design file, so a fresh clone builds every token with no plugin and no API key.
+The decision and what it costs — chiefly that **nothing detects drift from Figma** — is
+[ADR 0002](../../docs/ADR/0002-token-source-of-truth-is-dtcg-json-transcribed-per-figma-collection.md).
+
+The build still runs green on an empty token directory, emitting an empty `:root {}` and saying
+so. That remains a valid state, not an error.
 
 ## Where things are documented
 
@@ -38,9 +43,23 @@ next build silently discards the edit.
 
 ## Consuming it
 
+If you use the components, you need **one** import — `@ds/react/styles.css` already carries the
+token layer ahead of the component rules, because `@ds/react`'s barrel imports this package. That
+is [ADR 0003](../../docs/ADR/0003-library-stylesheet-carries-the-token-layer.md), and the reason is
+that an undeclared custom property makes a CSS declaration invalid at computed-value time: the rule
+is dropped with no console error, no build error, and no failing test.
+
 ```ts
-import '@ds/tokens/css'; // once, at the app root — @ds/react's barrel already does this
+import '@ds/react/styles.css'; // tokens + components, in that order
 ```
 
-The prefix comes from `/ds.config.json`, so after `pnpm init-ds weave` the properties are
-`--weave-*` and this package is `@weave/tokens`.
+Import this package directly only when you want the token layer **without** the components — an
+app styling its own surfaces against the same system:
+
+```ts
+import '@ds/tokens/css'; // once, at the app root
+```
+
+The prefix comes from `/ds.config.json`, so after `pnpm init-ds weave` the properties would be
+`--weave-*` and this package `@weave/tokens`. That codemod has **not** been run: this repo is
+deliberately still on the generic `ds` prefix.

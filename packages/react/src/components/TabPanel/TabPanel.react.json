@@ -1,0 +1,14 @@
+{
+  "$schema": "../../../../../contracts/react-binding.schema.json",
+  "component": "TabPanel",
+  "contract": "./TabPanel.contract.json",
+  "framework": "react",
+  "element": "div",
+  "refTarget": "root",
+  "classNamePassthrough": "root",
+  "notes": [
+    "Hiding uses the `hidden` attribute rather than conditional rendering, which is what keeps the panel mounted. The stylesheet restates `[hidden] { display: none }` because any `display` rule on the root would otherwise beat the attribute.",
+    "Props spread before role, id, aria-labelledby, tabIndex and hidden, so a caller cannot un-hide an unselected panel or repoint its label.",
+    "There is no exit for lazy content: React renders children whether or not the panel is hidden. A consumer who needs deferral has to guard inside their own children."
+  ]
+}

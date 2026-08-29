@@ -3,8 +3,26 @@
 **The authoring contract.** Everything the tooling assumes about a component is written down here.
 If you are about to write a component, this is the file to have read.
 
-This directory is **empty on purpose.** Components are built against an accepted decision, not
-scaffolded in advance — see `docs/ADR/README.md`, then use the `ds-component` skill.
+Components are built against an accepted decision, not scaffolded in advance — see
+`docs/ADR/README.md`, then use the `ds-component` skill. **This directory ships empty**; what is
+here was built that way.
+
+| Component                  | What it is                                  | Built against                                                                                                                                                                                                   |
+| -------------------------- | ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`Icon/`](./Icon/)         | One glyph from the system's icon set.       | [ADR 0004](../../../../docs/ADR/0004-icon-artwork-is-monochrome-and-colour-is-chosen-at-placement.md), [ADR 0005](../../../../docs/ADR/0005-icon-set-ships-as-one-component-over-a-generated-glyph-registry.md) |
+| [`Tabs/`](./Tabs/)         | Holds the selection and the keyboard model. | [ADR 0006](../../../../docs/ADR/0006-tabs-is-a-compound-of-three-parts-with-selection-held-at-the-root.md)                                                                                                      |
+| [`TabItem/`](./TabItem/)   | One tab in that list.                       | [ADR 0006](../../../../docs/ADR/0006-tabs-is-a-compound-of-three-parts-with-selection-held-at-the-root.md)                                                                                                      |
+| [`TabPanel/`](./TabPanel/) | The content one tab reveals.                | [ADR 0006](../../../../docs/ADR/0006-tabs-is-a-compound-of-three-parts-with-selection-held-at-the-root.md)                                                                                                      |
+
+`Tabs/`, `TabItem/` and `TabPanel/` are **one API in three directories**, because the contract
+system holds one component per contract. `Tabs/` carries a sixth file, `TabsContext.ts`, which is
+the shared selection the other two read — an item that could be told it was selected is exactly
+what ADR 0006 exists to prevent.
+
+`Icon/` carries two files beyond the five below, because its artwork is part of the library rather
+than something a stylesheet can express: `glyphs/` holds the 50 committed SVGs — the source — and
+`glyphs.ts` is generated from them by `pnpm glyphs`. Never edit the generated file; `pnpm
+glyphs:check` asserts it byte-matches the artwork.
 
 ## 1. The five files
 

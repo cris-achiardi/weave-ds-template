@@ -1,0 +1,117 @@
+{
+  "border": {
+    "medium": {
+      "$description": "Unused in the mocks.",
+      "$type": "dimension",
+      "$value": "3px"
+    },
+    "none": {
+      "$type": "dimension",
+      "$value": "0px"
+    },
+    "regular": {
+      "$description": "Unused in the mocks.",
+      "$type": "dimension",
+      "$value": "2px"
+    },
+    "thick": {
+      "$description": "Unused in the mocks.",
+      "$type": "dimension",
+      "$value": "4px"
+    },
+    "thin": {
+      "$description": "The only stroke weight the mocks use.",
+      "$type": "dimension",
+      "$value": "1px"
+    }
+  },
+  "radius": {
+    "2xl": {
+      "$description": "Unused in the mocks.",
+      "$type": "dimension",
+      "$value": "24px"
+    },
+    "full": {
+      "$description": "Pill. A large length rather than 50 per cent, so it does not distort on a non-square box.",
+      "$type": "dimension",
+      "$value": "99999px"
+    },
+    "l": {
+      "$type": "dimension",
+      "$value": "16px"
+    },
+    "m": {
+      "$type": "dimension",
+      "$value": "12px"
+    },
+    "none": {
+      "$type": "dimension",
+      "$value": "0px"
+    },
+    "s": {
+      "$type": "dimension",
+      "$value": "8px"
+    },
+    "xl": {
+      "$type": "dimension",
+      "$value": "20px"
+    },
+    "xs": {
+      "$description": "Unused in the mocks.",
+      "$type": "dimension",
+      "$value": "4px"
+    }
+  },
+  "space": {
+    "0": {
+      "$description": "Index, not a value: 0px.",
+      "$type": "dimension",
+      "$value": "0px"
+    },
+    "1": {
+      "$description": "Index, not a value: 2px.",
+      "$type": "dimension",
+      "$value": "2px"
+    },
+    "2": {
+      "$description": "Index, not a value: 4px.",
+      "$type": "dimension",
+      "$value": "4px"
+    },
+    "3": {
+      "$description": "Index, not a value: 8px.",
+      "$type": "dimension",
+      "$value": "8px"
+    },
+    "4": {
+      "$description": "Index, not a value: 12px.",
+      "$type": "dimension",
+      "$value": "12px"
+    },
+    "5": {
+      "$description": "Index, not a value: 16px.",
+      "$type": "dimension",
+      "$value": "16px"
+    },
+    "6": {
+      "$description": "Index, not a value: 24px.",
+      "$type": "dimension",
+      "$value": "24px"
+    },
+    "7": {
+      "$description": "Index, not a value: 32px.",
+      "$type": "dimension",
+      "$value": "32px"
+    },
+    "8": {
+      "$description": "Index, not a value: 48px. Unused in the mocks.",
+      "$type": "dimension",
+      "$value": "48px"
+    },
+    "9": {
+      "$description": "Index, not a value: 56px. Unused in the mocks.",
+      "$type": "dimension",
+      "$value": "56px"
+    }
+  }
+}

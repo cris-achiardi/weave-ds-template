@@ -4,5 +4,12 @@
     "noEmit": true,
     "types": ["vite/client"]
   },
-  "include": ["src"]
+  "include": ["src"],
+
+  // Stories are excluded because Storybook is deliberately OUT of the install graph
+  // (see /pnpm-workspace.yaml and apps/storybook/README.md). A story imports
+  // `@storybook/react-vite`, which does not resolve on a clone that has not switched
+  // Storybook on — and `pnpm verify` being green on a fresh clone is this template's
+  // acceptance test. Editors still type them fully once Storybook is installed.
+  "exclude": ["**/*.stories.tsx"]
 }

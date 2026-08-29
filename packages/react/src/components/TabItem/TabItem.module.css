@@ -1,0 +1,99 @@
+/*
+ * TabItem — see TabItem.contract.json. Every interaction state here is a pseudo-class, never a
+ * prop: the browser already tracks hover, focus and press, and a second copy in React would drift
+ * from it. See packages/react/src/components/README.md §3.
+ */
+
+.root {
+  position: relative;
+  /* Equal-width items. The mock is three fixed 140px tabs exactly filling a 452px container, which
+     reads as "share the row" rather than "be 140px". `min-inline-size: 0` lets a long label
+     ellipsis instead of forcing the row wider. */
+  flex: 1 1 0;
+  min-inline-size: 0;
+
+  display: flex;
+  justify-content: center;
+  padding: var(--ds-space-3);
+
+  border: 0;
+  background: none;
+  cursor: pointer;
+
+  color: var(--ds-text-primary);
+  font-family: var(--ds-font-font-family-primary);
+  font-size: var(--ds-font-size-base);
+  font-weight: var(--ds-font-weight-regular);
+  /*
+   * `literal`, and declared as one in the contract. The type scale carries family, size and weight
+   * but no line height — seven of the eight text styles in the design source are set to AUTO, so
+   * there is no token to reach for. 1.25 reproduces the measured 20px box on a 16px label.
+   */
+  line-height: 1.25;
+}
+
+/* The press weight. Deliberate, and it does cost a momentary reflow — recorded in ADR 0006. */
+.root:active:not(:disabled) {
+  font-weight: var(--ds-font-weight-medium);
+}
+
+.root:disabled {
+  color: var(--ds-text-disabled);
+  cursor: default;
+}
+
+/*
+ * An outline rather than a border, so the ring does not disturb the layout and — unlike the focus
+ * specimen in the design source — does not replace the indicator. A focused selected tab keeps
+ * saying it is selected.
+ */
+.root:focus-visible {
+  border-radius: var(--ds-radius-s);
+  outline: var(--ds-border-regular) dashed var(--ds-focus-ring);
+  outline-offset: calc(-1 * var(--ds-border-regular));
+}
+
+.label {
+  position: relative;
+  /* Own stacking context, so the wash below can sit behind the text without escaping upwards. */
+  isolation: isolate;
+
+  padding: var(--ds-space-3);
+  border-radius: var(--ds-radius-s);
+
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/*
+ * The hover wash is its OWN layer, not a background on the label. `interactive/hover-surface` is a
+ * solid colour and the transparency comes from an opacity token, per the token architecture — and
+ * applying that opacity to the label itself would fade the text along with the wash.
+ */
+.label::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--ds-interactive-hover-surface);
+  opacity: 0;
+}
+
+.root:hover:not(:disabled) .label::before {
+  opacity: var(--ds-opacity-100);
+}
+
+/*
+ * Only rendered when the tab is selected. It is out of flow, so appearing and disappearing costs
+ * no layout — nothing moves when the selection changes. Pulled down over the list's 1px track so
+ * the two share an edge rather than stacking into a 5px rule.
+ */
+.indicator {
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: calc(-1 * var(--ds-border-thin));
+  block-size: var(--ds-border-thick);
+  background: var(--ds-brand-primary);
+}

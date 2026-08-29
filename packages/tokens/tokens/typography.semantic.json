@@ -1,0 +1,118 @@
+{
+  "display": {
+    "heading": {
+      "font-family": {
+        "$type": "fontFamily",
+        "$value": "{font.font-family.primary}"
+      },
+      "size": {
+        "$type": "dimension",
+        "$value": "{font.size.xl}"
+      },
+      "weight": {
+        "$type": "fontWeight",
+        "$value": "{font.weight.medium}"
+      }
+    },
+    "time": {
+      "font-family": {
+        "$type": "fontFamily",
+        "$value": "{font.font-family.primary}"
+      },
+      "size": {
+        "$type": "dimension",
+        "$value": "{font.size.base}"
+      },
+      "weight": {
+        "$type": "fontWeight",
+        "$value": "{font.weight.medium}"
+      }
+    },
+    "title": {
+      "font-family": {
+        "$type": "fontFamily",
+        "$value": "{font.font-family.primary}"
+      },
+      "size": {
+        "$type": "dimension",
+        "$value": "{font.size.2xl}"
+      },
+      "weight": {
+        "$type": "fontWeight",
+        "$value": "{font.weight.medium}"
+      }
+    }
+  },
+  "ui": {
+    "button": {
+      "font-family": {
+        "$type": "fontFamily",
+        "$value": "{font.font-family.primary}"
+      },
+      "size": {
+        "$type": "dimension",
+        "$value": "{font.size.base}"
+      },
+      "weight": {
+        "$type": "fontWeight",
+        "$value": "{font.weight.medium}"
+      }
+    },
+    "caption": {
+      "font-family": {
+        "$type": "fontFamily",
+        "$value": "{font.font-family.primary}"
+      },
+      "size": {
+        "$type": "dimension",
+        "$value": "{font.size.xs}"
+      },
+      "weight": {
+        "$type": "fontWeight",
+        "$value": "{font.weight.light}"
+      }
+    },
+    "description": {
+      "font-family": {
+        "$type": "fontFamily",
+        "$value": "{font.font-family.primary}"
+      },
+      "size": {
+        "$type": "dimension",
+        "$value": "{font.size.sm}"
+      },
+      "weight": {
+        "$type": "fontWeight",
+        "$value": "{font.weight.light}"
+      }
+    },
+    "label": {
+      "font-family": {
+        "$type": "fontFamily",
+        "$value": "{font.font-family.primary}"
+      },
+      "size": {
+        "$type": "dimension",
+        "$value": "{font.size.base}"
+      },
+      "weight": {
+        "$type": "fontWeight",
+        "$value": "{font.weight.light}"
+      }
+    },
+    "label-emphasis": {
+      "font-family": {
+        "$type": "fontFamily",
+        "$value": "{font.font-family.primary}"
+      },
+      "size": {
+        "$type": "dimension",
+        "$value": "{font.size.base}"
+      },
+      "weight": {
+        "$type": "fontWeight",
+        "$value": "{font.weight.medium}"
+      }
+    }
+  }
+}

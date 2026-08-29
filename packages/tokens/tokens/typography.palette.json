@@ -1,0 +1,57 @@
+{
+  "font": {
+    "font-family": {
+      "primary": {
+        "$description": "An ARRAY so the CSS output carries a fallback: `'Lexend Deca', sans-serif`. It was the bare family until 2026-08-29, which meant a missing webfont fell through to the browser's default serif rather than to a sans — a wrong-looking page with nothing failing. The fallback is not drift from the design source: Figma has no concept of a fallback stack, and .figma/manifest.json -> identity.font already records `fallback: sans-serif` as measured. Loading the face is the consuming app's job, never the library's — see packages/react/README.md.",
+        "$type": "fontFamily",
+        "$value": ["Lexend Deca", "sans-serif"]
+      }
+    },
+    "size": {
+      "2xl": {
+        "$description": "Double XL - main titles. Unused in the mocks.",
+        "$type": "dimension",
+        "$value": "24px"
+      },
+      "base": {
+        "$description": "Base text size - body, labels, buttons",
+        "$type": "dimension",
+        "$value": "16px"
+      },
+      "lg": {
+        "$description": "Large text - reserved for future use. Unused in the mocks.",
+        "$type": "dimension",
+        "$value": "18px"
+      },
+      "sm": {
+        "$description": "Small text - descriptions, helper text",
+        "$type": "dimension",
+        "$value": "14px"
+      },
+      "xl": {
+        "$description": "Extra large - section headings",
+        "$type": "dimension",
+        "$value": "20px"
+      },
+      "xs": {
+        "$description": "Extra small text - captions, timestamps",
+        "$type": "dimension",
+        "$value": "12px"
+      }
+    },
+    "weight": {
+      "light": {
+        "$type": "fontWeight",
+        "$value": 300
+      },
+      "medium": {
+        "$type": "fontWeight",
+        "$value": 500
+      },
+      "regular": {
+        "$type": "fontWeight",
+        "$value": 400
+      }
+    }
+  }
+}

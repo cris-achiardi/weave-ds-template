@@ -1,0 +1,59 @@
+{
+  "opacity": {
+    "50": {
+      "$description": "Figma stores this as 5 to match its percentage unit; in code it is 0.05.",
+      "$type": "number",
+      "$value": 0.05
+    },
+    "100": {
+      "$description": "Figma stores this as 10 to match its percentage unit; in code it is 0.1.",
+      "$type": "number",
+      "$value": 0.1
+    },
+    "200": {
+      "$description": "Figma stores this as 20 to match its percentage unit; in code it is 0.2.",
+      "$type": "number",
+      "$value": 0.2
+    },
+    "300": {
+      "$description": "Figma stores this as 30 to match its percentage unit; in code it is 0.3.",
+      "$type": "number",
+      "$value": 0.3
+    },
+    "400": {
+      "$description": "Figma stores this as 40 to match its percentage unit; in code it is 0.4.",
+      "$type": "number",
+      "$value": 0.4
+    },
+    "500": {
+      "$description": "Figma stores this as 50 to match its percentage unit; in code it is 0.5.",
+      "$type": "number",
+      "$value": 0.5
+    },
+    "600": {
+      "$description": "Figma stores this as 60 to match its percentage unit; in code it is 0.6.",
+      "$type": "number",
+      "$value": 0.6
+    },
+    "700": {
+      "$description": "Figma stores this as 70 to match its percentage unit; in code it is 0.7.",
+      "$type": "number",
+      "$value": 0.7
+    },
+    "800": {
+      "$description": "Figma stores this as 80 to match its percentage unit; in code it is 0.8.",
+      "$type": "number",
+      "$value": 0.8
+    },
+    "900": {
+      "$description": "Figma stores this as 90 to match its percentage unit; in code it is 0.9.",
+      "$type": "number",
+      "$value": 0.9
+    },
+    "1000": {
+      "$description": "Figma stores this as 100 to match its percentage unit; in code it is 1.",
+      "$type": "number",
+      "$value": 1
+    }
+  }
+}

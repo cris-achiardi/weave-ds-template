@@ -1,0 +1,14 @@
+{
+  "$schema": "../../../../../contracts/react-binding.schema.json",
+  "component": "Icon",
+  "contract": "./Icon.contract.json",
+  "framework": "react",
+  "element": "svg",
+  "refTarget": "root",
+  "classNamePassthrough": "root",
+  "notes": [
+    "`name` is not a variant axis — it selects a path from the generated registry in ./glyphs.ts rather than a class. It is typed as `GlyphName`, a union of the 50 committed glyph names, so a bad literal is a compile error; a name arriving as a plain `string` at runtime is not checked and renders nothing.",
+    "Props spread onto the <svg> before `viewBox`, `data-ds-part` and `className`, so those three cannot be overridden from outside. The accessibility attributes are applied BEFORE the spread on purpose, so a caller can add their own — with the caveat recorded in the contract's a11y notes.",
+    "Children are omitted from the prop type. The glyph is the entire content, and an <svg> that accepted children would let a caller draw over the set."
+  ]
+}

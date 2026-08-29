@@ -14,26 +14,29 @@ generated set binds to a Figma variable or style that mirrors a `--ds-*` token, 
 the repo has one obvious counterpart in the file. Anything that cannot bind is reported, never
 silently baked in.
 
-## Read this before your first run — the template is not ready for this skill
+## Preconditions — both now met, as of 2026-08-29
 
-This skill was ported from a mature design system into a **starter template**, and two of its
-preconditions do not hold yet. Neither is a bug in the skill; each is a decision this repo has not
-taken. Do not paper over them.
+This skill was ported from a mature design system into a starter template, and for a while two of
+its preconditions did not hold. Both do now:
 
-| Precondition                        | State here                                                                                                          | What to do                                                                                                          |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| Semantic tokens exist to bind to    | `identity.variableCollections` in the manifest is **empty**; `packages/tokens/tokens/` holds no generated token set | Measure the source and decide the token set first. Binding cannot be checked against a mapping that does not exist. |
-| A component exists to generate from | `packages/react/src/components/` is **empty by design**                                                             | Build one with `ds-component` first. This skill reads a component; it does not invent one.                          |
+| Precondition                        | State                                                                                                                                  |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Semantic tokens exist to bind to    | **Met.** 156 tokens across 6 DTCG files under `packages/tokens/tokens/`, and `identity.variableCollections.map` maps every collection. |
+| A component exists to generate from | **Met.** `Icon`, `Tabs`, `TabItem`, `TabPanel` under `packages/react/src/components/`.                                                 |
 
 The bridge question is **settled**: `.figma/manifest.json` → `bridges` records a `read` bridge and a
 `write` bridge separately, and this skill runs on the write one. It is opt-in and unwired by design
 — nothing gates it, which is a known hole recorded in `bridges.write._gatedNote`.
 
-There is a third, smaller one: the source file has **no light/dark axis**
+One precondition still does **not** hold: the source file has **no light/dark axis**
 (`identity.themes.decided: false`, `modes: ["dark"]`). The mode-flip verification below is the
-strongest check in the whole workflow and it **cannot run yet**. When a theme axis is decided,
-turn it back on — until then, say in the report that this check did not run rather than implying
-it passed.
+strongest check in the whole workflow and it **cannot run**. When a theme axis is decided, turn it
+back on — until then, say in the report that this check did not run rather than implying it passed.
+
+> **The token layer moves.** It is measured from the design source by hand and nothing gates the two
+> against each other (ADR 0002). The numbers in `references/figma-file.md` are a dated snapshot, and
+> `text/disabled` changed under this skill's feet once already. **Re-measure the collections before
+> you bind**, and if a count disagrees with the reference, trust the file and fix the reference.
 
 ## Prerequisites
 
@@ -72,12 +75,22 @@ The repo's token rule has a direct Figma counterpart, and it is the thing most w
 
 **Bind to the token-tier collections and the published styles. Never to the primitive tier.**
 
-The source file separates the two by collection name. Measured on 2026-08-28:
+The source file separates the two by collection name. Re-measured on 2026-08-29:
 
-| Tier      | Collections                                     | Bind?   |
-| --------- | ----------------------------------------------- | ------- |
-| Token     | `Color Tokens`, `Type Tokens`, `Spacing Tokens` | **yes** |
-| Primitive | `Color Primitives`, `Type Primitives`           | **no**  |
+| Tier      | Collections                                                 | Bind?                   |
+| --------- | ----------------------------------------------------------- | ----------------------- |
+| Token     | `Color Tokens`, `Type Tokens`, `Spacing Tokens`             | **yes**                 |
+| Primitive | `Color Primitives`, `Type Primitives`, `Opacity Primitives` | **no** — except opacity |
+
+**`Opacity Primitives` is the one exception, and it is deliberate.** There is no semantic opacity
+layer and there is not going to be one: the token architecture composes a _solid_ colour with an
+opacity step at the point of use, which is exactly why `interactive/hoverSurface` is a plain white.
+Binding `opacity/100` alongside a bound fill is the intended pattern, not a tier violation.
+
+Note that `Spacing Tokens` is labelled `tier: "primitive"` in the manifest's collection map. That is
+not a contradiction: the label describes what the _values_ are (raw steps, no role), while this
+table describes what you may _bind_ to. There is no semantic spacing layer, so the scale is what you
+bind. Colour is the tier that actually has two layers, and colour is what this rule is about.
 
 A primitive is a raw value with no role. Binding one produces a component that looks right and
 silently opts out of every axis the token layer will later carry — the Figma equivalent of a
@@ -86,10 +99,11 @@ component writing `--ds-color-purple-500` instead of `--ds-color-fill-brand`.
 **Scope every variable lookup by collection id.** Names repeat across tiers; an unscoped
 `find()` can bind you to the wrong tier without any error.
 
-**This tier split is measured, not decided.** `identity.variableCollections` in the manifest is the
-place where collection → token-source mapping becomes canonical, and it is empty. Until it is
-filled, treat the table above as an observation with a date on it, and re-measure before you rely
-on it.
+**The collection → token-file mapping is now canonical.** `.figma/manifest.json` →
+`identity.variableCollections.map` names the DTCG file behind every collection, and
+`.figma/maps/tokens.json` records all 156 variables against their dotted code paths. Read those
+rather than re-deriving the mapping — but re-measure the _counts_, because nothing gates the two
+surfaces against each other.
 
 Type binds to a **text style**, never a hand-set `fontName` + `fontSize`. The file has eight, all
 Lexend Deca, all binding `fontSize`/`fontFamily`/`fontWeight` to variables — the full table is in
@@ -189,11 +203,21 @@ equivalent, so a nested icon keeps its own fill regardless of what it sits insid
 glyph's fill per consumer variant — and read **What cannot bind** below before you do, because that
 override has a trap in it.
 
-#### Glyph sets are not component sets
+#### Glyph sets — this repo decided the other way, and the decision wins
+
+The general advice below is what this skill was ported with. **This repo overrode it in ADR 0005**
+and the artefact already exists: one `COMPONENT_SET` named `icon` on the `├ Icons` page, carrying an
+`icon` property with 52 variants. Instance that set and set its `icon` property; do **not** build
+per-glyph components alongside it, or the file grows a second icon library.
+
+<details>
+<summary>The ported advice, kept because the reasoning still applies to a system that has not decided</summary>
 
 For an icon library, make **one COMPONENT per glyph**, named `Icon/<Name>`. The slash groups them in
 the Assets panel and gives the swap picker a searchable list. A `Glyph` variant axis makes swapping
 worse, not better, and multiplies against every other axis for no gain.
+
+</details>
 
 Size is **not** an axis either, and `FIXED` sizing is right here — the one place in this skill where
 it is. An icon is sized by whatever contains it, so carrying the size across a glyph swap is the
@@ -210,9 +234,20 @@ every glyph sits in the corner.
 The step most likely to be quietly wrong. Work it in `references/token-to-variable.md` and **write
 the mapping into the report**, so the numbers can be checked against the CSS instead of trusted.
 
-The infix is the trap specific to this file: Figma names are `weave-ds-{path}` while the CSS
-property is `--ds-{path}`. The `weave` segment is part of the Figma name and must not survive into
-the token. See `references/token-to-variable.md`.
+**The `weave-ds-` infix is NOT in the variable name — this was corrected on 2026-08-28 and the
+correction is easy to lose.** A Figma variable carries two names. `name` is the bare slash path you
+must look it up by (`brand/primary`); `codeSyntax.WEB` is a separate author-set string Figma emits
+in Dev Mode, and _that_ is where `weave-ds-brand-primary` comes from. Look variables up by the slash
+path. A lookup for `weave-ds-brand-primary` returns `undefined`, and the temptation at that point is
+to fall back to a literal — don't.
+
+The mapping is now three columns, all real: `brand/primary` → `--ds-brand-primary` →
+`brand.primary`. See `references/token-to-variable.md`.
+
+Note the live inconsistency, recorded in the manifest's `knownProblems`: `codeSyntax.WEB` still
+emits `weave-ds-*` while the repo settled on the `ds` prefix, so **anything copied out of the Figma
+inspector names a property that does not exist**. Nothing reads codeSyntax, so it is cosmetic — but
+it will mislead a designer.
 
 ### 6. Generate
 
@@ -296,12 +331,14 @@ Full table in `references/token-to-variable.md`. The ones that bite:
   empty, and re-exporting the same node id can return a cached image — capture a _different_ node to
   force a fresh render.
 
-- **`opacity` binds — verified in this file on 2026-08-28** (`node.setBoundVariable('opacity', v)`
-  succeeded against a local FLOAT). What is **not** settled here is the storage convention: Figma
-  reads the bound FLOAT as a percentage, while CSS wants a 0–1 ratio, so the same pixel is reached
-  from numbers that differ by 100×. This repo has not decided which the token stores. Settle it in
-  an ADR before writing opacity tokens, and until then **do not "correct" one side to match the
-  other** — you will be guessing which convention is canonical.
+- **`opacity` binds, and the convention is now SETTLED** — ADR 0002, decision 7. Figma reads a bound
+  FLOAT as a **percentage**, so `Opacity Primitives` stores **0–100**: `opacity/600` is `60`. The
+  DTCG token stores the **0–1** ratio CSS wants: `opacity.600` is `0.6`. The ÷100 happens once, at
+  transcription, and every token's `$description` records both numbers.
+
+  **So bind opacity freely, and never "correct" either side.** They differ by 100× on purpose. The
+  failure this cost a debugging session: binding `0.6` to a node's opacity renders it at 0.6%, which
+  looks like an invisible layer rather than a wrong number.
 
 ## Housekeeping
 

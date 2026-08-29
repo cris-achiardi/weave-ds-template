@@ -9,11 +9,7 @@
 > [`prop-map.config.json`](../../packages/react/prop-map.config.json) (data) and
 > `packages/react/src/components/README.md` §2 (prose).
 
-**Coverage:** 0 components · 0 props · 0 flags.
-
-> **State: canon-only.** No components exist yet. §1 and §2 below are the *declared*
-> canon — the vocabulary a design proposal must be written in. §3 and §4 measure
-> reality against it and are empty by construction, not by omission.
+**Coverage:** 4 components · 7 props · 0 flags.
 
 ## How to use this
 
@@ -35,7 +31,7 @@ never a synonym.
 | `hierarchy` | How much emphasis an action carries. Orthogonal to `variant`, which chooses the colour, and distinct from a paint treatment. Actions have a rank; surfaces do not — so this axis is for interactive components only. | primary · secondary · tertiary | `primary` | 0 |
 | `orientation` | Layout axis along which the component and its children flow. | horizontal · vertical | — | 0 |
 | `placement` | Where the component sits relative to its anchor or host. Two profiles — a component picks one whole profile, never a mix of the two. | _overlay_: top · top-start · top-end · bottom · bottom-start · bottom-end · left · left-start · left-end · right · right-start · right-end<br>_edge_: top · bottom · start · end | — | 0 |
-| `size` | One ordered scale, shared with the token ladder (--ds-space-*, --ds-font-size-*). A component exposes a contiguous subset of it, never a gap. | xs · s · m · l · xl | `m` | 0 |
+| `size` | One ordered scale, shared with the token ladder (--ds-space-*, --ds-font-size-*). A component exposes a contiguous subset of it, never a gap. | xs · s · m · l · xl | `m` | 1 |
 | `variant` | Semantic intent, which selects the colour role. Orthogonal to `hierarchy`, which decides how much emphasis is applied. | neutral · brand · success · warning · danger | `neutral` | 0 |
 
 ## 2. Value glossary (anti-synonym list)
@@ -61,11 +57,16 @@ One spelling, one meaning. A new value is added here in the same change that int
 
 ## 3. Prop index
 
-_No components yet. Nothing has been measured._
+| Prop | Kind | Values / type | Used on |
+| --- | --- | --- | --- |
+| `defaultValue` | local | string | Tabs |
+| `disabled` | boolean | boolean | TabItem |
+| `label` | local | string | Icon |
+| `name` | enum | article · cached · check-circle · check-small · chevron-backward · close · close-small · crop · crop-16-9 · crop-9-16 · crop-landscape · crop-portrait · crop-square · desktop-mac · download · drag-indicator · dvr · format-align-center · format-align-left · format-align-right · format-bold · format-italic · format-list-bulleted · format-underlined · graphic-eq · help · info · keyboard-arrow-down · keyboard-arrow-up · mic · mic-off · mobile · more-horiz · notifications · pause · picture-in-picture · play · premium-crown · settings · split-scene-down · split-scene-left · split-scene-right · split-scene-up · stop · text-decrease · text-increase · videocam · videocam-off · volume-off · volume-up | Icon |
+| `onValueChange` | local | (value: string) => void | Tabs |
+| `size` | axis | l · m · s · xl · xs | Icon |
+| `value` | local | string | TabItem, TabPanel, Tabs |
 
 ## 4. Drift report
 
 _No divergences._
-
-Nothing has been measured. A prop that diverges from §1 and has no disposition in
-`prop-map.config.json` will appear here as `unreviewed`.

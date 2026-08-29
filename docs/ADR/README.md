@@ -52,9 +52,14 @@ it, not here:
 
 <!-- adr-index:start -->
 
-| #                                                | Title                                                                    | Status   |
-| ------------------------------------------------ | ------------------------------------------------------------------------ | -------- |
-| [0001](./0001-every-layer-is-self-describing.md) | Every layer is self-describing, and context is pulled rather than pushed | Accepted |
+| #                                                                                     | Title                                                                                                         | Status   |
+| ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | -------- |
+| [0001](./0001-every-layer-is-self-describing.md)                                      | Every layer is self-describing, and context is pulled rather than pushed                                      | Accepted |
+| [0002](./0002-token-source-of-truth-is-dtcg-json-transcribed-per-figma-collection.md) | Token source of truth is DTCG JSON in the repo, transcribed from Figma one file per collection                | Accepted |
+| [0003](./0003-library-stylesheet-carries-the-token-layer.md)                          | The library stylesheet carries the token layer, so component CSS cannot resolve against undeclared properties | Accepted |
+| [0004](./0004-icon-artwork-is-monochrome-and-colour-is-chosen-at-placement.md)        | Icon artwork is monochrome, and colour is chosen where the icon is placed                                     | Accepted |
+| [0005](./0005-icon-set-ships-as-one-component-over-a-generated-glyph-registry.md)     | The icon set ships as one `Icon` component over a generated glyph registry, keyed by kebab-case name          | Accepted |
+| [0006](./0006-tabs-is-a-compound-of-three-parts-with-selection-held-at-the-root.md)   | Tabs is a compound of three parts, and selection is held at the root                                          | Accepted |
 
 <!-- adr-index:end -->
 

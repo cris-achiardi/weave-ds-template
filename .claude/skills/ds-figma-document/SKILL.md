@@ -27,18 +27,20 @@ the set was hand-built and no code component exists, say so in the description r
 the code side; a page that implies a code counterpart which does not exist is worse than one that
 admits the gap.
 
-## What is not ready here yet
+## What is and is not ready here
 
-This skill was ported from a mature design system into a **starter template**. Two things it leans
-on do not exist yet:
-
-- **No components.** `packages/react/src/components/` is empty by design, and
-  `.figma/maps/components.json` has no entries. Until `ds-component` builds one, this skill can only
-  document sets that already exist in the Figma file on their own terms.
-- **No theme axis.** `.figma/manifest.json` → `identity.themes` records `modes: ["dark"]` with
+- **Components exist — as of 2026-08-29.** `Icon`, `Tabs`, `TabItem` and `TabPanel` are under
+  `packages/react/src/components/`, and `.figma/maps/components.json` carries an entry for each with
+  its page and set ids. So the code side of a description is real: read it with `pnpm contract
+<Name>` rather than describing the artefact on its own terms.
+- **Still no theme axis.** `.figma/manifest.json` → `identity.themes` records `modes: ["dark"]` with
   `decided: false` — dark-only, and not yet decided to be dark-only. **The mode-flip verification in
   step 5 is the strongest check on this page and it cannot run.** Report that it did not run. Do not
   let a page imply it follows a light/dark axis that the file does not have.
+- **A design-only `State` axis is now the normal case here, not the exception.** `TabItem` carries
+  `Selected` and `State`, and _neither_ maps to a prop — the repo's authoring rule keeps browser
+  states out of the API entirely. The third description paragraph below is where that gets said, and
+  on these components it is the paragraph that matters most.
 
 ## Prerequisites
 

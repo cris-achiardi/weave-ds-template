@@ -1,0 +1,70 @@
+{
+  "$schema": "../../../../../contracts/component.schema.json",
+  "component": "Tabs",
+
+  "status": {
+    "level": "experimental",
+    "since": "2026-08-29",
+    "note": "First compound component in the library, and the first to own a keyboard model. The API is settled by ADR 0006; what is unproven is the composition mechanism — Tabs reads its items off `children`, and that has not met a consumer who wraps a TabItem yet."
+  },
+
+  "intent": {
+    "purpose": "Holds one selection across a set of tabs and the panels they reveal, and owns the keyboard movement between them. It exists so that the selected state has exactly one home: the items compare against it rather than each holding a copy.",
+    "behaviour": [
+      "Holds the selection, controlled via `value` + `onValueChange` or uncontrolled via `defaultValue`. Uncontrolled with no `defaultValue` starts on the first TabItem that is not disabled.",
+      "Renders its TabItem children inside a tablist, and its TabPanel children as siblings of it — a tablist may contain only tabs.",
+      "Moves between tabs on ArrowLeft and ArrowRight, jumps to the ends on Home and End, and wraps around at both ends. Disabled items are skipped.",
+      "Activates on focus: arrowing to a tab selects it in the same action. Suitable because every panel in this product is already in memory.",
+      "Calls `onValueChange` only when the selection actually changes. Re-clicking the selected tab does nothing.",
+      "Reads its items from `children` directly. A TabItem nested inside another element still renders and still works on click, but is invisible to the keyboard model."
+    ],
+    "notFor": [
+      "A filter strip or view switcher with no panels behind it. Without panels this is not the tabs pattern; use a radio group or a nav, which say what they actually do.",
+      "Navigation between routes. These tabs show and hide content in place; they do not change the URL and nothing here manages history.",
+      "A vertical tab rail. Only a horizontal list is designed, and no orientation axis is exposed.",
+      "An accordion or disclosure set, where more than one section may be open. Exactly one tab is selected here, by construction."
+    ]
+  },
+
+  "semantics": {
+    "role": "tablist",
+    "focusable": false
+  },
+
+  "a11y": {
+    "focusVisible": false,
+    "contrast": "not-applicable",
+    "keyboard": "Tab reaches the selected tab only; ArrowLeft/ArrowRight move and select, Home/End jump to the ends, movement wraps and skips disabled items.",
+    "notes": [
+      "Roving tabindex: exactly one TabItem is reachable with Tab, and it is the selected one. A controlled `value` that matches no rendered TabItem therefore leaves the whole list unreachable by keyboard. Nothing in this component detects that, because it cannot tell a not-yet-rendered value from a wrong one.",
+      "The tablist has no accessible name of its own. A consumer must pass `aria-label` or `aria-labelledby`, or assistive technology announces an unnamed set of tabs. This component cannot supply a sensible default and does not try.",
+      "Activation follows focus, so arrowing across the list changes the visible panel on every keypress. That is a deliberate choice for cheap panels — see ADR 0006 — and would be the wrong default for a panel that fetches.",
+      "Contrast is not applicable to this component: it paints only a hairline track. The contrast of a label belongs to TabItem."
+    ]
+  },
+
+  "composition": {
+    "children": {
+      "accepts": ["TabItem", "TabPanel"],
+      "min": 1,
+      "description": "TabItem children become the tab list; TabPanel children are rendered after it. Anything else is passed through untouched but takes no part in selection or keyboard movement."
+    }
+  },
+
+  "anatomy": {
+    "root": {
+      "part": "root",
+      "description": "The wrapper holding both the tab list and the panels, so the two stay adjacent in the DOM and a single className can position the pair.",
+      "parts": {
+        "list": {
+          "part": "list",
+          "description": "The tablist itself. Carries the `track` — the hairline the whole width of the row that the selected item's indicator sits on top of.",
+          "paints": {
+            "border-block-end": "--ds-border-",
+            "padding-inline": "--ds-space-"
+          }
+        }
+      }
+    }
+  }
+}

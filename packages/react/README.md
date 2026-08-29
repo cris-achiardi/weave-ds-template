@@ -19,6 +19,30 @@ made for awkward consumers — a bundler on classic Node resolution ignores `exp
 an Electron renderer under a strict CSP with a single global CSS rule cannot handle either runtime
 injection or shipped `*.module.css`.
 
+## The font is yours to load
+
+The type tokens **name** a family — `--ds-font-font-family-primary` — but the library never fetches
+it. `@ds/react/styles.css` has to import cleanly into an Electron renderer under a CSP with no
+remote origins, and a stylesheet that reaches out to a font CDN does not. So loading the face is
+the consuming app's job:
+
+```html
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Lexend+Deca:wght@300;400;500&display=swap"
+/>
+```
+
+Weights 300, 400 and 500 are the three the type scale uses. Self-host them instead if your CSP
+forbids remote origins — the library does not care where the face comes from, only that the family
+resolves.
+
+**If you skip this, nothing fails.** Every component still renders, in the token's `sans-serif`
+fallback, and the only symptom is that the type looks slightly wrong — which is exactly the kind of
+defect that survives review. Both harnesses in this repo (`apps/sandbox`, `apps/storybook`) load it
+themselves for that reason.
+
 ## Styling a component from outside
 
 Class names are hashed by CSS Modules and are not a public surface. Target the **part attributes**

@@ -10,6 +10,12 @@ apps/storybook/storybook-static
 .ai/maps/prop-map.json
 .ai/maps/prop-map.md
 
+# Generated. Byte-stability is asserted by `pnpm glyphs:check` against the artwork in
+# Icon/glyphs/, for the same reason as above — and the glyph names cannot all be bare
+# identifiers (`crop-16-9`), so leaving Prettier to decide the quoting per key would make the
+# generator's output a moving target.
+packages/react/src/components/Icon/glyphs.ts
+
 # Machine-local and git-ignored — written by the agent harness, never committed. Checking it
 # means `pnpm verify` goes red on a file that is not part of the repo, which breaks the
 # template's one acceptance test: green on a fresh clone.
