@@ -40,7 +40,7 @@ pnpm dev                   # sandbox at localhost:4300
 | `packages/react`  | The library. React 19, CSS Modules, CVA. Empty.                                |
 | `apps/sandbox`    | A one-page Vite harness pointed at component source. Boots in ~1s.             |
 | `apps/storybook`  | Complete on disk, deliberately **not installed** — one line to switch on       |
-| `docs/ADR`        | Decision records. A template and the rules; no records — they are yours        |
+| `docs/ADR`        | Decision records. One — how the repo is organised. The rest are yours          |
 | `docs/research`   | Pre-decision space: what is measurably true, ending in open questions          |
 | `.ai/maps`        | The prop glossary. Generated, descriptive, CI-gated. Useful while still empty. |
 | `.figma`          | Which design file we read, how names map, what has been reconciled             |

@@ -74,10 +74,13 @@ it with a new one.
 An ADR is not done until:
 
 1. It is numbered sequentially and named `NNNN-kebab-title.md`.
-2. **A row is added to the index table in `docs/ADR/README.md`.** An ADR not in the index does not
-   exist — nobody browses a directory listing.
+2. **`pnpm adr-index` has been run and the regenerated table committed.** An ADR not in the index
+   does not exist — nobody browses a directory listing. The table is generated from the records, so
+   **never hand-edit it**, and never write a status into it: the generator reads the status out of
+   the record, which is the only place it lives. `pnpm adr-index:check` fails the build otherwise.
 3. `Related:` links point both ways where a relationship exists. If this supersedes another, the
-   old record's status changes to `Superseded by NNNN` in the same change.
+   old record's status changes to `Superseded by NNNN` **in that record**, and the index is
+   regenerated.
 
 ## Title rule
 

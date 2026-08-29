@@ -69,12 +69,14 @@ pnpm verify              # the full local gate — run this before pushing
 pnpm contract <Name>     # what IS this component (source + contract, merged, no build)
 pnpm contract --coverage # who is contracted
 pnpm prop-map            # regenerate the prop glossary
+pnpm adr-index           # regenerate the ADR index from the records — never edit it by hand
+pnpm verify:docs         # every link, path and command in the docs resolves
 pnpm report:paints       # token policy vs stylesheet — a REPORT, never a gate
 ```
 
 `pnpm verify` chains: `format:check → typecheck → verify:contract → prop-map:check →
-verify:figma → build → test`. All of it is green on a fresh clone with zero components — that is
-the template's acceptance test.
+adr-index:check → verify:docs → verify:figma → build → test`. All of it is green on a fresh clone
+with zero components — that is the template's acceptance test.
 
 ## Governance lives in the ADRs — consult the one your task touches
 
