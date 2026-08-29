@@ -14,12 +14,18 @@ The scripts themselves live in [`scripts/`](../../scripts/README.md) and
 
 ### `verify`
 
-Runs the same chain as `pnpm verify`, one step per gate, each with a comment stating what that gate
-catches that nothing else would. Then two **reports** — contract coverage and the token-policy
-paint report — which print and never fail.
+Runs the same **set** of gates as `pnpm verify`, one step per gate, each with a comment stating what
+that gate catches that nothing else would. Then two **reports** — contract coverage and the
+token-policy paint report — which print and never fail.
 
 Steps are separate rather than one `pnpm verify` call on purpose: a failure names itself in the
 GitHub UI without anyone reading a log.
+
+**The same set, not the same order** — and the difference matters. This job builds tokens early;
+`pnpm verify` builds late. So a gate that accidentally depends on build output passes here and fails
+there. That is not hypothetical: `verify:docs` shipped requiring generated token files to exist,
+this job went green, and the `init-ds` job below caught it by running the real `pnpm verify` on a
+clean checkout. **A gate must not depend on anything produced later in its own chain.**
 
 ### `init-ds`
 
