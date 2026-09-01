@@ -36,6 +36,11 @@ components live here, in the consumer's own tree, which is the whole architectur
 The page labels each specimen `works`, `partial` or `shell`, because the four contracts did not
 compile equally and hiding that would make the harness a worse instrument.
 
+**Restart the dev server after generating into a directory it has not seen.** Vite's module graph
+is built when the server starts; a `theme.css` that appears afterwards is served correctly and never
+loaded by the page, so the component renders with no styling and looks like an emitter defect. It is
+not one. `pnpm dev` again, and clear `node_modules/.vite` if it persists.
+
 `Switch.tsx` and `Switch.structure.css` are overwritten on every run. `Switch.theme.css` is emitted
 once, empty, and then belongs to whoever fills it — it is the only file in that directory a person
 wrote. See `docs/research/0002-compiling-a-contract-into-a-component.md` for what the emitter could
