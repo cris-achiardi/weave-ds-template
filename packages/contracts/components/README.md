@@ -3,8 +3,18 @@
 **The authoring contract.** Everything the tooling assumes about a component contract is written down
 here. If you are about to write one, this is the file to have read.
 
-This directory is **empty on purpose.** A contract is written against measured evidence and an
-accepted decision, not scaffolded in advance — see `docs/ADR/README.md`.
+A contract is written against measured evidence and an accepted decision, never scaffolded in
+advance — see `docs/ADR/README.md`.
+
+## What is here
+
+| Contract  | Status         | Why it exists                                                                                                                                                                                                                              |
+| --------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `Switch/` | `experimental` | The first, and written to be compiled rather than admired — it is the subject of `docs/research/0002-compiling-a-contract-into-a-component.md`, which proved a contract can generate a working component and listed what it could not say. |
+
+One contract is not a library. The next are chosen for **coverage** rather than count: a positioned
+component to exercise the layout gap, and one with a real keyboard model to exercise the behaviour
+vocabulary. Three more variations on a toggle would tell us nothing new.
 
 ## 1. Per contract
 
@@ -19,7 +29,11 @@ generated output and are not versioned at all — so the changelog is the only r
 consumer's regenerated component will do differently. A contract change with no changelog entry is
 an unannounced API change.
 
-There is no emitter yet, so nothing consumes these files mechanically beyond schema validation.
+A spike emitter exists — `packages/react/src/emit/emit.mjs` — and compiles `Switch/` into working
+React. It is a probe rather than the emitter, it is wired into no gate, and **nothing validates a
+contract in this directory automatically**: `verify:contract` still enumerates components by looking
+for a `<Name>.tsx` that this architecture no longer produces. Until that inverts, a contract here is
+checked only when something reads it on purpose.
 
 ## 2. Prop naming — the canon
 

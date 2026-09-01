@@ -1,0 +1,71 @@
+/*
+ * Switch — THE CONSUMER'S FILE. Emitted once, empty, and never regenerated.
+ *
+ * The emitter produced this as a list of commented sockets: one line per channel the contract
+ * declares with no source. Everything below is the sandbox playing consumer and wiring them.
+ *
+ * The values are raw on purpose. A real consumer would reach for their own token set here —
+ * @ds/tokens is one worked example — and the point of this file is that the library has no
+ * opinion about which. Nothing above this line knows what colour a switch is.
+ */
+
+[data-ds-component='Switch'] {
+  inline-size: 44px;
+  block-size: 24px;
+  background: #3a3a3f;
+  border-radius: 999px;
+  border: 1px solid #4a4a52;
+  transition: background 150ms ease;
+}
+
+/* state: checked — the track takes its filled treatment */
+[data-ds-component='Switch'][aria-checked='true'] {
+  background: #5146e6;
+  border-color: #5146e6;
+}
+
+/* state: hover — the track shifts one step */
+[data-ds-component='Switch']:hover:not(:disabled) {
+  background: #46464d;
+}
+
+[data-ds-component='Switch'][aria-checked='true']:hover:not(:disabled) {
+  background: #5f55ea;
+}
+
+/* state: disabled */
+[data-ds-component='Switch']:disabled {
+  opacity: 0.4;
+}
+
+/* state: focus-visible */
+[data-ds-component='Switch']:focus-visible {
+  outline: 2px solid #8b83f0;
+  outline-offset: 2px;
+}
+
+[data-ds-component='Switch'] [data-ds-part='thumb'] {
+  inline-size: 18px;
+  block-size: 18px;
+  background: #ffffff;
+  border-radius: 999px;
+  inset-inline-start: 2px;
+  transform: translateX(0);
+  transition-duration: 150ms;
+  transition-property: transform;
+  transition-timing-function: ease;
+}
+
+/* state: checked — the thumb travels to the end of the track */
+[data-ds-component='Switch'][aria-checked='true'] [data-ds-part='thumb'] {
+  transform: translateX(20px);
+}
+
+/*
+ * NOT in the contract, and worth noticing.
+ *
+ * `inset-inline-start` above is positioning, not paint — it belongs with the structural CSS the
+ * emitter owns, not in the consumer's theme. It is here because the contract has no `layout`
+ * block, so the emitter had nowhere to put it and did not know it was needed. A consumer who
+ * deleted this file would get a switch whose thumb sits wherever it lands.
+ */

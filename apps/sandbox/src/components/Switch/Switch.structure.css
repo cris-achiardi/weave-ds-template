@@ -1,0 +1,24 @@
+/* GENERATED from Switch.contract.json. Do not edit by hand — regenerate instead. */
+/*
+ * STRUCTURE ONLY. No colour, no spacing scale, no type: those are yours, in Switch.theme.css.
+ * What is here is layout the contract's stated behaviour depends on. Removing it makes the
+ * contract lie — the thumb's position is what carries the state for anyone who cannot rely
+ * on colour, and that only works if the thumb is out of flow.
+ */
+
+[data-ds-component='Switch'] {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+[data-ds-component='Switch']:disabled {
+  cursor: not-allowed;
+}
+
+[data-ds-component='Switch'] [data-ds-part='thumb'] {
+  position: absolute;
+  pointer-events: none;
+}
