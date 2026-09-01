@@ -1,0 +1,14 @@
+{
+  "$schema": "./binding.schema.json",
+  "component": "Slider",
+  "contract": "../../contracts/components/Slider/Slider.contract.json",
+  "framework": "react",
+  "element": "div",
+  "refTarget": "root",
+  "classNamePassthrough": "root",
+  "notes": [
+    "Renders a `<div role=\"slider\">` rather than an `<input type=\"range\">`. The native range input cannot be styled into a two-part track-and-fill without pseudo-element hacks that differ per browser, which the unstyled model cannot accept. The cost is that every keyboard and pointer behaviour must be reimplemented, and NONE of it is generated: the contract can state the range but not the stepping.",
+    "aria-valuemin, aria-valuemax and aria-valuenow are generated from the state's min, max and current value. aria-valuetext is NOT: the contract says some ranges need text instead of a bare number and has no way to supply it.",
+    "The fill's length and the thumb's position are the value made visible. Both are computed from the value at render time and neither is expressible as static CSS, so both are currently the consumer's problem."
+  ]
+}

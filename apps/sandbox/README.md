@@ -28,7 +28,7 @@ node packages/react/src/emit/emit.mjs Switch --out apps/sandbox/src/components
 ```
 
 That produced `Switch/`, and the same command produced `Field/`, `Accordion/`, `AccordionItem/`,
-`RadioGroup/`, `RadioItem/`, `Tooltip/`, `Button/` and `Checkbox/` — each one a TSX, its structural CSS, an empty theme file
+`RadioGroup/`, `RadioItem/`, `Tooltip/`, `Button/`, `Checkbox/`, `TextField/` and `Slider/` — each one a TSX, its structural CSS, an empty theme file
 and a barrel, from the matching contract in `packages/contracts/components/`. Note what the imports in `src/App.tsx` do
 **not** say: nothing comes from `@ds/react`, because that package exports no components. The
 components live here, in the consumer's own tree, which is the whole architecture in one import path.

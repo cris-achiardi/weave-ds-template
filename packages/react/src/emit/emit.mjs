@@ -30,6 +30,8 @@ const TOGGLE_ROLES = new Set(['switch', 'checkbox']);
 
 // Which DOM attribute carries a state. Not stated in any contract — see the logged assumption.
 const NATIVE_ATTR = { disabled: 'disabled' };
+// Elements that actually have a `disabled` attribute. A div does not.
+const NATIVE_OK = new Set(['button', 'input', 'textarea', 'select', 'fieldset']);
 // A contract's state VALUES are its own words; ARIA has its own. `mixed` happens to coincide,
 // `checked`/`unchecked` do not map to `true`/`false` by name. This table is emitter knowledge and
 // lives in neither schema — the same gap the state-to-attribute mapping already has.
@@ -119,8 +121,19 @@ function surfaceFrom(contract) {
     const n = camel(state);
     // A state with `values` is an enumeration, not a boolean. Everything downstream — the prop
     // type, the default, the comparison in a `visibleWhen` — follows from this one fact.
-    const t = def.values ? def.values.map((v) => `'${v}'`).join(' | ') : 'boolean';
-    const dflt = def.values ? def.default : false;
+    // Three shapes: enumerated, free (string/number), or — saying nothing — boolean.
+    let t = 'boolean';
+    let dflt = false;
+    if (def.values) {
+      t = def.values.map((v) => `'${v}'`).join(' | ');
+      dflt = def.default;
+    } else if (def.valueType === 'string') {
+      t = 'string';
+      dflt = '';
+    } else if (def.valueType === 'number') {
+      t = 'number';
+      dflt = def.min ?? 0;
+    }
     if (def.control === 'shared') {
       props.push(
         { name: n, type: t, from: state, role: 'controlled' },
@@ -350,7 +363,19 @@ function emitTsx(name, contract, binding, prefix) {
     'ARIA attribute where one is conventional AND the element has a role, native attribute for disabled, otherwise data-<prefix>-state',
     'The contract declares that a state exists and who may set it, never how it is exposed. Worse, the right answer depends on the ROLE, not the state name: `open` is aria-expanded on an accordion trigger and nothing at all on a tooltip wrapper. The emitter keeps a state-name table and gates it on the element having a role, which is a heuristic. Two backends will diverge here.',
   );
-  if (shared.length && !rootToggles && !activator) {
+  const editable = el === 'input' || el === 'textarea';
+  const valueState = shared.find(
+    (x) => contract.states?.[x.from]?.valueType === 'string' && x.name === 'value',
+  );
+  const nativelyEdited = editable && valueState;
+  if (nativelyEdited) {
+    assume(
+      'what changes a natively edited value',
+      `wired ${valueState.name} to the element's own change event because the binding renders <${el}>`,
+      'Nothing in the contract says typing changes the value — `activates` covers activation, not editing. The emitter knows it because an <input> edits its own value, which is PLATFORM knowledge sitting in a React emitter. A backend rendering something other than a native input would have to reimplement editing from scratch with nothing to guide it.',
+    );
+  }
+  if (shared.length && !rootToggles && !activator && !nativelyEdited) {
     assume(
       'what changes a shared state',
       `no event wired — ${shared.map((s) => s.name).join(', ')} exposed as storage only`,
@@ -392,12 +417,13 @@ function emitTsx(name, contract, binding, prefix) {
   const hooks = ['forwardRef'];
   if (needsIds && !member) hooks.push('useId');
   if (shared.length || selShared) hooks.push('useState');
-  if (rootToggles || activator || collection) hooks.push('useCallback');
+  if (rootToggles || activator || collection || nativelyEdited) hooks.push('useCallback');
   if (collection) hooks.push('createContext', 'useMemo');
   if (member) hooks.push('useContext');
   s.push(`import { ${[...new Set(hooks)].join(', ')} } from 'react';`);
   const types = [attrType];
   if (slots.length) types.push('ReactNode');
+  if (nativelyEdited) types.push('ChangeEvent');
   s.push(`import type { ${types.join(', ')} } from 'react';`);
   if (member) {
     s.push(`import { ${member.of}Context } from '../${member.of}/${member.of}';`);
@@ -452,7 +478,9 @@ function emitTsx(name, contract, binding, prefix) {
     ...props.map((p) => {
       if (p.role === 'uncontrolled') {
         if (p.from === 'selection') return `${p.name} = ${many ? '[]' : "''"}`;
-        return `${p.name} = ${p.default === false ? 'false' : `'${p.default}'`}`;
+        const d = p.default;
+        const lit = d === false ? 'false' : typeof d === 'number' ? String(d) : `'${d}'`;
+        return `${p.name} = ${lit}`;
       }
       if (p.role === 'axis' && p.default) return `${p.name} = '${p.default}'`;
       return p.name;
@@ -582,13 +610,28 @@ function emitTsx(name, contract, binding, prefix) {
   }
 
   // ---- markup
+  if (nativelyEdited) {
+    const st = valueState.from;
+    const v = camel(st);
+    s.push(`  const handleChange = useCallback(`);
+    s.push(`    (event: ChangeEvent<${elType}>) => {`);
+    s.push(`      const next = event.target.value;`);
+    s.push(`      if (!${v}Controlled) set${pascal(st)}Internal(next);`);
+    s.push(`      on${pascal(st)}Change?.(next);`);
+    s.push(`    },`);
+    s.push(`    [${v}Controlled, on${pascal(st)}Change],`);
+    s.push(`  );`);
+    s.push(``);
+  }
+
   s.push(`  return (`);
   const rootAttrs = [];
   rootAttrs.push(`{...rest}`);
   rootAttrs.push(`ref={ref}`);
   if (el === 'button') rootAttrs.push(`type="button"`);
   // A <button> already IS role=button; restating it is noise the linters flag.
-  if (rootRole && !(el === 'button' && rootRole === 'button')) {
+  const IMPLICIT_ROLE = { button: 'button', input: 'textbox', textarea: 'textbox' };
+  if (rootRole && IMPLICIT_ROLE[el] !== rootRole) {
     rootAttrs.push(`role="${rootRole}"`);
   }
   if (needsIds && !member) rootAttrs.push(`id={baseId}`);
@@ -613,10 +656,13 @@ function emitTsx(name, contract, binding, prefix) {
       );
       continue;
     }
-    if (NATIVE_ATTR[st] && el === 'button') rootAttrs.push(`${NATIVE_ATTR[st]}={${expr}}`);
+    if (NATIVE_ATTR[st] && NATIVE_OK.has(el)) rootAttrs.push(`${NATIVE_ATTR[st]}={${expr}}`);
     else if (ariaOk && ARIA_EXPLICIT_FALSE.has(st)) rootAttrs.push(`${ARIA_ATTR[st]}={${expr}}`);
     else if (ariaOk) rootAttrs.push(`${ARIA_ATTR[st]}={${expr} || undefined}`);
-    else if (def.values) rootAttrs.push(`data-${prefix}-state-${st}={${expr}}`);
+    else if (def.valueType) {
+      // Deliberately nothing. A boolean or an enumerated state is a styling hook; free text is
+      // CONTENT, and mirroring it into an attribute leaks whatever the person typed.
+    } else if (def.values) rootAttrs.push(`data-${prefix}-state-${st}={${expr}}`);
     else rootAttrs.push(`data-${prefix}-state-${st}={${expr} || undefined}`);
   }
   // The state a member reflects is `internal`: no prop, so the loop above never sees it. It
@@ -631,7 +677,12 @@ function emitTsx(name, contract, binding, prefix) {
   }
   // Something with a role that takes focus needs to be reachable. `semantics.focusable` says so
   // and nothing was reading it.
-  if (contract.semantics?.focusable && el !== 'button' && (root.role || contract.semantics?.role)) {
+  const NATIVELY_FOCUSABLE = new Set(['button', 'input', 'textarea', 'select', 'a']);
+  if (
+    contract.semantics?.focusable &&
+    !NATIVELY_FOCUSABLE.has(el) &&
+    (root.role || contract.semantics?.role)
+  ) {
     rootAttrs.push(`tabIndex={${disabledExpr ? `${disabledExpr} ? -1 : 0` : '0'}}`);
     assume(
       'focus order',
@@ -651,13 +702,35 @@ function emitTsx(name, contract, binding, prefix) {
       'An axis that reaches no attribute cannot be styled: there is no class to select in an unstyled library, so a declared variant would generate a prop that changes nothing. This is a third attribute family beside part and state, and nothing in the contract system defines it.',
     );
   }
+  if (nativelyEdited) {
+    rootAttrs.push(`value={${camel(valueState.from)}Value}`);
+    rootAttrs.push(`onChange={handleChange}`);
+    rootAttrs.push(`readOnly={readOnly}`);
+  }
+  // A slider's range is part of what it MEANS, and ARIA has attributes for exactly it.
+  const ranged = Object.entries(contract.states ?? {}).find(([, d]) => d.valueType === 'number');
+  if (ranged && rootRole) {
+    const [rs, rd] = ranged;
+    const expr = sharedStates.has(rs) ? `${camel(rs)}Value` : camel(rs);
+    if (rd.min !== undefined) rootAttrs.push(`aria-valuemin={${rd.min}}`);
+    if (rd.max !== undefined) rootAttrs.push(`aria-valuemax={${rd.max}}`);
+    rootAttrs.push(`aria-valuenow={${expr}}`);
+  }
   if (rootToggles) rootAttrs.push(`onClick={activate}`);
   rootAttrs.push(`data-${prefix}-component="${name}"`);
   rootAttrs.push(`data-${prefix}-part="${root.part}"`);
   rootAttrs.push(`className={className}`);
 
+  const voidEl = el === 'input';
   s.push(`    <${el}`);
   for (const a of rootAttrs) s.push(`      ${a}`);
+  if (voidEl) {
+    s.push(`    />`);
+    s.push(`  );`);
+    s.push(`});`);
+    s.push(``);
+    return s.join('\n');
+  }
   s.push(`    >`);
 
   if (collection) s.push(`      <${name}Context.Provider value={contextValue}>`);

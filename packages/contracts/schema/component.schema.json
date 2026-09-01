@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://example.invalid/schemas/component-contract-5.json",
+  "$id": "https://example.invalid/schemas/component-contract-6.json",
   "title": "Component contract (framework-agnostic)",
   "description": "Describes ONE component completely enough to build it, in any framework. The reasoning is in contracts/README.md.\n\nThis file lives at contracts/ rather than inside a package on purpose: it belongs to no framework. It says what the component IS — its purpose, its behaviour, the states it must be able to show, the axes it exposes, its anatomy, and which family of token paints each part. It does NOT say how any of that is expressed in React, or in React Native, or in a web component. That is a binding, and bindings live beside the implementation.\n\nBuildable means: someone handed this file, the prop map for their framework, and the code standards should be able to produce the component without asking what it is for.",
   "type": "object",
@@ -80,6 +80,23 @@
             "type": "string",
             "pattern": "^[a-z][a-z0-9-]*$",
             "description": "The value before anything sets one. Only meaningful alongside `values`, and must be one of them."
+          },
+          "valueType": {
+            "enum": ["string", "number"],
+            "description": "For a state whose value CANNOT BE LISTED. EXPERIMENTAL.\n\nThe three shapes a state may take, and how to say each:\n  say nothing        -> a boolean. Most states.\n  `values: [...]`    -> one of a fixed set. A checkbox's unchecked/checked/mixed.\n  `valueType`        -> free text, or a number in a range. A text field, a slider.\n\nAdded because a text field's value is not a boolean and cannot be enumerated, and a slider's is a number with bounds. Both were previously inexpressible, which meant the two most common controls in any library could not be described at all."
+          },
+          "min": {
+            "type": "number",
+            "description": "Smallest permitted value. Only with `valueType: number`. A slider's range lives nowhere else — not in an axis, which is a styling choice, and not in `values`, which cannot enumerate a continuum."
+          },
+          "max": {
+            "type": "number",
+            "description": "Largest permitted value. Only with `valueType: number`."
+          },
+          "step": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "description": "The granularity of movement. Only with `valueType: number`. A value between steps is not reachable, which is a promise a consumer relies on."
           },
           "control": {
             "enum": ["consumer", "shared", "internal"],
