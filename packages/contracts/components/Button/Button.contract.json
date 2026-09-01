@@ -1,0 +1,195 @@
+{
+  "$schema": "../../schema/component.schema.json",
+  "component": "Button",
+
+  "status": {
+    "level": "experimental",
+    "since": "2026-09-01",
+    "note": "The simplest component in any library, chosen last on purpose: it is the first to exercise `axes` and `whenAxis`, which have sat in the schema since before this branch and have never been read by anything."
+  },
+
+  "intent": {
+    "purpose": "Runs an action when chosen. It is the only component here that does something rather than holding something — nothing about a button's own state survives the click.",
+    "behaviour": [
+      "Runs its action on click, and on Enter or Space when focused, because it is a button and the platform owns that.",
+      "Carries a rank — how much emphasis this action has relative to the others near it — separately from its colour. A secondary destructive action is both, and one axis could not say so.",
+      "Does nothing while disabled, and nothing while loading. Loading additionally announces that something is already in progress, so a second press is not silently swallowed.",
+      "Keeps its width while loading, so a row of buttons does not reflow when one of them starts working."
+    ],
+    "notFor": [
+      "Navigation. A control that changes the URL is a link, and rendering it as a button loses the browser's own behaviour — open in a new tab, copy the address, see where it goes.",
+      "Holding a state. A control that stays pressed is a toggle button or a switch; this one forgets the moment it is released.",
+      "Choosing between options. That is a radio group or a select.",
+      "Carrying an icon with no label and no accessible name. An icon-only button needs a name supplied by the consumer, and nothing here can supply one."
+    ]
+  },
+
+  "axes": {
+    "hierarchy": {
+      "values": ["primary", "secondary", "tertiary"],
+      "default": "secondary",
+      "description": "How much emphasis this action carries relative to the others around it. The rank of the action, not its colour — a page should hold one primary action, and everything else ranks below it. Defaults to `secondary` rather than the canon's `primary`, because the common case is not the page's most important action and a default of `primary` makes every unconsidered button shout."
+    },
+    "variant": {
+      "values": ["neutral", "brand", "danger"],
+      "default": "neutral",
+      "description": "What kind of action this is, which selects the colour role. Orthogonal to `hierarchy`: a secondary destructive action is `hierarchy: secondary` and `variant: danger`, and collapsing the two axes would make that unsayable. `success` and `warning` are in the canon and deliberately not taken — an action is not a status."
+    },
+    "size": {
+      "values": ["s", "m", "l"],
+      "default": "m",
+      "description": "A contiguous subset of the canon's ladder. `xs` and `xl` are not designed for actions."
+    }
+  },
+
+  "states": {
+    "disabled": {
+      "kind": "intrinsic",
+      "control": "consumer",
+      "description": "The platform's own disabled state. Removed from the focus order and cannot be activated.",
+      "visual": "The whole control dims and the pointer cursor is dropped."
+    },
+    "loading": {
+      "kind": "authored",
+      "control": "consumer",
+      "description": "The action is already running. The implementation must track this: no platform provides it.",
+      "visual": "A spinner replaces the leading icon and the label stays put, so the button does not change width."
+    },
+    "hover": {
+      "kind": "intrinsic",
+      "control": "internal",
+      "description": "The pointer is over the button and it is neither disabled nor loading.",
+      "visual": "The surface shifts one step."
+    },
+    "active": {
+      "kind": "intrinsic",
+      "control": "internal",
+      "description": "A pointer or key is held down — the CSS `:active` state.",
+      "visual": "The surface shifts a second step, in the same direction."
+    },
+    "focus-visible": {
+      "kind": "intrinsic",
+      "control": "internal",
+      "description": "Focused in a way the browser judges worth showing a ring for — keyboard, not a mouse click.",
+      "visual": "A ring is drawn outside the button's box."
+    }
+  },
+
+  "semantics": {
+    "role": "button",
+    "focusable": true
+  },
+
+  "a11y": {
+    "focusVisible": true,
+    "minHitArea": 24,
+    "contrast": "AA",
+    "keyboard": "Tab reaches it unless disabled. Enter and Space activate, which the platform provides.",
+    "notes": [
+      "An icon-only button has no accessible name unless the consumer supplies one. Nothing here detects that, and it is the single most common accessibility defect in a design system's button.",
+      "`loading` must reach assistive technology as well as the eye. A button that visually shows a spinner and announces nothing tells a screen-reader user that their press did nothing.",
+      "`disabled` removes the button from the focus order entirely, so a keyboard user cannot land on it to discover why it is unavailable. Where the reason matters, the alternative is to leave it enabled and explain the failure on activation.",
+      "Contrast is claimed for the label against the button's own surface at every hierarchy and variant. It is NOT claimed for the button's surface against whatever a consumer places it on — a tertiary button on a coloured banner is the consumer's problem to check."
+    ]
+  },
+
+  "composition": {
+    "children": {
+      "part": "label",
+      "accepts": ["text"],
+      "required": true,
+      "description": "The label. Text, and a verb — a button named 'Settings' describes where you land, not what happens."
+    },
+    "slots": {
+      "iconStart": {
+        "part": "iconStart",
+        "max": 1,
+        "description": "An icon before the label. Decorative: the label carries the meaning."
+      },
+      "iconEnd": {
+        "part": "iconEnd",
+        "max": 1,
+        "description": "An icon after the label, for an action that leads somewhere — a disclosure caret, an external-link mark."
+      }
+    }
+  },
+
+  "anatomy": {
+    "root": {
+      "part": "root",
+      "description": "The button. Owns the surface, the ring, the hit area and the rank.",
+      "paints": {
+        "padding-inline": null,
+        "padding-block": null,
+        "min-block-size": null,
+        "border-radius": null,
+        "font-size": null,
+        "font-weight": null,
+        "gap": null
+      },
+      "whenAxis": {
+        "hierarchy=primary": {
+          "background": null,
+          "color": null,
+          "border-color": null
+        },
+        "hierarchy=secondary": {
+          "background": null,
+          "color": null,
+          "border-color": null
+        },
+        "hierarchy=tertiary": {
+          "background": null,
+          "color": null,
+          "border-color": null
+        },
+        "size=s": {
+          "padding-inline": null,
+          "min-block-size": null,
+          "font-size": null
+        },
+        "size=m": {
+          "padding-inline": null,
+          "min-block-size": null,
+          "font-size": null
+        },
+        "size=l": {
+          "padding-inline": null,
+          "min-block-size": null,
+          "font-size": null
+        }
+      },
+      "states": {
+        "hover": { "background": null },
+        "active": { "background": null },
+        "disabled": { "background": null, "color": null, "opacity": null },
+        "focus-visible": { "outline": null, "outline-offset": null }
+      },
+      "parts": {
+        "iconStart": {
+          "part": "icon-start",
+          "description": "The leading icon, and the slot the spinner takes over while loading.",
+          "paints": {
+            "inline-size": null,
+            "block-size": null
+          }
+        },
+        "label": {
+          "part": "label",
+          "description": "The text. Never wraps — a button that wraps to two lines is a link in disguise.",
+          "paints": {
+            "color": null
+          }
+        },
+        "iconEnd": {
+          "part": "icon-end",
+          "description": "The trailing icon.",
+          "paints": {
+            "inline-size": null,
+            "block-size": null
+          }
+        }
+      }
+    }
+  }
+}

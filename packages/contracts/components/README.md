@@ -8,11 +8,12 @@ advance — see `docs/ADR/README.md`.
 
 ## What is here
 
-Seven contracts, and they did **not** compile equally. The verdict column is measured by generating
+Eight contracts, and they did **not** compile equally. The verdict column is measured by generating
 each one and using the result — see `docs/research/0002-compiling-a-contract-into-a-component.md`.
 
 | Contract         | Compiles       | What the contract could not say                                                  |
 | ---------------- | -------------- | -------------------------------------------------------------------------------- |
+| `Button/`        | **fully**      | how `loading` should reach assistive technology                                  |
 | `Switch/`        | **fully**      | nothing — the platform supplies its behaviour                                    |
 | `Accordion/`     | **fully**      | nothing, since `collection` was added                                            |
 | `AccordionItem/` | **fully**      | its heading level, which the APG says must fit the page                          |
@@ -24,6 +25,7 @@ each one and using the result — see `docs/research/0002-compiling-a-contract-i
 Three kinds of gap, in rising order of difficulty:
 
 1. **Solved.** A parent holding a selection across children — `collection` and `member` closed it.
+   Variant axes — `axes` and `whenAxis` were already in the schema and simply unread until `Button`.
 2. **Named but unbuilt.** The behaviour vocabulary. `RadioGroup` is the sharpest case: its APG
    pattern is normative and complete, and demands a keyboard model the contract cannot carry.
 3. **Not even named.** Positioning. `Tooltip` needs an anchor, a side, collision handling and a
@@ -31,7 +33,7 @@ Three kinds of gap, in rising order of difficulty:
    constraints and not just declarations.
 
 **`Switch` was never proof the system works — it is the easy case**, where the browser supplies the
-behaviour for free. The three verdicts above are what the system actually does.
+behaviour for free. The verdicts above are what the system actually does.
 
 ## 1. Per contract
 

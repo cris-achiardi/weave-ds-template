@@ -23,10 +23,12 @@ export const AccordionContext = createContext<AccordionContextValue | null>(null
 
 export interface AccordionProps extends Omit<
   HTMLAttributes<HTMLDivElement>,
-  'disabled' | 'value' | 'defaultValue' | 'onValueChange'
+  'disabled' | 'orientation' | 'value' | 'defaultValue' | 'onValueChange'
 > {
   /** The whole accordion ignores interaction. Cascades to every item. */
   disabled?: boolean;
+  /** Only vertical is designed. Recorded as an axis with one value rather than omitted, because the horizontal case exists in the canon and this component deliberately does not take it. Defaults to `vertical`. */
+  orientation?: 'vertical';
   /** The current selection. Controlled. */
   value?: string[];
   /** Initial value when uncontrolled. */
@@ -36,7 +38,16 @@ export interface AccordionProps extends Omit<
 }
 
 export const Accordion = forwardRef<HTMLDivElement, AccordionProps>(function Accordion(
-  { disabled, value, defaultValue = [], onValueChange, children, className, ...rest },
+  {
+    disabled,
+    orientation = 'vertical',
+    value,
+    defaultValue = [],
+    onValueChange,
+    children,
+    className,
+    ...rest
+  },
   ref,
 ) {
   const baseId = useId();
@@ -67,6 +78,7 @@ export const Accordion = forwardRef<HTMLDivElement, AccordionProps>(function Acc
       ref={ref}
       id={baseId}
       aria-disabled={disabled || undefined}
+      data-ds-orientation={orientation}
       data-ds-component="Accordion"
       data-ds-part="root"
       className={className}

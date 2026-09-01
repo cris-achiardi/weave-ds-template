@@ -1,0 +1,14 @@
+{
+  "$schema": "./binding.schema.json",
+  "component": "Button",
+  "contract": "../../contracts/components/Button/Button.contract.json",
+  "framework": "react",
+  "element": "button",
+  "refTarget": "root",
+  "classNamePassthrough": "root",
+  "notes": [
+    "Renders a native `<button type=\"button\">`. Nothing here overrides `type`, so a Button inside a form will not submit it — a submit button is a different contract, or a prop this one does not yet have.",
+    "The `hierarchy` axis is spelled `hierarchy`, not `role`: `role` is a real HTML attribute that tells assistive technology what an element IS, and a button carrying `role=\"primary\"` would stop being announced as a button. The canon's name and React's spelling agree here, so `axisOverrides` stays empty.",
+    "`loading` is `control: consumer` and the contract says it must reach assistive technology as well as the eye. Nothing in the contract says HOW — `aria-busy` is the conventional answer and the emitter has no way to know that."
+  ]
+}

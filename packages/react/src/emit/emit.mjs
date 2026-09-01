@@ -62,6 +62,7 @@ const assume = (topic, decision, why) => EMITTER_ASSUMPTIONS.push({ topic, decis
 
 const readJson = (p) => JSON.parse(readFileSync(p, 'utf8'));
 const camel = (s) => s.replace(/-([a-z0-9])/g, (_, c) => c.toUpperCase());
+const kebab = (s) => s.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
 const pascal = (s) => {
   const c = camel(s);
   return c.charAt(0).toUpperCase() + c.slice(1);
@@ -128,6 +129,19 @@ function surfaceFrom(contract) {
     // `internal` emits nothing. That is the whole point of the value.
   }
 
+  // An axis is a closed set of values the consumer chooses from. It is not a state — nothing is
+  // IN it — so ADR 0004's controlRules do not cover it, and this mapping is recorded nowhere.
+  for (const [axis, def] of Object.entries(contract.axes ?? {})) {
+    props.push({
+      name: axis,
+      type: def.values.map((v) => `'${v}'`).join(' | '),
+      from: axis,
+      role: 'axis',
+      default: def.default,
+      description: def.description,
+    });
+  }
+
   // A collection's selection compiles exactly like a `shared` state, except its value is a set
   // of member identities rather than a boolean. Same three props, different type.
   const sel = contract.collection?.selection;
@@ -183,6 +197,7 @@ function renderPart(key, node, ctx, depth) {
   const { prefix, slots, contract, idFor } = ctx;
   const pad = '  '.repeat(depth + 3);
   const slot = slots.find((x) => (x.part ? x.part === key : camel(x.from) === key));
+  const takesChildrenHere = ctx.childrenPart === key;
   const attrs = [];
 
   const nodeEl = node.activates?.toggles ? 'button' : 'div';
@@ -234,12 +249,13 @@ function renderPart(key, node, ctx, depth) {
   const close = `</${el}>`;
 
   const out = [];
-  if (!kids.length && !slot) {
+  if (!kids.length && !slot && !takesChildrenHere) {
     out.push(`${pad}<${el} ${attrs.join(' ')} />`);
     return out;
   }
   out.push(pad + open);
   if (slot) out.push(`${pad}  {${slot.name}}`);
+  if (takesChildrenHere) out.push(`${pad}  {children}`);
   for (const [k, child] of kids) out.push(...renderPart(k, child, ctx, depth + 1));
   out.push(pad + close);
   return out;
@@ -266,6 +282,7 @@ function emitTsx(name, contract, binding, prefix) {
   const slots = props.filter((p) => p.role === 'slot');
   const identity = props.find((p) => p.role === 'identity');
   const takesChildren = (contract.composition?.children?.max ?? 1) !== 0;
+  const childrenPart = contract.composition?.children?.part;
 
   const collection = contract.collection;
   const selShared = collection?.selection?.control === 'shared';
@@ -341,6 +358,7 @@ function emitTsx(name, contract, binding, prefix) {
     slots,
     contract,
     idFor,
+    childrenPart,
     memberReflects: member?.reflects,
     sharedStates,
     disabledExpr,
@@ -403,19 +421,23 @@ function emitTsx(name, contract, binding, prefix) {
     if (p.role === 'input') s.push(`  /** ${src.description} */`);
     if (p.role === 'identity' || p.role === 'slot')
       s.push(`  /** ${p.description ?? 'Slot content.'} */`);
+    if (p.role === 'axis')
+      s.push(
+        `  /** ${(p.description ?? '').replace(/\s+/g, ' ')}${p.default ? ` Defaults to \`${p.default}\`.` : ''} */`,
+      );
     s.push(`  ${p.name}${p.required ? '' : '?'}: ${p.type};`);
   }
   s.push(`}`);
   s.push(``);
 
   const destructured = [
-    ...props.map((p) =>
-      p.role === 'uncontrolled'
-        ? p.from === 'selection'
-          ? `${p.name} = ${many ? '[]' : "''"}`
-          : `${p.name} = false`
-        : p.name,
-    ),
+    ...props.map((p) => {
+      if (p.role === 'uncontrolled') {
+        return p.from === 'selection' ? `${p.name} = ${many ? '[]' : "''"}` : `${p.name} = false`;
+      }
+      if (p.role === 'axis' && p.default) return `${p.name} = '${p.default}'`;
+      return p.name;
+    }),
     ...(takesChildren ? ['children'] : []),
     'className',
     '...rest',
@@ -525,7 +547,10 @@ function emitTsx(name, contract, binding, prefix) {
   rootAttrs.push(`{...rest}`);
   rootAttrs.push(`ref={ref}`);
   if (el === 'button') rootAttrs.push(`type="button"`);
-  if (rootRole) rootAttrs.push(`role="${rootRole}"`);
+  // A <button> already IS role=button; restating it is noise the linters flag.
+  if (rootRole && !(el === 'button' && rootRole === 'button')) {
+    rootAttrs.push(`role="${rootRole}"`);
+  }
   if (needsIds && !member) rootAttrs.push(`id={baseId}`);
   for (const [st, def] of Object.entries(contract.states ?? {})) {
     const isShared = sharedStates.has(st);
@@ -562,6 +587,18 @@ function emitTsx(name, contract, binding, prefix) {
       'The contract declares `semantics.focusable` and nothing more. A radio group requires a ROVING tabindex — exactly one option in the Tab sequence, the chosen one — and nothing in the contract can express that, so the emitted group puts every option in the Tab order, which is wrong for the pattern its own `intent.behaviour` describes.',
     );
   }
+  // An axis has to be visible to CSS or a variant cannot be styled at all. Without CSS Modules
+  // there is no class to hang it on, so it becomes an attribute — a THIRD attribute family
+  // alongside part and state, invented here and documented nowhere.
+  const axisNames = Object.keys(contract.axes ?? {});
+  if (axisNames.length) {
+    for (const axis of axisNames) rootAttrs.push(`data-${prefix}-${kebab(axis)}={${axis}}`);
+    assume(
+      'axis values in the DOM',
+      `data-${prefix}-<axis>="<value>" on the root`,
+      'An axis that reaches no attribute cannot be styled: there is no class to select in an unstyled library, so a declared variant would generate a prop that changes nothing. This is a third attribute family beside part and state, and nothing in the contract system defines it.',
+    );
+  }
   if (rootToggles) rootAttrs.push(`onClick={activate}`);
   rootAttrs.push(`data-${prefix}-component="${name}"`);
   rootAttrs.push(`data-${prefix}-part="${root.part}"`);
@@ -587,7 +624,7 @@ function emitTsx(name, contract, binding, prefix) {
     );
     for (const o of orphaned) s.push(`      {${o.name}}`);
   }
-  if (takesChildren) s.push(`      {children}`);
+  if (takesChildren && !childrenPart) s.push(`      {children}`);
   if (collection) s.push(`      </${name}Context.Provider>`);
   s.push(`    </${el}>`);
   s.push(`  );`);
@@ -688,6 +725,18 @@ function emitTheme(name, contract, prefix) {
       const def = contract.states?.[state];
       L.push(`/* state: ${state} — ${def?.visual ?? 'no visual recorded'} */`);
       L.push(`${stateSelector(sel, state)} {`);
+      for (const c of Object.keys(paints)) L.push(`  /* ${c}: ; */`);
+      L.push(`}`);
+      L.push(``);
+    }
+    for (const [key, paints] of Object.entries(p.node.whenAxis ?? {})) {
+      const [axis, value] = key.includes('=') ? key.split('=') : [key, null];
+      const attr = `[data-${prefix}-${kebab(axis)}='${value ?? 'true'}']`;
+      const root = `[data-${prefix}-component='${name}']`;
+      const selector =
+        sel === root ? `${root}${attr}` : `${root}${attr} ${sel.slice(root.length + 1)}`;
+      L.push(`/* ${axis} = ${value ?? 'true'} */`);
+      L.push(`${selector} {`);
       for (const c of Object.keys(paints)) L.push(`  /* ${c}: ; */`);
       L.push(`}`);
       L.push(``);
