@@ -83,3 +83,40 @@ code {
   border-radius: 0.25rem;
   padding: 0.1em 0.35em;
 }
+
+/* --- spike: styles for the generated Switch specimens ------------------------------------- */
+
+.specimen-note {
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: #a3a3a3;
+  max-inline-size: 62ch;
+}
+
+.labelled {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.labelled label {
+  font-size: 0.9rem;
+  color: #d4d4d4;
+  cursor: pointer;
+}
+
+.ghost {
+  background: transparent;
+  border: 1px solid #3a3a3f;
+  border-radius: 0.4rem;
+  color: #d4d4d4;
+  padding: 0.35rem 0.7rem;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.ghost:hover {
+  border-color: #55555f;
+}

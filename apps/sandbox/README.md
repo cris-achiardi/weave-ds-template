@@ -19,18 +19,29 @@ They answer different questions.
 
 Use the sandbox while building. Switch Storybook on when the library is worth browsing.
 
+## What it is currently rendering
+
+`src/components/` holds a **generated** component, and the sandbox is standing in for a consumer:
+
+```bash
+node packages/react/src/emit/emit.mjs Switch --out apps/sandbox/src/components
+```
+
+That produced `Switch/` — the TSX, its structural CSS, an empty theme file and a barrel — from
+`packages/contracts/components/Switch/Switch.contract.json`. Note what the import in `src/App.tsx`
+does **not** say: nothing comes from `@ds/react`, because that package exports no components. The
+component lives here, in the consumer's own tree, which is the whole architecture in one import path.
+
+`Switch.tsx` and `Switch.structure.css` are overwritten on every run. `Switch.theme.css` is emitted
+once, empty, and then belongs to whoever fills it — it is the only file in that directory a person
+wrote. See `docs/research/0002-compiling-a-contract-into-a-component.md` for what the emitter could
+not derive.
+
 ## Adding a component to it
 
-`vite.config.ts` aliases `@ds/react` to `packages/react/src/index.ts`, so you get hot reload
-against source with no build step in between.
-
-```tsx
-import { Button } from '@ds/react';
-
-<Specimen name="Button">
-  <Button hierarchy="primary">Start recording</Button>
-</Specimen>;
-```
+`vite.config.ts` aliases `@ds/react` to `packages/react/src/index.ts` for hot reload against source
+with no build step in between. That alias is for the behaviour runtime; components are generated
+into `src/components/` and imported from there.
 
 The page styles itself with plain CSS on purpose — it is the harness, not the system. Styling the
 harness with the system's own tokens would make a token bug look like a layout bug.

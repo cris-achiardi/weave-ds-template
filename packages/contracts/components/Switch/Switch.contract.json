@@ -1,0 +1,128 @@
+{
+  "$schema": "../../schema/component.schema.json",
+  "component": "Switch",
+  "status": {
+    "level": "experimental",
+    "since": "2026-09-01",
+    "note": "Sourced from the W3C ARIA APG switch pattern for role and keyboard, and Base UI's Switch for API naming consensus."
+  },
+  "intent": {
+    "purpose": "A binary on/off control that takes effect immediately, for a setting whose two states both make sense on their own — not a value collected and submitted later.",
+    "behaviour": [
+      "Holds one boolean, controlled via `checked` + `onCheckedChange` or uncontrolled via `defaultChecked`.",
+      "Toggles on click, and on Space when focused. Enter also toggles, which the APG marks optional.",
+      "Cannot be partially on. A switch is binary by definition — that is the whole distinction from a checkbox, which may support a third indeterminate state.",
+      "Announces itself as on or off rather than as checked, so assistive technology reads 'Lights on' rather than 'Lights checkbox checked'.",
+      "Does nothing when disabled, and cannot be toggled when read-only, but a read-only switch stays in the focus order where a disabled one does not."
+    ],
+    "notFor": [
+      "Anything with three states. Use a checkbox, which may be indeterminate.",
+      "A value that is only applied when a form is submitted. A switch implies its effect is immediate; if there is a Save button between the flip and the effect, a checkbox describes the interaction honestly.",
+      "Choosing one of several options. That is a radio group.",
+      "Running an action. A switch holds a state; a button does a thing."
+    ]
+  },
+  "states": {
+    "checked": {
+      "kind": "authored",
+      "control": "shared",
+      "description": "The switch is on. Tracked by the implementation and reflected to assistive technology.",
+      "visual": "The thumb sits at the end of the track and the track takes its filled treatment."
+    },
+    "disabled": {
+      "kind": "intrinsic",
+      "control": "consumer",
+      "description": "The platform's own disabled state. Removed from the focus order and cannot be toggled.",
+      "visual": "The whole control dims and the pointer cursor is dropped."
+    },
+    "hover": {
+      "kind": "intrinsic",
+      "control": "internal",
+      "description": "The pointer is over the control and it is not disabled.",
+      "visual": "The track shifts one step."
+    },
+    "focus-visible": {
+      "kind": "intrinsic",
+      "control": "internal",
+      "description": "Focused in a way the browser judges worth showing a ring for — keyboard, not a mouse click.",
+      "visual": "A focus ring is drawn around the track."
+    },
+    "read-only": {
+      "kind": "intrinsic",
+      "control": "consumer",
+      "description": "Cannot be toggled, but remains focusable and readable. Distinct from disabled, which removes it from the focus order entirely.",
+      "visual": "NOT DECIDED. No treatment has been designed, and inventing one here would be exactly the guess this repo forbids."
+    }
+  },
+  "semantics": {
+    "role": "switch",
+    "focusable": true
+  },
+  "a11y": {
+    "focusVisible": true,
+    "minHitArea": 24,
+    "contrast": "AA",
+    "keyboard": "Space toggles. Enter also toggles, which the APG marks optional. Tab reaches it unless disabled.",
+    "notes": [
+      "The switch has no accessible name of its own. A consumer must supply one via a wrapping label, `aria-label` or `aria-labelledby`; nothing here detects its absence, and an unnamed switch is announced as an on/off control with no subject.",
+      "The on and off states must not be distinguished by the track's colour alone. Position of the thumb carries the state for anyone who cannot separate the two colours, which is why the thumb moves rather than only the track recolouring.",
+      "Read-only is claimed as a state but no visual is designed for it, so a read-only switch is currently indistinguishable from an interactive one. That is a gap, recorded rather than filled.",
+      "Contrast is claimed for the thumb against the track in both states, not for the track against whatever surface a consumer places this on."
+    ]
+  },
+  "composition": {
+    "children": {
+      "accepts": [],
+      "max": 0,
+      "description": "None. The control is the whole component; a label is a sibling the consumer associates, not a child."
+    }
+  },
+  "anatomy": {
+    "root": {
+      "part": "root",
+      "description": "The track. Owns the focus ring, the hit area and the state colour.",
+      "paints": {
+        "inline-size": null,
+        "block-size": null,
+        "background": null,
+        "border-radius": null,
+        "border": null
+      },
+      "states": {
+        "checked": {
+          "background": null
+        },
+        "hover": {
+          "background": null
+        },
+        "disabled": {
+          "background": null,
+          "opacity": null
+        },
+        "focus-visible": {
+          "outline": null,
+          "outline-offset": null
+        }
+      },
+      "parts": {
+        "thumb": {
+          "part": "thumb",
+          "description": "The moving knob. Its position is what carries the state for anyone who cannot rely on colour.",
+          "paints": {
+            "inline-size": null,
+            "block-size": null,
+            "background": null,
+            "border-radius": null,
+            "transform": null,
+            "transition-duration": null
+          },
+          "states": {
+            "checked": {
+              "transform": null
+            }
+          }
+        }
+      }
+    }
+  }
+}

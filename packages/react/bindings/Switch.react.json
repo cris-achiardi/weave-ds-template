@@ -1,0 +1,16 @@
+{
+  "$schema": "./binding.schema.json",
+  "component": "Switch",
+  "contract": "../../contracts/components/Switch/Switch.contract.json",
+  "framework": "react",
+  "element": "button",
+  "refTarget": "root",
+  "classNamePassthrough": "root",
+  "notes": [
+    "Renders a native `<button>` carrying `role=\"switch\"` rather than an `<input type=\"checkbox\">`. The APG permits either, and the button avoids the hidden-input-plus-label choreography that a checkbox needs in order to be styleable. The cost is that the generated Switch does not participate in form submission at all — there is no form control in the DOM to submit. That is honest rather than incidental: the contract cannot yet express form participation, so the emitter must not pretend to implement it.",
+    "`type=\"button\"` is set and cannot be overridden. A switch inside a form that defaulted to `submit` would submit the form every time it was toggled.",
+    "Props spread onto the button BEFORE role, aria-checked, aria-readonly, disabled, onClick and the part attributes, so none of those can be replaced from outside. They are what makes the element a switch.",
+    "The `checked` state reaches CSS as `aria-checked`, not as a `data-ds-state`. The attribute is already there for assistive technology, and a second copy could disagree with it. `read-only` reaches CSS as `aria-readonly` for the same reason; `disabled` uses the native attribute so `:disabled` styles it and the browser enforces it.",
+    "There is no `defaultChecked`-plus-`checked` guard. Passing both is a consumer error that React itself does not catch either, and nothing in this contract system can detect it."
+  ]
+}
