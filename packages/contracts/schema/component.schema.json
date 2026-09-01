@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://example.invalid/schemas/component-contract-6.json",
+  "$id": "https://example.invalid/schemas/component-contract-7.json",
   "title": "Component contract (framework-agnostic)",
   "description": "Describes ONE component completely enough to build it, in any framework. The reasoning is in contracts/README.md.\n\nThis file lives at contracts/ rather than inside a package on purpose: it belongs to no framework. It says what the component IS — its purpose, its behaviour, the states it must be able to show, the axes it exposes, its anatomy, and which family of token paints each part. It does NOT say how any of that is expressed in React, or in React Native, or in a web component. That is a binding, and bindings live beside the implementation.\n\nBuildable means: someone handed this file, the prop map for their framework, and the code standards should be able to produce the component without asking what it is for.",
   "type": "object",
@@ -189,9 +189,16 @@
       "description": "This component holds a SELECTION across a set of children — which tab is current, which accordion sections are open, which options are chosen. EXPERIMENTAL: added to find out whether an accordion can be compiled at all; not yet recorded in an ADR.\n\nDeclared here rather than as a `state` because a state is a boolean this component is IN, and a selection is a set of identities this component HOLDS. The children declare the other half with `member`.",
       "properties": {
         "items": {
-          "type": "string",
-          "pattern": "^[A-Z][A-Za-z0-9]*$",
-          "description": "The component that may be a member. Must name a real contract."
+          "oneOf": [
+            { "type": "string", "pattern": "^[A-Z][A-Za-z0-9]*$" },
+            {
+              "type": "array",
+              "items": { "type": "string", "pattern": "^[A-Z][A-Za-z0-9]*$" },
+              "minItems": 1,
+              "uniqueItems": true
+            }
+          ],
+          "description": "The component, or components, that may be a member. Each must name a real contract.\n\nAN ARRAY BECAUSE A SELECTION CAN HAVE MORE THAN ONE KIND OF MEMBER. A tab strip's selection is read by both the tab and its panel: the tab shows it is chosen, the panel shows itself. Both compare against the same value and both are members, and a single name could only admit one of them."
         },
         "identity": {
           "type": "string",

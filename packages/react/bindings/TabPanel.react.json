@@ -1,0 +1,14 @@
+{
+  "$schema": "./binding.schema.json",
+  "component": "TabPanel",
+  "contract": "../../contracts/components/TabPanel/TabPanel.contract.json",
+  "framework": "react",
+  "element": "div",
+  "refTarget": "root",
+  "classNamePassthrough": "root",
+  "notes": [
+    "Renders a `<div role=\"tabpanel\">`, hidden when its value is not the selection.",
+    "`aria-labelledby` pointing at its tab is NOT generated, for the same reason `aria-controls` is not generated on TabItem: the reference crosses a component boundary and `namedBy` can only name a sibling part.",
+    "It declares `member` of the same collection as TabItem. `collection.items` names ONE component, so Tabs cannot say that both are members — the emitter accepts it only because it never validates the ancestor's `items` against a panel."
+  ]
+}

@@ -1,0 +1,55 @@
+/* Dialog — THE CONSUMER'S FILE. Emitted once, empty, never regenerated. */
+
+/* --- structure, in the wrong file -------------------------------------------------------- */
+[data-ds-component='Dialog'] {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+[data-ds-component='Dialog'] [data-ds-part='panel'] {
+  display: flex;
+  flex-direction: column;
+}
+[data-ds-component='Dialog'] [data-ds-part='actions'] {
+  display: flex;
+  justify-content: flex-end;
+}
+/* --- end of misplaced structure ---------------------------------------------------------- */
+
+[data-ds-component='Dialog'] {
+  background: rgb(0 0 0 / 0.6);
+}
+[data-ds-component='Dialog'] [data-ds-part='panel'] {
+  background: #202024;
+  border-radius: 0.6rem;
+  padding: 1.25rem;
+  box-shadow: 0 16px 48px rgb(0 0 0 / 0.5);
+  max-inline-size: calc(100vw - 2rem);
+}
+[data-ds-component='Dialog'][data-ds-size='s'] [data-ds-part='panel'] {
+  inline-size: 22rem;
+}
+[data-ds-component='Dialog'][data-ds-size='m'] [data-ds-part='panel'] {
+  inline-size: 30rem;
+}
+[data-ds-component='Dialog'][data-ds-size='l'] [data-ds-part='panel'] {
+  inline-size: 40rem;
+}
+[data-ds-component='Dialog'] [data-ds-part='title'] {
+  color: #f2f2f4;
+  font-size: 1rem;
+  font-weight: 600;
+}
+[data-ds-component='Dialog'] [data-ds-part='body'] {
+  color: #a3a3ab;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  padding-block: 0.6rem 0.2rem;
+}
+[data-ds-component='Dialog'] [data-ds-part='actions'] {
+  gap: 0.5rem;
+  padding-block-start: 1rem;
+}

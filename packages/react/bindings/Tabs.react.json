@@ -1,0 +1,15 @@
+{
+  "$schema": "./binding.schema.json",
+  "component": "Tabs",
+  "contract": "../../contracts/components/Tabs/Tabs.contract.json",
+  "framework": "react",
+  "element": "div",
+  "refTarget": "root",
+  "classNamePassthrough": "root",
+  "notes": [
+    "Renders a plain `<div>`. The `tablist` role sits on the `list` part rather than the root, because a tablist may contain only tabs and the panels must be siblings of it.",
+    "The selection is shared with both tabs and panels through one React context.",
+    "Tabs and panels are NOT separated from `children` here: the emitter renders `{children}` in declaration order, so a consumer must place their TabItems before their TabPanels. The contract says the tabs go inside the tablist and the panels after it, and the emitter has no way to sort children into two regions.",
+    "The arrow-key model the contract describes is not generated. Same gap as RadioGroup."
+  ]
+}

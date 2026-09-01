@@ -8,7 +8,7 @@ advance — see `docs/ADR/README.md`.
 
 ## What is here
 
-Eleven contracts, and they did **not** compile equally. The verdict column is measured by generating
+Fifteen contracts, and they did **not** compile equally. The verdict column is measured by generating
 each one and using the result — see `docs/research/0002-compiling-a-contract-into-a-component.md`.
 
 | Contract         | Compiles       | What the contract could not say                                                   |
@@ -16,6 +16,9 @@ each one and using the result — see `docs/research/0002-compiling-a-contract-i
 | `Button/`        | **fully**      | how `loading` should reach assistive technology                                   |
 | `Checkbox/`      | **fully**      | how its three values map onto ARIA's, and where `mixed` comes from                |
 | `TextField/`     | **partially**  | that typing changes the value — it works only because a native input edits itself |
+| `Tabs/`          | **partially**  | its keyboard, and that a tab and its panel reference each other across a boundary |
+| `TabItem/`       | **partially**  | `aria-controls`, and that one tab belongs in the Tab order                        |
+| `TabPanel/`      | **partially**  | `aria-labelledby` — its name crosses a component boundary                         |
 | `Switch/`        | **fully**      | nothing — the platform supplies its behaviour                                     |
 | `Accordion/`     | **fully**      | nothing, since `collection` was added                                             |
 | `AccordionItem/` | **fully**      | its heading level, which the APG says must fit the page                           |
@@ -23,6 +26,7 @@ each one and using the result — see `docs/research/0002-compiling-a-contract-i
 | `RadioGroup/`    | **partially**  | its whole keyboard model: arrows that move and select, wrapping, roving tabindex  |
 | `RadioItem/`     | **partially**  | that exactly one option belongs in the Tab order                                  |
 | `Slider/`        | **shell only** | its keyboard, its drag, and that the fill's length is arithmetic over its value   |
+| `Dialog/`        | **shell only** | focus containment, focus return, an inert background, and Escape                  |
 | `Tooltip/`       | **shell only** | what opens it, after how long, what dismisses it, and where it goes               |
 
 Three kinds of gap, in rising order of difficulty:

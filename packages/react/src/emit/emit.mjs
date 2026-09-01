@@ -46,6 +46,7 @@ const ARIA_ATTR = {
   'read-only': 'aria-readonly',
   invalid: 'aria-invalid',
   open: 'aria-expanded',
+  selected: 'aria-selected',
   disabled: 'aria-disabled',
 };
 const NATIVE_PSEUDO = {
@@ -331,10 +332,12 @@ function emitTsx(name, contract, binding, prefix) {
       );
     }
     const ancestor = readJson(ancestorPath);
-    if (ancestor.collection?.items !== name) {
+    const declared = ancestor.collection?.items;
+    const admitted = Array.isArray(declared) ? declared : declared ? [declared] : [];
+    if (!admitted.includes(name)) {
       throw new Error(
-        `${name} says it is a member of ${member.of}, but ${member.of}.collection.items is ` +
-          `"${ancestor.collection?.items ?? '(absent)'}" — the two contracts disagree.`,
+        `${name} says it is a member of ${member.of}, but ${member.of}.collection.items admits ` +
+          `${admitted.length ? admitted.join(', ') : '(nothing)'} — the two contracts disagree.`,
       );
     }
     memberMany = ancestor.collection.selection.cardinality === 'many';
@@ -667,13 +670,25 @@ function emitTsx(name, contract, binding, prefix) {
   }
   // The state a member reflects is `internal`: no prop, so the loop above never sees it. It
   // still has to reach the DOM — a radio with no aria-checked is not a radio.
-  if (member && ARIA_ATTR[member.reflects]) {
+  if (member) {
     const attr = ARIA_ATTR[member.reflects];
-    rootAttrs.push(
-      ARIA_EXPLICIT_FALSE.has(member.reflects)
-        ? `${attr}={selected}`
-        : `${attr}={selected || undefined}`,
-    );
+    if (attr) {
+      rootAttrs.push(
+        ARIA_EXPLICIT_FALSE.has(member.reflects)
+          ? `${attr}={selected}`
+          : `${attr}={selected || undefined}`,
+      );
+    } else {
+      // No ARIA mapping for this state name. Previously that emitted NOTHING at all, which is how
+      // a tab shipped with no aria-selected: the table is a closed list and an unlisted name fell
+      // through a branch with no else.
+      rootAttrs.push(`data-${prefix}-state-${member.reflects}={selected || undefined}`);
+      assume(
+        'a member state outside the ARIA table',
+        `emitted data-${prefix}-state-${member.reflects} instead`,
+        'The state-to-attribute table is a closed list in the emitter. A state name it does not know reaches no ARIA attribute at all, and nothing detects that a component needs one.',
+      );
+    }
   }
   // Something with a role that takes focus needs to be reachable. `semantics.focusable` says so
   // and nothing was reading it.
@@ -716,6 +731,9 @@ function emitTsx(name, contract, binding, prefix) {
     if (rd.max !== undefined) rootAttrs.push(`aria-valuemax={${rd.max}}`);
     rootAttrs.push(`aria-valuenow={${expr}}`);
   }
+  // `visibleWhen` on the ROOT was handled only for child parts, so a panel that hides itself and a
+  // dialog that appears were both rendered permanently visible.
+  if (root.visibleWhen) rootAttrs.push(`hidden={!(${stateExpr(root.visibleWhen, ctx)})}`);
   if (rootToggles) rootAttrs.push(`onClick={activate}`);
   rootAttrs.push(`data-${prefix}-component="${name}"`);
   rootAttrs.push(`data-${prefix}-part="${root.part}"`);

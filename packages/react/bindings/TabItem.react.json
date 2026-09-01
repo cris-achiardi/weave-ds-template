@@ -1,0 +1,14 @@
+{
+  "$schema": "./binding.schema.json",
+  "component": "TabItem",
+  "contract": "../../contracts/components/TabItem/TabItem.contract.json",
+  "framework": "react",
+  "element": "button",
+  "refTarget": "root",
+  "classNamePassthrough": "root",
+  "notes": [
+    "Renders a native `<button>` carrying `role=\"tab\"`.",
+    "`aria-controls` pointing at its panel is NOT generated. `controls` names a sibling part within the same component, and a tab's panel is a different component entirely — the schema has no way to reference across a collection.",
+    "Roving tabindex is not generated. Every tab is in the Tab order, which is wrong for this pattern."
+  ]
+}

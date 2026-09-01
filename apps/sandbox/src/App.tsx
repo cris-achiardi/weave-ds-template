@@ -8,7 +8,7 @@
  * Nothing is imported from @ds/react, which exports no components and never will. The components
  * live here, in the consumer's own tree, which is the architecture in one import path.
  *
- * Eleven contracts went in. They did NOT come out equal, and the page says so per specimen — the
+ * Fifteen contracts went in. They did NOT come out equal, and the page says so per specimen — the
  * point of this harness is to show how far each contract got, not to hide the difference.
  */
 
@@ -24,6 +24,10 @@ import { Button } from './components/Button';
 import { Checkbox } from './components/Checkbox';
 import { TextField } from './components/TextField';
 import { Slider } from './components/Slider';
+import { Dialog } from './components/Dialog';
+import { Tabs } from './components/Tabs';
+import { TabItem } from './components/TabItem';
+import { TabPanel } from './components/TabPanel';
 
 function Specimen({
   name,
@@ -63,6 +67,8 @@ export function App() {
   const [tipOpen, setTipOpen] = useState(false);
   const [terms, setTerms] = useState<'unchecked' | 'checked' | 'mixed'>('mixed');
   const [volume, setVolume] = useState(40);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [tab, setTab] = useState('overview');
   const invalid = email.length > 0 && !email.includes('@');
 
   return (
@@ -70,8 +76,8 @@ export function App() {
       <header>
         <h1>Design system sandbox</h1>
         <p>
-          Eleven contracts, compiled by <code>packages/react/src/emit/emit.mjs</code>. Each specimen
-          is labelled with how far its contract actually got — see{' '}
+          Fifteen contracts, compiled by <code>packages/react/src/emit/emit.mjs</code>. Each
+          specimen is labelled with how far its contract actually got — see{' '}
           <code>docs/research/0002-compiling-a-contract-into-a-component.md</code>.
         </p>
       </header>
@@ -168,6 +174,52 @@ export function App() {
         >
           +10
         </button>
+      </Specimen>
+
+      <Specimen
+        name="Tabs + TabItem + TabPanel"
+        verdict="partial"
+        note="A collection whose members come in TWO kinds. collection.items had to become a list — a tab and its panel both read the same selection, and a single component name could only admit one of them. Mouse selection works and the panels swap. The keyboard does not, and neither aria-controls nor aria-labelledby is generated: those references cross a component boundary, and controls/namedBy can only name a sibling part."
+      >
+        <Tabs value={tab} onValueChange={setTab} aria-label="Project sections">
+          <TabItem value="overview" label="Overview" />
+          <TabItem value="activity" label="Activity" />
+          <TabItem value="settings" disabled label="Settings" />
+          <TabPanel value="overview">
+            A collection with two kinds of member. This panel and its tab compare against the same
+            value; neither holds it.
+          </TabPanel>
+          <TabPanel value="activity">
+            Selection follows focus in this pattern, which suits panels already in memory and is the
+            wrong default for one that fetches. The contract cannot say which was chosen.
+          </TabPanel>
+        </Tabs>
+      </Specimen>
+
+      <Specimen
+        name="Dialog"
+        verdict="shell"
+        note="A styled box that appears and disappears. Focus does not move into it, Tab leaves it, the page behind stays reachable, and Escape does nothing — all four are stated in the contract and none is expressible. Note what was traded away: a native <dialog> with showModal() supplies every one of them for free, and was rejected because it cannot be portalled and brings a stacking model the unstyled approach cannot reason about."
+      >
+        <Button hierarchy="primary" onClick={() => setDialogOpen(true)}>
+          Open the dialog
+        </Button>
+        <Dialog
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          title="Delete this project?"
+          body="Everything in it goes with it. Try tabbing — you will walk straight out of this dialog and into the page behind it, which is the whole gap."
+          actions={
+            <>
+              <Button hierarchy="secondary" onClick={() => setDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button hierarchy="primary" variant="danger" onClick={() => setDialogOpen(false)}>
+                Delete
+              </Button>
+            </>
+          }
+        />
       </Specimen>
 
       <Specimen

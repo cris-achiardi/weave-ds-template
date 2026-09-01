@@ -1,0 +1,14 @@
+{
+  "$schema": "./binding.schema.json",
+  "component": "Dialog",
+  "contract": "../../contracts/components/Dialog/Dialog.contract.json",
+  "framework": "react",
+  "element": "div",
+  "refTarget": "root",
+  "classNamePassthrough": "root",
+  "notes": [
+    "Renders a plain `<div>` wrapper holding the scrim and the panel; the `dialog` role sits on the panel, not the root, which is why the role is declared on the anatomy part rather than in `semantics`.",
+    "NOT rendered with the native `<dialog>` element and `showModal()`, which would supply focus containment, background inertness and Escape for free. The native element cannot be portalled into an arbitrary container and brings a top-layer stacking model the unstyled approach cannot reason about — but the trade is severe and worth naming: every one of the three behaviours the native element gives away has to be reimplemented, and none of them is generated here.",
+    "No focus trap, no focus return, no Escape handler, no `inert` on the background. The contract states all four in `intent.behaviour` and `a11y.notes`; none is expressible. The emitted dialog is a styled box that appears and disappears."
+  ]
+}
