@@ -1,0 +1,157 @@
+{
+  "$schema": "../../schema/component.schema.json",
+  "component": "Checkbox",
+  "status": {
+    "level": "experimental",
+    "since": "2026-09-01",
+    "note": "Chosen to break the state model. A checkbox has THREE conditions — unchecked, checked, mixed — and every state in this schema so far has been a boolean. Sourced from the W3C ARIA APG checkbox pattern, which specifies the tri-state case normatively."
+  },
+  "intent": {
+    "purpose": "Records a yes/no answer that is collected rather than acted on immediately, and can additionally report that a set of answers below it is partly yes.",
+    "behaviour": [
+      "Holds one of three conditions: unchecked, checked, or mixed. Mixed is not a third user choice — a user can only move between checked and unchecked; mixed is what a parent reports when its children disagree.",
+      "Toggles between checked and unchecked on click, and on Space when focused. Activating a mixed checkbox resolves it to checked.",
+      "Shows a tick when checked and a dash when mixed. The two are different marks, not the same mark dimmed, because they mean different things.",
+      "Announces mixed as mixed, not as unchecked. A parent that says 'no' when three of five children say 'yes' is lying to anyone who cannot see the dash."
+    ],
+    "notFor": [
+      "An immediate setting. A checkbox implies its answer is collected and applied later; a switch takes effect at once.",
+      "Choosing one of several options. That is a radio group, which enforces exactly one answer.",
+      "Being set to mixed by a user. Mixed is derived from the state of other checkboxes; offering it as a third click target confuses the meaning."
+    ]
+  },
+  "states": {
+    "checked": {
+      "kind": "authored",
+      "control": "shared",
+      "values": ["unchecked", "checked", "mixed"],
+      "default": "unchecked",
+      "description": "The answer. Three values, not two: `mixed` reports that a set of checkboxes below this one is partly checked, and is set by the implementation rather than chosen by a user.",
+      "visual": "A tick when checked, a dash when mixed, an empty box when unchecked."
+    },
+    "disabled": {
+      "kind": "intrinsic",
+      "control": "consumer",
+      "description": "The platform's own disabled state. Removed from the focus order and cannot be answered.",
+      "visual": "The box and its label dim, and the pointer cursor is dropped."
+    },
+    "invalid": {
+      "kind": "authored",
+      "control": "consumer",
+      "description": "The answer failed validation — typically a required checkbox left unchecked.",
+      "visual": "The box takes its error border."
+    },
+    "hover": {
+      "kind": "intrinsic",
+      "control": "internal",
+      "description": "The pointer is over the checkbox and it is not disabled.",
+      "visual": "The box's border takes its hover treatment."
+    },
+    "focus-visible": {
+      "kind": "intrinsic",
+      "control": "internal",
+      "description": "Focused in a way the browser judges worth showing a ring for — keyboard, not a mouse click.",
+      "visual": "A ring is drawn around the box."
+    }
+  },
+  "semantics": {
+    "role": "checkbox",
+    "focusable": true
+  },
+  "a11y": {
+    "focusVisible": true,
+    "minHitArea": 24,
+    "contrast": "AA",
+    "keyboard": "Tab reaches it unless disabled. Space toggles between checked and unchecked; a mixed checkbox resolves to checked.",
+    "notes": [
+      "`mixed` must reach assistive technology as `mixed` and not as unchecked. This is the whole reason the third value exists, and a boolean model cannot carry it.",
+      "The tick and the dash must be distinguishable by shape, not only by colour or weight. Anyone who cannot separate them is told 'some' when the answer is 'all'.",
+      "The accessible name is whatever is passed as the label. A checkbox with no label has no name, and nothing here detects that.",
+      "`disabled` removes it from the focus order, so a keyboard user cannot land on it to discover why it is unavailable."
+    ]
+  },
+  "composition": {
+    "slots": {
+      "label": {
+        "part": "label",
+        "accepts": ["text"],
+        "required": true,
+        "max": 1,
+        "description": "The question being answered. Fills the `label` part."
+      }
+    }
+  },
+  "anatomy": {
+    "root": {
+      "part": "root",
+      "description": "The checkbox and its label, kept together so the whole row is the target.",
+      "activates": {
+        "toggles": "checked",
+        "between": ["unchecked", "checked"]
+      },
+      "paints": {
+        "gap": null,
+        "padding": null
+      },
+      "states": {
+        "disabled": {
+          "color": null
+        }
+      },
+      "parts": {
+        "box": {
+          "part": "box",
+          "description": "The square. Owns the border, the focus ring and the fill, and holds whichever mark applies.",
+          "paints": {
+            "inline-size": null,
+            "block-size": null,
+            "border": null,
+            "border-radius": null,
+            "background": null
+          },
+          "states": {
+            "hover": {
+              "border-color": null
+            },
+            "invalid": {
+              "border-color": null
+            },
+            "focus-visible": {
+              "outline": null,
+              "outline-offset": null
+            }
+          },
+          "parts": {
+            "tick": {
+              "part": "tick",
+              "description": "The check mark. Shown only when the answer is a definite yes.",
+              "visibleWhen": "checked=checked",
+              "paints": {
+                "color": null,
+                "inline-size": null
+              }
+            },
+            "dash": {
+              "part": "dash",
+              "description": "The mixed mark. A different shape from the tick, not a dimmed one — it reports a different fact.",
+              "visibleWhen": "checked=mixed",
+              "paints": {
+                "background": null,
+                "inline-size": null,
+                "block-size": null
+              }
+            }
+          }
+        },
+        "label": {
+          "part": "label",
+          "description": "The question.",
+          "paints": {
+            "color": null,
+            "font-size": null
+          }
+        }
+      }
+    }
+  }
+}
