@@ -8,24 +8,30 @@ advance — see `docs/ADR/README.md`.
 
 ## What is here
 
-Four contracts, and they did **not** compile equally. The verdict column is measured, not estimated —
-see `docs/research/0002-compiling-a-contract-into-a-component.md`.
+Seven contracts, and they did **not** compile equally. The verdict column is measured by generating
+each one and using the result — see `docs/research/0002-compiling-a-contract-into-a-component.md`.
 
-| Contract         | Compiles       | What the contract could not say                                                          |
-| ---------------- | -------------- | ---------------------------------------------------------------------------------------- |
-| `Switch/`        | **fully**      | nothing — the platform supplies its behaviour                                            |
-| `Field/`         | **partially**  | how its parts relate: the generated component renders correctly and wires no ARIA at all |
-| `Accordion/`     | **shell only** | the open set, its central fact, exists only as prose in `intent.behaviour`               |
-| `AccordionItem/` | **shell only** | its identity, and which part carries its role                                            |
+| Contract         | Compiles       | What the contract could not say                                                  |
+| ---------------- | -------------- | -------------------------------------------------------------------------------- |
+| `Switch/`        | **fully**      | nothing — the platform supplies its behaviour                                    |
+| `Accordion/`     | **fully**      | nothing, since `collection` was added                                            |
+| `AccordionItem/` | **fully**      | its heading level, which the APG says must fit the page                          |
+| `Field/`         | **partially**  | what changes `invalid`, `touched` and `dirty`                                    |
+| `RadioGroup/`    | **partially**  | its whole keyboard model: arrows that move and select, wrapping, roving tabindex |
+| `RadioItem/`     | **partially**  | that exactly one option belongs in the Tab order                                 |
+| `Tooltip/`       | **shell only** | what opens it, after how long, what dismisses it, and where it goes              |
 
-They appear to fall into three kinds: a component whose behaviour the platform already provides
-compiles completely; one whose job is wiring relationships between its own parts compiles its shape
-and none of its purpose; one whose central fact is state shared across children compiles to an inert
-wrapper.
+Three kinds of gap, in rising order of difficulty:
 
-**`Switch` is not proof the system works — it is the easy case.** The next contracts should be
-chosen for coverage rather than count: something positioned, to exercise the missing `layout` block,
-and something with a real keyboard model, to exercise the missing behaviour vocabulary.
+1. **Solved.** A parent holding a selection across children — `collection` and `member` closed it.
+2. **Named but unbuilt.** The behaviour vocabulary. `RadioGroup` is the sharpest case: its APG
+   pattern is normative and complete, and demands a keyboard model the contract cannot carry.
+3. **Not even named.** Positioning. `Tooltip` needs an anchor, a side, collision handling and a
+   layer, and `layout` does not exist. The accordion's width defect suggests it will need
+   constraints and not just declarations.
+
+**`Switch` was never proof the system works — it is the easy case**, where the browser supplies the
+behaviour for free. The three verdicts above are what the system actually does.
 
 ## 1. Per contract
 

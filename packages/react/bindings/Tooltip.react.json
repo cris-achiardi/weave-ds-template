@@ -1,0 +1,14 @@
+{
+  "$schema": "./binding.schema.json",
+  "component": "Tooltip",
+  "contract": "../../contracts/components/Tooltip/Tooltip.contract.json",
+  "framework": "react",
+  "element": "div",
+  "refTarget": "root",
+  "classNamePassthrough": "root",
+  "notes": [
+    "Renders a wrapper `<div>` around the trigger and the bubble. Base UI instead portals the bubble to the document body through a Positioner, which is what makes collision detection and clipping work; nothing in the contract can express a portal, a layer or an anchor, so this binding keeps the bubble in place and the tooltip will be clipped by any ancestor with `overflow: hidden`.",
+    "What OPENS the tooltip is not generated. The contract says hover-with-delay and focus in prose; `activates` covers only activation, so the emitted component exposes `open` and never sets it.",
+    "Escape-to-dismiss is not generated either. There is no way to declare a key that is not activation."
+  ]
+}

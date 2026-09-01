@@ -1,0 +1,39 @@
+/* Tooltip — THE CONSUMER'S FILE. Emitted once, empty, never regenerated. */
+
+/*
+ * ==========================================================================================
+ * ALL THE POSITIONING BELOW IS STRUCTURE, AND IT IS BOTH IN THE WRONG FILE AND WRONG.
+ *
+ * A real tooltip is portalled out of the document flow and positioned against its trigger with
+ * collision detection, so it flips when there is no room and is never clipped by an ancestor.
+ * None of that is expressible: the contract has no anchor, no layer and no `layout` block, and
+ * the `placement` axis it declares is read by nothing.
+ *
+ * What follows is absolute positioning inside the wrapper. It will be clipped by any ancestor
+ * with overflow: hidden, and it will not flip.
+ * ==========================================================================================
+ */
+[data-ds-component='Tooltip'] {
+  position: relative;
+  display: inline-block;
+}
+[data-ds-component='Tooltip'] [data-ds-part='popup'] {
+  position: absolute;
+  inset-block-end: calc(100% + 6px);
+  inset-inline-start: 50%;
+  transform: translateX(-50%);
+  inline-size: max-content;
+  max-inline-size: 28ch;
+  z-index: 1;
+}
+/* --- end of misplaced structure -------------------------------------------------------- */
+
+[data-ds-component='Tooltip'] [data-ds-part='popup'] {
+  background: #2a2a30;
+  color: #e8e8ea;
+  border-radius: 0.35rem;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.4);
+}

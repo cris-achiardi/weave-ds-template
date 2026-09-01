@@ -1,0 +1,141 @@
+{
+  "$schema": "../../schema/component.schema.json",
+  "component": "RadioItem",
+
+  "status": {
+    "level": "experimental",
+    "since": "2026-09-01",
+    "note": "Only meaningful inside a RadioGroup. Sourced from the W3C ARIA APG radio group pattern."
+  },
+
+  "intent": {
+    "purpose": "One option in a radio group: a label that becomes the group's answer when chosen. It carries its own identity and its own disabled state, and nothing else — whether it is chosen is a comparison, not a property it holds.",
+    "behaviour": [
+      "Compares its `value` against the group's selection to decide whether it is chosen. It cannot be told directly.",
+      "Chooses itself on click, and on Space when focused.",
+      "Cannot un-choose itself. Clicking the chosen option again does nothing, because a radio group always has exactly one answer.",
+      "Shows a mark inside its control when chosen, and nothing there when not.",
+      "Throws if rendered outside a RadioGroup. There is no selection to compare against, and looking unchosen would hide the mistake."
+    ],
+    "notFor": [
+      "Use outside a RadioGroup. It has no fallback behaviour and deliberately fails loudly instead.",
+      "Being toggled off. If an option needs to be un-choosable, the set is not mutually exclusive and these are checkboxes.",
+      "Holding rich content. A radio's label is read as its accessible name, so anything structural inside it is announced as part of that name."
+    ]
+  },
+
+  "member": {
+    "of": "RadioGroup",
+    "identity": "value",
+    "reflects": "checked"
+  },
+
+  "states": {
+    "checked": {
+      "kind": "authored",
+      "control": "internal",
+      "description": "Derived from the surrounding RadioGroup by comparing `value`. Not settable on this component.",
+      "visual": "A filled mark appears inside the control."
+    },
+    "disabled": {
+      "kind": "intrinsic",
+      "control": "consumer",
+      "description": "Set by the `disabled` prop or inherited from the group. Skipped by arrow-key movement.",
+      "visual": "The label and control take the disabled colour and the pointer cursor is dropped."
+    },
+    "hover": {
+      "kind": "intrinsic",
+      "control": "internal",
+      "description": "The pointer is over the option and it is not disabled.",
+      "visual": "The control's border takes its hover treatment."
+    },
+    "focus-visible": {
+      "kind": "intrinsic",
+      "control": "internal",
+      "description": "Focused in a way the browser judges worth showing a ring for — keyboard, not a mouse click.",
+      "visual": "A focus ring is drawn around the control."
+    }
+  },
+
+  "semantics": {
+    "focusable": true
+  },
+
+  "a11y": {
+    "focusVisible": true,
+    "contrast": "AA",
+    "minHitArea": 24,
+    "keyboard": "Reachable with Tab only when it is the group's current stop. Arrow keys on the group move here and choose in one action; Space chooses.",
+    "notes": [
+      "The accessible name is whatever is passed as the label. An option given a non-text label has no name, and nothing here detects that.",
+      "The chosen state must not be carried by colour alone: the mark inside the control is what distinguishes chosen from unchosen for anyone who cannot separate the two colours.",
+      "`disabled` removes this option from arrow-key movement entirely, so a keyboard user cannot land on it to discover that it exists and is unavailable."
+    ]
+  },
+
+  "composition": {
+    "slots": {
+      "label": {
+        "part": "label",
+        "accepts": ["text"],
+        "required": true,
+        "max": 1,
+        "description": "The option's name. Fills the `label` part."
+      }
+    }
+  },
+
+  "anatomy": {
+    "root": {
+      "part": "root",
+      "description": "The option: its control and its label, kept together so the whole row is the target.",
+      "role": "radio",
+      "activates": { "toggles": "member" },
+      "paints": {
+        "gap": null,
+        "padding": null
+      },
+      "states": {
+        "disabled": { "color": null }
+      },
+      "parts": {
+        "control": {
+          "part": "control",
+          "description": "The circle. Owns the focus ring and the border, and holds the mark that shows the option is chosen.",
+          "paints": {
+            "inline-size": null,
+            "block-size": null,
+            "border": null,
+            "border-radius": null,
+            "background": null
+          },
+          "states": {
+            "hover": { "border-color": null },
+            "focus-visible": { "outline": null, "outline-offset": null }
+          },
+          "parts": {
+            "mark": {
+              "part": "mark",
+              "description": "The filled dot inside the control. Present only while chosen — it is the non-colour signal that this option is the answer.",
+              "visibleWhen": "checked",
+              "paints": {
+                "inline-size": null,
+                "block-size": null,
+                "background": null,
+                "border-radius": null
+              }
+            }
+          }
+        },
+        "label": {
+          "part": "label",
+          "description": "The option's name.",
+          "paints": {
+            "color": null,
+            "font-size": null
+          }
+        }
+      }
+    }
+  }
+}

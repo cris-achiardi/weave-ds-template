@@ -1,0 +1,12 @@
+/* RadioGroup — THE CONSUMER'S FILE. Emitted once, empty, never regenerated. */
+
+/* --- structure, in the wrong file ------------------------------------------------------ */
+[data-ds-component='RadioGroup'] {
+  display: flex;
+  flex-direction: column;
+}
+/* --- end of misplaced structure -------------------------------------------------------- */
+
+[data-ds-component='RadioGroup'] {
+  gap: 0.15rem;
+}

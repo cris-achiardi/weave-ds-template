@@ -1,0 +1,25 @@
+/* GENERATED from Tooltip.contract.json. Do not edit by hand — regenerate instead. */
+/*
+ * STRUCTURE ONLY — and there is almost none, on purpose.
+ *
+ * This file should hold the layout Tooltip's contract depends on: the positioning,
+ * stacking and flow that make its stated behaviour true, with no colour or spacing in it.
+ * It cannot, because the contract has no `layout` block and nothing in it describes
+ * where a part sits. The emitter will not guess: an inferred layout that renders is
+ * harder to catch than one that does not.
+ *
+ * So Tooltip's real layout currently lives in Tooltip.theme.css — the CONSUMER's file,
+ * which is the wrong place for it. See docs/research/0002.
+ */
+
+[data-ds-component='Tooltip'] {
+  /* the scoping handle. Everything else is yours, for now. */
+}
+
+[data-ds-component='Tooltip'] [data-ds-part='trigger'] {
+  /* no declared layout for this part */
+}
+
+[data-ds-component='Tooltip'] [data-ds-part='popup'] {
+  /* no declared layout for this part */
+}

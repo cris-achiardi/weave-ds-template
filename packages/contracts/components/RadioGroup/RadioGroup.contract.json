@@ -1,0 +1,87 @@
+{
+  "$schema": "../../schema/component.schema.json",
+  "component": "RadioGroup",
+
+  "status": {
+    "level": "experimental",
+    "since": "2026-09-01",
+    "note": "Sourced from the W3C ARIA APG radio group pattern, which is normative and complete for this widget, and Base UI's RadioGroup for API naming consensus. First use of `cardinality: one`, and the first component whose keyboard model the contract cannot express."
+  },
+
+  "intent": {
+    "purpose": "Holds one choice from a small set of mutually exclusive options, all visible at once. It exists so the chosen option has exactly one home: the items compare against it rather than each holding a copy.",
+    "behaviour": [
+      "Holds exactly one selected value. Unlike an accordion, the selection cannot be emptied by the user — choosing another option is the only way to change it.",
+      "Moves between options on the arrow keys, wrapping at both ends, and SELECTS as it moves: arrowing to an option chooses it in the same action.",
+      "Keeps exactly one option in the Tab order — the selected one, or the first when nothing is selected — so Tab enters and leaves the group rather than walking through it.",
+      "Skips disabled options when moving.",
+      "Announces itself as a group with a name the consumer supplies. It has no name of its own."
+    ],
+    "notFor": [
+      "Choosing several things at once. That is a set of checkboxes; a radio group cannot express more than one answer.",
+      "An on/off setting. That is a switch, and phrasing it as two radios makes the reader compare two labels to find out what the default is.",
+      "More than about seven options, or options that do not fit on screen together. A select or a combobox handles a long list; a radio group's whole value is that every option is visible.",
+      "An action. Choosing an option records a choice; it does not do a thing."
+    ]
+  },
+
+  "collection": {
+    "items": "RadioItem",
+    "identity": "value",
+    "selection": {
+      "cardinality": "one",
+      "control": "shared",
+      "initial": "none"
+    }
+  },
+
+  "states": {
+    "disabled": {
+      "kind": "intrinsic",
+      "control": "consumer",
+      "description": "The whole group ignores interaction. Cascades to every item.",
+      "visual": "Every option dims and none can be chosen."
+    },
+    "read-only": {
+      "kind": "intrinsic",
+      "control": "consumer",
+      "description": "The selection cannot be changed, but the group stays readable and focusable. Distinct from disabled, which removes it from the focus order.",
+      "visual": "NOT DECIDED. No treatment has been designed, and inventing one here would be a guess."
+    }
+  },
+
+  "semantics": {
+    "role": "radiogroup",
+    "focusable": false
+  },
+
+  "a11y": {
+    "focusVisible": false,
+    "contrast": "not-applicable",
+    "keyboard": "Tab enters the group on the selected option, or the first when nothing is selected, and leaves it entirely. Arrow keys move between options and select as they move, wrapping at both ends. Space selects the focused option.",
+    "notes": [
+      "The group has no accessible name of its own. A consumer must supply one via `aria-label` or `aria-labelledby`, or assistive technology announces an unnamed set of options. This component cannot supply a sensible default and does not try.",
+      "Selection follows focus, which is the APG's specified behaviour for this pattern, and is why arrow keys cannot be used to browse the options without choosing. A consumer who needs browsing without committing wants a listbox, not a radio group.",
+      "Exactly one option is reachable with Tab. A controlled `value` matching no rendered option therefore leaves the whole group unreachable by keyboard, and nothing here detects that — it cannot tell a not-yet-rendered value from a wrong one.",
+      "The APG says nothing about whether arrow navigation skips disabled options. This component skips them, which means a keyboard user cannot land on a disabled option to discover that it exists and is unavailable."
+    ]
+  },
+
+  "composition": {
+    "children": {
+      "accepts": ["RadioItem"],
+      "min": 2,
+      "description": "The options, in order. A radio group with one option is a checkbox with extra steps."
+    }
+  },
+
+  "anatomy": {
+    "root": {
+      "part": "root",
+      "description": "The group. Owns the arrow-key movement between options and the single Tab stop.",
+      "paints": {
+        "gap": null
+      }
+    }
+  }
+}

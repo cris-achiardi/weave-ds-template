@@ -157,3 +157,9 @@ code {
   outline: 2px solid #8b83f0;
   outline-offset: 1px;
 }
+
+.readout {
+  font-size: 0.8rem;
+  color: #8b8b93;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
