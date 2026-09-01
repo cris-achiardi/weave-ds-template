@@ -307,6 +307,43 @@ Base UI fills it with eight parts and roughly twenty positioning props — `Prov
 `positionMethod`, plus CSS variables for anchor and available size. The contract expressed a
 `placement` axis, and nothing reads it.
 
+### A fourth pass: Button, and two limbs with no pulse
+
+`Button` was chosen last on purpose — the simplest component in any library, and the first to use
+`axes` and `whenAxis`. Both had been in the schema since before this branch.
+
+**Neither had ever been read by anything.** Emitting `Button` against three declared axes produced:
+
+```
+props: disabled, loading, iconStart, iconEnd
+```
+
+No `hierarchy`, no `variant`, no `size`. Three axes, zero props — and the emitter did not log an
+assumption about it, because it did not know axes existed. `whenAxis` likewise compiled to nothing.
+A contract could declare a full variant surface, validate, generate, and produce a component with no
+variants at all.
+
+Three changes made them live:
+
+| Change             | Effect                                                                        |
+| ------------------ | ----------------------------------------------------------------------------- |
+| `axes` → props     | a typed union per axis, with the declared default applied in destructuring    |
+| axis value → DOM   | `data-<prefix>-<axis>="<value>"` on the root                                  |
+| `whenAxis` → theme | one commented socket block per axis value, generated rather than hand-written |
+
+The DOM attribute is a **third attribute family** beside `part` and `state`, invented by the emitter
+because an unstyled library has no class to hang a variant on. Nothing in the contract system
+defines it.
+
+Also fixed: `composition.children` may now name a `part`, so `Button`'s children render inside its
+`label` region rather than after its trailing icon. And a `<button>` no longer emits a redundant
+`role="button"`.
+
+Verified in the page: twelve buttons, defaults applied where props were omitted, `hierarchy` crossed
+with `variant` producing the primary-destructive and secondary-destructive pair the two axes exist
+to express, three distinct sizes, and the `loading` spinner animating in the leading icon's slot
+without moving the label.
+
 ## What it appears to mean (inferred)
 
 Every item below is a reading, not a measurement.
@@ -387,6 +424,18 @@ roles. A table keyed by `(role, state)` would be correct and is a much larger ob
 knowledge that belongs to the web platform rather than to React, which is an argument for the third
 artifact this report has already proposed.
 
+**Dead schema is a distinct failure mode from a missing field, and harder to see.** `axes` and
+`whenAxis` validated, were documented, and appeared in the roster of what a contract may contain —
+for months, doing nothing. A missing field announces itself the moment you reach for it. A field that
+accepts your input and discards it does not, and a contract author would have had no way to tell.
+Nothing in the repo could have caught it: the schema was satisfied, the gates were green, and only
+generating a component that needed it exposed the gap.
+
+**The count of untested schema surface is now the interesting number.** `roleByAxis` and
+`internalOnly` have still never been used by any contract, and `minHitArea` and `contrast` are read
+by nothing. Some of those are deliberately unenforceable; some may be dead in the same way `axes`
+was.
+
 **Regeneration safety is currently a convention, not a mechanism.** The emitter skips
 `theme.css` when it exists, which is the right behaviour and is enforced by one `existsSync`. Nothing
 marks the generated files as generated in a way a tool could check, and nothing would stop a
@@ -455,6 +504,15 @@ to hold it, constraint-shaped or otherwise.
 `Accordion`'s contract declares `display` and `gap` as paint channels. Neither carries design
 intent in the sense `paints` documents; both are structure. Nothing distinguishes them, so the
 paint/theme split a consumer relies on is enforced only by the care of whoever wrote the contract.
+
+**15. `axes` and `whenAxis` were dead schema.**
+Declared, validated, documented, and read by nothing. A contract could specify a complete variant
+surface and generate a component with no variants. Now fixed, and the class of defect is the
+finding: a field that silently discards valid input cannot be detected by any gate here.
+
+**16. The axis attribute family is undocumented.**
+`data-<prefix>-<axis>` joins `part` and `state` as a styling handle a consumer will rely on. The
+emitter invented it; no schema, README or ADR mentions it.
 
 **11. A generated RadioGroup contradicts its own contract's stated behaviour.**
 Arrow keys do nothing; every option is in the Tab order. `intent.behaviour` describes the opposite,

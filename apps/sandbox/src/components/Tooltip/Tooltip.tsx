@@ -10,7 +10,7 @@ import './Tooltip.theme.css';
 
 export interface TooltipProps extends Omit<
   HTMLAttributes<HTMLDivElement>,
-  'open' | 'defaultOpen' | 'onOpenChange' | 'disabled' | 'trigger' | 'content'
+  'open' | 'defaultOpen' | 'onOpenChange' | 'disabled' | 'placement' | 'trigger' | 'content'
 > {
   /** The tooltip is showing. A consumer may control it; hover and focus on the trigger also change it. Controlled. */
   open?: boolean;
@@ -20,6 +20,9 @@ export interface TooltipProps extends Omit<
   onOpenChange?: (open: boolean) => void;
   /** The tooltip never opens. The trigger still works. */
   disabled?: boolean;
+  /** The PREFERRED side. A tooltip may be moved elsewhere when there is not room, so this is a request rather than a guarantee — a distinction the axis mechanism cannot express. Defaults to `top`. */
+  placement?:
+    'top' | 'top-start' | 'top-end' | 'bottom' | 'bottom-start' | 'bottom-end' | 'left' | 'right';
   /** The control the tooltip describes. Fills the `trigger` part. */
   trigger: ReactNode;
   /** The label itself. Text only — anything interactive would be unreachable. Fills the `popup` part. */
@@ -32,6 +35,7 @@ export const Tooltip = forwardRef<HTMLDivElement, TooltipProps>(function Tooltip
     defaultOpen = false,
     onOpenChange,
     disabled,
+    placement = 'top',
     trigger,
     content,
     children,
@@ -56,6 +60,7 @@ export const Tooltip = forwardRef<HTMLDivElement, TooltipProps>(function Tooltip
       id={baseId}
       data-ds-state-open={openValue || undefined}
       aria-disabled={disabled || undefined}
+      data-ds-placement={placement}
       data-ds-component="Tooltip"
       data-ds-part="root"
       className={className}

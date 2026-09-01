@@ -8,7 +8,7 @@
  * Nothing is imported from @ds/react, which exports no components and never will. The components
  * live here, in the consumer's own tree, which is the architecture in one import path.
  *
- * Seven contracts went in. They did NOT come out equal, and the page says so per specimen — the
+ * Eight contracts went in. They did NOT come out equal, and the page says so per specimen — the
  * point of this harness is to show how far each contract got, not to hide the difference.
  */
 
@@ -20,6 +20,7 @@ import { AccordionItem } from './components/AccordionItem';
 import { RadioGroup } from './components/RadioGroup';
 import { RadioItem } from './components/RadioItem';
 import { Tooltip } from './components/Tooltip';
+import { Button } from './components/Button';
 
 function Specimen({
   name,
@@ -64,11 +65,47 @@ export function App() {
       <header>
         <h1>Design system sandbox</h1>
         <p>
-          Seven contracts, compiled by <code>packages/react/src/emit/emit.mjs</code>. Each specimen
+          Eight contracts, compiled by <code>packages/react/src/emit/emit.mjs</code>. Each specimen
           is labelled with how far its contract actually got — see{' '}
           <code>docs/research/0002-compiling-a-contract-into-a-component.md</code>.
         </p>
       </header>
+
+      <Specimen
+        name="Button"
+        verdict="works"
+        note="The first component to use `axes` and `whenAxis`, which had sat in the schema unread since before this branch. Three axes became three typed props with defaults, each value reaches the DOM as its own data attribute, and every socket in the theme file below was generated from whenAxis rather than written by hand. hierarchy is the RANK of the action; variant is its colour. They are separate axes so that a secondary destructive action can be said at all."
+      >
+        <Button hierarchy="primary">Save changes</Button>
+        <Button hierarchy="secondary">Cancel</Button>
+        <Button hierarchy="tertiary">Learn more</Button>
+        <Button hierarchy="primary" variant="danger">
+          Delete project
+        </Button>
+        <Button hierarchy="secondary" variant="danger">
+          Delete
+        </Button>
+        <Button hierarchy="secondary" variant="brand">
+          Upgrade
+        </Button>
+      </Specimen>
+
+      <Specimen
+        name="Button — size and state"
+        verdict="works"
+        note="size is a contiguous subset of the canon's ladder. loading is control: consumer and authored — no platform provides it — and the contract promises the label does not move, so the spinner takes the leading icon's slot rather than replacing the text."
+      >
+        <Button size="s">Small</Button>
+        <Button size="m">Medium</Button>
+        <Button size="l">Large</Button>
+        <Button hierarchy="primary" loading>
+          Saving
+        </Button>
+        <Button disabled>Disabled</Button>
+        <Button hierarchy="primary" iconStart={<span>+</span>}>
+          With icon
+        </Button>
+      </Specimen>
 
       <Specimen
         name="Switch"
