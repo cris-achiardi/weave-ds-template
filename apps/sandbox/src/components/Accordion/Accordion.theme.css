@@ -1,0 +1,10 @@
+/*
+ * Accordion — THE CONSUMER'S FILE. Emitted once, empty, never regenerated.
+ */
+
+[data-ds-component='Accordion'] {
+  border: 1px solid #3a3a3f;
+  border-radius: 0.5rem;
+  max-inline-size: 44ch;
+  overflow: hidden;
+}

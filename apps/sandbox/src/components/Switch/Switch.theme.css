@@ -9,6 +9,40 @@
  * opinion about which. Nothing above this line knows what colour a switch is.
  */
 
+/*
+ * ============================================================================================
+ * EVERYTHING IN THIS BLOCK IS STRUCTURE, AND IT IS IN THE WRONG FILE.
+ *
+ * Positioning, flow and stacking are not paint. They belong in Switch.structure.css, which the
+ * emitter owns and regenerates. They are here because the contract has no `layout` block, so the
+ * emitter has nothing to derive them from and refuses to guess.
+ *
+ * The cost is concrete: delete this file and you do not get an unstyled switch, you get a BROKEN
+ * one — the thumb collapses onto the track and the state stops being visible to anyone who cannot
+ * rely on colour, which is a promise the contract makes in writing.
+ * ============================================================================================
+ */
+
+[data-ds-component='Switch'] {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+[data-ds-component='Switch']:disabled {
+  cursor: not-allowed;
+}
+
+[data-ds-component='Switch'] [data-ds-part='thumb'] {
+  position: absolute;
+  pointer-events: none;
+  inset-inline-start: 2px;
+}
+
+/* ==== end of misplaced structure. Everything below is genuinely paint. ==================== */
+
 [data-ds-component='Switch'] {
   inline-size: 44px;
   block-size: 24px;
@@ -49,7 +83,6 @@
   block-size: 18px;
   background: #ffffff;
   border-radius: 999px;
-  inset-inline-start: 2px;
   transform: translateX(0);
   transition-duration: 150ms;
   transition-property: transform;
@@ -60,12 +93,3 @@
 [data-ds-component='Switch'][aria-checked='true'] [data-ds-part='thumb'] {
   transform: translateX(20px);
 }
-
-/*
- * NOT in the contract, and worth noticing.
- *
- * `inset-inline-start` above is positioning, not paint — it belongs with the structural CSS the
- * emitter owns, not in the consumer's theme. It is here because the contract has no `layout`
- * block, so the emitter had nowhere to put it and did not know it was needed. A consumer who
- * deleted this file would get a switch whose thumb sits wherever it lands.
- */

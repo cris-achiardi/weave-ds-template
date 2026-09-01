@@ -28,16 +28,16 @@ export const Switch = forwardRef<HTMLButtonElement, SwitchProps>(function Switch
   { checked, defaultChecked = false, onCheckedChange, disabled, readOnly, className, ...rest },
   ref,
 ) {
-  const controlled = checked !== undefined;
-  const [internal, setInternal] = useState(defaultChecked);
-  const value = controlled ? checked : internal;
+  const checkedControlled = checked !== undefined;
+  const [checkedInternal, setCheckedInternal] = useState(defaultChecked);
+  const checkedValue = checkedControlled ? checked : checkedInternal;
 
-  const toggle = useCallback(() => {
+  const activate = useCallback(() => {
     if (disabled || readOnly) return;
-    const next = !value;
-    if (!controlled) setInternal(next);
+    const next = !checkedValue;
+    if (!checkedControlled) setCheckedInternal(next);
     onCheckedChange?.(next);
-  }, [controlled, disabled, readOnly, value, onCheckedChange]);
+  }, [checkedControlled, checkedValue, onCheckedChange, disabled, readOnly]);
 
   return (
     <button
@@ -45,10 +45,10 @@ export const Switch = forwardRef<HTMLButtonElement, SwitchProps>(function Switch
       ref={ref}
       type="button"
       role="switch"
-      aria-checked={value}
-      aria-readonly={readOnly || undefined}
+      aria-checked={checkedValue || undefined}
       disabled={disabled}
-      onClick={toggle}
+      aria-readonly={readOnly || undefined}
+      onClick={activate}
       data-ds-component="Switch"
       data-ds-part="root"
       className={className}

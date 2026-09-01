@@ -3,13 +3,16 @@
 //
 // It exists to answer ONE question that no amount of contract-writing can: is a contract sufficient
 // to generate a working component from? Everything it cannot derive from the contract, it records in
-// EMITTER_ASSUMPTIONS below rather than quietly deciding — that list is the actual output of this
-// spike, and docs/research/0002 reports it.
+// EMITTER_ASSUMPTIONS rather than quietly deciding — that list is the actual output of this spike,
+// and docs/research/0002 reports it.
 //
 //   node packages/react/src/emit/emit.mjs <Name> --out <dir>
 //
-// Handles exactly what Switch needs. It is not the emitter; it is the probe that tells us what the
-// emitter will require.
+// v2. The first version was Switch-shaped: it hardcoded button attributes, a click-to-toggle
+// handler and `aria-checked` on every component it touched, which produced a Field that referenced
+// an undeclared variable and put `type="button"` on a div. What follows is the same probe with
+// those assumptions moved out of the templates and into either the binding, the contract, or a
+// logged assumption. It is still not the emitter.
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -21,10 +24,35 @@ const REPO_ROOT = resolve(HERE, '../../../..');
 const CONTRACTS = join(REPO_ROOT, 'packages/contracts');
 const BINDINGS = join(REPO_ROOT, 'packages/react/bindings');
 
-// ---------------------------------------------------------------------------------------
-// Everything the emitter had to decide FOR ITSELF. Each one is a gap in the contract system,
-// not a preference — a second backend would have to make the same call with nothing to guide it.
-// ---------------------------------------------------------------------------------------
+// Roles whose state is toggled by activating the element itself. Outside this list the emitter
+// does NOT wire an event, because nothing in a contract says what causes a state to change.
+const TOGGLE_ROLES = new Set(['switch', 'checkbox']);
+
+// Which DOM attribute carries a state. Not stated in any contract — see the logged assumption.
+const NATIVE_ATTR = { disabled: 'disabled' };
+const ARIA_ATTR = {
+  checked: 'aria-checked',
+  'read-only': 'aria-readonly',
+  invalid: 'aria-invalid',
+  open: 'aria-expanded',
+  disabled: 'aria-disabled',
+};
+const NATIVE_PSEUDO = {
+  hover: ':hover',
+  'focus-visible': ':focus-visible',
+  disabled: ':disabled',
+  active: ':active',
+};
+
+// React's typing for a given intrinsic element. Another thing no contract states.
+const ATTR_TYPE = {
+  button: ['ButtonHTMLAttributes', 'HTMLButtonElement'],
+  input: ['InputHTMLAttributes', 'HTMLInputElement'],
+  label: ['LabelHTMLAttributes', 'HTMLLabelElement'],
+  a: ['AnchorHTMLAttributes', 'HTMLAnchorElement'],
+};
+const attrTypeFor = (el) => ATTR_TYPE[el] ?? ['HTMLAttributes', 'HTMLDivElement'];
+
 const EMITTER_ASSUMPTIONS = [];
 const assume = (topic, decision, why) => EMITTER_ASSUMPTIONS.push({ topic, decision, why });
 
@@ -71,42 +99,47 @@ function load(name) {
 }
 
 // ---------------------------------------------------------------------------------------
-// states -> the public prop surface, via prop-bindings.json controlRules
+// states -> the public prop surface, per ADR 0004's controlRules
+// slots  -> content props
 // ---------------------------------------------------------------------------------------
 function surfaceFrom(contract) {
-  const states = contract.states ?? {};
   const props = [];
-  for (const [state, def] of Object.entries(states)) {
-    const name = camel(state);
+
+  for (const [state, def] of Object.entries(contract.states ?? {})) {
+    const n = camel(state);
     if (def.control === 'shared') {
       props.push(
-        { name, type: 'boolean', optional: true, from: state, role: 'controlled' },
-        {
-          name: `default${pascal(state)}`,
-          type: 'boolean',
-          optional: true,
-          from: state,
-          role: 'uncontrolled',
-        },
+        { name: n, type: 'boolean', from: state, role: 'controlled' },
+        { name: `default${pascal(state)}`, type: 'boolean', from: state, role: 'uncontrolled' },
         {
           name: `on${pascal(state)}Change`,
-          type: `(${name}: boolean) => void`,
-          optional: true,
+          type: `(${n}: boolean) => void`,
           from: state,
           role: 'callback',
         },
       );
     } else if (def.control === 'consumer') {
-      props.push({ name, type: 'boolean', optional: true, from: state, role: 'input' });
+      props.push({ name: n, type: 'boolean', from: state, role: 'input' });
     }
     // `internal` emits nothing. That is the whole point of the value.
   }
+
+  // A named slot becomes a content prop. ADR 0004 covers states only; this is the obvious
+  // analogue and is NOT recorded anywhere, which is itself worth reporting.
+  for (const [slot, def] of Object.entries(contract.composition?.slots ?? {})) {
+    props.push({
+      name: camel(slot),
+      type: 'ReactNode',
+      from: slot,
+      role: 'slot',
+      required: def.required === true,
+      description: def.description,
+    });
+  }
+
   return props;
 }
 
-// ---------------------------------------------------------------------------------------
-// anatomy -> a flat list of parts
-// ---------------------------------------------------------------------------------------
 function partsOf(node, out = [], key = 'root') {
   out.push({ key, part: node.part, node });
   for (const [k, child] of Object.entries(node.parts ?? {})) partsOf(child, out, k);
@@ -114,108 +147,183 @@ function partsOf(node, out = [], key = 'root') {
 }
 
 // ---------------------------------------------------------------------------------------
-// emit: TSX
+// TSX
 // ---------------------------------------------------------------------------------------
-function emitTsx(name, contract, binding, dataPrefix) {
+function emitTsx(name, contract, binding, prefix) {
   const props = surfaceFrom(contract);
-  const parts = partsOf(contract.anatomy.root);
-  const shared = props.filter((p) => p.role === 'controlled');
+  const root = contract.anatomy.root;
   const el = binding.element;
+  const [attrType, elType] = attrTypeFor(el);
+  const role = contract.semantics?.role;
 
+  const shared = props.filter((p) => p.role === 'controlled');
+  const slots = props.filter((p) => p.role === 'slot');
+  const takesChildren = (contract.composition?.children?.max ?? 1) !== 0;
+
+  // ---- can this component's state be driven by activating it?
+  const toggles = shared.length > 0 && role && TOGGLE_ROLES.has(role);
+  const primary = toggles ? shared[0] : null;
+
+  assume(
+    'how a state reaches the DOM',
+    'ARIA attribute where one is conventional, native attribute for disabled, otherwise data-<prefix>-state',
+    'The contract declares that a state exists and who may set it, never how it is exposed. Two backends will diverge here, and a consumer styling [aria-checked] against one will find the other using a data attribute.',
+  );
+
+  if (shared.length > 0 && !toggles) {
+    assume(
+      'what changes a shared state',
+      `no event wired — ${shared.map((s) => s.name).join(', ')} ${shared.length > 1 ? 'are' : 'is'} exposed as storage only`,
+      `Nothing in a contract says what CAUSES a state to change. It is stated in intent.behaviour as prose, which no tool reads. The emitter only wires activation for roles it knows are self-toggling (${[...TOGGLE_ROLES].join(', ')}); for anything else the generated component holds the state and never sets it.`,
+    );
+  }
   if (shared.length > 1) {
     assume(
       'multiple shared states',
-      'only the first is given controlled/uncontrolled machinery',
-      'Nothing says how two independently controllable states interact, or whether a framework can even express two two-way bindings. Vue allows one primary v-model.',
+      'each gets its own independent controlled/uncontrolled storage',
+      'Nothing says whether two shared states are independent or related. It works in React; Vue allows one primary v-model, so this is the case most likely to break the rule in ADR 0004.',
     );
   }
-
-  const role = contract.semantics?.role;
-  if (!role) {
+  if (slots.length > 0) {
     assume(
-      'semantics.role absent',
-      'no role attribute emitted',
-      'The contract may omit it, and the emitter cannot infer one.',
+      'slots as props',
+      'each named slot becomes a ReactNode prop rendered into the anatomy part of the same name',
+      'ADR 0004 defines how STATES become props and says nothing about slots. This mapping is the obvious analogue and is recorded nowhere, so a second backend would invent its own.',
     );
   }
-
-  // ---- state -> DOM attribute. NOT stated anywhere.
-  assume(
-    'how a state reaches the DOM',
-    'ARIA attribute where one exists (aria-checked, aria-readonly), native attribute for disabled, otherwise data-<prefix>-state',
-    'The contract declares that a state exists and who sets it, never how it is exposed. The binding says so in prose notes, which no tool reads. Two backends will diverge here.',
-  );
 
   const s = [];
   s.push(`// GENERATED from ${name}.contract.json + ${name}.react.json. Do not edit by hand.`);
   s.push(`// Regenerate: node packages/react/src/emit/emit.mjs ${name} --out <dir>`);
   s.push(`//`);
-  s.push(`// ${contract.intent.purpose.replace(/\n/g, ' ')}`);
+  s.push(`// ${contract.intent.purpose.replace(/\s+/g, ' ')}`);
   s.push(``);
-  s.push(`import { forwardRef, useCallback, useState } from 'react';`);
-  s.push(`import type { ButtonHTMLAttributes } from 'react';`);
+
+  const hooks = ['forwardRef'];
+  if (primary) hooks.push('useCallback', 'useState');
+  else if (shared.length) hooks.push('useState');
+  s.push(`import { ${hooks.join(', ')} } from 'react';`);
+  const types = [attrType];
+  if (slots.length) types.push('ReactNode');
+  s.push(`import type { ${types.join(', ')} } from 'react';`);
   s.push(`import './${name}.structure.css';`);
   s.push(`import './${name}.theme.css';`);
   s.push(``);
 
-  const own = props.map((p) => p.name);
-  s.push(`export interface ${name}Props`);
+  const owned = props.map((p) => p.name);
   s.push(
-    `  extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, ${own.map((n) => `'${n}'`).join(' | ')}> {`,
+    `export interface ${name}Props extends Omit<${attrType}<${elType}>, ${owned.map((n) => `'${n}'`).join(' | ')}> {`,
   );
   for (const p of props) {
-    const src = contract.states[p.from];
+    const src = contract.states?.[p.from];
     if (p.role === 'controlled') s.push(`  /** ${src.description} Controlled. */`);
     if (p.role === 'uncontrolled') s.push(`  /** Initial value when uncontrolled. */`);
     if (p.role === 'callback') s.push(`  /** Called when it changes, controlled or not. */`);
     if (p.role === 'input') s.push(`  /** ${src.description} */`);
-    s.push(`  ${p.name}?: ${p.type};`);
+    if (p.role === 'slot') s.push(`  /** ${p.description ?? 'Slot content.'} */`);
+    s.push(`  ${p.name}${p.required ? '' : '?'}: ${p.type};`);
   }
   s.push(`}`);
   s.push(``);
 
-  const primary = shared[0];
-  const pn = primary?.name;
-  const destructure = [
+  const destructured = [
     ...props.map((p) => (p.role === 'uncontrolled' ? `${p.name} = false` : p.name)),
+    ...(takesChildren ? ['children'] : []),
     'className',
     '...rest',
   ];
 
-  s.push(`export const ${name} = forwardRef<HTMLButtonElement, ${name}Props>(function ${name}(`);
-  s.push(`  { ${destructure.join(', ')} },`);
+  s.push(`export const ${name} = forwardRef<${elType}, ${name}Props>(function ${name}(`);
+  s.push(`  { ${destructured.join(', ')} },`);
   s.push(`  ref,`);
   s.push(`) {`);
+
+  for (const sh of shared) {
+    const st = sh.from;
+    const v = camel(st);
+    s.push(`  const ${v}Controlled = ${sh.name} !== undefined;`);
+    s.push(`  const [${v}Internal, set${pascal(st)}Internal] = useState(default${pascal(st)});`);
+    s.push(`  const ${v}Value = ${v}Controlled ? ${sh.name} : ${v}Internal;`);
+    if (!primary || primary.from !== st) {
+      s.push(
+        `  // The contract declares \`${st}\` as control: shared, so a consumer may set it — but`,
+      );
+      s.push(
+        `  // nothing in the contract says what CHANGES it, so this setter is unreachable and the`,
+      );
+      s.push(
+        `  // uncontrolled form of this state can never move. Pass \`${sh.name}\` to control it.`,
+      );
+      s.push(`  void set${pascal(st)}Internal;`);
+    }
+  }
+  if (shared.length) s.push(``);
+
   if (primary) {
-    s.push(`  const controlled = ${pn} !== undefined;`);
-    s.push(`  const [internal, setInternal] = useState(default${pascal(primary.from)});`);
-    s.push(`  const value = controlled ? ${pn} : internal;`);
-    s.push(``);
-    s.push(`  const toggle = useCallback(() => {`);
-    s.push(`    if (disabled || readOnly) return;`);
-    s.push(`    const next = !value;`);
-    s.push(`    if (!controlled) setInternal(next);`);
-    s.push(`    on${pascal(primary.from)}Change?.(next);`);
-    s.push(`  }, [controlled, disabled, readOnly, value, on${pascal(primary.from)}Change]);`);
+    const st = primary.from;
+    const v = camel(st);
+    const guards = props
+      .filter((p) => p.role === 'input' && ['disabled', 'readOnly'].includes(p.name))
+      .map((p) => p.name);
+    s.push(`  const activate = useCallback(() => {`);
+    if (guards.length) s.push(`    if (${guards.join(' || ')}) return;`);
+    s.push(`    const next = !${v}Value;`);
+    s.push(`    if (!${v}Controlled) set${pascal(st)}Internal(next);`);
+    s.push(`    on${pascal(st)}Change?.(next);`);
+    s.push(
+      `  }, [${v}Controlled, ${v}Value, on${pascal(st)}Change${guards.length ? ', ' + guards.join(', ') : ''}]);`,
+    );
     s.push(``);
   }
+
   s.push(`  return (`);
   s.push(`    <${el}`);
   s.push(`      {...rest}`);
   s.push(`      ref={ref}`);
-  s.push(`      type="button"`);
+  if (el === 'button') s.push(`      type="button"`);
   if (role) s.push(`      role="${role}"`);
-  if (primary) s.push(`      aria-checked={value}`);
-  s.push(`      aria-readonly={readOnly || undefined}`);
-  s.push(`      disabled={disabled}`);
-  s.push(`      onClick={toggle}`);
-  s.push(`      data-${dataPrefix}-component="${name}"`);
-  s.push(`      data-${dataPrefix}-part="${parts[0].node.part}"`);
+
+  // state -> attribute, only for states this component actually declares
+  for (const [st, def] of Object.entries(contract.states ?? {})) {
+    const v = camel(st);
+    const isShared = shared.some((x) => x.from === st);
+    const isConsumer = props.some((p) => p.role === 'input' && p.from === st);
+    if (!isShared && !isConsumer) continue;
+    const expr = isShared ? `${v}Value` : v;
+    if (NATIVE_ATTR[st] && el === 'button') {
+      s.push(`      ${NATIVE_ATTR[st]}={${expr}}`);
+    } else if (ARIA_ATTR[st]) {
+      s.push(`      ${ARIA_ATTR[st]}={${expr} || undefined}`);
+    } else {
+      s.push(`      data-${prefix}-state-${st}={${expr} || undefined}`);
+    }
+  }
+  if (primary) s.push(`      onClick={activate}`);
+  s.push(`      data-${prefix}-component="${name}"`);
+  s.push(`      data-${prefix}-part="${root.part}"`);
   s.push(`      className={className}`);
   s.push(`    >`);
-  for (const p of parts.slice(1)) {
-    s.push(`      <span data-${dataPrefix}-part="${p.node.part}" />`);
+
+  const childParts = Object.entries(root.parts ?? {});
+  for (const [key, node] of childParts) {
+    const slot = slots.find((x) => camel(x.from) === key);
+    if (slot) {
+      s.push(`      <span data-${prefix}-part="${node.part}">{${slot.name}}</span>`);
+    } else {
+      s.push(`      <span data-${prefix}-part="${node.part}" />`);
+    }
   }
+  // Slots with no matching anatomy part still have to go somewhere.
+  const orphaned = slots.filter((x) => !childParts.some(([k]) => k === camel(x.from)));
+  if (orphaned.length) {
+    assume(
+      'slots with no anatomy part',
+      `rendered bare, in declaration order: ${orphaned.map((o) => o.name).join(', ')}`,
+      'The contract declares these slots but its anatomy names no part for them, so there is no described region to put them in and no way to style where they land.',
+    );
+    for (const o of orphaned) s.push(`      {${o.name}}`);
+  }
+  if (takesChildren) s.push(`      {children}`);
   s.push(`    </${el}>`);
   s.push(`  );`);
   s.push(`});`);
@@ -224,52 +332,47 @@ function emitTsx(name, contract, binding, dataPrefix) {
 }
 
 // ---------------------------------------------------------------------------------------
-// emit: structure.css  — the honest part of the spike
+// structure.css
 // ---------------------------------------------------------------------------------------
-function emitStructure(name, contract, dataPrefix) {
-  const parts = partsOf(contract.anatomy.root);
+function emitStructure(name, contract, prefix) {
+  const root = contract.anatomy.root;
+  const kids = Object.values(root.parts ?? {});
+
   assume(
     'structural CSS',
-    'hand-written in the emitter, per component',
-    "THE BIG ONE. The contract has no `layout` block, so nothing states that the thumb must be out of flow for its position to carry the state — which is a promise the contract makes in prose. The emitter cannot derive it and currently hardcodes it, which means the layout a contract depends on is not the contract's decision and no gate can check it.",
+    'NONE EMITTED — the emitter refuses to guess',
+    "THE BIG ONE. The contract has no `layout` block, so there is nothing to derive from. v1 hardcoded a Switch's layout into the emitter; v2 tried to infer it from prose in `states.*.visual` and silently emitted `display: block`, which collapsed the Switch's thumb onto its track. Both are guesses, and a guess that renders is more dangerous than one that does not. So this file now carries only the scoping rule, and every component's real layout has to live in the CONSUMER's theme file — which is the wrong place, and is exactly the gap.",
   );
   assume(
     'scoping selector',
-    `data-${dataPrefix}-component="<Name>" on the root`,
-    'Without CSS Modules there is no hashing, so [data-*-part="root"] would match every component in the page. Nothing in the contract system defines a component-level attribute; the emitter invented one.',
+    `data-${prefix}-component="<Name>" on the root`,
+    'Without CSS Modules there is no hashing, so [data-*-part="root"] would match every component on the page. Nothing in the contract system defines a component-level attribute; the emitter invented one.',
   );
 
   const L = [];
   L.push(`/* GENERATED from ${name}.contract.json. Do not edit by hand — regenerate instead. */`);
   L.push(`/*`);
+  L.push(` * STRUCTURE ONLY — and there is almost none, on purpose.`);
+  L.push(` *`);
+  L.push(` * This file should hold the layout ${name}'s contract depends on: the positioning,`);
   L.push(
-    ` * STRUCTURE ONLY. No colour, no spacing scale, no type: those are yours, in ${name}.theme.css.`,
+    ` * stacking and flow that make its stated behaviour true, with no colour or spacing in it.`,
   );
-  L.push(
-    ` * What is here is layout the contract's stated behaviour depends on. Removing it makes the`,
-  );
-  L.push(
-    ` * contract lie — the thumb's position is what carries the state for anyone who cannot rely`,
-  );
-  L.push(` * on colour, and that only works if the thumb is out of flow.`);
+  L.push(` * It cannot, because the contract has no \`layout\` block and nothing in it describes`);
+  L.push(` * where a part sits. The emitter will not guess: an inferred layout that renders is`);
+  L.push(` * harder to catch than one that does not.`);
+  L.push(` *`);
+  L.push(` * So ${name}'s real layout currently lives in ${name}.theme.css — the CONSUMER's file,`);
+  L.push(` * which is the wrong place for it. See docs/research/0002.`);
   L.push(` */`);
   L.push(``);
-  L.push(`[data-${dataPrefix}-component='${name}'] {`);
-  L.push(`  position: relative;`);
-  L.push(`  display: inline-flex;`);
-  L.push(`  align-items: center;`);
-  L.push(`  flex-shrink: 0;`);
-  L.push(`  cursor: pointer;`);
+  L.push(`[data-${prefix}-component='${name}'] {`);
+  L.push(`  /* the scoping handle. Everything else is yours, for now. */`);
   L.push(`}`);
   L.push(``);
-  L.push(`[data-${dataPrefix}-component='${name}']:disabled {`);
-  L.push(`  cursor: not-allowed;`);
-  L.push(`}`);
-  L.push(``);
-  for (const p of parts.slice(1)) {
-    L.push(`[data-${dataPrefix}-component='${name}'] [data-${dataPrefix}-part='${p.node.part}'] {`);
-    L.push(`  position: absolute;`);
-    L.push(`  pointer-events: none;`);
+  for (const node of kids) {
+    L.push(`[data-${prefix}-component='${name}'] [data-${prefix}-part='${node.part}'] {`);
+    L.push(`  /* no declared layout for this part */`);
     L.push(`}`);
     L.push(``);
   }
@@ -277,9 +380,20 @@ function emitStructure(name, contract, dataPrefix) {
 }
 
 // ---------------------------------------------------------------------------------------
-// emit: theme.css — one commented socket per unbound channel
+// theme.css — one commented socket per unbound channel
 // ---------------------------------------------------------------------------------------
-function emitTheme(name, contract, dataPrefix) {
+function stateSelector(base, state) {
+  const isChild = base.includes('] [');
+  const rootSel = isChild ? base.split('] [')[0] + ']' : base;
+  const childSel = isChild ? '[' + base.split('] [')[1] : '';
+  let on;
+  if (NATIVE_PSEUDO[state]) on = NATIVE_PSEUDO[state];
+  else if (ARIA_ATTR[state]) on = `[${ARIA_ATTR[state]}='true']`;
+  else on = `[data-state~='${state}']`;
+  return isChild ? `${rootSel}${on} ${childSel}` : `${base}${on}`;
+}
+
+function emitTheme(name, contract, prefix) {
   const parts = partsOf(contract.anatomy.root);
   const L = [];
   L.push(`/*`);
@@ -296,8 +410,8 @@ function emitTheme(name, contract, dataPrefix) {
   for (const p of parts) {
     const sel =
       p.key === 'root'
-        ? `[data-${dataPrefix}-component='${name}']`
-        : `[data-${dataPrefix}-component='${name}'] [data-${dataPrefix}-part='${p.node.part}']`;
+        ? `[data-${prefix}-component='${name}']`
+        : `[data-${prefix}-component='${name}'] [data-${prefix}-part='${p.node.part}']`;
     const channels = Object.keys(p.node.paints ?? {});
     if (channels.length) {
       L.push(`${sel} {`);
@@ -307,37 +421,14 @@ function emitTheme(name, contract, dataPrefix) {
     }
     for (const [state, paints] of Object.entries(p.node.states ?? {})) {
       const def = contract.states?.[state];
-      const selector = stateSelector(sel, state, def);
       L.push(`/* state: ${state} — ${def?.visual ?? 'no visual recorded'} */`);
-      L.push(`${selector} {`);
+      L.push(`${stateSelector(sel, state)} {`);
       for (const c of Object.keys(paints)) L.push(`  /* ${c}: ; */`);
       L.push(`}`);
       L.push(``);
     }
   }
   return L.join('\n');
-}
-
-function stateSelector(base, state, def) {
-  // Another undeclared mapping. See EMITTER_ASSUMPTIONS.
-  const NATIVE = {
-    hover: ':hover',
-    'focus-visible': ':focus-visible',
-    disabled: ':disabled',
-    active: ':active',
-  };
-  const ARIA = { checked: '[aria-checked="true"]', 'read-only': '[aria-readonly="true"]' };
-  if (base.includes('[data-') && base.includes('part')) {
-    // A child part: the state lives on the root, so the selector has to reach back up.
-    const root = base.split('] [')[0] + ']';
-    const child = '[' + base.split('] [')[1];
-    if (NATIVE[state]) return `${root}${NATIVE[state]} ${child}`;
-    if (ARIA[state]) return `${root}${ARIA[state]} ${child}`;
-    return `${root}[data-state~='${state}'] ${child}`;
-  }
-  if (NATIVE[state]) return `${base}${NATIVE[state]}`;
-  if (ARIA[state]) return `${base}${ARIA[state]}`;
-  return `${base}[data-state~='${state}']`;
 }
 
 // ---------------------------------------------------------------------------------------
@@ -352,21 +443,17 @@ if (!name || outIdx === -1) {
 const outDir = resolve(process.cwd(), process.argv[outIdx + 1], name);
 
 const { contract, binding } = load(name);
-const dataPrefix = readJson(join(REPO_ROOT, 'ds.config.json')).dataPrefix;
+const prefix = readJson(join(REPO_ROOT, 'ds.config.json')).dataPrefix;
 
 mkdirSync(outDir, { recursive: true });
-writeFileSync(join(outDir, `${name}.tsx`), emitTsx(name, contract, binding, dataPrefix), 'utf8');
-writeFileSync(
-  join(outDir, `${name}.structure.css`),
-  emitStructure(name, contract, dataPrefix),
-  'utf8',
-);
+writeFileSync(join(outDir, `${name}.tsx`), emitTsx(name, contract, binding, prefix), 'utf8');
+writeFileSync(join(outDir, `${name}.structure.css`), emitStructure(name, contract, prefix), 'utf8');
 
 const themePath = join(outDir, `${name}.theme.css`);
 if (existsSync(themePath)) {
   console.log(`  kept   ${name}.theme.css (yours — never regenerated)`);
 } else {
-  writeFileSync(themePath, emitTheme(name, contract, dataPrefix), 'utf8');
+  writeFileSync(themePath, emitTheme(name, contract, prefix), 'utf8');
 }
 writeFileSync(
   join(outDir, 'index.ts'),
@@ -376,7 +463,7 @@ writeFileSync(
 
 const surface = surfaceFrom(contract);
 console.log(`\nemitted ${name} -> ${outDir}`);
-console.log(`  props generated from states: ${surface.map((p) => p.name).join(', ') || '(none)'}`);
+console.log(`  props: ${surface.map((p) => p.name).join(', ') || '(none)'}`);
 console.log(`\n${EMITTER_ASSUMPTIONS.length} thing(s) the contract could not tell the emitter:\n`);
 for (const a of EMITTER_ASSUMPTIONS) {
   console.log(`  ${a.topic}`);

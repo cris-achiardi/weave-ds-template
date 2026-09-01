@@ -1,0 +1,74 @@
+{
+  "$schema": "../../schema/component.schema.json",
+  "component": "Accordion",
+  "status": {
+    "level": "experimental",
+    "since": "2026-09-01",
+    "note": "Sourced from the W3C ARIA APG accordion pattern for roles and keyboard, and Base UI's Accordion for API naming consensus. Note that the APG no longer specifies arrow-key navigation between headers, and Base UI has deprecated its `orientation` and `loopFocus` props to match."
+  },
+  "intent": {
+    "purpose": "Holds which of a set of sections are expanded, and lets a reader open one without losing the list of the others. It exists so that the open set has exactly one home rather than each section holding its own copy.",
+    "behaviour": [
+      "Holds the open set as a list of item values, controlled via `value` + `onValueChange` or uncontrolled via `defaultValue`.",
+      "Allows exactly one open section by default. `multiple` allows any number, including none.",
+      "In single mode, opening one section closes whichever was open. In multiple mode, sections are independent.",
+      "Adds no keyboard behaviour between headers. Every trigger is an ordinary button in the page's Tab order, which is what the ARIA APG now specifies — it removed roving focus from this pattern, and arrow-key navigation between headers is not part of it.",
+      "Never renders a state where every section is closed and nothing indicates why, unless the design has said an all-closed accordion is acceptable.",
+      "Disabling the accordion disables every item in it; an individual item may also be disabled on its own."
+    ],
+    "notFor": [
+      "Tabs. An accordion's sections stack and more than one may be open; tabs show exactly one panel in a fixed area. Choosing accordion for a tabs job produces a list that jumps as it opens.",
+      "A single collapsible section. That is a disclosure, and it needs none of this — no set, no shared state, no coordination.",
+      "Navigation. These sections reveal content in place; nothing here changes a URL.",
+      "Hiding content from the page's search. A closed panel that is removed from the DOM cannot be found by the browser's find-in-page, which is a real cost and the reason a keep-mounted option exists."
+    ]
+  },
+  "axes": {
+    "orientation": {
+      "values": ["vertical"],
+      "default": "vertical",
+      "description": "Only vertical is designed. Recorded as an axis with one value rather than omitted, because the horizontal case exists in the canon and this component deliberately does not take it."
+    }
+  },
+  "states": {
+    "disabled": {
+      "kind": "intrinsic",
+      "control": "consumer",
+      "description": "The whole accordion ignores interaction. Cascades to every item.",
+      "visual": "Every header dims and no panel can be toggled."
+    }
+  },
+  "semantics": {
+    "focusable": false
+  },
+  "a11y": {
+    "focusVisible": false,
+    "contrast": "not-applicable",
+    "keyboard": "Tab and Shift+Tab move between triggers as ordinary buttons. Enter and Space toggle the focused section. No arrow-key navigation — the APG does not specify it for this pattern.",
+    "notes": [
+      "Each header must be wrapped in a heading element whose level fits the surrounding page, and the trigger button must be the only thing inside that heading. This component cannot know what heading level is correct for a page it does not own, so the level must be passed in and there is no safe default.",
+      "In single mode the open section's trigger is marked disabled for assistive technology, because activating it would do nothing. That is the APG's guidance and it means a keyboard user can still focus it and be told why it will not respond.",
+      "A panel removed from the DOM when closed is invisible to find-in-page. Keeping it mounted fixes that and costs rendering every panel's content whether or not anyone opens it.",
+      "The accordion has no accessible name of its own and does not need one — each section is named by its own heading."
+    ]
+  },
+  "composition": {
+    "children": {
+      "accepts": ["AccordionItem"],
+      "min": 1,
+      "description": "The sections, in order. Anything else is passed through untouched but takes no part in the open set."
+    }
+  },
+  "anatomy": {
+    "root": {
+      "part": "root",
+      "description": "The wrapper holding the sections, so they stack as one unit and can be given a shared border treatment.",
+      "paints": {
+        "display": null,
+        "gap": null,
+        "border": null,
+        "border-radius": null
+      }
+    }
+  }
+}

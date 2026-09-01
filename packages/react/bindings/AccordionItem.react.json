@@ -1,0 +1,13 @@
+{
+  "$schema": "./binding.schema.json",
+  "component": "AccordionItem",
+  "contract": "../../contracts/components/AccordionItem/AccordionItem.contract.json",
+  "framework": "react",
+  "element": "div",
+  "refTarget": "root",
+  "classNamePassthrough": "root",
+  "notes": [
+    "The contract's `semantics.role` of `button` lands on the `trigger` part, not on the rendered root. The root is a wrapper holding the heading and the panel so a single border can separate one section from the next.",
+    "The heading level is a required prop with no default. The APG requires a level that fits the surrounding document outline, which this component cannot know — see the contract's a11y notes. The contract has no way to declare a required consumer-supplied value, so nothing enforces it."
+  ]
+}

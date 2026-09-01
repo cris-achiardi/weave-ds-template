@@ -27,10 +27,14 @@ Use the sandbox while building. Switch Storybook on when the library is worth br
 node packages/react/src/emit/emit.mjs Switch --out apps/sandbox/src/components
 ```
 
-That produced `Switch/` — the TSX, its structural CSS, an empty theme file and a barrel — from
-`packages/contracts/components/Switch/Switch.contract.json`. Note what the import in `src/App.tsx`
-does **not** say: nothing comes from `@ds/react`, because that package exports no components. The
-component lives here, in the consumer's own tree, which is the whole architecture in one import path.
+That produced `Switch/`, and the same command produced `Field/`, `Accordion/` and
+`AccordionItem/` — each one a TSX, its structural CSS, an empty theme file and a barrel, from the
+matching contract in `packages/contracts/components/`. Note what the imports in `src/App.tsx` do
+**not** say: nothing comes from `@ds/react`, because that package exports no components. The
+components live here, in the consumer's own tree, which is the whole architecture in one import path.
+
+The page labels each specimen `works`, `partial` or `shell`, because the four contracts did not
+compile equally and hiding that would make the harness a worse instrument.
 
 `Switch.tsx` and `Switch.structure.css` are overwritten on every run. `Switch.theme.css` is emitted
 once, empty, and then belongs to whoever fills it — it is the only file in that directory a person

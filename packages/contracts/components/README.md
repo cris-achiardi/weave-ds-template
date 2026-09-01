@@ -8,13 +8,24 @@ advance — see `docs/ADR/README.md`.
 
 ## What is here
 
-| Contract  | Status         | Why it exists                                                                                                                                                                                                                              |
-| --------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `Switch/` | `experimental` | The first, and written to be compiled rather than admired — it is the subject of `docs/research/0002-compiling-a-contract-into-a-component.md`, which proved a contract can generate a working component and listed what it could not say. |
+Four contracts, and they did **not** compile equally. The verdict column is measured, not estimated —
+see `docs/research/0002-compiling-a-contract-into-a-component.md`.
 
-One contract is not a library. The next are chosen for **coverage** rather than count: a positioned
-component to exercise the layout gap, and one with a real keyboard model to exercise the behaviour
-vocabulary. Three more variations on a toggle would tell us nothing new.
+| Contract         | Compiles       | What the contract could not say                                                          |
+| ---------------- | -------------- | ---------------------------------------------------------------------------------------- |
+| `Switch/`        | **fully**      | nothing — the platform supplies its behaviour                                            |
+| `Field/`         | **partially**  | how its parts relate: the generated component renders correctly and wires no ARIA at all |
+| `Accordion/`     | **shell only** | the open set, its central fact, exists only as prose in `intent.behaviour`               |
+| `AccordionItem/` | **shell only** | its identity, and which part carries its role                                            |
+
+They appear to fall into three kinds: a component whose behaviour the platform already provides
+compiles completely; one whose job is wiring relationships between its own parts compiles its shape
+and none of its purpose; one whose central fact is state shared across children compiles to an inert
+wrapper.
+
+**`Switch` is not proof the system works — it is the easy case.** The next contracts should be
+chosen for coverage rather than count: something positioned, to exercise the missing `layout` block,
+and something with a real keyboard model, to exercise the missing behaviour vocabulary.
 
 ## 1. Per contract
 
