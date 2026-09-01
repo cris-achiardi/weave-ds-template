@@ -44,6 +44,10 @@ jobs:
 
       - run: pnpm format:check
 
+      # Covers packages/react AND apps/sandbox. The sandbox matters because it is where GENERATED
+      # components land: three real defects in emitted code were found by running tsc against it by
+      # hand, and none would have failed here — the script reached only packages/react, and the app
+      # had no tsconfig at all.
       - run: pnpm typecheck
 
       # Style Dictionary skips a file with zero tokens rather than erroring, so a broken glob

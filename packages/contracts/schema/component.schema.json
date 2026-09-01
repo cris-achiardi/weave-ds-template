@@ -6,36 +6,55 @@
   "type": "object",
   "additionalProperties": false,
   "required": ["component", "status", "intent", "anatomy"],
-
   "properties": {
-    "$schema": { "type": "string" },
-
+    "$schema": {
+      "type": "string"
+    },
     "component": {
       "type": "string",
       "pattern": "^[A-Z][A-Za-z0-9]*$",
       "description": "PascalCase name. Tooling asserts it matches the directory and, in each binding, the implementation."
     },
-
     "status": {
       "type": "object",
       "additionalProperties": false,
       "required": ["level", "since"],
       "description": "Lifecycle. Structured rather than a bare string, so a deprecation cannot exist without somewhere to migrate to.",
       "properties": {
-        "level": { "enum": ["experimental", "stable", "deprecated"] },
-        "since": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
-        "replacedBy": { "type": "string", "pattern": "^[A-Z][A-Za-z0-9]*$" },
-        "migrationUrl": { "type": "string" },
-        "note": { "type": "string" }
+        "level": {
+          "enum": ["experimental", "stable", "deprecated"]
+        },
+        "since": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "replacedBy": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Za-z0-9]*$"
+        },
+        "migrationUrl": {
+          "type": "string"
+        },
+        "note": {
+          "type": "string"
+        }
       },
       "allOf": [
         {
-          "if": { "properties": { "level": { "const": "deprecated" } }, "required": ["level"] },
-          "then": { "required": ["level", "since", "replacedBy", "migrationUrl"] }
+          "if": {
+            "properties": {
+              "level": {
+                "const": "deprecated"
+              }
+            },
+            "required": ["level"]
+          },
+          "then": {
+            "required": ["level", "since", "replacedBy", "migrationUrl"]
+          }
         }
       ]
     },
-
     "intent": {
       "type": "object",
       "additionalProperties": false,
@@ -48,30 +67,40 @@
         },
         "behaviour": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "description": "What it does in response to use, in plain language. Interaction model, keyboard model, what happens on activation, what it does NOT do. This is what makes the file buildable rather than merely descriptive."
         },
         "notFor": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "description": "Uses this component deliberately does not cover, and what to reach for instead. The section that stops the component being quietly widened until it means nothing."
         }
       }
     },
-
     "states": {
       "type": "object",
       "description": "Every state this component must be able to REPRESENT, keyed by name. Distinct from the per-part paint overrides in `anatomy`: this is the declaration that the state exists at all and where it comes from, so a design can be checked against it before any styling is written.\n\n`intrinsic` — the platform provides it (hover, focus, pressed, disabled). You do not implement it, you only style it.\n`authored`  — someone sets it (loading, current, selected). The implementation has to track it.",
-      "propertyNames": { "pattern": "^[a-z][a-z0-9-]*$" },
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9-]*$"
+      },
       "additionalProperties": {
         "type": "object",
         "additionalProperties": false,
         "required": ["kind", "control"],
         "properties": {
-          "kind": { "enum": ["intrinsic", "authored"] },
+          "kind": {
+            "enum": ["intrinsic", "authored"]
+          },
           "values": {
             "type": "array",
-            "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9-]*$"
+            },
             "minItems": 2,
             "uniqueItems": true,
             "description": "The values this state may hold, in a meaningful order. EXPERIMENTAL.\n\nOMIT IT AND THE STATE IS A BOOLEAN, which is what every state in this schema was until a checkbox needed three conditions — unchecked, checked and mixed. Two booleans cannot carry that: `checked` and `indeterminate` as separate flags admits `checked: true, indeterminate: true`, which is meaningless, and no gate here could reject it.\n\nNot the same thing as an `axis`. An axis is a styling choice the consumer makes; a state is a condition the component is in, and may be set by the platform or derived."
@@ -102,7 +131,9 @@
             "enum": ["consumer", "shared", "internal"],
             "description": "WHO MAY SET THIS STATE. Distinct from `kind`, which says who TRACKS it — the two are orthogonal, and `disabled` proves it: the platform tracks it (intrinsic) but only the consumer sets it (consumer).\n\nThis is the bit a framework binding compiles into a public surface, and it is the reason this file can be translated rather than merely read:\n  `consumer` -> the consumer sets it; the user cannot change it. Compiles to ONE input.        e.g. disabled\n  `shared`   -> the consumer may set it AND the user may change it. Compiles to whatever that framework uses for two-way state — in React a controlled/uncontrolled trio, in Vue a v-model pair.   e.g. checked, open\n  `internal` -> nothing outside sets it: the platform observes it, the component derives it, or an ancestor owns it. Compiles to NO input at all.   e.g. hover, focus-visible, an accordion item's open state\n\nDeliberately says nothing about prop names. `checked` + `defaultChecked` + `onCheckedChange` is React's SPELLING of `shared`; Vue spells the same fact `modelValue` + `update:modelValue`. Naming either here would put a framework in an agnostic file. Each framework's spelling is a RULE in its own prop-bindings.json, which is why one rule covers every shared state in the library rather than one entry per component."
           },
-          "description": { "type": "string" },
+          "description": {
+            "type": "string"
+          },
           "visual": {
             "type": "string",
             "description": "What must visibly change, where anything does. Most states paint something, and one that paints nothing is worth questioning hard.\n\nBut not all of them do, and the earlier form of this rule — 'a state nobody can see is not a state' — was measured to be wrong. A GATING state like `touched` or `dirty` exists to decide WHEN another state may display; it is real, the implementation must track it, and it honestly paints nothing. Say so plainly rather than inventing a treatment to fill the field. Whether such states deserve a `kind` of their own is open — see docs/research/0001-contract-schema-smoke-test.md."
@@ -110,11 +141,12 @@
         }
       }
     },
-
     "axes": {
       "type": "object",
       "description": "The canonical axes this component exposes, and the SUBSET of values it takes. Axis names and their canonical values come from the prop map — a component narrows an axis, it never invents a value.\n\nThis is specified here, and the implementation also expresses it. That duplication is deliberate and safe, because a gate asserts the two are equal. It is what makes the contract something you can build FROM rather than only describe with.",
-      "propertyNames": { "pattern": "^[a-z][a-zA-Z0-9]*$" },
+      "propertyNames": {
+        "pattern": "^[a-z][a-zA-Z0-9]*$"
+      },
       "additionalProperties": {
         "type": "object",
         "additionalProperties": false,
@@ -122,16 +154,21 @@
         "properties": {
           "values": {
             "type": "array",
-            "items": { "type": "string" },
+            "items": {
+              "type": "string"
+            },
             "minItems": 1,
             "description": "A subset of the axis's canonical values, in canonical order."
           },
-          "default": { "type": "string" },
-          "description": { "type": "string" }
+          "default": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
         }
       }
     },
-
     "semantics": {
       "type": "object",
       "additionalProperties": false,
@@ -147,11 +184,15 @@
           "required": ["axis", "map"],
           "description": "For components whose meaning changes with an axis value.",
           "properties": {
-            "axis": { "type": "string" },
+            "axis": {
+              "type": "string"
+            },
             "map": {
               "type": "object",
               "minProperties": 1,
-              "additionalProperties": { "type": "string" }
+              "additionalProperties": {
+                "type": "string"
+              }
             }
           }
         },
@@ -161,27 +202,34 @@
         }
       }
     },
-
     "a11y": {
       "type": "object",
       "additionalProperties": false,
       "description": "Accessibility commitments. Not checkable — a wrong role or an optimistic contrast claim passes every gate — so write it as a statement of intent a human reviews.",
       "properties": {
-        "focusVisible": { "type": "boolean" },
+        "focusVisible": {
+          "type": "boolean"
+        },
         "minHitArea": {
           "type": "number",
           "description": "CSS px. 44 for WCAG 2.5.5 AAA, 24 for 2.5.8 AA."
         },
-        "contrast": { "enum": ["AA", "AAA", "not-applicable"] },
-        "keyboard": { "type": "string", "description": "One line on the keyboard model." },
+        "contrast": {
+          "enum": ["AA", "AAA", "not-applicable"]
+        },
+        "keyboard": {
+          "type": "string",
+          "description": "One line on the keyboard model."
+        },
         "notes": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "description": "Prefer naming what the component CANNOT enforce. That is the fact nothing else records."
         }
       }
     },
-
     "collection": {
       "type": "object",
       "additionalProperties": false,
@@ -190,10 +238,16 @@
       "properties": {
         "items": {
           "oneOf": [
-            { "type": "string", "pattern": "^[A-Z][A-Za-z0-9]*$" },
+            {
+              "type": "string",
+              "pattern": "^[A-Z][A-Za-z0-9]*$"
+            },
             {
               "type": "array",
-              "items": { "type": "string", "pattern": "^[A-Z][A-Za-z0-9]*$" },
+              "items": {
+                "type": "string",
+                "pattern": "^[A-Z][A-Za-z0-9]*$"
+              },
               "minItems": 1,
               "uniqueItems": true
             }
@@ -226,7 +280,6 @@
         }
       }
     },
-
     "member": {
       "type": "object",
       "additionalProperties": false,
@@ -250,30 +303,37 @@
         }
       }
     },
-
     "composition": {
       "type": "object",
       "additionalProperties": false,
       "description": "What may be placed inside. Frameworks differ on the mechanism (children, slots, render props); they agree on the constraint.",
       "properties": {
-        "children": { "$ref": "#/$defs/slot" },
+        "children": {
+          "$ref": "#/$defs/slot"
+        },
         "slots": {
           "type": "object",
-          "propertyNames": { "pattern": "^[a-z][a-zA-Z0-9]*$" },
-          "additionalProperties": { "$ref": "#/$defs/slot" }
+          "propertyNames": {
+            "pattern": "^[a-z][a-zA-Z0-9]*$"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/slot"
+          }
         }
       }
     },
-
     "anatomy": {
       "type": "object",
       "additionalProperties": false,
       "required": ["root"],
       "description": "The tree of named pieces, and the token policy for each. Agnostic: a piece is a named region with a job, not a div.",
-      "properties": { "root": { "$ref": "#/$defs/part" } }
+      "properties": {
+        "root": {
+          "$ref": "#/$defs/part"
+        }
+      }
     }
   },
-
   "$defs": {
     "slot": {
       "type": "object",
@@ -284,54 +344,131 @@
           "pattern": "^[a-z][a-zA-Z0-9]*$",
           "description": "Which anatomy part this slot's content fills. EXPERIMENTAL.\n\nWithout it, a slot and a part are two vocabularies for the same place and nothing reconciles them: a slot whose name happens to match a part key worked by luck, and one that did not — a field's `control`, an accordion item's `heading` — rendered outside any described region, in declaration order, which put a form control below its own error message."
         },
-        "accepts": { "type": "array", "items": { "type": "string" } },
-        "min": { "type": "integer", "minimum": 0 },
+        "accepts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "min": {
+          "type": "integer",
+          "minimum": 0
+        },
         "max": {
           "type": "integer",
           "minimum": 0,
           "description": "0 is legal and means the component accepts nothing here. A switch's label is a sibling it is associated with, not a child it contains — `max: 0` says that outright, where an empty `accepts` list only says 'none of these'."
         },
-        "required": { "type": "boolean" },
-        "description": { "type": "string" }
+        "required": {
+          "type": "boolean"
+        },
+        "description": {
+          "type": "string"
+        }
       }
     },
-
     "tokenPolicyAtom": {
       "description": "One permitted source for a visual channel — a namespace PREFIX, never a value. The concrete prefix comes from /ds.config.json.",
       "oneOf": [
-        { "type": "string", "pattern": "^--[a-z][a-z0-9-]*-$" },
-        { "enum": ["component-property", "literal"] }
+        {
+          "type": "string",
+          "pattern": "^--[a-z][a-z0-9-]*-$"
+        },
+        {
+          "enum": ["component-property", "literal"]
+        }
       ]
     },
-
     "tokenPolicy": {
       "description": "Where this channel's value may come from — or `null`, meaning the library deliberately does not say.\n\nTHE UNSTYLED DEFAULT IS `null`. This library ships no visual opinion, so a contract names the channel a part paints and leaves the source unbound for a consumer to wire. Read it as a patch bay: the contract says this part has a socket for a block-end border, not what to plug in. Deleting the channel instead would leave a consumer nothing to wire and force them to reverse-engineer a stylesheet, which is the failure this library exists to remove.\n\nTwo notations, two different facts, and conflating them loses the distinction:\n  `\"channel\": null`   -> UNBOUND BY DESIGN. The consumer supplies this.\n  channel omitted     -> NOT DESCRIBED YET. Nobody has established what it paints.\n\nA named policy is still legal and is what a consumer's own wiring, or a reference implementation like @ds/tokens, would state. Prefer group-less role families (--ds-color-fill-, --ds-color-border-, --ds-color-on-): those are what a variant axis re-points, so a component styled against them gets every variant free. Naming a branded family pins it to one colour.\n\n`literal` means a deliberate non-token value and always wants a reason. An ARRAY is a permitted SET, not a preference — a border that is transparent at rest and a token when outlined declares both.",
       "oneOf": [
-        { "type": "null" },
-        { "$ref": "#/$defs/tokenPolicyAtom" },
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/tokenPolicyAtom"
+        },
         {
           "type": "array",
-          "items": { "$ref": "#/$defs/tokenPolicyAtom" },
+          "items": {
+            "$ref": "#/$defs/tokenPolicyAtom"
+          },
           "minItems": 2,
           "uniqueItems": true
         }
       ]
     },
-
     "paints": {
       "type": "object",
-      "description": "Visual channel -> token policy. Not exhaustive: list what carries design intent (colour, spacing, radius, type, elevation, motion), not every layout declaration.",
-      "propertyNames": { "pattern": "^[a-z-]+$" },
-      "additionalProperties": { "$ref": "#/$defs/tokenPolicy" }
+      "description": "Visual channel -> token policy. Not exhaustive: list what carries design intent (colour, spacing, radius, type, elevation, motion), not every layout declaration.\n\nSTRUCTURAL CHANNELS ARE REJECTED. `display`, `position`, the inset properties, the flex and grid properties and their friends are layout, not paint, and a consumer's theme file is the wrong home for them: delete that file and a component with structure in it does not become unstyled, it becomes BROKEN. Two contracts had already put `display` here before this was enforced.\n\nSpacing stays — `gap`, `padding` and `margin` carry design intent and belong to the token system. So does sizing. The line is: does it decide WHERE something sits, or how it LOOKS?",
+      "propertyNames": {
+        "allOf": [
+          {
+            "pattern": "^[a-z-]+$"
+          },
+          {
+            "not": {
+              "enum": [
+                "display",
+                "position",
+                "float",
+                "clear",
+                "z-index",
+                "overflow",
+                "overflow-x",
+                "overflow-y",
+                "isolation",
+                "inset",
+                "inset-block",
+                "inset-inline",
+                "inset-block-start",
+                "inset-block-end",
+                "inset-inline-start",
+                "inset-inline-end",
+                "top",
+                "right",
+                "bottom",
+                "left",
+                "flex",
+                "flex-direction",
+                "flex-wrap",
+                "flex-grow",
+                "flex-shrink",
+                "flex-basis",
+                "order",
+                "align-items",
+                "align-self",
+                "align-content",
+                "justify-items",
+                "justify-self",
+                "justify-content",
+                "place-items",
+                "place-content",
+                "grid-template-columns",
+                "grid-template-rows",
+                "grid-column",
+                "grid-row",
+                "grid-area",
+                "pointer-events"
+              ]
+            }
+          }
+        ]
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/tokenPolicy"
+      }
     },
-
     "whenAxis": {
       "type": "object",
       "description": "Paint overrides driven by an AXIS VALUE rather than a state, keyed `axis=value` or a bare boolean axis name. Every key must name an axis declared above, and its value must be one this component actually takes — which is checkable precisely because `axes` declares them.",
-      "propertyNames": { "pattern": "^[a-zA-Z][a-zA-Z0-9]*(=[a-zA-Z0-9-]+)?$" },
-      "additionalProperties": { "$ref": "#/$defs/paints" }
+      "propertyNames": {
+        "pattern": "^[a-zA-Z][a-zA-Z0-9]*(=[a-zA-Z0-9-]+)?$"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/paints"
+      }
     },
-
     "part": {
       "type": "object",
       "additionalProperties": false,
@@ -343,7 +480,9 @@
           "pattern": "^[a-z][a-z0-9]*(-[a-z0-9]+)*$",
           "description": "kebab-case name. Each binding exposes this to consumers in whatever way its platform allows; in React that is a data attribute."
         },
-        "description": { "type": "string" },
+        "description": {
+          "type": "string"
+        },
         "internalOnly": {
           "type": "boolean",
           "description": "Structural, deliberately not exposed to consumers. Recording it says the omission was a decision."
@@ -363,7 +502,10 @@
             },
             "between": {
               "type": "array",
-              "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+              "items": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9-]*$"
+              },
               "minItems": 2,
               "maxItems": 2,
               "description": "For a state with more than two values: the two a USER may move between, and the resting one to fall back to from any other. EXPERIMENTAL.\n\nA checkbox holds three values and a user may only reach two of them: `mixed` is reported by a parent whose children disagree, and activating a mixed checkbox resolves it to checked. Without this, activation would have to guess — and offering `mixed` as a third click target is a real defect in real libraries.\n\nRequired when the toggled state declares more than two values."
@@ -382,7 +524,10 @@
         },
         "describedBy": {
           "type": "array",
-          "items": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]*$" },
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-zA-Z0-9]*$"
+          },
           "description": "Names other parts that supply this one's supplementary description, IN ANNOUNCEMENT ORDER. An array because a field's help text and its error are both descriptions and their order is not incidental. EXPERIMENTAL."
         },
         "visibleWhen": {
@@ -390,18 +535,30 @@
           "pattern": "^[a-z][a-z0-9-]*(=[a-z0-9-]+)?$",
           "description": "Names a state; this part is hidden whenever that state is false. For a state with `values`, write `state=value` — a checkbox's tick is `checked=checked` and its dash is `checked=mixed`, two different marks for two different facts rather than one mark shown twice. EXPERIMENTAL.\n\nHidden, not removed: the part stays in the document so find-in-page can reach it and so anything measured inside it survives. A component that must unmount its hidden content is a different decision and has no home here yet."
         },
-        "paints": { "$ref": "#/$defs/paints" },
+        "paints": {
+          "$ref": "#/$defs/paints"
+        },
         "states": {
           "type": "object",
           "description": "Per-state paint overrides. Every key must be declared in the top-level `states`, so styling cannot describe a state the component does not have.",
-          "propertyNames": { "pattern": "^[a-z][a-z0-9-]*$" },
-          "additionalProperties": { "$ref": "#/$defs/paints" }
+          "propertyNames": {
+            "pattern": "^[a-z][a-z0-9-]*$"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/paints"
+          }
         },
-        "whenAxis": { "$ref": "#/$defs/whenAxis" },
+        "whenAxis": {
+          "$ref": "#/$defs/whenAxis"
+        },
         "parts": {
           "type": "object",
-          "propertyNames": { "pattern": "^[a-z][a-zA-Z0-9]*$" },
-          "additionalProperties": { "$ref": "#/$defs/part" }
+          "propertyNames": {
+            "pattern": "^[a-z][a-zA-Z0-9]*$"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/part"
+          }
         }
       }
     }

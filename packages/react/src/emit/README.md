@@ -55,6 +55,29 @@ and not a preference:
 Read the prefix from `/ds.config.json`. Never hard-code `ds` — `pnpm init-ds` renames it, and a
 hard-coded prefix in emitted code survives the rename and breaks silently.
 
+### 1b. Three attribute families, not one
+
+`data-<prefix>-part` was the only one documented. Generated code emits **three**, and a consumer
+styling an unstyled library depends on all of them:
+
+| Attribute                 | Carries                                      | Example                       |
+| ------------------------- | -------------------------------------------- | ----------------------------- |
+| `data-<prefix>-component` | which component this is — the scoping handle | `data-ds-component="Button"`  |
+| `data-<prefix>-part`      | which named region                           | `data-ds-part="label"`        |
+| `data-<prefix>-<axis>`    | an axis value                                | `data-ds-hierarchy="primary"` |
+
+**Why `component` exists.** Without CSS Modules there is no hashing, so `[data-ds-part="root"]`
+would match every component on the page. Something has to scope it. The emitter invented this and
+it is now load-bearing.
+
+**Why an axis needs an attribute at all.** A variant that reaches no attribute cannot be styled:
+there is no class to select in an unstyled library, so a declared `variant` would generate a prop
+that changes nothing. That is exactly what happened before `Button` — `axes` and `whenAxis` sat in
+the schema unread, and a contract could declare a full variant surface and produce a component with
+no variants.
+
+A state uses none of these where the platform already has an answer — see below.
+
 ### 2. States use the platform's own mechanism where one exists
 
 Native pseudo-class for anything the browser owns (`:hover`, `:focus-visible`, `:disabled`). A
