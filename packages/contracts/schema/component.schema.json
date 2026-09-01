@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://example.invalid/schemas/component-contract-2.json",
+  "$id": "https://example.invalid/schemas/component-contract-3.json",
   "title": "Component contract (framework-agnostic)",
   "description": "Describes ONE component completely enough to build it, in any framework. The reasoning is in contracts/README.md.\n\nThis file lives at contracts/ rather than inside a package on purpose: it belongs to no framework. It says what the component IS — its purpose, its behaviour, the states it must be able to show, the axes it exposes, its anatomy, and which family of token paints each part. It does NOT say how any of that is expressed in React, or in React Native, or in a web component. That is a binding, and bindings live beside the implementation.\n\nBuildable means: someone handed this file, the prop map for their framework, and the code standards should be able to produce the component without asking what it is for.",
   "type": "object",
@@ -66,13 +66,17 @@
       "additionalProperties": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["kind"],
+        "required": ["kind", "control"],
         "properties": {
           "kind": { "enum": ["intrinsic", "authored"] },
+          "control": {
+            "enum": ["consumer", "shared", "internal"],
+            "description": "WHO MAY SET THIS STATE. Distinct from `kind`, which says who TRACKS it — the two are orthogonal, and `disabled` proves it: the platform tracks it (intrinsic) but only the consumer sets it (consumer).\n\nThis is the bit a framework binding compiles into a public surface, and it is the reason this file can be translated rather than merely read:\n  `consumer` -> the consumer sets it; the user cannot change it. Compiles to ONE input.        e.g. disabled\n  `shared`   -> the consumer may set it AND the user may change it. Compiles to whatever that framework uses for two-way state — in React a controlled/uncontrolled trio, in Vue a v-model pair.   e.g. checked, open\n  `internal` -> nothing outside sets it: the platform observes it, the component derives it, or an ancestor owns it. Compiles to NO input at all.   e.g. hover, focus-visible, an accordion item's open state\n\nDeliberately says nothing about prop names. `checked` + `defaultChecked` + `onCheckedChange` is React's SPELLING of `shared`; Vue spells the same fact `modelValue` + `update:modelValue`. Naming either here would put a framework in an agnostic file. Each framework's spelling is a RULE in its own prop-bindings.json, which is why one rule covers every shared state in the library rather than one entry per component."
+          },
           "description": { "type": "string" },
           "visual": {
             "type": "string",
-            "description": "What must visibly change. A state nobody can see is not a state, it is a variable."
+            "description": "What must visibly change, where anything does. Most states paint something, and one that paints nothing is worth questioning hard.\n\nBut not all of them do, and the earlier form of this rule — 'a state nobody can see is not a state' — was measured to be wrong. A GATING state like `touched` or `dirty` exists to decide WHEN another state may display; it is real, the implementation must track it, and it honestly paints nothing. Say so plainly rather than inventing a treatment to fill the field. Whether such states deserve a `kind` of their own is open — see docs/research/0001-contract-schema-smoke-test.md."
           }
         }
       }
@@ -179,7 +183,11 @@
       "properties": {
         "accepts": { "type": "array", "items": { "type": "string" } },
         "min": { "type": "integer", "minimum": 0 },
-        "max": { "type": "integer", "minimum": 1 },
+        "max": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "0 is legal and means the component accepts nothing here. A switch's label is a sibling it is associated with, not a child it contains — `max: 0` says that outright, where an empty `accepts` list only says 'none of these'."
+        },
         "required": { "type": "boolean" },
         "description": { "type": "string" }
       }
@@ -194,8 +202,9 @@
     },
 
     "tokenPolicy": {
-      "description": "Which token family may supply this channel. The contract states policy; the stylesheet keeps the concrete token, so the two cannot become two copies of one value.\n\nPrefer group-less role families (--ds-color-fill-, --ds-color-border-, --ds-color-on-): those are what a variant axis re-points, so a component styled against them gets every variant free. Naming a branded family pins it to one colour.\n\n`literal` means a deliberate non-token value and always wants a reason. An ARRAY is a permitted SET, not a preference — a border that is transparent at rest and a token when outlined declares both.",
+      "description": "Where this channel's value may come from — or `null`, meaning the library deliberately does not say.\n\nTHE UNSTYLED DEFAULT IS `null`. This library ships no visual opinion, so a contract names the channel a part paints and leaves the source unbound for a consumer to wire. Read it as a patch bay: the contract says this part has a socket for a block-end border, not what to plug in. Deleting the channel instead would leave a consumer nothing to wire and force them to reverse-engineer a stylesheet, which is the failure this library exists to remove.\n\nTwo notations, two different facts, and conflating them loses the distinction:\n  `\"channel\": null`   -> UNBOUND BY DESIGN. The consumer supplies this.\n  channel omitted     -> NOT DESCRIBED YET. Nobody has established what it paints.\n\nA named policy is still legal and is what a consumer's own wiring, or a reference implementation like @ds/tokens, would state. Prefer group-less role families (--ds-color-fill-, --ds-color-border-, --ds-color-on-): those are what a variant axis re-points, so a component styled against them gets every variant free. Naming a branded family pins it to one colour.\n\n`literal` means a deliberate non-token value and always wants a reason. An ARRAY is a permitted SET, not a preference — a border that is transparent at rest and a token when outlined declares both.",
       "oneOf": [
+        { "type": "null" },
         { "$ref": "#/$defs/tokenPolicyAtom" },
         {
           "type": "array",

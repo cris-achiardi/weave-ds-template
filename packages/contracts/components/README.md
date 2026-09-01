@@ -77,21 +77,41 @@ Two notations, two different facts, and conflating them loses the distinction:
 
 That is the repo's standing rule — a gap is a finding, not a blank to fill — applied to styling.
 
-**Not yet mechanized:** `component.schema.json` does not currently permit `null` here. It requires a
-token namespace prefix, `component-property`, or `literal`. Writing the JSON above will fail
-`pnpm verify:contract` today. The schema change is deliberately waiting on evidence from real
-contracts.
+Recorded as [ADR 0003](../../../docs/ADR/0003-paints-name-the-channel-and-leave-the-source-unbound.md)
+and mechanized: `$defs.tokenPolicy` permits `null`. A named policy stays legal, because a consumer's
+own wiring needs to express one — but a contract this library ships does not name one, and **nothing
+enforces that.** It is a convention here, not a gate.
 
-### States
+### States: two required facts, and they are not the same fact
 
-A state is either **intrinsic** — the platform already tracks it (`hover`, `disabled`,
-`focus-visible`) — or **authored**, meaning the implementation has to track it (`loading`,
-`current`, `selected`). Declaring an intrinsic state as authored, or the reverse, is the most common
-error in this file, because the two look identical from the outside and behave completely differently
-in generated code.
+Every state declares **`kind`** — who tracks it — and **`control`** — who may set it. They are
+orthogonal, and `disabled` is why: the platform tracks it, and only the consumer sets it.
 
-Prefer the intrinsic form wherever the platform has one. A state reflected into an attribute that the
-platform already exposes forces generated code to track something the platform tracks for free.
+**`kind`** is `intrinsic` (the platform already tracks it: `hover`, `disabled`, `focus-visible`) or
+`authored` (the implementation has to track it: `loading`, `current`, `selected`). Prefer the
+intrinsic form wherever the platform has one — a state reflected into an attribute the platform
+already exposes forces generated code to track something it gets for free.
+
+**`control`** is the field a framework binding compiles into a public surface, and getting it wrong
+produces a component that works and is missing an API:
+
+| Value      | Means                                                                         | Compiles to                          | Example                                 |
+| ---------- | ----------------------------------------------------------------------------- | ------------------------------------ | --------------------------------------- |
+| `consumer` | the consumer sets it; the user cannot change it                               | one input                            | `disabled`, `read-only`                 |
+| `shared`   | the consumer may set it **and** the user may change it                        | that framework's two-way state idiom | `checked`, an accordion's `open`        |
+| `internal` | nothing outside sets it — platform-observed, derived, or owned by an ancestor | no input at all                      | `hover`, an accordion **item**'s `open` |
+
+**Never write a prop name in a contract.** `checked` + `defaultChecked` + `onCheckedChange` is
+React's spelling of `control: "shared"`; Vue spells the same fact `modelValue` +
+`update:modelValue`. Naming either here puts a framework in an agnostic file. Each framework holds
+one rule per `control` value in its own `prop-bindings.json`, which is why adding a component adds no
+mapping work. See
+[ADR 0004](../../../docs/ADR/0004-a-state-declares-who-may-set-it-and-props-are-generated-from-that.md).
+
+**A state may legitimately paint nothing.** `touched` and `dirty` on a form field exist to gate
+_when another state may display_; they are real, tracked, and invisible. Say so in `visual` rather
+than inventing a treatment. Whether these deserve a `kind` of their own is open — see
+`docs/research/0001-contract-schema-smoke-test.md`.
 
 ## 4. Never invent a field to fill a blank
 

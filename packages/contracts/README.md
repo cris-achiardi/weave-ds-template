@@ -60,13 +60,23 @@ describes an intention in the present tense is how a repo starts lying about its
 
 - **No loader.** There is no `.` export and no `toIR()`. `pnpm verify:contract` reads the schema by
   path, not by package specifier.
-- **No `props` in the schema.** Under the flow this package replaces, props were derived from the
-  TypeScript source and the contract deliberately never restated them. A contract that is generated
-  _from_ cannot borrow that, so the schema needs a `props` block it does not yet have.
-- **No `layout` block, and `paints` cannot yet be `null`.** Both are required by the unstyled
-  policy and neither is in the schema.
+- **No `layout` block.** The unstyled policy needs one — structural CSS that a contract's stated
+  behaviour depends on is not decoration and cannot be left to a consumer. Nothing has measured what
+  it must hold; the three patterns drafted so far barely exercised it.
 - **No behaviour vocabulary.** The interaction schema that would carry one does not exist.
+- **No form participation.** `name`, `value` and `required` are not states, not behaviour and not
+  styling, and nothing currently planned holds them.
+- **No way to state a relationship between parts,** which is most of what a Field does, or to
+  declare a value the consumer must supply and the component cannot default — an accordion's heading
+  level being the worked example. Both are prose today, where no gate can reach them.
 
-Those four changes are earned by evidence, not designed in advance: the next step is drafting a
-handful of real contracts and reporting where the schema falls short. See `docs/research/README.md`
-for the shape that report takes.
+**There is deliberately no `props` block, and there will not be one.** A prop name is a framework's
+spelling of a fact, not the fact. `checked` + `defaultChecked` + `onCheckedChange` is React's
+rendering of _this state can be set from outside and the user can change it_; Vue spells the same
+fact `modelValue` + `update:modelValue`. The contract states the rule — see `states.*.control` — and
+each framework's `prop-bindings.json` compiles it into that framework's vocabulary. See
+[ADR 0004](../../docs/ADR/0004-a-state-declares-who-may-set-it-and-props-are-generated-from-that.md).
+
+Those gaps are earned by evidence rather than designed in advance. The first pass is
+`docs/research/0001-contract-schema-smoke-test.md`, which drafted four contracts against real
+reference APIs and reported where the schema fell short; ADRs 0003 and 0004 record what it settled.
