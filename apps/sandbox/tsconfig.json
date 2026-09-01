@@ -1,0 +1,9 @@
+{
+  "//": "The sandbox is typechecked because it is where GENERATED components land. Three real defects in emitted code were found by running tsc against this directory by hand, and none of them would have failed pnpm verify or CI — the root typecheck reached only packages/react, and this app had no tsconfig at all. See docs/research/0002-compiling-a-contract-into-a-component.md.",
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["vite/client"]
+  },
+  "include": ["src"]
+}

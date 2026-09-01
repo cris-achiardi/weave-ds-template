@@ -124,6 +124,24 @@ and mechanized: `$defs.tokenPolicy` permits `null`. A named policy stays legal, 
 own wiring needs to express one — but a contract this library ships does not name one, and **nothing
 enforces that.** It is a convention here, not a gate.
 
+### What a consumer can actually target
+
+Class names are hashed and are not a public surface. Generated components expose three stable
+attribute families instead, and between them they are the entire styling contract:
+
+```css
+[data-ds-component='Button']                      /* this component */
+[data-ds-component='Button'] [data-ds-part='label']   /* one of its regions */
+[data-ds-component='Button'][data-ds-hierarchy='primary']  /* an axis value */
+```
+
+The prefix comes from `/ds.config.json` and moves with `pnpm init-ds`. Never hard-code it.
+
+A **state** deliberately does not get a fourth family. Where the platform already carries the state
+it is used as-is — `:hover`, `:disabled`, `[aria-checked='true']` — because a second copy could
+disagree with the first. Only a state the platform does not own falls back to
+`data-<prefix>-state-<name>`.
+
 ### States: two required facts, and they are not the same fact
 
 Every state declares **`kind`** — who tracks it — and **`control`** — who may set it. They are

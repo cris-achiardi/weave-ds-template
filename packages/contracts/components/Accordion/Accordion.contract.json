@@ -71,7 +71,6 @@
       "part": "root",
       "description": "The wrapper holding the sections, so they stack as one unit and can be given a shared border treatment.",
       "paints": {
-        "display": null,
         "gap": null,
         "border": null,
         "border-radius": null

@@ -120,7 +120,6 @@
       "part": "root",
       "description": "The wrapper holding one control and its three satellites, so they stay together and can be spaced as a unit.",
       "paints": {
-        "display": null,
         "gap": null
       },
       "parts": {
