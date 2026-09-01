@@ -1,0 +1,83 @@
+{
+  "$schema": "../../schema/component.schema.json",
+  "component": "Tabs",
+  "status": {
+    "level": "experimental",
+    "since": "2026-09-01",
+    "note": "Chosen to test whether one navigation gap serves two components. Uses cardinality: one, like RadioGroup, and needs the same arrow-key model — but its members come in TWO kinds, a tab and a panel, which collection.items cannot say."
+  },
+  "intent": {
+    "purpose": "Holds which one of several sections is showing, in a fixed area, so a person can move between them without losing their place on the page.",
+    "behaviour": [
+      "Holds exactly one selected value. Unlike an accordion, the selection can never be emptied — there is always a visible panel.",
+      "Renders its tabs inside a tablist and its panels as siblings of it, because a tablist may contain only tabs.",
+      "Moves between tabs on the arrow keys, wrapping at both ends, and selects as it moves.",
+      "Keeps exactly one tab in the Tab order, so Tab enters the strip and then leaves it for the panel.",
+      "Skips disabled tabs when moving."
+    ],
+    "notFor": [
+      "Navigation between routes. These panels show and hide in place; nothing here changes the URL or manages history.",
+      "Content that should all be readable at once. Tabs hide everything but one panel, which makes comparing them impossible and makes find-in-page miss most of the content.",
+      "More sections than fit on one line. A wrapping or scrolling tab strip is a different design with different keyboard rules.",
+      "A filter strip with no panels. Without panels this is not the tabs pattern — use a radio group or a nav, which say what they actually do."
+    ]
+  },
+  "collection": {
+    "items": ["TabItem", "TabPanel"],
+    "identity": "value",
+    "selection": {
+      "cardinality": "one",
+      "control": "shared",
+      "initial": "first-enabled"
+    }
+  },
+  "states": {
+    "disabled": {
+      "kind": "intrinsic",
+      "control": "consumer",
+      "description": "The whole strip ignores interaction. Cascades to every tab.",
+      "visual": "Every tab dims and none can be chosen."
+    }
+  },
+  "semantics": {
+    "focusable": false
+  },
+  "a11y": {
+    "focusVisible": false,
+    "contrast": "not-applicable",
+    "keyboard": "Tab enters the strip on the selected tab and leaves it for the panel. Arrow keys move between tabs and select as they move, wrapping at both ends.",
+    "notes": [
+      "The tablist has no accessible name of its own. A consumer must supply one via aria-label or aria-labelledby, or assistive technology announces an unnamed set of tabs.",
+      "Selection follows focus, which suits panels already in memory and is the wrong default for a panel that fetches. That distinction is a real design decision and this contract cannot express which was chosen.",
+      "Exactly one tab is reachable with Tab. A controlled value matching no rendered tab leaves the whole strip unreachable by keyboard, and nothing here detects it.",
+      "Content hidden in an unselected panel is invisible to find-in-page. That is the cost of the pattern and no option here mitigates it."
+    ]
+  },
+  "composition": {
+    "children": {
+      "accepts": ["TabItem", "TabPanel"],
+      "min": 2,
+      "description": "The tabs and the panels. TabItems become the strip; TabPanels are rendered after it."
+    }
+  },
+  "anatomy": {
+    "root": {
+      "part": "root",
+      "description": "The wrapper holding the strip and the panels, so the two stay adjacent and can be positioned as a pair.",
+      "paints": {
+        "gap": null
+      },
+      "parts": {
+        "list": {
+          "part": "list",
+          "role": "tablist",
+          "description": "The strip itself. Owns the arrow-key movement and the single Tab stop.",
+          "paints": {
+            "gap": null,
+            "border-block-end": null
+          }
+        }
+      }
+    }
+  }
+}

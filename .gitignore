@@ -11,3 +11,6 @@ packages/tokens/build/
 Thumbs.db
 .env
 .env.local
+
+# Local-only working notes. Never committed.
+docs/cris-logs/

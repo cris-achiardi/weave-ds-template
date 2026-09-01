@@ -1,0 +1,130 @@
+{
+  "$schema": "../../schema/component.schema.json",
+  "component": "Dialog",
+
+  "status": {
+    "level": "experimental",
+    "since": "2026-09-01",
+    "note": "Chosen for modality. Tooltip established that layering has no home; a dialog adds focus containment, background inertness and a dismissal key, and none of those are the same problem. Sourced from the W3C ARIA APG modal dialog pattern, which is normative and complete."
+  },
+
+  "intent": {
+    "purpose": "Interrupts what a person was doing to ask for something that cannot wait, and refuses to let them continue until they answer or leave.",
+    "behaviour": [
+      "Shows over the page with everything behind it made inert: not merely covered, but unreachable by pointer, by Tab and by a screen reader's virtual cursor.",
+      "Moves focus inside when it opens, onto the first meaningful control rather than the close button, and holds focus inside for as long as it is open.",
+      "Returns focus, on close, to whatever had it before — otherwise a keyboard user is dropped at the top of the document.",
+      "Closes on Escape from anywhere inside it.",
+      "Names itself from its own title, so it is announced as the thing it is asking about rather than as an unnamed dialog."
+    ],
+    "notFor": [
+      "Anything that can be said in place. A dialog stops everything; a message that could have been a line of text under a field should be.",
+      "Non-modal side content. A panel that lets you keep working is a drawer or a popover, and modality is the whole difference.",
+      "Nesting. A dialog opened from a dialog leaves a person two escapes from where they were, and no design here covers where focus returns.",
+      "Anything long enough to scroll on a phone. A full-screen sheet is a different pattern with different dismissal rules."
+    ]
+  },
+
+  "states": {
+    "open": {
+      "kind": "authored",
+      "control": "shared",
+      "description": "The dialog is showing and holding focus.",
+      "visual": "The scrim covers the page and the panel appears above it."
+    }
+  },
+
+  "axes": {
+    "size": {
+      "values": ["s", "m", "l"],
+      "default": "m",
+      "description": "How wide the panel is. A contiguous subset of the canon's ladder."
+    }
+  },
+
+  "semantics": {
+    "focusable": false
+  },
+
+  "a11y": {
+    "focusVisible": false,
+    "contrast": "AA",
+    "keyboard": "Escape closes from anywhere inside. Tab and Shift+Tab cycle within the dialog and never leave it while it is open.",
+    "notes": [
+      "Focus containment is the whole pattern, and NONE of it is expressible here. A dialog that can be tabbed out of is not modal, and a screen-reader user who reaches the page behind it is being lied to about what is interactive.",
+      "The background must be inert, not merely covered. A scrim that only paints over the page still leaves every control behind it focusable and readable, which is the most common way this pattern is got wrong.",
+      "Focus must return to the element that opened the dialog. Nothing here records what that was, and dropping focus to the document start is disorienting in a way sighted users never see.",
+      "The dialog is named by its title. A dialog with no title is announced as an unnamed dialog, and nothing here detects that.",
+      "Escape must close it. That is a keyboard behaviour that is not activation, and there is no way to declare one."
+    ]
+  },
+
+  "composition": {
+    "slots": {
+      "title": {
+        "part": "title",
+        "accepts": ["text"],
+        "required": true,
+        "max": 1,
+        "description": "What the dialog is asking about. Required: it is the dialog's accessible name."
+      },
+      "body": {
+        "part": "body",
+        "required": true,
+        "max": 1,
+        "description": "The content. Fills the `body` part."
+      },
+      "actions": {
+        "part": "actions",
+        "max": 1,
+        "description": "The buttons that resolve it. Fills the `actions` part."
+      }
+    }
+  },
+
+  "anatomy": {
+    "root": {
+      "part": "root",
+      "description": "The layer holding the scrim and the panel. Covers the viewport while open.",
+      "visibleWhen": "open",
+      "paints": { "background": null },
+      "parts": {
+        "panel": {
+          "part": "panel",
+          "role": "dialog",
+          "namedBy": "title",
+          "description": "The dialog itself. Named by its title, and the region focus is held inside.",
+          "paints": {
+            "background": null,
+            "border-radius": null,
+            "padding": null,
+            "box-shadow": null,
+            "max-inline-size": null
+          },
+          "whenAxis": {
+            "size=s": { "inline-size": null },
+            "size=m": { "inline-size": null },
+            "size=l": { "inline-size": null }
+          },
+          "parts": {
+            "title": {
+              "part": "title",
+              "description": "The heading. Supplies the dialog's accessible name.",
+              "paints": { "color": null, "font-size": null, "font-weight": null }
+            },
+            "body": {
+              "part": "body",
+              "description": "The content.",
+              "paints": { "color": null, "font-size": null }
+            },
+            "actions": {
+              "part": "actions",
+              "description": "The row of buttons that resolve it.",
+              "paints": { "gap": null, "padding-block-start": null }
+            }
+          }
+        }
+      }
+    }
+  }
+}

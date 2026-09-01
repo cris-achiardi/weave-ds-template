@@ -1,0 +1,130 @@
+{
+  "$schema": "../../schema/component.schema.json",
+  "component": "TabItem",
+  "status": {
+    "level": "experimental",
+    "since": "2026-09-01",
+    "note": "Only meaningful inside a Tabs. The tab half of the pair; TabPanel is the other, and both are members of the same collection — which the schema cannot say."
+  },
+  "intent": {
+    "purpose": "One tab: a label that reveals its panel when chosen. It carries its own identity and its own disabled state, and nothing else.",
+    "behaviour": [
+      "Compares its value against the selection on the surrounding Tabs to decide whether it is chosen.",
+      "Chooses itself on click, and on Space or Enter when focused.",
+      "Cannot un-choose itself. A tab strip always has exactly one chosen tab.",
+      "Points at the panel of the same value, and is pointed back at by it.",
+      "Throws if rendered outside a Tabs."
+    ],
+    "notFor": [
+      "Use outside a Tabs.",
+      "Acting as a link. It renders a button and changes no URL — a tab that navigates is a nav item.",
+      "Holding the panel's content. Keeping them apart is what lets panels live outside the tablist, which the tablist role requires."
+    ]
+  },
+  "member": {
+    "of": "Tabs",
+    "identity": "value",
+    "reflects": "selected"
+  },
+  "states": {
+    "selected": {
+      "kind": "authored",
+      "control": "internal",
+      "description": "Derived from the surrounding Tabs by comparing value. Not settable here.",
+      "visual": "An indicator appears along the bottom edge and the label takes its selected colour."
+    },
+    "disabled": {
+      "kind": "intrinsic",
+      "control": "consumer",
+      "description": "Set by the prop or inherited from the strip. Skipped by arrow-key movement.",
+      "visual": "The label takes the disabled colour and the pointer cursor is dropped."
+    },
+    "hover": {
+      "kind": "intrinsic",
+      "control": "internal",
+      "description": "The pointer is over the tab and it is not disabled.",
+      "visual": "The label takes its hover colour."
+    },
+    "focus-visible": {
+      "kind": "intrinsic",
+      "control": "internal",
+      "description": "Focused in a way the browser judges worth showing a ring for.",
+      "visual": "A ring is drawn inside the tab's box."
+    }
+  },
+  "semantics": {
+    "focusable": true
+  },
+  "a11y": {
+    "focusVisible": true,
+    "contrast": "AA",
+    "minHitArea": 44,
+    "keyboard": "Reachable with Tab only when chosen. Arrow keys on the strip move here and choose in one action.",
+    "notes": [
+      "The accessible name is whatever is passed as the label. A tab given a non-text child has no name and nothing detects that.",
+      "disabled renders a natively disabled button, so a keyboard user cannot land on it to discover it exists.",
+      "The chosen state must not be carried by colour alone. The indicator is the non-colour signal.",
+      "This tab points at a panel that may not be rendered. Nothing here checks that a panel of the same value exists, and a tab referencing a missing id is reported by some assistive technology."
+    ]
+  },
+  "composition": {
+    "slots": {
+      "label": {
+        "part": "label",
+        "accepts": ["text"],
+        "required": true,
+        "max": 1,
+        "description": "The tab's name. Fills the label part."
+      }
+    }
+  },
+  "anatomy": {
+    "root": {
+      "part": "root",
+      "role": "tab",
+      "activates": {
+        "toggles": "member"
+      },
+      "description": "The tab. Owns the focus ring, the hit area and the indicator.",
+      "paints": {
+        "padding": null,
+        "color": null,
+        "font-size": null,
+        "min-block-size": null
+      },
+      "states": {
+        "hover": {
+          "color": null
+        },
+        "disabled": {
+          "color": null
+        },
+        "selected": {
+          "color": null
+        },
+        "focus-visible": {
+          "outline": null,
+          "outline-offset": null
+        }
+      },
+      "parts": {
+        "label": {
+          "part": "label",
+          "description": "The text.",
+          "paints": {
+            "color": null
+          }
+        },
+        "indicator": {
+          "part": "indicator",
+          "description": "The bar along the bottom edge marking the chosen tab. Out of flow, so its arrival moves nothing.",
+          "visibleWhen": "selected",
+          "paints": {
+            "block-size": null,
+            "background": null
+          }
+        }
+      }
+    }
+  }
+}

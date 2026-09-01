@@ -1,0 +1,68 @@
+{
+  "$schema": "../../schema/component.schema.json",
+  "component": "TabPanel",
+  "status": {
+    "level": "experimental",
+    "since": "2026-09-01",
+    "note": "The panel half of the Tabs pair. It is a member of the SAME collection as TabItem, which collection.items — a single component name — cannot express."
+  },
+  "intent": {
+    "purpose": "The content one tab reveals. It exists so the strip has something real to control: a tab announcing that it opens a panel, with no panel wired to it, describes an interaction that does not happen.",
+    "behaviour": [
+      "Matches its value against the selection on the surrounding Tabs and hides itself when it does not match.",
+      "Stays in the document while hidden, so scroll position and anything a consumer measured survive switching away and back.",
+      "Is focusable in its own right, so a keyboard user leaving the strip has somewhere to land even when the panel holds nothing focusable.",
+      "Names itself from its tab, so it is announced with the tab's label rather than needing its own.",
+      "Throws if rendered outside a Tabs."
+    ],
+    "notFor": [
+      "Content that should unmount when hidden. This panel stays in the document by design.",
+      "Lazy loading. Nothing here defers rendering, and selection follows focus, so arrowing across the strip renders every panel in turn.",
+      "Use without a TabItem of the same value — the panel would have no accessible name and no way to be shown."
+    ]
+  },
+  "member": {
+    "of": "Tabs",
+    "identity": "value",
+    "reflects": "selected"
+  },
+  "states": {
+    "selected": {
+      "kind": "authored",
+      "control": "internal",
+      "description": "Derived from the surrounding Tabs by comparing value.",
+      "visual": "The panel is shown; otherwise it is hidden."
+    }
+  },
+  "semantics": {
+    "role": "tabpanel",
+    "focusable": true
+  },
+  "a11y": {
+    "focusVisible": false,
+    "contrast": "not-applicable",
+    "keyboard": "Reachable with Tab immediately after the chosen tab. It shows no focus ring of its own.",
+    "notes": [
+      "The accessible name comes entirely from the matching tab. If no tab carries the same value, the panel is announced unnamed and nothing detects that pairing.",
+      "It is focusable unconditionally, which is the practice for a panel that may hold nothing focusable. The cost is a Tab stop on every panel, including ones full of focusable content that did not need it.",
+      "It takes no focus ring, so a keyboard user landing on it gets no visible confirmation. That is the common convention and still a real gap."
+    ]
+  },
+  "composition": {
+    "children": {
+      "part": "root",
+      "description": "Anything. The panel makes no assumptions about its content."
+    }
+  },
+  "anatomy": {
+    "root": {
+      "part": "root",
+      "visibleWhen": "selected",
+      "description": "The panel region. Its only paint is the space separating it from the strip.",
+      "paints": {
+        "padding-block-start": null,
+        "color": null
+      }
+    }
+  }
+}

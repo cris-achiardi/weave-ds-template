@@ -424,6 +424,45 @@ a styling hook; free text is content, and copying it into an attribute leaks it 
 Also in this pass: `Field` now composes a generated `TextField` rather than a raw input — the first
 contract whose slot is filled by another contract's output.
 
+### A seventh pass: Dialog and the Tabs family — fifteen contracts
+
+**`collection.items` had to become a list.** A tab and its panel both compare against the same
+selection, so both are members — and `items` named exactly one component. The emitter refused to
+compile `TabPanel` with a clear message rather than producing something wrong, which is the
+cross-contract check earning its place:
+
+```
+TabPanel says it is a member of Tabs, but Tabs.collection.items admits TabItem
+```
+
+**Tabs confirmed the navigation gap is one gap, not two.** Its keyboard requirement is identical to
+`RadioGroup`'s — arrows that move and select, wrapping, one Tab stop. One primitive would serve
+both. `Slider` remains the odd one out: stepping a number is a different problem.
+
+**A new gap: references cannot cross a component boundary.** A tab must point at its panel with
+`aria-controls`, and the panel must be named by its tab with `aria-labelledby`. Both `controls` and
+`namedBy` can only name a _sibling part within the same component_. Neither reference is generated,
+so the generated panel is announced unnamed. This is the same shape as `Field`'s original problem,
+one level up.
+
+**`Dialog` is a styled box that appears and disappears.** Four behaviours are stated in the contract
+and none is expressible: focus containment, focus movement and return, an inert background, and
+Escape. Tabbing out of the open dialog and into the page behind it is demonstrable in the sandbox.
+
+Worth naming precisely: a native `<dialog>` with `showModal()` supplies three of those four for
+free. The binding rejected it because it cannot be portalled into an arbitrary container and brings
+a top-layer stacking model the unstyled approach cannot reason about. **Three of the four gaps are
+gaps only because of that trade**, which is a much narrower and more answerable question than
+"how do we express modality".
+
+**Two more emitter bugs of the now-familiar kind:**
+
+- **Every tab shipped with no `aria-selected`.** The state-to-ARIA table had no `selected` entry,
+  and the member branch was an `if` with no `else` — an unlisted state name emitted nothing at all.
+  Exactly the radio's missing `aria-checked`, three passes later, in a different code path.
+- **`visibleWhen` on a ROOT was never applied**, only on child parts. `TabPanel` and `Dialog` both
+  rendered permanently visible until it was fixed.
+
 ## What it appears to mean (inferred)
 
 Every item below is a reading, not a measurement.
@@ -546,6 +585,17 @@ natively focusable; which have an implicit role; which edit their own value. Sev
 React-specific, all in a React emitter. A second backend would need every one and would get at least
 one subtly wrong.
 
+**The same bug keeps recurring in different code paths, and that is the strongest signal here.** A
+state that reaches no ARIA attribute has now happened three times: the radio's `aria-checked`, the
+tooltip's wrongly-applied `aria-expanded`, and the tab's `aria-selected`. Each was a different branch
+of the same closed table. A table that must be consulted from four places and has no default is not a
+table problem — it is an argument that the mapping does not belong in the emitter at all.
+
+**Cross-boundary references look like the last structural gap in the composition model.** Within a
+component, `namedBy` and `controls` work. Across one — a tab to its panel, a field to a control
+passed into it — there is nothing. Both cases are common, both produce silently unnamed regions, and
+a collection already establishes that components know about each other.
+
 **Regeneration safety is currently a convention, not a mechanism.** The emitter skips
 `theme.css` when it exists, which is the right behaviour and is enforced by one `existsSync`. Nothing
 marks the generated files as generated in a way a tool could check, and nothing would stop a
@@ -614,6 +664,15 @@ to hold it, constraint-shaped or otherwise.
 `Accordion`'s contract declares `display` and `gap` as paint channels. Neither carries design
 intent in the sense `paints` documents; both are structure. Nothing distinguishes them, so the
 paint/theme split a consumer relies on is enforced only by the care of whoever wrote the contract.
+
+**20. ARIA references cannot cross a component boundary.**
+A tab cannot point at its panel; a panel cannot be named by its tab. `controls` and `namedBy` name a
+sibling part only. The generated panel is announced unnamed, and the generated tab references
+nothing.
+
+**21. `visibleWhen` on a root was ignored.**
+Only child parts were checked, so a panel that hides itself and a dialog that appears both rendered
+permanently visible.
 
 **18. A free-form value was mirrored into the DOM as a data attribute.**
 Whatever a person typed appeared in `data-ds-state-value`, visible in devtools and in any serialised
