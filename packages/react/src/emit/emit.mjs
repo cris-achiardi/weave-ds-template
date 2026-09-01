@@ -30,6 +30,10 @@ const TOGGLE_ROLES = new Set(['switch', 'checkbox']);
 
 // Which DOM attribute carries a state. Not stated in any contract — see the logged assumption.
 const NATIVE_ATTR = { disabled: 'disabled' };
+// ARIA attributes whose FALSE value is meaningful and must be rendered rather than omitted.
+// A switch that drops aria-checked when off is announced as having no on/off state at all.
+const ARIA_EXPLICIT_FALSE = new Set(['checked']);
+
 const ARIA_ATTR = {
   checked: 'aria-checked',
   'read-only': 'aria-readonly',
@@ -530,6 +534,8 @@ function emitTsx(name, contract, binding, prefix) {
     if (!isShared && !isConsumer) continue;
     const expr = isShared ? `${camel(st)}Value` : camel(st);
     if (NATIVE_ATTR[st] && el === 'button') rootAttrs.push(`${NATIVE_ATTR[st]}={${expr}}`);
+    else if (ARIA_ATTR[st] && ARIA_EXPLICIT_FALSE.has(st))
+      rootAttrs.push(`${ARIA_ATTR[st]}={${expr}}`);
     else if (ARIA_ATTR[st]) rootAttrs.push(`${ARIA_ATTR[st]}={${expr} || undefined}`);
     else rootAttrs.push(`data-${prefix}-state-${st}={${expr} || undefined}`);
   }

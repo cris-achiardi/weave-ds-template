@@ -81,6 +81,9 @@
     "root": {
       "part": "root",
       "description": "The track. Owns the focus ring, the hit area and the state colour.",
+      "activates": {
+        "toggles": "checked"
+      },
       "paints": {
         "inline-size": null,
         "block-size": null,

@@ -3,7 +3,7 @@
 //
 // A binary on/off control that takes effect immediately, for a setting whose two states both make sense on their own — not a value collected and submitted later.
 
-import { forwardRef, useState } from 'react';
+import { forwardRef, useState, useCallback } from 'react';
 import type { ButtonHTMLAttributes } from 'react';
 import './Switch.structure.css';
 import './Switch.theme.css';
@@ -31,9 +31,13 @@ export const Switch = forwardRef<HTMLButtonElement, SwitchProps>(function Switch
   const checkedControlled = checked !== undefined;
   const [checkedInternal, setCheckedInternal] = useState(defaultChecked);
   const checkedValue = checkedControlled ? checked : checkedInternal;
-  // Nothing in the contract says what CHANGES `checked`: no part declares
-  // `activates`. It works when controlled from outside; uncontrolled it cannot move.
-  void setCheckedInternal;
+
+  const activate = useCallback(() => {
+    if (disabled || readOnly) return;
+    const next = !checkedValue;
+    if (!checkedControlled) setCheckedInternal(next);
+    onCheckedChange?.(next);
+  }, [checkedControlled, checkedValue, onCheckedChange, disabled, readOnly]);
 
   return (
     <button
@@ -41,9 +45,10 @@ export const Switch = forwardRef<HTMLButtonElement, SwitchProps>(function Switch
       ref={ref}
       type="button"
       role="switch"
-      aria-checked={checkedValue || undefined}
+      aria-checked={checkedValue}
       disabled={disabled}
       aria-readonly={readOnly || undefined}
+      onClick={activate}
       data-ds-component="Switch"
       data-ds-part="root"
       className={className}
