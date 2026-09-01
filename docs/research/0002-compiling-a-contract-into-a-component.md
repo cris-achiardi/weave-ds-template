@@ -216,6 +216,32 @@ that fact lives on `Accordion`. The emitter has to open the ancestor's contract 
 child's. It now also checks that `AccordionItem.member.of` and `Accordion.collection.items` agree
 and fails if they do not — and it is the only thing that checks.
 
+### Retiring the hardcoded toggle silently broke the Switch
+
+Replacing `TOGGLE_ROLES` with the declared `activates` field was the right move and shipped with a
+defect: `Switch`'s contract was never given the declaration that replaced its special case. The
+generated component still rendered, still typechecked, and still worked when driven from the page —
+it simply could not be clicked. Found by using it.
+
+The emitted file said so, in the comment the emitter writes when a shared state has no declared
+cause:
+
+```
+// Nothing in the contract says what CHANGES `checked`: no part declares
+// `activates`. It works when controlled from outside; uncontrolled it cannot move.
+void setCheckedInternal;
+```
+
+That comment described the symptom exactly, and nothing read it. **A generated artifact explaining
+its own defect in a comment is not a gate.** The regeneration check that ADR 0002 anticipated would
+not have caught this either: the output was internally consistent and byte-stable.
+
+The same regeneration surfaced a second defect, found by reading rather than clicking:
+`aria-checked` was emitted as `{value || undefined}`, so an OFF switch carried no `aria-checked` at
+all and was announced as having no on/off state. The APG requires `aria-checked="false"`. Every
+boolean ARIA attribute had been treated as omissible-when-false, which is right for
+`aria-readonly` and wrong for `aria-checked`, and nothing in the contract distinguishes the two.
+
 ### The accordion resized as it opened, and nothing could have said not to
 
 Found by using the component, not by reading it. With no definite width, an accordion is as wide as
@@ -333,6 +359,17 @@ Prettier owns formatting in this repo and reflows the emitter's output, so `emit
 within a week — the exact failure the repo's own rule about day-one gates warns about. This is not a
 new problem here: `adr-index.mjs` compares _parsed rows_ rather than bytes for the same reason, and
 says so in its header.
+
+**5d. A component that declares no cause for its state compiles to something inert, and no gate says so.**
+`Switch` lost its click for exactly this reason. The emitter knows — it writes a comment about it —
+but a comment in generated output is not enforcement. This is the shape of defect the whole
+regeneration-check idea does not catch: the output was correct with respect to its input, and the
+input was incomplete.
+
+**5e. Which ARIA attributes are meaningful when false is emitter knowledge.**
+`aria-checked` must render `false`; `aria-readonly` may be omitted. The contract says only that a
+state exists. Both backends and both authors have to know this table, and it lives in neither
+schema.
 
 **5c. `pnpm verify` does not typecheck emitted components.**
 `typecheck` runs against `packages/react/tsconfig.json`, whose `include` is `src`. The sandbox has no
