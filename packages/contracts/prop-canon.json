@@ -1,6 +1,6 @@
 {
   "_doc": "Canonical overlay for the prop glossary. This is the HAND-MAINTAINED half: it declares which props are shared axes, their canonical values, the value glossary, and the disposition of each known divergence. The MEASURED half is extracted from component source. Edit this file to change the canon; run `pnpm prop-map` to regenerate .ai/maps/prop-map.{json,md}.",
-  "_canon": "packages/react/src/components/README.md §2 is the prose statement of this registry. Keep the two in step — the axes and values here must match §2, and §2 points at the generated map for measured usage.",
+  "_canon": "packages/contracts/components/README.md §2 is the prose statement of this registry. Keep the two in step — the axes and values here must match §2, and §2 points at the generated map for measured usage.",
   "_starter": "These axes ship as a STARTING POINT, not a decision. They are the vocabulary a design proposal is written in before any component exists. Changing them is expected work for a new system — but change them HERE and regenerate, never by editing the generated map.",
 
   "conventions": {

@@ -32,9 +32,10 @@ admits the gap.
 This skill was ported from a mature design system into a **starter template**. Two things it leans
 on do not exist yet:
 
-- **No components.** `packages/react/src/components/` is empty by design, and
-  `.figma/maps/components.json` has no entries. Until `ds-component` builds one, this skill can only
-  document sets that already exist in the Figma file on their own terms.
+- **No components.** `packages/contracts/components/` is empty by design, and
+  `.figma/maps/components.json` has no entries. There is also no working skill that builds one —
+  `ds-component` is superseded — so this skill can only document sets that already exist in the
+  Figma file on their own terms.
 - **No theme axis.** `.figma/manifest.json` → `identity.themes` records `modes: ["dark"]` with
   `decided: false` — dark-only, and not yet decided to be dark-only. **The mode-flip verification in
   step 5 is the strongest check on this page and it cannot run.** Report that it did not run. Do not

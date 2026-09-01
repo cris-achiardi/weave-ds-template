@@ -6,8 +6,8 @@
 > **Descriptive, not prescriptive.** This documents every prop, its acceptable values, and
 > the components using it, and _flags_ divergence from the canonical axes. It resolves
 > nothing and changes no component. The canon itself lives in
-> [`prop-map.config.json`](../../packages/react/prop-map.config.json) (data) and
-> `packages/react/src/components/README.md` §2 (prose).
+> [`prop-canon.json`](../../packages/contracts/prop-canon.json) (data) and
+> `packages/contracts/components/README.md` §2 (prose).
 
 **Coverage:** 0 components · 0 props · 0 flags.
 

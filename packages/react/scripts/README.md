@@ -5,7 +5,7 @@ checks a claim against it.
 
 Repo-wide scripts live in [`scripts/`](../../../scripts/README.md). These are here because they all
 depend on one thing — the TypeScript source of the components in
-[`../src/components/`](../src/components/README.md) — and they read it **on demand, with no build
+[`../src/components/`](../../contracts/components/README.md) — and they read it **on demand, with no build
 step**. That constraint is why the template is useful on a fresh clone with zero components.
 
 ## What is here
@@ -36,4 +36,4 @@ There is no generated component metadata to keep in step, and no build to run fi
 
 The authored half — purpose, accessibility commitments, token policy, what a slot accepts — lives in
 `<Name>.contract.json` beside the component. `contract.mjs` is what puts the two halves together;
-reading either alone is misleading. See [`contracts/README.md`](../../../contracts/README.md).
+reading either alone is misleading. See [`packages/contracts/schema/README.md`](../../contracts/schema/README.md).

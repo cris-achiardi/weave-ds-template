@@ -1,7 +1,23 @@
 ---
 name: ds-figma-component
-description: Generate a Figma component set from a component in packages/react/src/components/, through the figma-console MCP. Reads the component's TSX, CSS module and contract, then creates variants bound to the source file's Figma variables and text styles. Use when asked to "generate the Figma component for Button", "push a component to Figma", "build the Figma card/badge/dialog", or when given a Figma page plus a component name.
+description: BLOCKED, DO NOT USE — reads component TSX from packages/react/src/components/, a directory that no longer exists; component source is now generated into consumers' repositories. Needs rewriting against the contract. Originally: generate a Figma component set from a component in that directory, through the figma-console MCP. Reads the component's TSX, CSS module and contract, then creates variants bound to the source file's Figma variables and text styles. Use when asked to "generate the Figma component for Button", "push a component to Figma", "build the Figma card/badge/dialog", or when given a Figma page plus a component name.
 ---
+
+> [!CAUTION]
+>
+> ## BLOCKED — its input no longer exists
+>
+> This skill reads a component's TSX and CSS module from `packages/react/src/components/<Name>/`.
+> **That directory has been removed.** The library is contract-driven now: component source is
+> generated into a consumer's repository and is not in this repo at all, so there is no TSX here for
+> this skill to read.
+>
+> A Figma component set should be generated from the **contract** instead — see
+> `packages/contracts/components/README.md`. Rewriting this skill to do that is real work and has
+> not been done.
+>
+> `ds-figma-document` and `ds-figma-explain` are unaffected: they operate on Figma content and on
+> explanation, not on component source.
 
 # ds-figma-component
 
@@ -60,7 +76,7 @@ Per the repo's first rule, pull context on demand; don't front-load it.
 | Always, before reporting                                       | `references/property-check.md` — instantiate the set and drive every property. This is where the bugs are                  |
 | Naming a property or its values                                | `.ai/maps/prop-map.md` §1–2 — **the canon.** A Figma variant value must equal the prop value exactly                       |
 | Understanding what the component IS                            | `pnpm contract <Name>` — the merged contract-plus-source view, no build needed                                             |
-| Authoring rules the component followed                         | `packages/react/src/components/README.md`                                                                                  |
+| Authoring rules the component followed                         | `packages/contracts/components/README.md`                                                                                  |
 
 Agnostic know-how index: <https://www.giorris.dev/figma/refs/refs-map.md>. Those references are
 written for any design system — **where they disagree with this file, this file wins**, because it

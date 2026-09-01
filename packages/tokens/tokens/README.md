@@ -58,7 +58,7 @@ weave-ds-space-3           ->  --ds-space-3           ->  space.3
   otherwise every reader guesses, and half of them guess `3px`.
 - **No component-specific tokens in the global namespace.** A token used by exactly one component
   is that component's business; expose it as an unprefixed component property (see
-  `packages/react/src/components/README.md` §4) rather than adding it here.
+  `packages/contracts/components/README.md` §4) rather than adding it here.
 
 ## 5. Modes and themes
 

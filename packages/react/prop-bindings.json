@@ -1,0 +1,18 @@
+{
+  "_doc": "How this framework spells the agnostic vocabulary. The canon — which axes exist, their canonical values, the anti-synonym glossary — lives in @ds/contracts/prop-canon.json and is framework-free. This file holds ONLY the places React's idiom differs from it.",
+  "_why": "A contract says a component has a selection that can be controlled. It does not say whether that is `value` + `onValueChange`, `modelValue` + `update:modelValue`, or a two-way binding, because that is a framework's business and not the specification's. Putting those spellings in the contract is the most common way an 'agnostic' spec turns out to be one framework with extra steps.",
+  "_regenerate": "Hand-maintained. Nothing generates this file.",
+
+  "conventions": {
+    "propCase": "camelCase — identical to the canon, so no axis name needs a mapping",
+    "valueCase": "kebab-case — identical to the canon",
+    "eventPrefix": "on",
+    "booleanNaming": "bare adjective, as the canon requires. React needs no deviation."
+  },
+
+  "_axisOverridesDoc": "Axis name -> the React prop that carries it, for the rare case where the canonical name collides with a reserved or conventional React prop. Empty means every axis is spelled exactly as the canon spells it, which is the desired state. Every entry needs a reason: a rename with no reason is drift with paperwork.",
+  "axisOverrides": {},
+
+  "_behaviorBindingDoc": "Behaviour vocabulary primitive -> the React implementation that satisfies it. Populated when the vocabulary and the primitives exist; both are unbuilt.",
+  "behaviorBindings": {}
+}

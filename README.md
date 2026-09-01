@@ -71,7 +71,7 @@ once and reviewed by a person.
 The gate also enforces the plain half: a contract cannot name a part that never renders, a state
 nothing can enter, or a prop value that was never in the axis.
 
-See [`contracts/README.md`](./contracts/README.md) for where the line falls, and what the gate costs
+See [`packages/contracts/schema/README.md`](./packages/contracts/schema/README.md) for where the line falls, and what the gate costs
 you if it is ever switched off.
 
 ## New here? Start with the illustrated version
@@ -85,7 +85,7 @@ becomes a component.
 
 - **[`CLAUDE.md`](./CLAUDE.md)** — the entry map. Start here.
 - **[`packages/react/CLAUDE.md`](./packages/react/CLAUDE.md)** — library internals.
-- **[`packages/react/src/components/README.md`](./packages/react/src/components/README.md)** — the
+- **[`packages/contracts/components/README.md`](./packages/contracts/components/README.md)** — the
   authoring contract. The most important document in the repo if you are writing a component.
 
 Everything is documented next to the thing it governs. Each README is an index for its own

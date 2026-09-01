@@ -3,11 +3,11 @@
 Three artifacts with three different authorities. Confusing them is how a glossary stops being
 trusted, so the distinction is worth holding:
 
-| File                                        | Who writes it                   | What it is                                                                                                                                                                                                              |
-| ------------------------------------------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `prop-map.json` / `prop-map.md`             | **generated** — `pnpm prop-map` | The **measured** surface: every prop in the library, its values, which components use it, and every divergence from the canon. Never edit; the edit is discarded on the next run and `pnpm prop-map:check` fails in CI. |
-| `proposals/*.md`                            | **hand-written**                | One per component that does **not exist yet**. Maps a design's variants onto the canonical vocabulary _before_ anything is built.                                                                                       |
-| `../../packages/react/prop-map.config.json` | **hand-written**                | The **canon**: the axes, their values, the anti-synonym glossary, and the disposition of each known divergence. This is what the generated map measures against.                                                        |
+| File                                       | Who writes it                   | What it is                                                                                                                                                                                                              |
+| ------------------------------------------ | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `prop-map.json` / `prop-map.md`            | **generated** — `pnpm prop-map` | The **measured** surface: every prop in the library, its values, which components use it, and every divergence from the canon. Never edit; the edit is discarded on the next run and `pnpm prop-map:check` fails in CI. |
+| `proposals/*.md`                           | **hand-written**                | One per component that does **not exist yet**. Maps a design's variants onto the canonical vocabulary _before_ anything is built.                                                                                       |
+| `../../packages/contracts/prop-canon.json` | **hand-written**                | The **canon**: the axes, their values, the anti-synonym glossary, and the disposition of each known divergence. This is what the generated map measures against.                                                        |
 
 ## Why the generated map exists at all
 

@@ -26,7 +26,7 @@ decision nobody has implemented is a Draft, however confident it sounds._
 ## The records
 
 **This directory ships almost empty**, like `docs/research/`, `.ai/maps/proposals/` and
-`packages/react/src/components/`. You get the machinery, not somebody else's conclusions.
+`packages/contracts/components/`. You get the machinery, not somebody else's conclusions.
 
 That is worth being explicit about, because an ADR folder is exactly where inherited decisions do
 the most damage. A record you did not make, about a system you have not built yet, still reads as
@@ -40,8 +40,8 @@ it, not here:
 
 | What                                                  | Where                                     |
 | ----------------------------------------------------- | ----------------------------------------- |
-| What a component contract may contain, and why        | `contracts/README.md`                     |
-| How to author a component, and the gates it must pass | `packages/react/src/components/README.md` |
+| What a component contract may contain, and why        | `packages/contracts/schema/README.md`     |
+| How to author a component, and the gates it must pass | `packages/contracts/components/README.md` |
 | Token naming and tiers                                | `packages/tokens/tokens/README.md`        |
 | What Figma is, and what it is not                     | `.figma/README.md`                        |
 
@@ -52,9 +52,10 @@ it, not here:
 
 <!-- adr-index:start -->
 
-| #                                                | Title                                                                    | Status   |
-| ------------------------------------------------ | ------------------------------------------------------------------------ | -------- |
-| [0001](./0001-every-layer-is-self-describing.md) | Every layer is self-describing, and context is pulled rather than pushed | Accepted |
+| #                                                              | Title                                                                    | Status   |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------ | -------- |
+| [0001](./0001-every-layer-is-self-describing.md)               | Every layer is self-describing, and context is pulled rather than pushed | Accepted |
+| [0002](./0002-agnostic-contracts-live-in-their-own-package.md) | Agnostic contracts live in their own package, not at the repo root       | Accepted |
 
 <!-- adr-index:end -->
 
