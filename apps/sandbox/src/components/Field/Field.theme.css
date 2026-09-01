@@ -1,32 +1,42 @@
 /*
- * Field — THE CONSUMER'S FILE. Emitted once, empty, never regenerated.
- * The sandbox is playing consumer. Raw values on purpose: the library has no opinion.
+ * Field — YOUR FILE. Emitted once, never regenerated. Wire your tokens here.
+ *
+ * Every channel below is declared in the contract with no source: the library says this
+ * part paints a background, and deliberately does not say from where. Uncomment and fill.
  */
 
 [data-ds-component='Field'] {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  max-inline-size: 32ch;
+  /* display: ; */
+  /* gap: ; */
 }
 
 [data-ds-component='Field'] [data-ds-part='label'] {
-  color: #e8e8ea;
-  font-size: 0.85rem;
-  font-weight: 500;
+  /* color: ; */
+  /* font-size: ; */
+  /* font-weight: ; */
+}
+
+/* state: disabled — Label, control and description all take the disabled treatment. */
+[data-ds-component='Field']:disabled [data-ds-part='label'] {
+  /* color: ; */
+}
+
+/* state: focused — The label takes its focused treatment. */
+[data-ds-component='Field'][data-state~='focused'] [data-ds-part='label'] {
+  /* color: ; */
 }
 
 [data-ds-component='Field'] [data-ds-part='description'] {
-  color: #8b8b93;
-  font-size: 0.8rem;
+  /* color: ; */
+  /* font-size: ; */
+}
+
+/* state: disabled — Label, control and description all take the disabled treatment. */
+[data-ds-component='Field']:disabled [data-ds-part='description'] {
+  /* color: ; */
 }
 
 [data-ds-component='Field'] [data-ds-part='error'] {
-  color: #f0736a;
-  font-size: 0.8rem;
-}
-
-[data-ds-component='Field'][aria-disabled='true'] [data-ds-part='label'],
-[data-ds-component='Field'][aria-disabled='true'] [data-ds-part='description'] {
-  color: #5a5a62;
+  /* color: ; */
+  /* font-size: ; */
 }

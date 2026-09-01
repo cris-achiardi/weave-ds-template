@@ -4,7 +4,7 @@
   "status": {
     "level": "experimental",
     "since": "2026-09-01",
-    "note": "Only meaningful inside an Accordion."
+    "note": "Only meaningful inside an Accordion. Uses the EXPERIMENTAL `member` block and the experimental part-level `role`, `activates`, `controls`, `namedBy` and `visibleWhen` fields."
   },
   "intent": {
     "purpose": "One section of an accordion: a heading that reveals a panel when chosen. It carries its own identity and its own disabled state, and nothing else — whether it is open is a comparison against the surrounding Accordion, not a property it holds.",
@@ -21,6 +21,11 @@
       "A standalone collapsible section. That is a disclosure component with no shared state and no coordination.",
       "Holding a heading level decision. The level is passed in; guessing it produces a document outline that is wrong in a way no gate here can detect."
     ]
+  },
+  "member": {
+    "of": "Accordion",
+    "identity": "value",
+    "reflects": "open"
   },
   "states": {
     "open": {
@@ -49,14 +54,13 @@
     }
   },
   "semantics": {
-    "role": "button",
-    "focusable": true
+    "focusable": false
   },
   "a11y": {
     "focusVisible": true,
     "contrast": "AA",
     "minHitArea": 44,
-    "keyboard": "Tab reaches the trigger as an ordinary button. Enter and Space toggle the section.",
+    "keyboard": "Tab reaches each trigger as an ordinary button. Enter and Space toggle that section.",
     "notes": [
       "The heading level is the consumer's to supply and there is no safe default. A component that guessed would produce a document outline that reads correctly to sighted users and wrongly to anyone navigating by heading — and nothing in this repo could detect it.",
       "The trigger must be the only element inside the heading. A decorative icon that is visually part of the row but semantically outside it has to sit outside the heading, or it is read as part of the section's name.",
@@ -67,15 +71,17 @@
   "composition": {
     "slots": {
       "heading": {
+        "part": "trigger",
         "accepts": ["text"],
         "required": true,
         "max": 1,
-        "description": "The section's name, rendered inside the trigger."
+        "description": "The section's name, rendered inside the trigger. Fills the `trigger` part."
       },
       "panel": {
+        "part": "panel",
         "required": true,
         "max": 1,
-        "description": "The revealed content. Anything."
+        "description": "The revealed content. Anything. Fills the `panel` part."
       }
     }
   },
@@ -89,45 +95,52 @@
       "parts": {
         "header": {
           "part": "header",
-          "description": "The heading element wrapping the trigger. Structural — it exists to carry the heading level and holds no paint of its own.",
-          "internalOnly": true
-        },
-        "trigger": {
-          "part": "trigger",
-          "description": "The button. Owns the focus ring, the hit area and the hover wash, and stretches the full width so the whole row is the target.",
-          "paints": {
-            "padding": null,
-            "color": null,
-            "font-size": null,
-            "font-weight": null,
-            "min-block-size": null
-          },
-          "states": {
-            "hover": {
-              "background": null
-            },
-            "disabled": {
-              "color": null
-            },
-            "focus-visible": {
-              "outline": null,
-              "outline-offset": null
-            }
-          },
+          "description": "The heading element wrapping the trigger. The APG requires the trigger to be the ONLY thing inside it, and requires a heading level that fits the surrounding page — which this component cannot know and cannot default. Nothing in the schema can declare a value the consumer must supply, so the level is currently not set at all and the item is not APG-conformant.",
+          "internalOnly": true,
           "parts": {
-            "indicator": {
-              "part": "indicator",
-              "description": "The chevron marking whether the section is open. Rotates rather than swapping glyph, so the change reads as one object moving.",
+            "trigger": {
+              "part": "trigger",
+              "description": "The button. Owns the focus ring, the hit area and the hover wash, and stretches the full width so the whole row is the target.",
+              "role": "button",
+              "activates": {
+                "toggles": "member"
+              },
+              "controls": "panel",
               "paints": {
-                "inline-size": null,
-                "block-size": null,
+                "padding": null,
                 "color": null,
-                "transform": null,
-                "transition-duration": null
+                "font-size": null,
+                "font-weight": null,
+                "min-block-size": null
               },
               "states": {
-                "open": {
-                  "transform": null
+                "hover": {
+                  "background": null
+                },
+                "disabled": {
+                  "color": null
+                },
+                "focus-visible": {
+                  "outline": null,
+                  "outline-offset": null
+                }
+              },
+              "parts": {
+                "indicator": {
+                  "part": "indicator",
+                  "description": "The chevron marking whether the section is open. Rotates rather than swapping glyph, so the change reads as one object moving.",
+                  "paints": {
+                    "inline-size": null,
+                    "block-size": null,
+                    "color": null,
+                    "transform": null,
+                    "transition-duration": null
+                  },
+                  "states": {
+                    "open": {
+                      "transform": null
+                    }
+                  }
                 }
               }
             }
@@ -136,6 +149,9 @@
         "panel": {
           "part": "panel",
           "description": "The revealed content region.",
+          "role": "region",
+          "namedBy": "trigger",
+          "visibleWhen": "open",
           "paints": {
             "padding": null,
             "color": null

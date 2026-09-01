@@ -4,16 +4,14 @@
   "status": {
     "level": "experimental",
     "since": "2026-09-01",
-    "note": "Sourced from the W3C ARIA APG accordion pattern for roles and keyboard, and Base UI's Accordion for API naming consensus. Note that the APG no longer specifies arrow-key navigation between headers, and Base UI has deprecated its `orientation` and `loopFocus` props to match."
+    "note": "Sourced from the W3C ARIA APG accordion pattern for roles and keyboard, and Base UI's Accordion for API naming consensus. Note that the APG no longer specifies arrow-key navigation between headers, and Base UI has deprecated its `orientation` and `loopFocus` props to match. Uses the EXPERIMENTAL `collection` block, added to find out whether an accordion can be compiled at all."
   },
   "intent": {
     "purpose": "Holds which of a set of sections are expanded, and lets a reader open one without losing the list of the others. It exists so that the open set has exactly one home rather than each section holding its own copy.",
     "behaviour": [
-      "Holds the open set as a list of item values, controlled via `value` + `onValueChange` or uncontrolled via `defaultValue`.",
-      "Allows exactly one open section by default. `multiple` allows any number, including none.",
-      "In single mode, opening one section closes whichever was open. In multiple mode, sections are independent.",
+      "Holds the open set: which of its sections are expanded. The set lives here rather than in each section, so opening one can close another.",
+      "Allows any number of sections open at once, including none.",
       "Adds no keyboard behaviour between headers. Every trigger is an ordinary button in the page's Tab order, which is what the ARIA APG now specifies — it removed roving focus from this pattern, and arrow-key navigation between headers is not part of it.",
-      "Never renders a state where every section is closed and nothing indicates why, unless the design has said an all-closed accordion is acceptable.",
       "Disabling the accordion disables every item in it; an individual item may also be disabled on its own."
     ],
     "notFor": [
@@ -28,6 +26,15 @@
       "values": ["vertical"],
       "default": "vertical",
       "description": "Only vertical is designed. Recorded as an axis with one value rather than omitted, because the horizontal case exists in the canon and this component deliberately does not take it."
+    }
+  },
+  "collection": {
+    "items": "AccordionItem",
+    "identity": "value",
+    "selection": {
+      "cardinality": "many",
+      "control": "shared",
+      "initial": "none"
     }
   },
   "states": {

@@ -3,30 +3,75 @@
 //
 // Holds which of a set of sections are expanded, and lets a reader open one without losing the list of the others. It exists so that the open set has exactly one home rather than each section holding its own copy.
 
-import { forwardRef } from 'react';
+import { forwardRef, useId, useState, useCallback, createContext, useMemo } from 'react';
 import type { HTMLAttributes } from 'react';
 import './Accordion.structure.css';
 import './Accordion.theme.css';
 
-export interface AccordionProps extends Omit<HTMLAttributes<HTMLDivElement>, 'disabled'> {
+export interface AccordionContextValue {
+  /** The current selection, by member value. */
+  selection: string[];
+  /** Called by a member when it is activated. */
+  toggle: (value: string) => void;
+  /** Shared id root, so a member's parts can reference one another. */
+  baseId: string;
+  /** True when the whole collection is disabled. */
+  disabled: boolean;
+}
+
+export const AccordionContext = createContext<AccordionContextValue | null>(null);
+
+export interface AccordionProps extends Omit<
+  HTMLAttributes<HTMLDivElement>,
+  'disabled' | 'value' | 'defaultValue' | 'onValueChange'
+> {
   /** The whole accordion ignores interaction. Cascades to every item. */
   disabled?: boolean;
+  /** The current selection. Controlled. */
+  value?: string[];
+  /** Initial value when uncontrolled. */
+  defaultValue?: string[];
+  /** Called when it changes, controlled or not. */
+  onValueChange?: (value: string[]) => void;
 }
 
 export const Accordion = forwardRef<HTMLDivElement, AccordionProps>(function Accordion(
-  { disabled, children, className, ...rest },
+  { disabled, value, defaultValue = [], onValueChange, children, className, ...rest },
   ref,
 ) {
+  const baseId = useId();
+
+  const valueControlled = value !== undefined;
+  const [valueInternal, setValueInternal] = useState(defaultValue);
+  const selection = valueControlled ? value : valueInternal;
+
+  const toggle = useCallback(
+    (value: string) => {
+      const next = selection.includes(value)
+        ? selection.filter((v) => v !== value)
+        : [...selection, value];
+      if (!valueControlled) setValueInternal(next);
+      onValueChange?.(next);
+    },
+    [selection, valueControlled, onValueChange],
+  );
+
+  const contextValue = useMemo(
+    () => ({ selection, toggle, baseId, disabled: disabled ?? false }),
+    [selection, toggle, baseId, disabled],
+  );
+
   return (
     <div
       {...rest}
       ref={ref}
+      id={baseId}
       aria-disabled={disabled || undefined}
       data-ds-component="Accordion"
       data-ds-part="root"
       className={className}
     >
-      {children}
+      <AccordionContext.Provider value={contextValue}>{children}</AccordionContext.Provider>
     </div>
   );
 });

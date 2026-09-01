@@ -4,7 +4,7 @@
   "status": {
     "level": "experimental",
     "since": "2026-09-01",
-    "note": "Sourced from Base UI's Field for the state vocabulary and part names; the ARIA APG has no 'field' pattern, so the accessibility facts come from the HTML label/describedby specification instead."
+    "note": "Sourced from Base UI's Field for the state vocabulary and part names; the ARIA APG has no 'field' pattern, so the accessibility facts come from the HTML label/describedby specification instead. Uses the EXPERIMENTAL part-level `namedBy`, `describedBy` and `visibleWhen` fields — without them the generated component rendered four correct regions that knew nothing about each other."
   },
   "intent": {
     "purpose": "Wires a form control to its label, its help text and its error message, so the three are announced together and the control's validity has one place to live. It is the plumbing around an input, never the input.",
@@ -88,23 +88,27 @@
     },
     "slots": {
       "label": {
+        "part": "label",
         "accepts": ["text"],
         "required": true,
         "max": 1,
         "description": "Names the control. Required — a field with no label is the defect this component exists to prevent."
       },
       "control": {
+        "part": "control",
         "accepts": ["input", "select", "textarea", "Switch"],
         "required": true,
         "max": 1,
         "description": "The control being wired up. Passed in rather than rendered."
       },
       "description": {
+        "part": "description",
         "accepts": ["text"],
         "max": 1,
         "description": "Help text, announced with the control."
       },
       "error": {
+        "part": "error",
         "accepts": ["text"],
         "max": 1,
         "description": "Why validation failed. Shown only when the field is invalid AND has been touched."
@@ -137,6 +141,12 @@
             }
           }
         },
+        "control": {
+          "part": "control",
+          "description": "The region the passed-in control occupies. Named by the label and described by the description and the error, in that order.",
+          "namedBy": "label",
+          "describedBy": ["description", "error"]
+        },
         "description": {
           "part": "description",
           "description": "Help text sitting below the control.",
@@ -153,6 +163,7 @@
         "error": {
           "part": "error",
           "description": "The failure message. Occupies no space until it is shown.",
+          "visibleWhen": "invalid",
           "paints": {
             "color": null,
             "font-size": null

@@ -185,6 +185,52 @@ state became false.
 v3 therefore emits no layout at all and says so in the file. `Switch`'s real layout now lives in the
 consumer's `theme.css` under a banner explaining that it is in the wrong place.
 
+### A second pass: the accordion now works, and what it took
+
+The contract gained two blocks and the anatomy gained five per-part fields. All are marked
+EXPERIMENTAL in the schema and none is yet recorded in an ADR.
+
+| Addition                               | Where                                | What it fixed                                                                             |
+| -------------------------------------- | ------------------------------------ | ----------------------------------------------------------------------------------------- |
+| `collection`                           | Accordion                            | the parent holds a selection of member identities — the fact that existed only as prose   |
+| `member`                               | AccordionItem                        | how a child learns whether it is in that selection                                        |
+| `role` on a part                       | AccordionItem                        | the role landing on the root and announcing the whole section as one button               |
+| `activates`                            | AccordionItem's trigger              | what causes the state to change; also retires the emitter's hardcoded `TOGGLE_ROLES` list |
+| `controls` / `namedBy` / `describedBy` | AccordionItem, Field                 | the ARIA wiring that made the generated Field inert                                       |
+| `visibleWhen`                          | AccordionItem's panel, Field's error | "the panel is revealed", which had been prose in `visual`                                 |
+| `part` on a slot                       | AccordionItem, Field                 | slot content landing outside any described region                                         |
+
+`cardinality` takes three values rather than Base UI's `multiple: boolean`, because `one` (a tab
+list, which can never show nothing) and `at-most-one` (a single-open accordion, which may close its
+last section) are different and a boolean cannot hold the difference.
+
+The emitter now generates, from those declarations alone: a React context on the parent, the
+controlled/uncontrolled selection with its toggle, the member's comparison against it, the
+`aria-expanded` / `aria-controls` / `aria-labelledby` triangle with generated ids, the `hidden`
+panel, and cascading `disabled`. All four contracts typecheck under `--strict --noUnusedLocals`.
+
+### A member contract is not self-contained
+
+Compiling `AccordionItem` requires knowing whether the selection is a set or a single value, and
+that fact lives on `Accordion`. The emitter has to open the ancestor's contract to compile the
+child's. It now also checks that `AccordionItem.member.of` and `Accordion.collection.items` agree
+and fails if they do not — and it is the only thing that checks.
+
+### The accordion resized as it opened, and nothing could have said not to
+
+Found by using the component, not by reading it. With no definite width, an accordion is as wide as
+its widest heading when collapsed and as wide as its widest panel when expanded, so every section
+shifts under the pointer as you open one.
+
+_Opening a section must not change the component's width_ is exactly the kind of promise a contract
+should carry — the masterclass Tabs contract makes the equivalent promise about height, in prose.
+There is nowhere to put it. It ended up in the consumer's theme file, where nothing checks it and a
+consumer who omits it gets a component that works and jumps.
+
+Worth noting alongside: the Accordion contract lists `display` and `gap` among its root's **paint**
+channels. Neither is paint. The paint/layout line is drawn in the documentation and not in the
+schema, so a contract author can put structure in `paints` and every gate stays green.
+
 ## What it appears to mean (inferred)
 
 Every item below is a reading, not a measurement.
@@ -235,6 +281,17 @@ where content goes; a part is a named region. `Field`'s `label` slot and `label`
 place, and the emitter reconciled them by name — which worked by luck, and failed for `control` and
 for `heading`/`header`.
 
+**The accordion result suggests the missing layer is smaller than it looked.** Two blocks and five
+part-level fields took `Accordion` from inert to working, and the same fields fixed `Field`'s ARIA.
+That is a vocabulary, not a language — each field takes one name and no expression — which is the
+shape ADR 0004 argued for on different evidence.
+
+**`layout` now looks like it needs constraints, not just declarations.** The width defect is not
+"the root has `display: flex`"; it is "the root's size must not depend on which parts are visible".
+That is a rule about permissible layouts rather than a layout. If that reading is right, a `layout`
+block that only lists CSS-shaped declarations will not be able to express the thing that actually
+broke.
+
 **Regeneration safety is currently a convention, not a mechanism.** The emitter skips
 `theme.css` when it exists, which is the right behaviour and is enforced by one `existsSync`. Nothing
 marks the generated files as generated in a way a tool could check, and nothing would stop a
@@ -282,6 +339,16 @@ says so in its header.
 tsconfig at all. The three dead-setter errors above were found by invoking `tsc` by hand; nothing in
 `pnpm verify` or CI would have caught them, and nothing would catch an emitter that starts producing
 uncompilable code.
+
+**6b. A component can resize as its state changes, and no contract can forbid it.**
+The accordion changed width on every open and close. The promise that would prevent it — the size
+must not depend on which parts are visible — is a constraint on layout, and there is no layout block
+to hold it, constraint-shaped or otherwise.
+
+**6c. `paints` accepts structural channels.**
+`Accordion`'s contract declares `display` and `gap` as paint channels. Neither carries design
+intent in the sense `paints` documents; both are structure. Nothing distinguishes them, so the
+paint/theme split a consumer relies on is enforced only by the care of whoever wrote the contract.
 
 **7. `Field` compiles to something that looks right and does nothing.**
 Every part renders; no relationship is wired. The control is named by its placeholder, the error is

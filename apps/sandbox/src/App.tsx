@@ -110,17 +110,25 @@ export function App() {
 
       <Specimen
         name="Accordion + AccordionItem"
-        verdict="shell"
-        note="Compiled to correct, inert markup. The contract never declares the open set as a state — it describes it only in intent.behaviour prose — so no value, no onValueChange, and no way to open a section. Nothing here is broken; the contract simply does not contain the component's central fact. This is the behaviour-vocabulary gap, made visible."
+        verdict="works"
+        note="Now compiles. The contract gained a `collection` block (the parent holds a selection of member identities) and the item gained `member` plus part-level role, activates, controls, namedBy and visibleWhen. The emitter generated the context, the toggle, the aria-expanded/controls/labelledby wiring and the hidden panel from those. Click a heading."
       >
-        <Accordion>
+        <Accordion defaultValue={['what']}>
           <AccordionItem
+            value="what"
             heading="What is a contract?"
-            panel="The specification a component is generated from."
+            panel="The agnostic specification a component is generated from. It is the thing this library ships; the component is output."
           />
           <AccordionItem
-            heading="Why is nothing opening?"
-            panel="Because the contract does not say what opening means."
+            value="why"
+            heading="Why is this one opening?"
+            panel="Because the contract now says what opening means: the accordion holds a selection, this item is a member of it, and the trigger toggles that membership."
+          />
+          <AccordionItem
+            value="disabled"
+            disabled
+            heading="This one is disabled"
+            panel="You should not be able to read this."
           />
         </Accordion>
       </Specimen>
