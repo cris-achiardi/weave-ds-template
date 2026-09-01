@@ -25,7 +25,7 @@ clone with zero components.
 The cost is real and worth knowing. Syntax reading sees what is _written_, so a variant axis built
 by spreading a computed object, or a part name held in a variable, is invisible to it. Author
 plainly — the authoring contract in
-[`../../src/components/README.md`](../../src/components/README.md) exists partly to keep components
+[`../../../contracts/components/README.md`](../../../contracts/components/README.md) exists partly to keep components
 readable this way.
 
 `props.mjs` is the exception: it uses `react-docgen-typescript`, which does run a type program. That

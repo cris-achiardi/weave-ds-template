@@ -77,10 +77,14 @@ function main() {
   // components. A malformed schema would otherwise sit undetected until the first contract.
   let validateContract, validateBinding;
   try {
-    validateContract = ajv.compile(readJson(join(REPO_ROOT, 'contracts/component.schema.json')));
-    validateBinding = ajv.compile(readJson(join(REPO_ROOT, 'contracts/react-binding.schema.json')));
+    validateContract = ajv.compile(
+      readJson(join(REPO_ROOT, 'packages/contracts/schema/component.schema.json')),
+    );
+    validateBinding = ajv.compile(
+      readJson(join(REPO_ROOT, 'packages/react/bindings/binding.schema.json')),
+    );
   } catch (err) {
-    console.error(`a schema in contracts/ does not compile: ${err.message}`);
+    console.error(`a contract schema does not compile: ${err.message}`);
     process.exit(1);
   }
 

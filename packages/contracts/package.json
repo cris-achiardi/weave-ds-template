@@ -1,0 +1,17 @@
+{
+  "name": "@ds/contracts",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Component contracts. The agnostic specification a component is generated from — no framework, no token values, no styling.",
+  "exports": {
+    "./schema/*": "./schema/*",
+    "./components/*": "./components/*",
+    "./prop-canon.json": "./prop-canon.json"
+  },
+  "files": [
+    "schema",
+    "components",
+    "prop-canon.json"
+  ]
+}

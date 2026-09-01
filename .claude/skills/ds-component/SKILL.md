@@ -1,7 +1,31 @@
 ---
 name: ds-component
-description: Build a React component from an accepted decision — the five files, its agnostic contract and React binding, the barrel entry, and every gate. Use when asked to "create the Button", "scaffold a component", "implement ADR NNNN", "add a component to the design system", or when given a component name plus a design intent. Requires a governing ADR or a prop-map proposal to work from.
+description: SUPERSEDED, DO NOT USE — describes the retired hand-authoring flow and writes to packages/react/src/components/, a directory that no longer exists. The library is now contract-driven and there is no replacement skill yet. Read packages/contracts/components/README.md instead. Retained only for its reasoning. Originally: build a React component from an accepted decision — the five files, its agnostic contract and React binding, the barrel entry, and every gate. Use when asked to "create the Button", "scaffold a component", "implement ADR NNNN", "add a component to the design system", or when given a component name plus a design intent. Requires a governing ADR or a prop-map proposal to work from.
 ---
+
+> [!CAUTION]
+>
+> ## SUPERSEDED — do not follow this skill
+>
+> This skill builds five hand-written files into `packages/react/src/components/<Name>/` and adds a
+> barrel entry. **That directory no longer exists and the barrel exports nothing.** Every path below
+> is wrong, and the flow it describes — write the component by hand, then write a contract that
+> annotates it — is the exact direction this library has reversed.
+>
+> The library is now contract-driven: the contract in `packages/contracts/components/<Name>/` is the
+> source, and component source code is _generated_ from it into a consumer's own repository.
+>
+> **There is no replacement skill yet, because there is no emitter yet.** Do not improvise one from
+> the instructions below — they will produce a component in a directory nothing scans, contracted by
+> a gate that no longer measures what it claims to.
+>
+> - What a contract may contain: `packages/contracts/components/README.md`
+> - What generated React must look like: `packages/react/src/emit/README.md`
+> - Why the direction reversed: `packages/contracts/schema/README.md`
+>
+> Retained unedited below for its reasoning, which is still good — the refusal to start without a
+> governing decision, the anatomy invariants, the rule against inventing a field. Only the mechanics
+> are dead.
 
 # ds-component
 
@@ -19,14 +43,14 @@ visibly.
 
 ## Read these when you are in their territory
 
-| When                       | Read                                                                                       |
-| -------------------------- | ------------------------------------------------------------------------------------------ |
-| **Always, first**          | `packages/react/src/components/README.md` — the authoring contract                         |
-| **Before naming any prop** | `.ai/maps/prop-map.md` §1–2 — reuse an axis, do not coin a synonym                         |
-| Writing the contract       | `references/authoring-the-contract.md` + `contracts/*.schema.json` + `contracts/README.md` |
-| The file shapes            | `references/component-anatomy.md`                                                          |
-| Choosing a `paints` policy | `references/token-policy.md`                                                               |
-| What the gate will check   | `packages/react/scripts/verify-contract.mjs` header                                        |
+| When                       | Read                                                                                                       |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| **Always, first**          | `packages/contracts/components/README.md` — the authoring contract                                         |
+| **Before naming any prop** | `.ai/maps/prop-map.md` §1–2 — reuse an axis, do not coin a synonym                                         |
+| Writing the contract       | `references/authoring-the-contract.md` + `contracts/*.schema.json` + `packages/contracts/schema/README.md` |
+| The file shapes            | `references/component-anatomy.md`                                                                          |
+| Choosing a `paints` policy | `references/token-policy.md`                                                                               |
+| What the gate will check   | `packages/react/scripts/verify-contract.mjs` header                                                        |
 
 ## The five files
 

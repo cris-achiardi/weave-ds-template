@@ -21,7 +21,7 @@ Ask: **if this changed, would the decision have changed?**
 - No → it is a contract. Link it.
 - Yes → it is part of the decision. Write it.
 
-Adding a field to `contracts/component.schema.json` does not change the decision "a component
+Adding a field to `packages/contracts/schema/component.schema.json` does not change the decision "a component
 carries a contract". So the schema is a contract. Deciding that contracts are _machine-readable
 rather than prose_ does change the decision, so it belongs in the record.
 
@@ -33,7 +33,7 @@ component contracts work would split like this:
 | Belongs in the **record**                                                        | Belongs in the **contract table**                           |
 | -------------------------------------------------------------------------------- | ----------------------------------------------------------- |
 | "Every component may carry exactly one contract file, colocated with its source" | `packages/react/src/components/<Name>/<Name>.contract.json` |
-| "Machine-readable, not prose"                                                    | `contracts/component.schema.json`                           |
+| "Machine-readable, not prose"                                                    | `packages/contracts/schema/component.schema.json`           |
 | "Restating a derivable fact is a defect, not redundancy"                         | `packages/react/scripts/verify-contract.mjs`                |
 | "The contract states token policy, not token values"                             | the `tokenPolicy` definition inside the schema              |
 | "Absence is a reportable state, not a failure"                                   | the coverage output of the gate                             |
@@ -50,9 +50,9 @@ The realizing specifics live with the code they govern, not here:
 
 | Concern         | Where                                                                              |
 | --------------- | ---------------------------------------------------------------------------------- |
-| Contract schema | `contracts/component.schema.json`                                                  |
+| Contract schema | `packages/contracts/schema/component.schema.json`                                  |
 | Enforcement     | `packages/react/scripts/verify-contract.mjs` (`pnpm verify:contract`, gated in CI) |
-| Authoring rules | `packages/react/src/components/README.md`                                          |
+| Authoring rules | `packages/contracts/components/README.md`                                          |
 ```
 
 Always name **how it is enforced**, not just where it lives. A contract with no gate is a

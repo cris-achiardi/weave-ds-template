@@ -28,11 +28,13 @@ decision; the arc that produces one is:
 
 Exploring the design source and writing up what is there are **done by hand** — Figma is a canvas to
 read, not a pipeline stage, and no skill sweeps it. `ds-decide` turns a report's open questions into
-a record, `ds-component` builds against that record, and a gate sits behind the build.
+a record. The build step is mid-migration: the library is moving to contract-driven generation, so
+`ds-component` describes a retired flow and carries a banner saying so.
 
 ```
+packages/contracts/ @ds/contracts — THE PRODUCT. Agnostic component contracts + their schema
 packages/tokens/   @ds/tokens — DTCG JSON -> CSS custom properties + TS constants
-packages/react/    @ds/react  — the component library (empty)
+packages/react/    @ds/react  — one backend: React bindings, emitter, behaviour primitives
 apps/sandbox/      fast Vite harness, in the workspace
 apps/storybook/    complete on disk, deliberately OUT of the install graph
 docs/research/     pre-decision: what is measurably true
@@ -101,8 +103,8 @@ Working against an accepted ADR without updating it is a defect, not a shortcut.
 | Read it when                                    | File                                                                                                                     |
 | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
 | Explaining any of this to a designer            | `docs/documentation/` — plain language + diagrams. Explanation, not spec: where it disagrees with a spec, the spec wins. |
-| Authoring or changing a component               | `packages/react/src/components/README.md` — **the** authoring contract                                                   |
-| Deciding what is agnostic vs framework-specific | `contracts/README.md` — the two schemas and where the line falls                                                         |
+| Authoring or changing a component               | `packages/contracts/components/README.md` — **the** authoring contract                                                   |
+| Deciding what is agnostic vs framework-specific | `packages/contracts/schema/README.md` — the two schemas and where the line falls                                         |
 | Naming a prop or a value                        | `.ai/maps/prop-map.md` §1–2                                                                                              |
 | Writing a token                                 | `packages/tokens/tokens/README.md`                                                                                       |
 | Reading the design source                       | `.figma/README.md`                                                                                                       |

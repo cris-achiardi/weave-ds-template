@@ -16,7 +16,7 @@ the install graph. Every clone would otherwise pay for it, including the ones th
 Stories sit **next to the component they document**, not in this app:
 
 ```
-packages/react/src/components/Button/Button.stories.tsx
+packages/react/src/**/<Name>.stories.tsx
 ```
 
 `.storybook/main.ts` globs them from there and aliases `@ds/react` to source, so a story

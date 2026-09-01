@@ -147,15 +147,16 @@
     },
 
     "variantConventions": {
-      "_doc": "A Figma variant property value must match the component's prop value exactly, or the two surfaces describe different components. The canon lives in .ai/maps/prop-map.md §1 and packages/react/prop-map.config.json — THOSE ARE AUTHORITATIVE; this is a pointer, not a copy.",
-      "canonSource": [".ai/maps/prop-map.md", "packages/react/prop-map.config.json"],
+      "_doc": "A Figma variant property value must match the component's prop value exactly, or the two surfaces describe different components. The canon lives in .ai/maps/prop-map.md §1 and packages/contracts/prop-canon.json — THOSE ARE AUTHORITATIVE; this is a pointer, not a copy.",
+      "canonSource": [".ai/maps/prop-map.md", "packages/contracts/prop-canon.json"],
       "propertyCase": "TitleCase property name, prop-exact value — Hierarchy=secondary, Size=m",
       "statesAreNotVariants": "Hover / Pressed / Focused are runtime states the browser owns. They must not become a variant property that maps to a prop. See .ai/maps/proposals/README.md."
     },
 
     "codePathConvention": {
-      "pattern": "packages/react/src/components/<Name>/",
-      "files": ["<Name>.tsx", "<Name>.module.css", "<Name>.contract.json", "index.ts"]
+      "_doc": "A Figma component reconciles against its CONTRACT, not against a framework implementation. Component source is generated into a consumer's repository and is not in this repo at all, so there is nothing here for it to point at.",
+      "pattern": "packages/contracts/components/<Name>/",
+      "files": ["<Name>.contract.json", "CHANGELOG.md"]
     }
   },
 

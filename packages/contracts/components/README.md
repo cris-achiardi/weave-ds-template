@@ -1,0 +1,112 @@
+# Authoring a contract
+
+**The authoring contract.** Everything the tooling assumes about a component contract is written down
+here. If you are about to write one, this is the file to have read.
+
+This directory is **empty on purpose.** A contract is written against measured evidence and an
+accepted decision, not scaffolded in advance — see `docs/ADR/README.md`.
+
+## 1. Per contract
+
+```
+<Name>/
+├── <Name>.contract.json   the specification. Governed by ../schema/component.schema.json
+└── CHANGELOG.md           what changed, and whether it was breaking
+```
+
+The changelog is not bookkeeping. **The contract is the versioned artifact** — components are
+generated output and are not versioned at all — so the changelog is the only record of what a
+consumer's regenerated component will do differently. A contract change with no changelog entry is
+an unannounced API change.
+
+There is no emitter yet, so nothing consumes these files mechanically beyond schema validation.
+
+## 2. Prop naming — the canon
+
+**Before naming a prop, read [`../prop-canon.json`](../prop-canon.json), then
+`.ai/maps/prop-map.md` §1–2 for what has actually been measured.**
+
+A component exposes a **subset** of an axis's canonical values — never a synonym, never an extra
+value bolted on.
+
+| Rule          |                                                                                                                                                         |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Props         | `camelCase`                                                                                                                                             |
+| Values        | `kebab-case`                                                                                                                                            |
+| Booleans      | a bare adjective or state: `disabled`, `loading`, `fullWidth`. Never `is*` / `has*` / `show*` — the prop already reads as a predicate at the call site. |
+| Content props | named for the slot, not the content: `iconStart`, not `startIcon` or `leftIcon`                                                                         |
+
+`prop-canon.json` is the data half of this canon; this section is its prose statement. Keep the two
+in step.
+
+**Why bother.** A synonym is only visible by comparing value sets _across_ components, which is
+exactly what a per-component review cannot see. One person adds `emphasis="high"`, another adds
+`hierarchy="primary"`, both reviews pass, and the library now has two names for one idea. The
+generated map is the only place that shows up — and it flags rather than blocks, so it is on you to
+look.
+
+This canon is agnostic on purpose. **How a canonical name is spelled in a given framework is that
+framework's business** and lives in its own binding table, not here.
+
+## 3. Anatomy, and the unstyled surface
+
+Every named node in `anatomy` is a **part**: a region a consumer can target, style and reason about.
+Part names are kebab-case (`icon-start`), nest through `parts`, and each may declare which visual
+channels it paints.
+
+Because the library is unstyled, a contract names the channel and **leaves the source unbound**:
+
+```json
+"paints": {
+  "border-block-end": null,
+  "padding-inline": null
+}
+```
+
+Read it as a patch bay. The contract says _this part has a socket for a block-end border and one for
+inline padding_. It does not say what to plug in. Delete `paints` and there are no sockets — a
+consumer has nothing to wire and has to reverse-engineer someone's stylesheet, which is the failure
+this library exists to remove.
+
+Two notations, two different facts, and conflating them loses the distinction:
+
+| Notation              | Means                                                         |
+| --------------------- | ------------------------------------------------------------- |
+| `"channel": null`     | **unbound by design.** The consumer supplies this.            |
+| channel simply absent | **not described yet.** Nobody has established what it paints. |
+
+That is the repo's standing rule — a gap is a finding, not a blank to fill — applied to styling.
+
+**Not yet mechanized:** `component.schema.json` does not currently permit `null` here. It requires a
+token namespace prefix, `component-property`, or `literal`. Writing the JSON above will fail
+`pnpm verify:contract` today. The schema change is deliberately waiting on evidence from real
+contracts.
+
+### States
+
+A state is either **intrinsic** — the platform already tracks it (`hover`, `disabled`,
+`focus-visible`) — or **authored**, meaning the implementation has to track it (`loading`,
+`current`, `selected`). Declaring an intrinsic state as authored, or the reverse, is the most common
+error in this file, because the two look identical from the outside and behave completely differently
+in generated code.
+
+Prefer the intrinsic form wherever the platform has one. A state reflected into an attribute that the
+platform already exposes forces generated code to track something the platform tracks for free.
+
+## 4. Never invent a field to fill a blank
+
+An empty field is an honest "not decided". A plausible wrong one passes every check in this repo and
+misleads every reader after you.
+
+This applies hardest to the fields nothing can check: `intent.purpose`, every `a11y` claim, and every
+token policy. A gate can prove a contract is _legal_. Nothing can prove it is _true_.
+
+## 5. What is deliberately not here
+
+The old version of this document also covered how to write the React implementation — the five files,
+`cva` variant rules, CSS-Modules class pairing, the build commands. All of it assumed a component was
+written by hand and the contract annotated it afterwards.
+
+That flow is being replaced. The React-specific rules that a generator must still honour moved to
+`packages/react/src/emit/README.md`; the rest retires with the flow. `.claude/skills/ds-component`
+describes the retired flow and carries a banner saying so.

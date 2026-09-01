@@ -33,7 +33,7 @@ design-system API derived from a Figma file, and naming it is most of this docum
 
 - **Status:** Proposal. Nothing is built.
 - **Source:** [<frame name>](<figma url>) (node `123:456`)
-- **Read alongside:** [`../prop-map.md`](../prop-map.md) §1, `packages/react/src/components/README.md` §2
+- **Read alongside:** [`../prop-map.md`](../prop-map.md) §1, `packages/contracts/components/README.md` §2
 - **Measured from the file**, not read off a screenshot — every value below came from the nodes.
 
 ## 1. What the design actually contains

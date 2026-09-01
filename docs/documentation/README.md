@@ -32,10 +32,10 @@ These pages break that rule on purpose, because an explanation that refuses to r
 useless. So: **if one of these ever disagrees with the technical doc it links to, the technical doc
 is right and this one is stale.** Say so and we'll fix it.
 
-| Topic                       | The real spec                                       |
-| --------------------------- | --------------------------------------------------- |
-| What a contract may contain | `contracts/` — the schemas and where the line falls |
-| The reasoning behind it     | [`contracts/README.md`](../../contracts/README.md)  |
-| How to author a component   | `packages/react/src/components/README.md`           |
-| The prop vocabulary         | `.ai/maps/prop-map.md`                              |
-| How we read the Figma file  | `.figma/README.md`                                  |
+| Topic                       | The real spec                                                                      |
+| --------------------------- | ---------------------------------------------------------------------------------- |
+| What a contract may contain | `contracts/` — the schemas and where the line falls                                |
+| The reasoning behind it     | [`packages/contracts/schema/README.md`](../../packages/contracts/schema/README.md) |
+| How to author a component   | `packages/contracts/components/README.md`                                          |
+| The prop vocabulary         | `.ai/maps/prop-map.md`                                                             |
+| How we read the Figma file  | `.figma/README.md`                                                                 |

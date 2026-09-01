@@ -15,10 +15,10 @@ loop back to the design source:
 ```
    Figma  ──by hand──▶  docs/research/  ──ds-decide──▶  docs/ADR/
                                                              │
-                                                        ds-component
+                                                     (build step)
                                                              │
                                                              ▼
-                                                  packages/react/src/components/
+                                                packages/contracts/components/
                                                              │
                                                    ds-figma-component
                                                              │
@@ -39,13 +39,13 @@ governing decision.
 
 ## Index
 
-| Skill                                         | What it does                                                                                                                                      | Writes to                            |
-| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
-| [`ds-decide`](./ds-decide/)                   | Turns a research report's open questions into Architecture Decision Records. Writes records, never code.                                          | `docs/ADR/`                          |
-| [`ds-component`](./ds-component/)             | Builds a React component from an accepted decision — the five files, its agnostic contract and React binding, the barrel entry, and every gate.   | `packages/react/src/components/`     |
-| [`ds-figma-component`](./ds-figma-component/) | Generates a Figma **component set** from a component's source, bound to the file's variables and text styles.                                     | Figma, `.figma/maps/components.json` |
-| [`ds-figma-document`](./ds-figma-document/)   | Lays out the **page around** a component set — title, description, labelled cell grid, extension tables. Works on sets this repo never generated. | Figma, `.figma/maps/components.json` |
-| [`ds-figma-explain`](./ds-figma-explain/)     | Builds **explanatory** boards — node graphs, spec tables, annotated anatomy, flows. For things meant to be read, not instantiated.                | Figma                                |
+| Skill                                         | What it does                                                                                                                                            | Writes to                            |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| [`ds-decide`](./ds-decide/)                   | Turns a research report's open questions into Architecture Decision Records. Writes records, never code.                                                | `docs/ADR/`                          |
+| [`ds-component`](./ds-component/)             | **SUPERSEDED — do not use.** Describes the retired hand-authoring flow. No replacement exists yet; the library is moving to contract-driven generation. | —                                    |
+| [`ds-figma-component`](./ds-figma-component/) | Generates a Figma **component set** from a component's source, bound to the file's variables and text styles.                                           | Figma, `.figma/maps/components.json` |
+| [`ds-figma-document`](./ds-figma-document/)   | Lays out the **page around** a component set — title, description, labelled cell grid, extension tables. Works on sets this repo never generated.       | Figma, `.figma/maps/components.json` |
+| [`ds-figma-explain`](./ds-figma-explain/)     | Builds **explanatory** boards — node graphs, spec tables, annotated anatomy, flows. For things meant to be read, not instantiated.                      | Figma                                |
 
 ### Picking between the three Figma skills
 
@@ -82,7 +82,8 @@ Three preconditions are unmet across them. Each is a decision, not a bug:
 
 1. **No token set exists.** `identity.variableCollections` is empty and `packages/tokens/tokens/`
    holds no DTCG source. Bindings cannot be checked against a mapping that is not there.
-2. **No components exist.** `packages/react/src/components/` is empty on purpose.
+2. **No components exist.** `packages/contracts/components/` is empty on purpose, and component
+   source is no longer held in this repo at all — it is generated into a consumer's repository.
 3. **The source file has one mode.** Every collection has a single mode, so the **mode-flip
    verification cannot run** — and it is the strongest check in both `ds-figma-component` and
    `ds-figma-document`. With one mode a bound value and a baked literal render identically. Read

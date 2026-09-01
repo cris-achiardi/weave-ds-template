@@ -4,6 +4,26 @@
 pipeline and the governance layer; this file covers authoring components and the contract system.
 Where the two disagree, this one wins for anything under `packages/react/`.
 
+> [!IMPORTANT]
+>
+> **Mid-migration. This file describes machinery that still works and a flow that has been
+> reversed.** Read it for how the scripts behave today; do not read it as the plan.
+>
+> This package no longer holds components — `src/components/` is gone, and the barrel exports
+> nothing. The library is becoming contract-driven: a contract in `packages/contracts/components/`
+> is the source, and component code is generated from it into a consumer's own repository.
+>
+> What is still accurate below: every command, the extraction readers and the TypeScript pin, the
+> build-output reasoning, and the gate/report split. Those describe code that exists and runs.
+>
+> What has reversed: **"the source owns everything derivable"**. With no source to derive from, the
+> contract must carry the props, and the parity check that compares a contract's axes against `cva`
+> axes in a TSX becomes circular. It is harmless today only because there are zero components for
+> it to compare. `packages/contracts/schema/README.md` carries the full argument.
+>
+> New territory has its own docs: [`README.md`](./README.md) routes to the emitter rules, the
+> behaviour primitives and the bindings.
+
 ## Commands
 
 ```bash
@@ -28,7 +48,7 @@ and nothing needs building first.
 **The contract (`<Name>.contract.json`, agnostic) plus its React binding (`<Name>.react.json`) owns
 what the source cannot state** — the rendered element, ARIA role, where the ref lands, which node
 absorbs `className`, accessibility commitments, what a slot accepts, lifecycle status, and the token
-policy per node. The full reasoning, and the line between the two files, is in `contracts/README.md`.
+policy per node. The full reasoning, and the line between the two files, is in `packages/contracts/schema/README.md`.
 
 **Read them merged:** `pnpm contract Button`. Reading either alone is misleading.
 
@@ -58,15 +78,15 @@ Components without a contract are **reported, not failed**. Backfilling is delib
 
 [`.ai/maps/prop-map.md`](../../.ai/maps/prop-map.md) §1 is the axis registry. Reuse an axis and its
 canonical values instead of coining a synonym. The canon is
-[`prop-map.config.json`](./prop-map.config.json) (data) and
-[`src/components/README.md`](./src/components/README.md) §2 (prose); the map measures reality
+[`packages/contracts/prop-canon.json`](../contracts/prop-canon.json) (data) and
+[`packages/contracts/components/README.md`](../contracts/components/README.md) §2 (prose); the map measures reality
 against it and **flags rather than blocks**, so nobody is stopped — which means somebody has to
 look.
 
 ## The three invariants
 
 Everything above depends on these. They are stated with their reasons in
-[`src/components/README.md`](./src/components/README.md) §3 and §5; in short:
+[`packages/contracts/components/README.md`](../contracts/components/README.md) §3 and §5; in short:
 
 1. A named node carries `data-ds-part="x"` **and** `className={styles.x}`, same name.
 2. Every variant axis is a `cva` axis with a `defaultVariants` entry.
