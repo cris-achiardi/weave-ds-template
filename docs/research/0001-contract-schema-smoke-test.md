@@ -14,6 +14,14 @@
 
   The drafts are working artifacts and were **not** committed. The deliverable is this report.
 
+  **Revised after review.** The first version of this report read the 28 untranslatable props as a
+  missing `props` block in the schema. That was wrong, and wrong in the specific way this package
+  exists to prevent: a prop name is a framework's spelling of a fact, not the fact, and putting
+  `checked`/`defaultChecked`/`onCheckedChange` in a contract would encode React into the artifact
+  whose whole value is that it is not React. The measurements below are unchanged — the census was
+  accurate — but the interpretation of them is rewritten. The measured/inferred split is what made
+  that separable, which is the argument for the split.
+
   **Not covered:** no component was built and no emitter was written, so nothing here reports on
   whether a contract is sufficient to _generate_ from — only on whether it can be _written_. Base UI
   was read as documentation, not as source; its runtime behaviour was not tested. Radix and React
@@ -72,10 +80,12 @@ Three of four validate. `Switch` fails on one remaining error, unrelated to pain
 `$defs.slot.max` has `"minimum": 1`, so `max: 0` — "this component accepts no children at all" — is
 not expressible.
 
-### 28 public props from the reference implementations have nowhere to go
+### 28 public props from the reference implementations have no direct counterpart
 
-The schema has **no `props` key**. Counting only props that are framework-agnostic API surface, and
-excluding React-specific ones (`className`, `style`, `render`, `inputRef`, `nativeButton`):
+The schema has **no `props` key**. That is by design — a prop name is a framework's spelling, not a
+fact about the component — so what follows is a census of what had to be translated, not a list of
+fields the schema is missing. Counting only props that carry an agnostic fact, and excluding
+React-specific ones (`className`, `style`, `render`, `inputRef`, `nativeButton`):
 
 | Component       | Props with no home | Names                                                                                                                                  |
 | --------------- | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
@@ -86,6 +96,33 @@ excluding React-specific ones (`className`, `style`, `render`, `inputRef`, `nati
 
 `axes` covers only variant axes drawn from the canon — `Accordion` was able to declare
 `orientation: ["vertical"]` and nothing else. None of the 28 above is a variant axis.
+
+Sorting the 28 by the agnostic fact each one spells:
+
+| Category                        | Count | Examples                                                                                                                                                           | Does the schema hold it?                                      |
+| ------------------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------- |
+| Externally settable state       | 14    | `checked`/`defaultChecked`/`onCheckedChange`, `value`/`defaultValue`/`onValueChange`, `open`/`onOpenChange`, `disabled`, `invalid`, `readOnly`, `touched`, `dirty` | **partly** — the states are declared; who may set them is not |
+| Behaviour parameter             | 6     | `multiple`, `keepMounted`, `hiddenUntilFound`, `validationMode`, `validationDebounceTime`, `match`                                                                 | **no**                                                        |
+| Form participation              | 5     | `name`, `value`, `uncheckedValue`, `form`, `required`                                                                                                              | **no**                                                        |
+| Custom logic supplied by caller | 1     | `validate`                                                                                                                                                         | **no**                                                        |
+| Already covered elsewhere       | 2     | `orientation`, `loopFocus` (both deprecated upstream)                                                                                                              | **yes** — `axes`                                              |
+
+The largest category collapses further. Nine of the 14 are three spellings of three facts:
+`checked` + `defaultChecked` + `onCheckedChange` is one state that can be set from outside;
+`value` + `defaultValue` + `onValueChange` is another; `open` + `onOpenChange` a third.
+
+### `states` records who tracks a state, never who may set it
+
+`$defs` requires `kind`, which is `intrinsic` (the platform provides it) or `authored` (the
+implementation tracks it). Across the four drafts, three distinct setter relationships occurred and
+all three had to be written as `authored` or `intrinsic` with the difference left to prose:
+
+| State                  | Who may set it                     | Recorded as |
+| ---------------------- | ---------------------------------- | ----------- |
+| `checked` (Switch)     | the consumer, **and** the user     | `authored`  |
+| `disabled` (Switch)    | the consumer only; never the user  | `intrinsic` |
+| `hover` (Switch)       | nobody; the platform observes it   | `intrinsic` |
+| `open` (AccordionItem) | the parent component, not the item | `authored`  |
 
 ### The schema accepted three states that paint nothing
 
@@ -130,10 +167,40 @@ all of them. The control run showing three of four contracts otherwise valid sug
 schema already accommodates unstyled contracts, and that the styling question was the only structural
 blocker in this sample.
 
-**The 28 homeless props look like the larger problem, precisely because they produced no error.** A
-missing `props` key cannot fail validation — there was nothing to write, so nothing to reject. The
-smoke test surfaced it only because the drafting was done against real reference APIs. This suggests
-absence-shaped gaps will not be found by validating drafts, and need a different method to surface.
+**The 28 props are not a missing `props` block, and reading them as one would be the mistake this
+package exists to prevent.** `checked` + `defaultChecked` + `onCheckedChange` is React's spelling of
+a single fact — _this state can be set from outside_ — and Vue spells the same fact `modelValue` +
+`update:modelValue`. Recording the triple in a contract would encode React into the artifact whose
+whole value is that it is not React. The census above is therefore a measure of translation work, not
+of schema gaps.
+
+**What does look genuinely missing is one bit per state: who may set it.** The categories collapse to
+almost nothing once that bit exists. An externally settable state that the user can also change is
+the controlled/uncontrolled pattern; one only the consumer sets is a plain input; one nobody sets is
+an observation with no input at all. Those three shapes appear to cover 14 of the 28 outright.
+
+**If that reading holds, the prop-map becomes a small set of rules rather than a per-component
+table.** A rule of the form _externally settable state `X` → `X`, `default X`, `on X Change`_ would
+generate `checked`/`defaultChecked`/`onCheckedChange` for Switch and `open`/`defaultOpen`/
+`onOpenChange` for Accordion from the same line, and a Vue map would emit `modelValue` +
+`update:modelValue` from the same input. This is inferred from four contracts and has not been tested
+against a framework that is not React, which is the case most likely to break it.
+
+**Behaviour parameters look like they belong to the behaviour vocabulary, not to the contract's
+surface.** `multiple` reads as a choice between two named primitives — single-select and
+multi-select — rather than as a property of the accordion. `keepMounted` and `validationMode` have
+the same shape. If so they arrive free once the vocabulary exists, and need no separate mechanism.
+
+**Form participation looks like the one category with no home in any current plan.** `name`, `value`,
+`uncheckedValue` and `required` are not states, not behaviour, and not styling. They describe how a
+control takes part in a form, which every platform has some version of and no two spell alike.
+
+**State names are themselves inherited vocabulary, and nothing currently guards them.** The Switch
+draft named its state `checked`, which is HTML's checkbox word; the APG uses `aria-checked` only
+because ARIA reuses the checkbox attribute, while its prose consistently says _on_ and _off_.
+`prop-canon.json` already polices this for values — `danger`, never `error` — but its glossary covers
+values only. On this reading, framework vocabulary can enter through a state name as easily as
+through a prop name, and the second door is currently unwatched.
 
 **`touched` and `dirty` appear to be a genuine third kind, not a mistake.** They are not intrinsic —
 no platform tracks them — and they are not authored in the sense `selected` is, because nothing
@@ -163,11 +230,21 @@ nothing else. Until this changes, no contract expressing the unstyled surface ca
 `packages/contracts/components/README.md` §3 documents a JSON shape that the schema in the adjacent
 directory rejects.
 
-**2. The contract cannot state a component's props.**
-28 across four contracts, including every controlled/uncontrolled pair — `checked` +
-`onCheckedChange` + `defaultChecked` — which is the single most consequential API decision in a
-component. A contract that cannot express them cannot be generated from, which is the stated premise
-of the whole package.
+**2. A state does not say who may set it, so the controlled/uncontrolled decision has no home.**
+Not a missing `props` block — props are a framework's spelling and belong in that framework's
+prop-map. What is missing is one bit further up: `kind` records who _tracks_ a state, never who may
+_set_ it. `checked` is set by the consumer and changed by the user; `disabled` is set by the consumer
+and never by the user; `hover` is set by nobody. All three were written as `authored` or `intrinsic`
+with the difference surviving only in prose. That bit is what a prop-map needs in order to decide
+between a controlled/uncontrolled triple, a plain input, and no input at all — and without it the
+single most consequential API decision in a component is unrecorded in the artifact that is supposed
+to be generated from.
+
+**2b. Behaviour parameters and form participation have no home either.**
+Six props select between behaviours (`multiple`, `keepMounted`, `validationMode`); five describe how
+a control takes part in a form (`name`, `value`, `uncheckedValue`, `required`). The first group
+plausibly belongs to the behaviour vocabulary once that exists. The second belongs to nothing
+currently planned, and every platform has some version of it.
 
 **3. `states` has two kinds and needs three.**
 `touched`, `dirty` and arguably `valid` track something real, are set by the implementation, and paint
@@ -206,12 +283,28 @@ would check that what arrives is _correct for the page_.
    notations really carry different meanings, and whether anything will ever check the difference, is
    not.
 
-2. **What shape does a `props` block take, and what stops it becoming a TypeScript type in JSON?** A
-   prop has a name, a type, a default, required-ness, and a relationship to other props
-   (`checked` is meaningless without `onCheckedChange`; `defaultChecked` is mutually exclusive with
-   `checked`). Encoding all of that risks the same failure the behaviour vocabulary is designed to
-   avoid — the schema becoming a language. Does the controlled/uncontrolled pattern get a named
-   primitive, the way a keyboard behaviour would?
+2. **How does a state declare who may set it?** The minimum appears to be one field with three
+   values — set by the consumer and changeable by the user, set by the consumer only, set by nobody.
+   Whether that is a new field on `states`, a widening of `kind` beyond `intrinsic | authored`, or a
+   separate block is open. So is whether three values are enough: `open` on `AccordionItem` is set by
+   its parent rather than by the consumer, which may be a fourth relationship or may be a detail of
+   composition rather than of state.
+
+2b. **Does the prop-map hold rules or tables?** If a rule of the form _externally settable state `X`
+→ `X`, `default X`, `on X Change`_ generates the React surface for every such state, the prop-map is
+a handful of rules and stays small. If each component needs its own entry, it is a table that grows
+with the library and drifts. The four drafts here are consistent with the rule form, but all four
+were read through one framework, which is the condition least likely to expose a mismatch.
+
+2c. **Where does form participation live?** `name`, `value`, `uncheckedValue` and `required` are not
+states, not behaviour and not styling. A `formControl` block on the contract, a behaviour primitive,
+and "out of scope, the consumer wires their own form" are all defensible, and nothing in the repo
+currently points at one.
+
+2d. **Should the value glossary in `prop-canon.json` cover state names as well as values?** It
+currently polices values (`danger`, never `error`). Nothing polices a state name, and `checked`
+entered the Switch draft straight from HTML's checkbox vocabulary without being questioned — for a
+control whose own spec talks about _on_ and _off_.
 
 3. **Is there a third state kind, and what is it called?** Candidates: a `gating` kind, a boolean
    `visible: false`, or removing the visibility rule and letting `visual` be genuinely optional. The
