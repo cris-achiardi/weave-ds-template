@@ -63,14 +63,22 @@ contract is checked against it.** `verify:contract` compares the contract's decl
 
 This library inverts that. The contract is primary and the code is emitted from it. Under inversion:
 
-- The contract must state the props, because there is no source to derive them from.
-- The existing parity check becomes circular — comparing generated output against its own input
-  proves nothing — and has to be replaced by a **regeneration check**: re-emit, compare, fail on a
-  difference. The pattern already exists in this repo; `prop-map:check` works exactly that way.
+- **The contract must state the rules a component is compiled from** — but not its props. A prop name
+  is a framework's spelling, so the contract states that a state is `shared` and each binding
+  compiles that into `checked`/`defaultChecked`/`onCheckedChange`, or into `modelValue` +
+  `update:modelValue`, or into an attribute and an event. See `states.*.control` and
+  [ADR 0004](../../../docs/ADR/0004-a-state-declares-who-may-set-it-and-props-are-generated-from-that.md).
+- **The existing parity check becomes circular.** It compares a contract's declared axes against the
+  `cva` axes read out of a TSX; once that TSX is emitted from the contract, the comparison checks
+  generated output against its own input and proves nothing. It has to become a **regeneration
+  check**: re-emit, compare, fail on a difference. The pattern already exists here —
+  `prop-map:check` works exactly that way.
 
-Neither change is made yet. The schema still has no `props` block, and `verify:contract` still runs
-the parity comparison against a `packages/react/src/components/` directory that no longer exists —
-which is harmless only because there are zero components for it to compare.
+The first half is done: `control` landed with ADR 0004, and `$id` is now
+`component-contract-3.json`. The second is not. `verify:contract` still runs the parity comparison
+against a `packages/react/src/components/` directory that no longer exists, which is harmless only
+because there are zero components for it to compare — and stops being harmless the day an emitter
+produces one.
 
 ## Reading a schema
 

@@ -2,17 +2,30 @@
   "_doc": "How this framework spells the agnostic vocabulary. The canon — which axes exist, their canonical values, the anti-synonym glossary — lives in @ds/contracts/prop-canon.json and is framework-free. This file holds ONLY the places React's idiom differs from it.",
   "_why": "A contract says a component has a selection that can be controlled. It does not say whether that is `value` + `onValueChange`, `modelValue` + `update:modelValue`, or a two-way binding, because that is a framework's business and not the specification's. Putting those spellings in the contract is the most common way an 'agnostic' spec turns out to be one framework with extra steps.",
   "_regenerate": "Hand-maintained. Nothing generates this file.",
-
   "conventions": {
     "propCase": "camelCase — identical to the canon, so no axis name needs a mapping",
     "valueCase": "kebab-case — identical to the canon",
     "eventPrefix": "on",
     "booleanNaming": "bare adjective, as the canon requires. React needs no deviation."
   },
-
+  "_controlRulesDoc": "How React spells each `control` value from a contract's `states`. THESE ARE RULES, NOT A TABLE: one entry per control value covers every state in the library, so adding a component adds no mapping work here. A per-component table would grow with the library and drift. `X` is the state name in camelCase; `Xtitle` is the same name capitalised. Recorded as ADR 0004.",
+  "controlRules": {
+    "consumer": {
+      "emits": ["X?: boolean"],
+      "note": "One input. The user cannot change it, so there is nothing to report back and no callback. e.g. a state named `disabled` becomes `disabled?: boolean`."
+    },
+    "shared": {
+      "emits": ["X?: boolean", "defaultX?: boolean", "onXChange?: (X: boolean) => void"],
+      "note": "React has no two-way binding, so its idiom for shared state is the controlled/uncontrolled trio: pass `X` to control it, `defaultX` to seed it and let the component own it, and `onXChange` to observe either way. A state named `checked` becomes checked/defaultChecked/onCheckedChange; one named `open` becomes open/defaultOpen/onOpenChange. Same rule, no per-component entry."
+    },
+    "internal": {
+      "emits": [],
+      "note": "NO public input. The state still reaches CSS — as a native pseudo-class where the platform owns one, otherwise as a data attribute — but nothing outside can set it. This is what makes an accordion item correct without a special case: its `open` state is owned by the surrounding accordion, so the item gets no open prop."
+    }
+  },
+  "_nonBooleanNote": "The rules above are written for boolean states because every state drafted so far is one. A `shared` state whose value is not a boolean — a selection, a set of open items — takes the same three-prop shape with its own type. Nothing has exercised that yet, so it is stated rather than claimed.",
   "_axisOverridesDoc": "Axis name -> the React prop that carries it, for the rare case where the canonical name collides with a reserved or conventional React prop. Empty means every axis is spelled exactly as the canon spells it, which is the desired state. Every entry needs a reason: a rename with no reason is drift with paperwork.",
   "axisOverrides": {},
-
   "_behaviorBindingDoc": "Behaviour vocabulary primitive -> the React implementation that satisfies it. Populated when the vocabulary and the primitives exist; both are unbuilt.",
   "behaviorBindings": {}
 }

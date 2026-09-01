@@ -52,10 +52,12 @@ it, not here:
 
 <!-- adr-index:start -->
 
-| #                                                              | Title                                                                    | Status   |
-| -------------------------------------------------------------- | ------------------------------------------------------------------------ | -------- |
-| [0001](./0001-every-layer-is-self-describing.md)               | Every layer is self-describing, and context is pulled rather than pushed | Accepted |
-| [0002](./0002-agnostic-contracts-live-in-their-own-package.md) | Agnostic contracts live in their own package, not at the repo root       | Accepted |
+| #                                                                                   | Title                                                                    | Status   |
+| ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | -------- |
+| [0001](./0001-every-layer-is-self-describing.md)                                    | Every layer is self-describing, and context is pulled rather than pushed | Accepted |
+| [0002](./0002-agnostic-contracts-live-in-their-own-package.md)                      | Agnostic contracts live in their own package, not at the repo root       | Accepted |
+| [0003](./0003-paints-name-the-channel-and-leave-the-source-unbound.md)              | A paint names the channel and leaves its source unbound                  | Accepted |
+| [0004](./0004-a-state-declares-who-may-set-it-and-props-are-generated-from-that.md) | A state declares who may set it, and prop names are generated from that  | Accepted |
 
 <!-- adr-index:end -->
 
