@@ -1,0 +1,164 @@
+{
+  "$schema": "../../schema/component.schema.json",
+  "component": "Field",
+  "status": {
+    "level": "experimental",
+    "since": "2026-09-01",
+    "note": "Sourced from Base UI's Field for the state vocabulary and part names; the ARIA APG has no 'field' pattern, so the accessibility facts come from the HTML label/describedby specification instead."
+  },
+  "intent": {
+    "purpose": "Wires a form control to its label, its help text and its error message, so the three are announced together and the control's validity has one place to live. It is the plumbing around an input, never the input.",
+    "behaviour": [
+      "Associates the label with the control, so clicking the label focuses the control.",
+      "Points the control at its description and its error message together, so assistive technology reads help text and the reason for a failure in one pass.",
+      "Tracks whether the field has been touched and whether its value has changed, and uses those to decide WHEN to show an error — not whether one exists.",
+      "Validates on submit by default. On blur and on change are both available, and on change may be debounced.",
+      "Marks the control invalid for assistive technology at the same moment the error becomes visible, so the two cannot disagree.",
+      "Renders its error only when the field is in a state where showing one is useful. A field nobody has touched yet is not wrong; it is unanswered."
+    ],
+    "notFor": [
+      "Being the input. The control is passed in — Field wires it up and does not render it.",
+      "Form-level submission, or coordinating validity across several fields. That is a form.",
+      "Layout of a form. Field describes one control's relationships, not how a set of them is arranged.",
+      "Displaying a server error unrelated to the control's own value. That is a message, not a field validity state."
+    ]
+  },
+  "states": {
+    "disabled": {
+      "kind": "intrinsic",
+      "control": "consumer",
+      "description": "The control ignores interaction. Set on the field so the label and description can dim with it.",
+      "visual": "Label, control and description all take the disabled treatment."
+    },
+    "focused": {
+      "kind": "intrinsic",
+      "control": "internal",
+      "description": "The control inside has focus. Hoisted to the field so the label can respond to focus on its control.",
+      "visual": "The label takes its focused treatment."
+    },
+    "invalid": {
+      "kind": "authored",
+      "control": "shared",
+      "description": "Validation has run and failed. Reaches assistive technology as aria-invalid and shows the error.",
+      "visual": "The control takes its error border and the error message appears."
+    },
+    "valid": {
+      "kind": "authored",
+      "control": "internal",
+      "description": "Validation has run and passed. Distinct from not-yet-validated, which is neither valid nor invalid.",
+      "visual": "NOT DECIDED. Most designs show nothing for a passing field; a success treatment has not been designed."
+    },
+    "touched": {
+      "kind": "authored",
+      "control": "shared",
+      "description": "The control has been focused and then blurred at least once. Gates WHEN an error is allowed to show.",
+      "visual": "NONE. This state paints nothing on its own — it only gates whether `invalid` may display. See the report; the schema requires a visual and this state honestly has none."
+    },
+    "dirty": {
+      "kind": "authored",
+      "control": "shared",
+      "description": "The value differs from the value the field started with. Gates validation timing and enables a reset affordance.",
+      "visual": "NONE. Paints nothing. Same problem as `touched`."
+    },
+    "filled": {
+      "kind": "authored",
+      "control": "internal",
+      "description": "The control has a non-empty value. Used by controls whose label floats out of the way once something is typed.",
+      "visual": "For a floating-label control, the label moves out of the input. For everything else, nothing."
+    }
+  },
+  "semantics": {
+    "focusable": false
+  },
+  "a11y": {
+    "focusVisible": false,
+    "contrast": "AA",
+    "keyboard": "Field adds no keyboard behaviour of its own. Every interaction belongs to the control inside it.",
+    "notes": [
+      "The error message and the description must both be referenced by the control, and in a stable order, or a screen reader announces them in whichever order the references happen to be written.",
+      "Marking the control invalid and showing the error message must happen together. If the visual error appears while the control is still announced as valid, a sighted user and a screen-reader user are told different things about the same field.",
+      "An error that appears while the user is still typing is announced on every keystroke. That is why validation defaults to on-submit, and why on-change is debounced when it is chosen.",
+      "The `valid` state is claimed but no treatment is designed, so a field that passes validation looks identical to one that has not been validated. Recorded rather than filled in.",
+      "Field cannot enforce that the control it wraps is actually labellable. Wrapping a div in a Field produces silent, complete-looking plumbing that announces nothing."
+    ]
+  },
+  "composition": {
+    "children": {
+      "description": "The label, the control, the description and the error, in whatever order the design calls for. Field wires them by relationship, not by position."
+    },
+    "slots": {
+      "label": {
+        "accepts": ["text"],
+        "required": true,
+        "max": 1,
+        "description": "Names the control. Required — a field with no label is the defect this component exists to prevent."
+      },
+      "control": {
+        "accepts": ["input", "select", "textarea", "Switch"],
+        "required": true,
+        "max": 1,
+        "description": "The control being wired up. Passed in rather than rendered."
+      },
+      "description": {
+        "accepts": ["text"],
+        "max": 1,
+        "description": "Help text, announced with the control."
+      },
+      "error": {
+        "accepts": ["text"],
+        "max": 1,
+        "description": "Why validation failed. Shown only when the field is invalid AND has been touched."
+      }
+    }
+  },
+  "anatomy": {
+    "root": {
+      "part": "root",
+      "description": "The wrapper holding one control and its three satellites, so they stay together and can be spaced as a unit.",
+      "paints": {
+        "display": null,
+        "gap": null
+      },
+      "parts": {
+        "label": {
+          "part": "label",
+          "description": "The control's name.",
+          "paints": {
+            "color": null,
+            "font-size": null,
+            "font-weight": null
+          },
+          "states": {
+            "disabled": {
+              "color": null
+            },
+            "focused": {
+              "color": null
+            }
+          }
+        },
+        "description": {
+          "part": "description",
+          "description": "Help text sitting below the control.",
+          "paints": {
+            "color": null,
+            "font-size": null
+          },
+          "states": {
+            "disabled": {
+              "color": null
+            }
+          }
+        },
+        "error": {
+          "part": "error",
+          "description": "The failure message. Occupies no space until it is shown.",
+          "paints": {
+            "color": null,
+            "font-size": null
+          }
+        }
+      }
+    }
+  }
+}

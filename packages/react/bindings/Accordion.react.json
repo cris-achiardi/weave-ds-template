@@ -1,0 +1,13 @@
+{
+  "$schema": "./binding.schema.json",
+  "component": "Accordion",
+  "contract": "../../contracts/components/Accordion/Accordion.contract.json",
+  "framework": "react",
+  "element": "div",
+  "refTarget": "root",
+  "classNamePassthrough": "root",
+  "notes": [
+    "Renders a plain `<div>`. The APG gives an accordion no container role — each section is named by its own heading — so there is nothing to put on the wrapper.",
+    "The open set is shared with items through React context. That is a React mechanism, not a contract fact; another framework satisfies the same contract with whatever it uses for ambient state."
+  ]
+}

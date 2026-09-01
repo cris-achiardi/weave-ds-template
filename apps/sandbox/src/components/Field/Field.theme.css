@@ -1,0 +1,32 @@
+/*
+ * Field — THE CONSUMER'S FILE. Emitted once, empty, never regenerated.
+ * The sandbox is playing consumer. Raw values on purpose: the library has no opinion.
+ */
+
+[data-ds-component='Field'] {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-inline-size: 32ch;
+}
+
+[data-ds-component='Field'] [data-ds-part='label'] {
+  color: #e8e8ea;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+[data-ds-component='Field'] [data-ds-part='description'] {
+  color: #8b8b93;
+  font-size: 0.8rem;
+}
+
+[data-ds-component='Field'] [data-ds-part='error'] {
+  color: #f0736a;
+  font-size: 0.8rem;
+}
+
+[data-ds-component='Field'][aria-disabled='true'] [data-ds-part='label'],
+[data-ds-component='Field'][aria-disabled='true'] [data-ds-part='description'] {
+  color: #5a5a62;
+}

@@ -120,3 +120,40 @@ code {
 .ghost:hover {
   border-color: #55555f;
 }
+
+.verdict {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.15em 0.5em;
+  border-radius: 0.25rem;
+  vertical-align: middle;
+  margin-inline-start: 0.5rem;
+}
+.verdict-works {
+  background: #1c3a2a;
+  color: #6ee7a0;
+}
+.verdict-partial {
+  background: #3a331c;
+  color: #e7cd6e;
+}
+.verdict-shell {
+  background: #3a1c1c;
+  color: #e78b6e;
+}
+
+.text-input {
+  background: #1a1a1d;
+  border: 1px solid #3a3a3f;
+  border-radius: 0.35rem;
+  color: #e8e8ea;
+  padding: 0.4rem 0.6rem;
+  font: inherit;
+  font-size: 0.9rem;
+  inline-size: 100%;
+}
+.text-input:focus-visible {
+  outline: 2px solid #8b83f0;
+  outline-offset: 1px;
+}

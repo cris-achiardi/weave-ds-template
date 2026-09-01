@@ -1,0 +1,13 @@
+{
+  "$schema": "./binding.schema.json",
+  "component": "Field",
+  "contract": "../../contracts/components/Field/Field.contract.json",
+  "framework": "react",
+  "element": "div",
+  "refTarget": "root",
+  "classNamePassthrough": "root",
+  "notes": [
+    "Renders a plain `<div>`. Field is plumbing: it owns no interactive element of its own, and every keyboard interaction belongs to the control passed into it.",
+    "The label/control/description/error relationships are wired with generated ids and `aria-describedby`. The contract records those relationships only as prose in `intent.behaviour`, so this binding is currently the only place they are stated at all — and it states them in prose too."
+  ]
+}

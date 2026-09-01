@@ -1,0 +1,23 @@
+/*
+ * AccordionItem — THE CONSUMER'S FILE. Emitted once, empty, never regenerated.
+ */
+
+[data-ds-component='AccordionItem'] {
+  border-block-end: 1px solid #3a3a3f;
+}
+
+[data-ds-component='AccordionItem']:last-child {
+  border-block-end: none;
+}
+
+[data-ds-component='AccordionItem'] [data-ds-part='trigger'] {
+  padding: 0.7rem 0.9rem;
+  color: #e8e8ea;
+  font-size: 0.9rem;
+}
+
+[data-ds-component='AccordionItem'] [data-ds-part='panel'] {
+  padding: 0 0.9rem 0.7rem;
+  color: #8b8b93;
+  font-size: 0.85rem;
+}
