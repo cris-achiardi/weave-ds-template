@@ -344,6 +344,41 @@ with `variant` producing the primary-destructive and secondary-destructive pair 
 to express, three distinct sizes, and the `loading` spinner animating in the leading icon's slot
 without moving the label.
 
+### A fifth pass: Checkbox, and the state model's first real widening
+
+Every state in this schema was a boolean until a checkbox needed three conditions. Written the way
+it should be — one state with three values — the contract was rejected four times:
+
+```
+/states/checked                       additionalProperties  (values)
+/states/checked                       additionalProperties  (default)
+/anatomy/.../tick/visibleWhen         pattern  "checked=checked"
+/anatomy/.../dash/visibleWhen         pattern  "checked=mixed"
+```
+
+**Two booleans cannot express it.** `checked` plus `indeterminate` as separate flags admits
+`checked: true, indeterminate: true`, which is meaningless, and no gate here could reject it. One
+state with three values makes the illegal combination unrepresentable.
+
+Schema v5 adds `states.*.values` and `states.*.default` (omit them and a state is still a boolean),
+widens `visibleWhen` to take `state=value`, and adds `activates.between` — the two values a **user**
+may move between. That last one is not ceremony: without it the emitter cycles through all three and
+offers `mixed` as a click target, which is a real defect in real libraries.
+
+Verified in the page: `mixed → checked → unchecked → checked`, the dash and the tick swapping as
+different shapes, `aria-checked` reporting `mixed` rather than `false`, and the disabled one
+refusing.
+
+**Two emitter bugs, both worth naming:**
+
+- **`hidden={!checkedValue === 'checked'}`.** Negating a comparison without parentheses parses as
+  `(!checkedValue) === 'checked'`, which is always false. The generated component typechecked and
+  rendered; the mark simply never appeared. Templating produced an expression no human wrote.
+- **`mixed` resolved to `unchecked`.** The fallback compared against the wrong end of the pair.
+  Correct is: anything outside the pair falls to the _second_ value. The contract and the APG both
+  say a mixed checkbox becomes checked; the first implementation made it become unchecked, and it
+  looked entirely plausible.
+
 ## What it appears to mean (inferred)
 
 Every item below is a reading, not a measurement.
@@ -436,6 +471,18 @@ generating a component that needed it exposed the gap.
 by nothing. Some of those are deliberately unenforceable; some may be dead in the same way `axes`
 was.
 
+**A valued state looks like the same shape as an axis, and is deliberately not merged with one.**
+Both are "one of these values". An axis is a styling choice the consumer makes; a state is a
+condition the component is in, which the platform may own or which may be derived. `Checkbox`'s
+`checked` is `shared` and partly derived; `Button`'s `variant` is neither. Merging them would make
+`control` meaningless for half the merged concept.
+
+**The emitter is accumulating platform knowledge that belongs somewhere else.** It now holds: which
+ARIA attribute a state name maps to, which of those are meaningful when false, and which contract
+value names map onto which ARIA value names. None of it is React-specific — all of it is _web_
+knowledge — and it lives in a React emitter because there is nowhere else. That is now three
+separate tables arguing for the web-platform artifact this report proposed after the first pass.
+
 **Regeneration safety is currently a convention, not a mechanism.** The emitter skips
 `theme.css` when it exists, which is the right behaviour and is enforced by one `existsSync`. Nothing
 marks the generated files as generated in a way a tool could check, and nothing would stop a
@@ -504,6 +551,11 @@ to hold it, constraint-shaped or otherwise.
 `Accordion`'s contract declares `display` and `gap` as paint channels. Neither carries design
 intent in the sense `paints` documents; both are structure. Nothing distinguishes them, so the
 paint/theme split a consumer relies on is enforced only by the care of whoever wrote the contract.
+
+**17. Template-generated expressions can be syntactically valid and semantically inverted.**
+`hidden={!checkedValue === 'checked'}` typechecked, rendered, and silently never showed the mark.
+No gate catches an expression no human wrote; TypeScript accepted it because the comparison is
+legal, just useless.
 
 **15. `axes` and `whenAxis` were dead schema.**
 Declared, validated, documented, and read by nothing. A contract could specify a complete variant

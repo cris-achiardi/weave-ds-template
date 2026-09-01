@@ -30,6 +30,11 @@ const TOGGLE_ROLES = new Set(['switch', 'checkbox']);
 
 // Which DOM attribute carries a state. Not stated in any contract — see the logged assumption.
 const NATIVE_ATTR = { disabled: 'disabled' };
+// A contract's state VALUES are its own words; ARIA has its own. `mixed` happens to coincide,
+// `checked`/`unchecked` do not map to `true`/`false` by name. This table is emitter knowledge and
+// lives in neither schema — the same gap the state-to-attribute mapping already has.
+const ARIA_VALUE = { checked: 'true', unchecked: 'false', mixed: 'mixed' };
+
 // ARIA attributes whose FALSE value is meaningful and must be rendered rather than omitted.
 // A switch that drops aria-checked when off is announced as having no on/off state at all.
 const ARIA_EXPLICIT_FALSE = new Set(['checked', 'selected']);
@@ -112,19 +117,29 @@ function surfaceFrom(contract) {
 
   for (const [state, def] of Object.entries(contract.states ?? {})) {
     const n = camel(state);
+    // A state with `values` is an enumeration, not a boolean. Everything downstream — the prop
+    // type, the default, the comparison in a `visibleWhen` — follows from this one fact.
+    const t = def.values ? def.values.map((v) => `'${v}'`).join(' | ') : 'boolean';
+    const dflt = def.values ? def.default : false;
     if (def.control === 'shared') {
       props.push(
-        { name: n, type: 'boolean', from: state, role: 'controlled' },
-        { name: `default${pascal(state)}`, type: 'boolean', from: state, role: 'uncontrolled' },
+        { name: n, type: t, from: state, role: 'controlled' },
+        {
+          name: `default${pascal(state)}`,
+          type: t,
+          from: state,
+          role: 'uncontrolled',
+          default: dflt,
+        },
         {
           name: `on${pascal(state)}Change`,
-          type: `(${n}: boolean) => void`,
+          type: `(${n}: ${t}) => void`,
           from: state,
           role: 'callback',
         },
       );
     } else if (def.control === 'consumer') {
-      props.push({ name: n, type: 'boolean', from: state, role: 'input' });
+      props.push({ name: n, type: t, from: state, role: 'input', default: dflt });
     }
     // `internal` emits nothing. That is the whole point of the value.
   }
@@ -227,7 +242,7 @@ function renderPart(key, node, ctx, depth) {
   }
   if (node.activates?.toggles) attrs.push(`onClick={activate}`);
   if (node.activates?.toggles && node.role === 'button') attrs.push(`type="button"`);
-  if (node.visibleWhen) attrs.push(`hidden={!${stateExpr(node.visibleWhen, ctx)}}`);
+  if (node.visibleWhen) attrs.push(`hidden={!(${stateExpr(node.visibleWhen, ctx)})}`);
   if (node.role === 'button') {
     const dis = ctx.disabledExpr;
     if (dis) attrs.push(`disabled={${dis}}`);
@@ -262,10 +277,13 @@ function renderPart(key, node, ctx, depth) {
 }
 
 // How a state name evaluates inside the generated component.
-function stateExpr(state, ctx) {
-  if (ctx.memberReflects === state) return 'selected';
-  if (ctx.sharedStates.has(state)) return `${camel(state)}Value`;
-  return camel(state);
+function stateExpr(spec, ctx) {
+  const [state, value] = spec.includes('=') ? spec.split('=') : [spec, null];
+  let base;
+  if (ctx.memberReflects === state) base = 'selected';
+  else if (ctx.sharedStates.has(state)) base = `${camel(state)}Value`;
+  else base = camel(state);
+  return value === null ? base : `${base} === '${value}'`;
 }
 
 // ---------------------------------------------------------------------------------------
@@ -433,7 +451,8 @@ function emitTsx(name, contract, binding, prefix) {
   const destructured = [
     ...props.map((p) => {
       if (p.role === 'uncontrolled') {
-        return p.from === 'selection' ? `${p.name} = ${many ? '[]' : "''"}` : `${p.name} = false`;
+        if (p.from === 'selection') return `${p.name} = ${many ? '[]' : "''"}`;
+        return `${p.name} = ${p.default === false ? 'false' : `'${p.default}'`}`;
       }
       if (p.role === 'axis' && p.default) return `${p.name} = '${p.default}'`;
       return p.name;
@@ -531,7 +550,28 @@ function emitTsx(name, contract, binding, prefix) {
       s.push(`  }, [${deps.join(', ')}]);`);
     } else {
       const v = camel(what);
-      s.push(`    const next = !${v}Value;`);
+      const def = contract.states?.[what];
+      const between = (activator?.node.activates ?? root.activates)?.between;
+      if (def?.values && between) {
+        // Any value outside the pair — a checkbox's `mixed` — resolves to the second, which is
+        // what the APG specifies and what `between` exists to say.
+        // Anything outside the pair falls to the SECOND value, not the first: a mixed
+        // checkbox resolves to checked, which is what the APG specifies. Comparing against
+        // between[1] rather than between[0] is the whole difference.
+        s.push(
+          `    const next = ${v}Value === '${between[1]}' ? '${between[0]}' : '${between[1]}';`,
+        );
+      } else if (def?.values) {
+        assume(
+          'activating a valued state with no `between`',
+          'cycles through the declared values in order',
+          'The contract declares more than two values and does not say which two a user may move between, so the emitter cycles. For a checkbox that would offer `mixed` as a click target, which is wrong.',
+        );
+        s.push(`    const order = [${def.values.map((x) => `'${x}'`).join(', ')}] as const;`);
+        s.push(`    const next = order[(order.indexOf(${v}Value) + 1) % order.length]!;`);
+      } else {
+        s.push(`    const next = !${v}Value;`);
+      }
       s.push(`    if (!${v}Controlled) set${pascal(what)}Internal(next);`);
       s.push(`    on${pascal(what)}Change?.(next);`);
       s.push(
@@ -557,14 +597,26 @@ function emitTsx(name, contract, binding, prefix) {
     const isConsumer = consumerProps.some((p) => p.from === st);
     if (!isShared && !isConsumer) continue;
     const expr = isShared ? `${camel(st)}Value` : camel(st);
+    void def;
     // An ARIA state attribute only means something on an element that HAS a role. `open` maps to
     // aria-expanded on an accordion trigger and to nothing at all on a tooltip wrapper: the right
     // attribute depends on the role, and the contract's state name does not carry one.
     const roleBearing = Boolean(rootRole) || el === 'button' || el === 'input';
     const ariaOk = ARIA_ATTR[st] && (roleBearing || st === 'disabled');
+    if (def.values && ariaOk) {
+      const map = def.values.map((v) => `${expr} === '${v}' ? '${ARIA_VALUE[v] ?? v}'`).join(' : ');
+      rootAttrs.push(`${ARIA_ATTR[st]}={${map} : undefined}`);
+      assume(
+        'a valued state reaching ARIA',
+        `mapped ${st}'s values onto ${ARIA_ATTR[st]} by a table in the emitter`,
+        "A contract's state values are its own words and ARIA has its own. `mixed` coincides; `checked`/`unchecked` do not map to `true`/`false` by name. The table is emitter knowledge and lives in neither schema.",
+      );
+      continue;
+    }
     if (NATIVE_ATTR[st] && el === 'button') rootAttrs.push(`${NATIVE_ATTR[st]}={${expr}}`);
     else if (ariaOk && ARIA_EXPLICIT_FALSE.has(st)) rootAttrs.push(`${ARIA_ATTR[st]}={${expr}}`);
     else if (ariaOk) rootAttrs.push(`${ARIA_ATTR[st]}={${expr} || undefined}`);
+    else if (def.values) rootAttrs.push(`data-${prefix}-state-${st}={${expr}}`);
     else rootAttrs.push(`data-${prefix}-state-${st}={${expr} || undefined}`);
   }
   // The state a member reflects is `internal`: no prop, so the loop above never sees it. It
@@ -684,7 +736,15 @@ function emitStructure(name, contract, prefix) {
 // ---------------------------------------------------------------------------------------
 // theme.css — one commented socket per unbound channel
 // ---------------------------------------------------------------------------------------
-function stateSelector(base, state) {
+function stateSelector(base, spec, prefix) {
+  const [state, value] = spec.includes('=') ? spec.split('=') : [spec, null];
+  if (value !== null) {
+    const isChild2 = base.includes('] [');
+    const rootSel2 = isChild2 ? base.split('] [')[0] + ']' : base;
+    const childSel2 = isChild2 ? '[' + base.split('] [')[1] : '';
+    const on2 = `[data-${prefix}-state-${state}='${value}']`;
+    return isChild2 ? `${rootSel2}${on2} ${childSel2}` : `${base}${on2}`;
+  }
   const isChild = base.includes('] [');
   const rootSel = isChild ? base.split('] [')[0] + ']' : base;
   const childSel = isChild ? '[' + base.split('] [')[1] : '';
@@ -724,7 +784,7 @@ function emitTheme(name, contract, prefix) {
     for (const [state, paints] of Object.entries(p.node.states ?? {})) {
       const def = contract.states?.[state];
       L.push(`/* state: ${state} — ${def?.visual ?? 'no visual recorded'} */`);
-      L.push(`${stateSelector(sel, state)} {`);
+      L.push(`${stateSelector(sel, state, prefix)} {`);
       for (const c of Object.keys(paints)) L.push(`  /* ${c}: ; */`);
       L.push(`}`);
       L.push(``);

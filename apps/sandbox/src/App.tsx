@@ -8,7 +8,7 @@
  * Nothing is imported from @ds/react, which exports no components and never will. The components
  * live here, in the consumer's own tree, which is the architecture in one import path.
  *
- * Eight contracts went in. They did NOT come out equal, and the page says so per specimen — the
+ * Nine contracts went in. They did NOT come out equal, and the page says so per specimen — the
  * point of this harness is to show how far each contract got, not to hide the difference.
  */
 
@@ -21,6 +21,7 @@ import { RadioGroup } from './components/RadioGroup';
 import { RadioItem } from './components/RadioItem';
 import { Tooltip } from './components/Tooltip';
 import { Button } from './components/Button';
+import { Checkbox } from './components/Checkbox';
 
 function Specimen({
   name,
@@ -58,6 +59,7 @@ export function App() {
   const [email, setEmail] = useState('');
   const [plan, setPlan] = useState('monthly');
   const [tipOpen, setTipOpen] = useState(false);
+  const [terms, setTerms] = useState<'unchecked' | 'checked' | 'mixed'>('mixed');
   const invalid = email.length > 0 && !email.includes('@');
 
   return (
@@ -65,7 +67,7 @@ export function App() {
       <header>
         <h1>Design system sandbox</h1>
         <p>
-          Eight contracts, compiled by <code>packages/react/src/emit/emit.mjs</code>. Each specimen
+          Nine contracts, compiled by <code>packages/react/src/emit/emit.mjs</code>. Each specimen
           is labelled with how far its contract actually got — see{' '}
           <code>docs/research/0002-compiling-a-contract-into-a-component.md</code>.
         </p>
@@ -105,6 +107,23 @@ export function App() {
         <Button hierarchy="primary" iconStart={<span>+</span>}>
           With icon
         </Button>
+      </Specimen>
+
+      <Specimen
+        name="Checkbox"
+        verdict="works"
+        note="The first state in this library with THREE values rather than two. `checked` is unchecked | checked | mixed, and mixed is not a third click target — activates.between names the two a user may reach, so a mixed checkbox resolves to checked, which is what the APG specifies. The tick and the dash are different shapes, not one mark at two opacities, because they report different facts."
+      >
+        <Checkbox
+          checked={terms}
+          onCheckedChange={setTerms}
+          label={`Select all (currently ${terms})`}
+        />
+        <Checkbox defaultChecked="checked" label="Marketing email" />
+        <Checkbox label="Product updates" />
+        <Checkbox defaultChecked="mixed" label="Partly chosen" />
+        <Checkbox invalid label="Required, and unanswered" />
+        <Checkbox disabled defaultChecked="checked" label="Disabled" />
       </Specimen>
 
       <Specimen

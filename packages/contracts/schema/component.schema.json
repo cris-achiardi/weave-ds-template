@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://example.invalid/schemas/component-contract-4.json",
+  "$id": "https://example.invalid/schemas/component-contract-5.json",
   "title": "Component contract (framework-agnostic)",
   "description": "Describes ONE component completely enough to build it, in any framework. The reasoning is in contracts/README.md.\n\nThis file lives at contracts/ rather than inside a package on purpose: it belongs to no framework. It says what the component IS — its purpose, its behaviour, the states it must be able to show, the axes it exposes, its anatomy, and which family of token paints each part. It does NOT say how any of that is expressed in React, or in React Native, or in a web component. That is a binding, and bindings live beside the implementation.\n\nBuildable means: someone handed this file, the prop map for their framework, and the code standards should be able to produce the component without asking what it is for.",
   "type": "object",
@@ -69,6 +69,18 @@
         "required": ["kind", "control"],
         "properties": {
           "kind": { "enum": ["intrinsic", "authored"] },
+          "values": {
+            "type": "array",
+            "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+            "minItems": 2,
+            "uniqueItems": true,
+            "description": "The values this state may hold, in a meaningful order. EXPERIMENTAL.\n\nOMIT IT AND THE STATE IS A BOOLEAN, which is what every state in this schema was until a checkbox needed three conditions — unchecked, checked and mixed. Two booleans cannot carry that: `checked` and `indeterminate` as separate flags admits `checked: true, indeterminate: true`, which is meaningless, and no gate here could reject it.\n\nNot the same thing as an `axis`. An axis is a styling choice the consumer makes; a state is a condition the component is in, and may be set by the platform or derived."
+          },
+          "default": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*$",
+            "description": "The value before anything sets one. Only meaningful alongside `values`, and must be one of them."
+          },
           "control": {
             "enum": ["consumer", "shared", "internal"],
             "description": "WHO MAY SET THIS STATE. Distinct from `kind`, which says who TRACKS it — the two are orthogonal, and `disabled` proves it: the platform tracks it (intrinsic) but only the consumer sets it (consumer).\n\nThis is the bit a framework binding compiles into a public surface, and it is the reason this file can be translated rather than merely read:\n  `consumer` -> the consumer sets it; the user cannot change it. Compiles to ONE input.        e.g. disabled\n  `shared`   -> the consumer may set it AND the user may change it. Compiles to whatever that framework uses for two-way state — in React a controlled/uncontrolled trio, in Vue a v-model pair.   e.g. checked, open\n  `internal` -> nothing outside sets it: the platform observes it, the component derives it, or an ancestor owns it. Compiles to NO input at all.   e.g. hover, focus-visible, an accordion item's open state\n\nDeliberately says nothing about prop names. `checked` + `defaultChecked` + `onCheckedChange` is React's SPELLING of `shared`; Vue spells the same fact `modelValue` + `update:modelValue`. Naming either here would put a framework in an agnostic file. Each framework's spelling is a RULE in its own prop-bindings.json, which is why one rule covers every shared state in the library rather than one entry per component."
@@ -324,6 +336,13 @@
             "toggles": {
               "type": "string",
               "description": "A state name declared in `states`, or the literal `member` meaning this component's membership of its ancestor's collection."
+            },
+            "between": {
+              "type": "array",
+              "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+              "minItems": 2,
+              "maxItems": 2,
+              "description": "For a state with more than two values: the two a USER may move between, and the resting one to fall back to from any other. EXPERIMENTAL.\n\nA checkbox holds three values and a user may only reach two of them: `mixed` is reported by a parent whose children disagree, and activating a mixed checkbox resolves it to checked. Without this, activation would have to guess — and offering `mixed` as a third click target is a real defect in real libraries.\n\nRequired when the toggled state declares more than two values."
             }
           }
         },
@@ -344,8 +363,8 @@
         },
         "visibleWhen": {
           "type": "string",
-          "pattern": "^[a-z][a-z0-9-]*$",
-          "description": "Names a state; this part is hidden whenever that state is false. EXPERIMENTAL.\n\nHidden, not removed: the part stays in the document so find-in-page can reach it and so anything measured inside it survives. A component that must unmount its hidden content is a different decision and has no home here yet."
+          "pattern": "^[a-z][a-z0-9-]*(=[a-z0-9-]+)?$",
+          "description": "Names a state; this part is hidden whenever that state is false. For a state with `values`, write `state=value` — a checkbox's tick is `checked=checked` and its dash is `checked=mixed`, two different marks for two different facts rather than one mark shown twice. EXPERIMENTAL.\n\nHidden, not removed: the part stays in the document so find-in-page can reach it and so anything measured inside it survives. A component that must unmount its hidden content is a different decision and has no home here yet."
         },
         "paints": { "$ref": "#/$defs/paints" },
         "states": {

@@ -1,0 +1,14 @@
+{
+  "$schema": "./binding.schema.json",
+  "component": "Checkbox",
+  "contract": "../../contracts/components/Checkbox/Checkbox.contract.json",
+  "framework": "react",
+  "element": "button",
+  "refTarget": "root",
+  "classNamePassthrough": "root",
+  "notes": [
+    "Renders a native `<button role=\"checkbox\">` rather than an `<input type=\"checkbox\">`. The native input cannot express `mixed` as a value — its `indeterminate` is a DOM property with no attribute, unsettable from markup — and it brings styling constraints the unstyled model cannot accept. The cost is the usual one: no form participation.",
+    "`checked` is the first state in this library with three values rather than two. Its ARIA rendering maps `checked`/`unchecked`/`mixed` onto `true`/`false`/`mixed`, a table that lives in the emitter because neither schema can carry it.",
+    "Activation moves between the two values `activates.between` names. A `mixed` checkbox resolves to `checked`, which is the APG's behaviour and the reason `between` exists: without it the emitter would cycle and offer `mixed` as a third click target."
+  ]
+}
