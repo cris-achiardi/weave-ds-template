@@ -379,6 +379,51 @@ refusing.
   say a mixed checkbox becomes checked; the first implementation made it become unchecked, and it
   looked entirely plausible.
 
+### A sixth pass: TextField and Slider, and the third and fourth value shapes
+
+Both were rejected identically, on the same field:
+
+```
+TextField  /states/value  additionalProperties   (valueType)
+Slider     /states/value  additionalProperties   (valueType, min, max, step)
+```
+
+A state could be a boolean, or — since `Checkbox` — one of a listed set. Neither can hold free text,
+and neither can hold a number with bounds. **The two most common controls in any library were
+inexpressible.** Schema v6 adds `valueType: "string" | "number"` with `min`, `max` and `step`.
+
+`TextField` then compiled and works. But note _why_ typing works: nothing in the contract says it
+does. The binding renders a native `<input>`, and the emitter knows an input edits its own value.
+
+`Slider` compiled to a shell, and it is the most instructive result in this pass:
+
+| What a slider is                      | Where it lives                                       |
+| ------------------------------------- | ---------------------------------------------------- |
+| a number between bounds, in steps     | **the contract** — `valueType`, `min`, `max`, `step` |
+| `aria-valuemin` / `max` / `now`       | **generated** from those                             |
+| arrow keys, Page Up/Down, Home/End    | nowhere                                              |
+| pointer drag                          | nowhere                                              |
+| the fill's length, the thumb's offset | nowhere — and not expressible as CSS either          |
+
+**Slider's keyboard is a different gap from RadioGroup's.** RadioGroup navigates _between items_;
+Slider _steps a number_. One navigation primitive will not cover both, which is worth knowing before
+designing one.
+
+**And the fill's position is a gap of a shape not seen before.** It is neither a declaration nor a
+constraint: it is _arithmetic over a state_. `inline-size` is the value as a percentage. No `layout`
+block of CSS-shaped rules could express it, however it were designed. The sandbox works around it by
+handing the number back in as a custom property and doing the maths in the consumer's theme file —
+which means the one thing that makes a slider a slider is the consumer's to implement.
+
+**Four emitter bugs, all the same root cause:** the emitter did not know enough about HTML.
+`role="textbox"` restated on an `<input>`; `tabIndex` added to a natively focusable element;
+`aria-disabled` used where the native `disabled` attribute exists; and — the one that matters —
+**whatever the person typed mirrored into `data-ds-state-value`**. A boolean or enumerated state is
+a styling hook; free text is content, and copying it into an attribute leaks it into the DOM.
+
+Also in this pass: `Field` now composes a generated `TextField` rather than a raw input — the first
+contract whose slot is filled by another contract's output.
+
 ## What it appears to mean (inferred)
 
 Every item below is a reading, not a measurement.
@@ -483,6 +528,24 @@ value names map onto which ARIA value names. None of it is React-specific — al
 knowledge — and it lives in a React emitter because there is nowhere else. That is now three
 separate tables arguing for the web-platform artifact this report proposed after the first pass.
 
+**There now appear to be at least three kinds of behaviour, not one.** Activation (a click that
+toggles), navigation (moving between items), and stepping (moving a number). `activates` covers the
+first; the second and third have nothing. A single "behaviour vocabulary" was the working assumption
+and it looks too coarse — `RadioGroup` and `Slider` both need "the arrow keys do something" and need
+entirely different somethings.
+
+**`Slider` suggests `layout` should not be attempted as declarations at all.** The accordion's width
+defect wanted a constraint; the slider's fill wants arithmetic. A block trying to hold both, plus
+static positioning, is three unrelated things wearing one name. It may be that position-from-a-value
+is simply the consumer's job, and the contract's role is only to say the relationship exists.
+
+**The platform-knowledge tables in the emitter are now the largest undesigned artifact in the
+system.** Which ARIA attribute a state maps to; which are meaningful when false; which contract
+value names map to which ARIA value names; which elements have a native `disabled`; which are
+natively focusable; which have an implicit role; which edit their own value. Seven tables, none
+React-specific, all in a React emitter. A second backend would need every one and would get at least
+one subtly wrong.
+
 **Regeneration safety is currently a convention, not a mechanism.** The emitter skips
 `theme.css` when it exists, which is the right behaviour and is enforced by one `existsSync`. Nothing
 marks the generated files as generated in a way a tool could check, and nothing would stop a
@@ -551,6 +614,15 @@ to hold it, constraint-shaped or otherwise.
 `Accordion`'s contract declares `display` and `gap` as paint channels. Neither carries design
 intent in the sense `paints` documents; both are structure. Nothing distinguishes them, so the
 paint/theme split a consumer relies on is enforced only by the care of whoever wrote the contract.
+
+**18. A free-form value was mirrored into the DOM as a data attribute.**
+Whatever a person typed appeared in `data-ds-state-value`, visible in devtools and in any serialised
+markup. The emitter treated every state as a styling hook; free text is content. Fixed, and nothing
+would have caught it.
+
+**19. Slider's core behaviour is not merely missing — parts of it are not expressible as any kind of
+static declaration.** The fill's length is the value as a percentage: arithmetic over a state. No
+`layout` block, constraint-shaped or otherwise, would hold it.
 
 **17. Template-generated expressions can be syntactically valid and semantically inverted.**
 `hidden={!checkedValue === 'checked'}` typechecked, rendered, and silently never showed the mark.

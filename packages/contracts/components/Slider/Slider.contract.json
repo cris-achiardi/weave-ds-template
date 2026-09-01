@@ -1,0 +1,122 @@
+{
+  "$schema": "../../schema/component.schema.json",
+  "component": "Slider",
+
+  "status": {
+    "level": "experimental",
+    "since": "2026-09-01",
+    "note": "Chosen because its value is a NUMBER IN A RANGE — not a boolean, not one of a fixed set, and not a set of identities. Sourced from the W3C ARIA APG slider pattern, which is normative and complete."
+  },
+
+  "intent": {
+    "purpose": "Chooses a number from a continuous range where the approximate value matters more than the exact one — a volume, a zoom level, a price ceiling.",
+    "behaviour": [
+      "Holds one number between a minimum and a maximum, moving in steps.",
+      "Moves by one step on the arrow keys, by a larger jump on Page Up and Page Down, and to the ends on Home and End.",
+      "Follows the pointer while dragging, snapping to the nearest step.",
+      "Never reports a value outside its range, and never one between steps.",
+      "Announces the number, and where a bare number would be meaningless — a rating, a date — announces text instead."
+    ],
+    "notFor": [
+      "An exact number a person knows already. Typing '47' is faster and more accurate than dragging to it; use a number field, or pair the two.",
+      "A range with two ends. That is a second thumb, a second value, and a set of rules about which one can pass which — a different contract.",
+      "Choosing from a handful of options. Steps that are few enough to name are a radio group, where every choice is visible and labelled.",
+      "Anything where being one step out matters. A slider cannot be operated precisely on a touch screen."
+    ]
+  },
+
+  "states": {
+    "value": {
+      "kind": "authored",
+      "control": "shared",
+      "valueType": "number",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "description": "The chosen number. Bounded and stepped — facts that live nowhere else, and that no boolean or enumeration can carry.",
+      "visual": "The filled portion of the track ends at the thumb, and the thumb sits at the value's position along the track."
+    },
+    "disabled": {
+      "kind": "intrinsic",
+      "control": "consumer",
+      "description": "The platform's own disabled state. Removed from the focus order and cannot be moved.",
+      "visual": "The track and thumb dim and the grab cursor is dropped."
+    },
+    "dragging": {
+      "kind": "authored",
+      "control": "internal",
+      "description": "A pointer is held down on the thumb and moving it. Tracked by the implementation; no platform provides it.",
+      "visual": "The thumb grows slightly and its shadow deepens."
+    },
+    "hover": {
+      "kind": "intrinsic",
+      "control": "internal",
+      "description": "The pointer is over the slider and it is not disabled.",
+      "visual": "The thumb grows slightly."
+    },
+    "focus-visible": {
+      "kind": "intrinsic",
+      "control": "internal",
+      "description": "The thumb has keyboard focus.",
+      "visual": "A ring is drawn around the thumb."
+    }
+  },
+
+  "semantics": {
+    "role": "slider",
+    "focusable": true
+  },
+
+  "a11y": {
+    "focusVisible": true,
+    "minHitArea": 44,
+    "contrast": "AA",
+    "keyboard": "Arrow keys move by one step, Page Up and Page Down by a larger jump, Home and End to the ends.",
+    "notes": [
+      "The slider has no accessible name of its own and must be given one. Unnamed, it is announced only as a number.",
+      "A bare number is meaningless for some ranges — a five-point rating, a date, a set of named tiers. Those need text alongside the number, and this contract has no way to declare that the text is required.",
+      "The thumb must be at least 44px in its hit area even where it is drawn smaller, or it cannot be operated on a touch screen. The drawn size and the target size are different numbers and only one of them is stated here.",
+      "Keyboard operation must reach every step. A range of 0–100 with a step of 1 is 100 arrow presses end to end, which is technically conformant and practically unusable; Page Up and Page Down exist for that and their jump size is not stated in this contract."
+    ]
+  },
+
+  "composition": {
+    "children": { "max": 0, "description": "None. The value is a number, not content." }
+  },
+
+  "anatomy": {
+    "root": {
+      "part": "root",
+      "description": "The slider. Owns the keyboard, the drag and the focus ring.",
+      "paints": { "block-size": null, "padding-block": null },
+      "parts": {
+        "track": {
+          "part": "track",
+          "description": "The full range, drawn as a line.",
+          "paints": { "block-size": null, "background": null, "border-radius": null }
+        },
+        "fill": {
+          "part": "fill",
+          "description": "The portion of the track below the value. Its length IS the value made visible, which is the one thing here that cannot be static CSS.",
+          "paints": { "background": null, "border-radius": null }
+        },
+        "thumb": {
+          "part": "thumb",
+          "description": "The grabbable marker. Its position along the track is the value.",
+          "paints": {
+            "inline-size": null,
+            "block-size": null,
+            "background": null,
+            "border-radius": null,
+            "box-shadow": null
+          },
+          "states": {
+            "hover": { "inline-size": null, "block-size": null },
+            "dragging": { "box-shadow": null },
+            "focus-visible": { "outline": null, "outline-offset": null }
+          }
+        }
+      }
+    }
+  }
+}

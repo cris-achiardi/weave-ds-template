@@ -1,0 +1,122 @@
+{
+  "$schema": "../../schema/component.schema.json",
+  "component": "TextField",
+
+  "status": {
+    "level": "experimental",
+    "since": "2026-09-01",
+    "note": "The most-used component in any library, and the first whose value is free text rather than a boolean or one of a fixed set. Sourced from the HTML input specification; the ARIA APG has no text-field pattern because the native element already is one."
+  },
+
+  "intent": {
+    "purpose": "Collects a single line of text from a person. It is the control itself, where Field is the plumbing around a control — the two compose, and neither does the other's job.",
+    "behaviour": [
+      "Holds a string, controlled via `value` + `onValueChange` or uncontrolled via `defaultValue`.",
+      "Reports every keystroke, not only the final answer, so a caller may validate as the person types or wait until they leave.",
+      "Shows placeholder text only while empty. Placeholder is never a label: it disappears exactly when the person needs it most, and it is the wrong contrast for reading.",
+      "Renders nothing about validity itself. Whether this text is acceptable is a Field's decision, and duplicating it here would let the two disagree."
+    ],
+    "notFor": [
+      "More than one line. A growing box has different keyboard behaviour — Enter inserts a newline rather than submitting — and is a different contract.",
+      "Numbers with a range. That is a slider or a number input with min and max; a text field cannot express bounds.",
+      "Choosing from a set. That is a select or a combobox.",
+      "Passwords, without a way to reveal them. A masked field with no reveal control fails anyone who cannot type it twice from memory."
+    ]
+  },
+
+  "states": {
+    "value": {
+      "kind": "authored",
+      "control": "shared",
+      "valueType": "string",
+      "description": "The text itself. Free-form: not a boolean, and not one of a fixed set — which is what makes this the first state in the library that `values` cannot describe.",
+      "visual": "The text appears in the box. An empty field shows its placeholder instead."
+    },
+    "disabled": {
+      "kind": "intrinsic",
+      "control": "consumer",
+      "description": "The platform's own disabled state. Removed from the focus order and cannot be typed into.",
+      "visual": "The box and its text dim, and the text cursor is dropped."
+    },
+    "read-only": {
+      "kind": "intrinsic",
+      "control": "consumer",
+      "description": "The text can be read and selected but not changed. Distinct from disabled, which removes it from the focus order.",
+      "visual": "The box loses its editable affordance but keeps its text at full contrast."
+    },
+    "invalid": {
+      "kind": "authored",
+      "control": "consumer",
+      "description": "Set from outside — usually by a surrounding Field. This component does not decide it.",
+      "visual": "The box takes its error border."
+    },
+    "hover": {
+      "kind": "intrinsic",
+      "control": "internal",
+      "description": "The pointer is over the box and it is not disabled.",
+      "visual": "The border takes its hover treatment."
+    },
+    "focus-visible": {
+      "kind": "intrinsic",
+      "control": "internal",
+      "description": "The box has focus.",
+      "visual": "A ring is drawn around the box."
+    }
+  },
+
+  "axes": {
+    "size": {
+      "values": ["s", "m", "l"],
+      "default": "m",
+      "description": "A contiguous subset of the canon's ladder."
+    }
+  },
+
+  "semantics": {
+    "role": "textbox",
+    "focusable": true
+  },
+
+  "a11y": {
+    "focusVisible": true,
+    "minHitArea": 24,
+    "contrast": "AA",
+    "keyboard": "Every keyboard behaviour here belongs to the platform's text editing: selection, word movement, undo. This component adds none and must not intercept any.",
+    "notes": [
+      "This component has NO accessible name of its own. It must be given one — by a surrounding Field, a `<label>`, or `aria-label`. A text field with only a placeholder is announced as unnamed, and the placeholder vanishes the moment someone types.",
+      "Placeholder text is not a label and must not be used as one. It disappears on the first keystroke, it fails contrast at most designs' placeholder colour, and it is not announced as a name by every screen reader.",
+      "`invalid` is set from outside and reaches the DOM as `aria-invalid`. Nothing here checks that a message explaining the failure exists — that is Field's job, and a field marked invalid with no message says only that something is wrong."
+    ]
+  },
+
+  "composition": {
+    "children": { "max": 0, "description": "None. The value is text, not content." }
+  },
+
+  "anatomy": {
+    "root": {
+      "part": "root",
+      "description": "The box. Owns the border, the ring and the text.",
+      "paints": {
+        "inline-size": null,
+        "border": null,
+        "border-radius": null,
+        "background": null,
+        "color": null,
+        "font-family": null
+      },
+      "whenAxis": {
+        "size=s": { "padding-inline": null, "min-block-size": null, "font-size": null },
+        "size=m": { "padding-inline": null, "min-block-size": null, "font-size": null },
+        "size=l": { "padding-inline": null, "min-block-size": null, "font-size": null }
+      },
+      "states": {
+        "hover": { "border-color": null },
+        "invalid": { "border-color": null },
+        "disabled": { "color": null, "opacity": null },
+        "read-only": { "background": null },
+        "focus-visible": { "outline": null, "outline-offset": null }
+      }
+    }
+  }
+}

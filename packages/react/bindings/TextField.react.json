@@ -1,0 +1,14 @@
+{
+  "$schema": "./binding.schema.json",
+  "component": "TextField",
+  "contract": "../../contracts/components/TextField/TextField.contract.json",
+  "framework": "react",
+  "element": "input",
+  "refTarget": "root",
+  "classNamePassthrough": "root",
+  "notes": [
+    "Renders a native `<input>`. This is the first binding where the platform edits the component's own value: nothing in the contract says typing changes it, and the emitter wires the change event because an <input> edits itself. That is platform knowledge, not React knowledge.",
+    "`readOnly` maps to the native attribute so the platform enforces it. `disabled` likewise.",
+    "No `type` is set, so this is a text input. A password, email or search field would each need their own contract or a prop this one does not have — and `type` changes the keyboard on a phone, which is a real difference and not a styling one."
+  ]
+}

@@ -8,7 +8,7 @@
  * Nothing is imported from @ds/react, which exports no components and never will. The components
  * live here, in the consumer's own tree, which is the architecture in one import path.
  *
- * Nine contracts went in. They did NOT come out equal, and the page says so per specimen — the
+ * Eleven contracts went in. They did NOT come out equal, and the page says so per specimen — the
  * point of this harness is to show how far each contract got, not to hide the difference.
  */
 
@@ -22,6 +22,8 @@ import { RadioItem } from './components/RadioItem';
 import { Tooltip } from './components/Tooltip';
 import { Button } from './components/Button';
 import { Checkbox } from './components/Checkbox';
+import { TextField } from './components/TextField';
+import { Slider } from './components/Slider';
 
 function Specimen({
   name,
@@ -60,6 +62,7 @@ export function App() {
   const [plan, setPlan] = useState('monthly');
   const [tipOpen, setTipOpen] = useState(false);
   const [terms, setTerms] = useState<'unchecked' | 'checked' | 'mixed'>('mixed');
+  const [volume, setVolume] = useState(40);
   const invalid = email.length > 0 && !email.includes('@');
 
   return (
@@ -67,7 +70,7 @@ export function App() {
       <header>
         <h1>Design system sandbox</h1>
         <p>
-          Nine contracts, compiled by <code>packages/react/src/emit/emit.mjs</code>. Each specimen
+          Eleven contracts, compiled by <code>packages/react/src/emit/emit.mjs</code>. Each specimen
           is labelled with how far its contract actually got — see{' '}
           <code>docs/research/0002-compiling-a-contract-into-a-component.md</code>.
         </p>
@@ -124,6 +127,47 @@ export function App() {
         <Checkbox defaultChecked="mixed" label="Partly chosen" />
         <Checkbox invalid label="Required, and unanswered" />
         <Checkbox disabled defaultChecked="checked" label="Disabled" />
+      </Specimen>
+
+      <Specimen
+        name="TextField"
+        verdict="partial"
+        note="The first state whose value is free text: not a boolean, not one of a fixed set. valueType: string was added to the schema for it. Typing works — but only because the binding renders a native input and the emitter knows an input edits its own value. Nothing in the contract says typing changes anything."
+      >
+        <TextField placeholder="Uncontrolled" />
+        <TextField size="s" placeholder="Small" />
+        <TextField size="l" placeholder="Large" />
+        <TextField invalid defaultValue="not an email" />
+        <TextField readOnly defaultValue="Read-only" />
+        <TextField disabled placeholder="Disabled" />
+      </Specimen>
+
+      <Specimen
+        name="Slider"
+        verdict="shell"
+        note="A number in a range — valueType: number with min, max and step, all new to the schema. aria-valuemin/max/now are generated from them. Nothing else is: no arrow keys, no drag, no stepping. And the fill's length and the thumb's offset ARE the value. The page has to hand the number back in as a CSS custom property for the theme to do arithmetic on, because the contract cannot say that a part's size is derived from a state."
+      >
+        <Slider
+          value={volume}
+          onValueChange={setVolume}
+          aria-label="Volume"
+          style={{ ['--value' as string]: volume }}
+        />
+        <span className="readout">value: {volume}</span>
+        <button
+          type="button"
+          className="ghost"
+          onClick={() => setVolume((v) => Math.max(0, v - 10))}
+        >
+          −10
+        </button>
+        <button
+          type="button"
+          className="ghost"
+          onClick={() => setVolume((v) => Math.min(100, v + 10))}
+        >
+          +10
+        </button>
       </Specimen>
 
       <Specimen
@@ -211,7 +255,7 @@ export function App() {
       <Specimen
         name="Field"
         verdict="partial"
-        note="Slots and the ARIA wiring now compile: the control is named by the label and described by the description and the error, in that order, and the error is hidden until invalid. Its STATES still do not — invalid, touched and dirty are control: shared, but nothing says what changes them, so they work controlled and their uncontrolled form cannot move."
+        note="Now composing a generated TextField rather than a raw input — the first contract whose slot is filled by another contract's output. Slots and the ARIA wiring compile: the control is named by the label and described by the description and the error, in that order, and the error is hidden until invalid. Its STATES still do not — invalid, touched and dirty are control: shared, but nothing says what changes them, so they work controlled and their uncontrolled form cannot move."
       >
         <Field
           label="Email address"
@@ -219,11 +263,11 @@ export function App() {
           error={invalid ? 'That does not look like an email address.' : undefined}
           invalid={invalid}
           control={
-            <input
-              className="text-input"
+            <TextField
               value={email}
               placeholder="you@example.com"
-              onChange={(e) => setEmail(e.target.value)}
+              invalid={invalid}
+              onValueChange={setEmail}
             />
           }
         />

@@ -1,0 +1,63 @@
+/* Slider — THE CONSUMER'S FILE. Emitted once, empty, never regenerated. */
+
+/*
+ * ==========================================================================================
+ * THE FILL AND THE THUMB HAVE NO POSITION HERE, AND CANNOT.
+ *
+ * Their positions ARE the value: the fill's length and the thumb's offset are computed from a
+ * number at render time. That is not static CSS and no `layout` block of declarations could
+ * express it — it is arithmetic over a state, which nothing in the contract system can carry.
+ *
+ * The sandbox supplies both with inline styles from the page. A real consumer would have to do
+ * the same, which means the one thing that makes a slider a slider is theirs to implement.
+ * ==========================================================================================
+ */
+
+[data-ds-component='Slider'] {
+  position: relative;
+  display: flex;
+  align-items: center;
+  inline-size: 220px;
+  block-size: 20px;
+  padding-block: 8px;
+  cursor: pointer;
+}
+[data-ds-component='Slider'][aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+[data-ds-component='Slider'] [data-ds-part='track'] {
+  position: absolute;
+  inset-inline: 0;
+  block-size: 4px;
+  background: #3a3a3f;
+  border-radius: 999px;
+}
+[data-ds-component='Slider'] [data-ds-part='fill'] {
+  position: absolute;
+  inset-inline-start: 0;
+  /* The consumer had to invent --value and hand the number back in. Nothing in the contract
+     says the fill's length is derived from the state; this is the gap made concrete. */
+  inline-size: calc(var(--value, 0) * 1%);
+  block-size: 4px;
+  background: #5146e6;
+  border-radius: 999px;
+}
+[data-ds-component='Slider'] [data-ds-part='thumb'] {
+  position: absolute;
+  inline-size: 14px;
+  block-size: 14px;
+  background: #ffffff;
+  border-radius: 999px;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.5);
+  inset-inline-start: calc(var(--value, 0) * 1%);
+  translate: -50% 0;
+}
+[data-ds-component='Slider']:hover [data-ds-part='thumb'] {
+  inline-size: 16px;
+  block-size: 16px;
+}
+[data-ds-component='Slider']:focus-visible [data-ds-part='thumb'] {
+  outline: 2px solid #8b83f0;
+  outline-offset: 2px;
+}
