@@ -3,7 +3,7 @@
 //
 // Wires a form control to its label, its help text and its error message, so the three are announced together and the control's validity has one place to live. It is the plumbing around an input, never the input.
 
-import { forwardRef, useState } from 'react';
+import { forwardRef, useId, useState } from 'react';
 import type { HTMLAttributes, ReactNode } from 'react';
 import './Field.structure.css';
 import './Field.theme.css';
@@ -77,32 +77,32 @@ export const Field = forwardRef<HTMLDivElement, FieldProps>(function Field(
   },
   ref,
 ) {
+  const baseId = useId();
+
   const invalidControlled = invalid !== undefined;
   const [invalidInternal, setInvalidInternal] = useState(defaultInvalid);
   const invalidValue = invalidControlled ? invalid : invalidInternal;
-  // The contract declares `invalid` as control: shared, so a consumer may set it — but
-  // nothing in the contract says what CHANGES it, so this setter is unreachable and the
-  // uncontrolled form of this state can never move. Pass `invalid` to control it.
+  // Nothing in the contract says what CHANGES `invalid`: no part declares
+  // `activates`. It works when controlled from outside; uncontrolled it cannot move.
   void setInvalidInternal;
   const touchedControlled = touched !== undefined;
   const [touchedInternal, setTouchedInternal] = useState(defaultTouched);
   const touchedValue = touchedControlled ? touched : touchedInternal;
-  // The contract declares `touched` as control: shared, so a consumer may set it — but
-  // nothing in the contract says what CHANGES it, so this setter is unreachable and the
-  // uncontrolled form of this state can never move. Pass `touched` to control it.
+  // Nothing in the contract says what CHANGES `touched`: no part declares
+  // `activates`. It works when controlled from outside; uncontrolled it cannot move.
   void setTouchedInternal;
   const dirtyControlled = dirty !== undefined;
   const [dirtyInternal, setDirtyInternal] = useState(defaultDirty);
   const dirtyValue = dirtyControlled ? dirty : dirtyInternal;
-  // The contract declares `dirty` as control: shared, so a consumer may set it — but
-  // nothing in the contract says what CHANGES it, so this setter is unreachable and the
-  // uncontrolled form of this state can never move. Pass `dirty` to control it.
+  // Nothing in the contract says what CHANGES `dirty`: no part declares
+  // `activates`. It works when controlled from outside; uncontrolled it cannot move.
   void setDirtyInternal;
 
   return (
     <div
       {...rest}
       ref={ref}
+      id={baseId}
       aria-disabled={disabled || undefined}
       aria-invalid={invalidValue || undefined}
       data-ds-state-touched={touchedValue || undefined}
@@ -111,10 +111,23 @@ export const Field = forwardRef<HTMLDivElement, FieldProps>(function Field(
       data-ds-part="root"
       className={className}
     >
-      <span data-ds-part="label">{label}</span>
-      <span data-ds-part="description">{description}</span>
-      <span data-ds-part="error">{error}</span>
-      {control}
+      <div data-ds-part="label">{label}</div>
+      <div
+        id={`${baseId}-control`}
+        aria-labelledby={`${baseId}-label`}
+        aria-describedby={
+          [`${baseId}-description`, invalidValue ? `${baseId}-error` : null]
+            .filter(Boolean)
+            .join(' ') || undefined
+        }
+        data-ds-part="control"
+      >
+        {control}
+      </div>
+      <div data-ds-part="description">{description}</div>
+      <div hidden={!invalidValue} data-ds-part="error">
+        {error}
+      </div>
       {children}
     </div>
   );

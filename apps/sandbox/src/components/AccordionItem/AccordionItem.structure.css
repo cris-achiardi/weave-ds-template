@@ -20,10 +20,6 @@
   /* no declared layout for this part */
 }
 
-[data-ds-component='AccordionItem'] [data-ds-part='trigger'] {
-  /* no declared layout for this part */
-}
-
 [data-ds-component='AccordionItem'] [data-ds-part='panel'] {
   /* no declared layout for this part */
 }

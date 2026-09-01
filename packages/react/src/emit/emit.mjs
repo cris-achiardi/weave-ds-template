@@ -124,6 +124,32 @@ function surfaceFrom(contract) {
     // `internal` emits nothing. That is the whole point of the value.
   }
 
+  // A collection's selection compiles exactly like a `shared` state, except its value is a set
+  // of member identities rather than a boolean. Same three props, different type.
+  const sel = contract.collection?.selection;
+  if (sel && sel.control === 'shared') {
+    const many = sel.cardinality === 'many';
+    const t = many ? 'string[]' : 'string';
+    props.push(
+      { name: 'value', type: t, from: 'selection', role: 'controlled' },
+      { name: 'defaultValue', type: t, from: 'selection', role: 'uncontrolled' },
+      { name: 'onValueChange', type: `(value: ${t}) => void`, from: 'selection', role: 'callback' },
+    );
+  }
+
+  // A member's identity is a required prop. It is not a state — nothing is IN it — so ADR 0004's
+  // controlRules do not cover it, and this mapping is recorded nowhere.
+  if (contract.member) {
+    props.push({
+      name: contract.member.identity,
+      type: 'string',
+      from: 'member',
+      role: 'identity',
+      required: true,
+      description: `Distinguishes this ${contract.component} from its siblings. The ancestor ${contract.member.of} compares against it to decide whether this one is in the selection.`,
+    });
+  }
+
   // A named slot becomes a content prop. ADR 0004 covers states only; this is the obvious
   // analogue and is NOT recorded anywhere, which is itself worth reporting.
   for (const [slot, def] of Object.entries(contract.composition?.slots ?? {})) {
@@ -132,6 +158,7 @@ function surfaceFrom(contract) {
       type: 'ReactNode',
       from: slot,
       role: 'slot',
+      part: def.part,
       required: def.required === true,
       description: def.description,
     });
@@ -146,6 +173,81 @@ function partsOf(node, out = [], key = 'root') {
   return out;
 }
 
+// Render one anatomy part and everything under it. Recursive, so a role or a relationship on a
+// nested part lands where the contract put it rather than on the root.
+function renderPart(key, node, ctx, depth) {
+  const { prefix, slots, contract, idFor } = ctx;
+  const pad = '  '.repeat(depth + 3);
+  const slot = slots.find((x) => (x.part ? x.part === key : camel(x.from) === key));
+  const attrs = [];
+
+  const nodeEl = node.activates?.toggles ? 'button' : 'div';
+  if (node.role && !(nodeEl === 'button' && node.role === 'button')) {
+    attrs.push(`role="${node.role}"`);
+  }
+  if (node.role || node.controls || node.namedBy || (node.describedBy ?? []).length) {
+    attrs.push(`id={${idFor(key)}}`);
+  }
+  if (node.controls) attrs.push(`aria-controls={${idFor(node.controls)}}`);
+  if (node.namedBy) attrs.push(`aria-labelledby={${idFor(node.namedBy)}}`);
+  if ((node.describedBy ?? []).length) {
+    const live = node.describedBy.filter((d) => {
+      const target = Object.entries(contract.anatomy.root.parts ?? {}).find(([k]) => k === d);
+      return !target || !target[1].visibleWhen;
+    });
+    const conditional = node.describedBy.filter((d) => !live.includes(d));
+    const pieces = [
+      ...live.map((d) => idFor(d)),
+      ...conditional.map((d) => {
+        const st = Object.entries(contract.anatomy.root.parts ?? {}).find(([k]) => k === d)[1]
+          .visibleWhen;
+        return `(${stateExpr(st, ctx)} ? ${idFor(d)} : null)`;
+      }),
+    ];
+    attrs.push(`aria-describedby={[${pieces.join(', ')}].filter(Boolean).join(' ') || undefined}`);
+  }
+  if (node.activates?.toggles) attrs.push(`onClick={activate}`);
+  if (node.activates?.toggles && node.role === 'button') attrs.push(`type="button"`);
+  if (node.visibleWhen) attrs.push(`hidden={!${stateExpr(node.visibleWhen, ctx)}}`);
+  if (node.role === 'button') {
+    const dis = ctx.disabledExpr;
+    if (dis) attrs.push(`disabled={${dis}}`);
+  }
+  // aria-expanded belongs on whatever controls a part whose visibility is a state
+  if (node.controls) {
+    const target = Object.entries(contract.anatomy.root.parts ?? {}).find(
+      ([k]) => k === node.controls,
+    );
+    if (target && target[1].visibleWhen) {
+      attrs.push(`aria-expanded={${stateExpr(target[1].visibleWhen, ctx)}}`);
+    }
+  }
+  attrs.push(`data-${prefix}-part="${node.part}"`);
+
+  const el = nodeEl;
+  const kids = Object.entries(node.parts ?? {});
+  const open = `<${el} ${attrs.join(' ')}>`;
+  const close = `</${el}>`;
+
+  const out = [];
+  if (!kids.length && !slot) {
+    out.push(`${pad}<${el} ${attrs.join(' ')} />`);
+    return out;
+  }
+  out.push(pad + open);
+  if (slot) out.push(`${pad}  {${slot.name}}`);
+  for (const [k, child] of kids) out.push(...renderPart(k, child, ctx, depth + 1));
+  out.push(pad + close);
+  return out;
+}
+
+// How a state name evaluates inside the generated component.
+function stateExpr(state, ctx) {
+  if (ctx.memberReflects === state) return 'selected';
+  if (ctx.sharedStates.has(state)) return `${camel(state)}Value`;
+  return camel(state);
+}
+
 // ---------------------------------------------------------------------------------------
 // TSX
 // ---------------------------------------------------------------------------------------
@@ -154,43 +256,92 @@ function emitTsx(name, contract, binding, prefix) {
   const root = contract.anatomy.root;
   const el = binding.element;
   const [attrType, elType] = attrTypeFor(el);
-  const role = contract.semantics?.role;
+  const rootRole = root.role ?? contract.semantics?.role;
 
-  const shared = props.filter((p) => p.role === 'controlled');
+  const shared = props.filter((p) => p.role === 'controlled' && p.from !== 'selection');
   const slots = props.filter((p) => p.role === 'slot');
+  const identity = props.find((p) => p.role === 'identity');
   const takesChildren = (contract.composition?.children?.max ?? 1) !== 0;
 
-  // ---- can this component's state be driven by activating it?
-  const toggles = shared.length > 0 && role && TOGGLE_ROLES.has(role);
-  const primary = toggles ? shared[0] : null;
+  const collection = contract.collection;
+  const selShared = collection?.selection?.control === 'shared';
+  const many = collection?.selection?.cardinality === 'many';
+  const member = contract.member;
+
+  // A member contract is NOT self-contained: whether its selection is a set or a single value
+  // lives in the ancestor's contract, so the emitter has to open that file to compile this one.
+  let memberMany = false;
+  if (member) {
+    const ancestorPath = join(CONTRACTS, 'components', member.of, `${member.of}.contract.json`);
+    if (!existsSync(ancestorPath)) {
+      throw new Error(
+        `${name} declares member.of "${member.of}" but no contract exists at ${ancestorPath}`,
+      );
+    }
+    const ancestor = readJson(ancestorPath);
+    if (ancestor.collection?.items !== name) {
+      throw new Error(
+        `${name} says it is a member of ${member.of}, but ${member.of}.collection.items is ` +
+          `"${ancestor.collection?.items ?? '(absent)'}" — the two contracts disagree.`,
+      );
+    }
+    memberMany = ancestor.collection.selection.cardinality === 'many';
+    assume(
+      'a member contract is not self-contained',
+      `read ${member.of}.contract.json to learn the selection is ${memberMany ? 'a set' : 'a single value'}`,
+      'Cardinality lives on the ancestor, so this component cannot be compiled from its own contract alone. Nothing in the repo checks that the two contracts agree; the emitter now does, and it is the only thing that does.',
+    );
+  }
+
+  const sharedStates = new Set(shared.map((s) => s.from));
+  const consumerProps = props.filter((p) => p.role === 'input');
+  const disabledExpr = consumerProps.some((p) => p.name === 'disabled')
+    ? member
+      ? 'disabled || ctx.disabled'
+      : 'disabled'
+    : null;
+
+  // Which part, if any, activates something.
+  const allParts = partsOf(root);
+  const activator = allParts.find((p) => p.node.activates?.toggles);
+  const rootToggles = root.activates?.toggles;
 
   assume(
     'how a state reaches the DOM',
     'ARIA attribute where one is conventional, native attribute for disabled, otherwise data-<prefix>-state',
-    'The contract declares that a state exists and who may set it, never how it is exposed. Two backends will diverge here, and a consumer styling [aria-checked] against one will find the other using a data attribute.',
+    'The contract declares that a state exists and who may set it, never how it is exposed. Two backends will diverge here.',
   );
-
-  if (shared.length > 0 && !toggles) {
+  if (shared.length && !rootToggles && !activator) {
     assume(
       'what changes a shared state',
-      `no event wired — ${shared.map((s) => s.name).join(', ')} ${shared.length > 1 ? 'are' : 'is'} exposed as storage only`,
-      `Nothing in a contract says what CAUSES a state to change. It is stated in intent.behaviour as prose, which no tool reads. The emitter only wires activation for roles it knows are self-toggling (${[...TOGGLE_ROLES].join(', ')}); for anything else the generated component holds the state and never sets it.`,
+      `no event wired — ${shared.map((s) => s.name).join(', ')} exposed as storage only`,
+      'No part declares `activates`, and nothing else in the contract says what causes these to change.',
     );
   }
-  if (shared.length > 1) {
+  if (member) {
     assume(
-      'multiple shared states',
-      'each gets its own independent controlled/uncontrolled storage',
-      'Nothing says whether two shared states are independent or related. It works in React; Vue allows one primary v-model, so this is the case most likely to break the rule in ADR 0004.',
+      'how a member reaches its collection',
+      'React context, imported from the ancestor component module',
+      'The contract says this component is a member of an ancestor collection; it does not and should not say HOW. React uses context; Vue would use provide/inject; a web component would need a registration protocol. Each backend picks, and the emitted import path is this backend invention.',
     );
   }
-  if (slots.length > 0) {
-    assume(
-      'slots as props',
-      'each named slot becomes a ReactNode prop rendered into the anatomy part of the same name',
-      'ADR 0004 defines how STATES become props and says nothing about slots. This mapping is the obvious analogue and is recorded nowhere, so a second backend would invent its own.',
+
+  const idFor = (key) => (key === 'root' ? 'baseId' : '`${baseId}-' + key + '`');
+  const needsIds =
+    Boolean(collection) ||
+    allParts.some(
+      (p) => p.node.role || p.node.controls || p.node.namedBy || (p.node.describedBy ?? []).length,
     );
-  }
+
+  const ctx = {
+    prefix,
+    slots,
+    contract,
+    idFor,
+    memberReflects: member?.reflects,
+    sharedStates,
+    disabledExpr,
+  };
 
   const s = [];
   s.push(`// GENERATED from ${name}.contract.json + ${name}.react.json. Do not edit by hand.`);
@@ -200,15 +351,39 @@ function emitTsx(name, contract, binding, prefix) {
   s.push(``);
 
   const hooks = ['forwardRef'];
-  if (primary) hooks.push('useCallback', 'useState');
-  else if (shared.length) hooks.push('useState');
-  s.push(`import { ${hooks.join(', ')} } from 'react';`);
+  if (needsIds && !member) hooks.push('useId');
+  if (shared.length || selShared) hooks.push('useState');
+  if (rootToggles || activator || collection) hooks.push('useCallback');
+  if (collection) hooks.push('createContext', 'useMemo');
+  if (member) hooks.push('useContext');
+  s.push(`import { ${[...new Set(hooks)].join(', ')} } from 'react';`);
   const types = [attrType];
   if (slots.length) types.push('ReactNode');
   s.push(`import type { ${types.join(', ')} } from 'react';`);
+  if (member) {
+    s.push(`import { ${member.of}Context } from '../${member.of}/${member.of}';`);
+  }
   s.push(`import './${name}.structure.css';`);
   s.push(`import './${name}.theme.css';`);
   s.push(``);
+
+  // ---- the context a collection publishes to its members
+  if (collection) {
+    const t = many ? 'string[]' : 'string';
+    s.push(`export interface ${name}ContextValue {`);
+    s.push(`  /** The current selection, by member ${collection.identity}. */`);
+    s.push(`  selection: ${t};`);
+    s.push(`  /** Called by a member when it is activated. */`);
+    s.push(`  toggle: (${collection.identity}: string) => void;`);
+    s.push(`  /** Shared id root, so a member's parts can reference one another. */`);
+    s.push(`  baseId: string;`);
+    s.push(`  /** True when the whole collection is disabled. */`);
+    s.push(`  disabled: boolean;`);
+    s.push(`}`);
+    s.push(``);
+    s.push(`export const ${name}Context = createContext<${name}ContextValue | null>(null);`);
+    s.push(``);
+  }
 
   const owned = props.map((p) => p.name);
   s.push(
@@ -216,18 +391,28 @@ function emitTsx(name, contract, binding, prefix) {
   );
   for (const p of props) {
     const src = contract.states?.[p.from];
-    if (p.role === 'controlled') s.push(`  /** ${src.description} Controlled. */`);
+    if (p.role === 'controlled')
+      s.push(
+        `  /** ${p.from === 'selection' ? 'The current selection. Controlled.' : src.description + ' Controlled.'} */`,
+      );
     if (p.role === 'uncontrolled') s.push(`  /** Initial value when uncontrolled. */`);
     if (p.role === 'callback') s.push(`  /** Called when it changes, controlled or not. */`);
     if (p.role === 'input') s.push(`  /** ${src.description} */`);
-    if (p.role === 'slot') s.push(`  /** ${p.description ?? 'Slot content.'} */`);
+    if (p.role === 'identity' || p.role === 'slot')
+      s.push(`  /** ${p.description ?? 'Slot content.'} */`);
     s.push(`  ${p.name}${p.required ? '' : '?'}: ${p.type};`);
   }
   s.push(`}`);
   s.push(``);
 
   const destructured = [
-    ...props.map((p) => (p.role === 'uncontrolled' ? `${p.name} = false` : p.name)),
+    ...props.map((p) =>
+      p.role === 'uncontrolled'
+        ? p.from === 'selection'
+          ? `${p.name} = ${many ? '[]' : "''"}`
+          : `${p.name} = false`
+        : p.name,
+    ),
     ...(takesChildren ? ['children'] : []),
     'className',
     '...rest',
@@ -238,92 +423,143 @@ function emitTsx(name, contract, binding, prefix) {
   s.push(`  ref,`);
   s.push(`) {`);
 
+  // ---- member: read the ancestor's selection
+  if (member) {
+    s.push(`  const ctx = useContext(${member.of}Context);`);
+    s.push(`  if (!ctx) {`);
+    s.push(
+      `    throw new Error('${name} must be rendered inside a ${member.of}. There is no selection to compare against, and looking unselected would hide the mistake.');`,
+    );
+    s.push(`  }`);
+    s.push(
+      `  const selected = ${memberMany ? `ctx.selection.includes(${member.identity})` : `ctx.selection === ${member.identity}`};`,
+    );
+    s.push(`  const baseId = \`\${ctx.baseId}-\${${member.identity}}\`;`);
+    s.push(``);
+  } else if (needsIds) {
+    s.push(`  const baseId = useId();`);
+    s.push(``);
+  }
+
+  // ---- plain shared states
   for (const sh of shared) {
     const st = sh.from;
     const v = camel(st);
     s.push(`  const ${v}Controlled = ${sh.name} !== undefined;`);
     s.push(`  const [${v}Internal, set${pascal(st)}Internal] = useState(default${pascal(st)});`);
     s.push(`  const ${v}Value = ${v}Controlled ? ${sh.name} : ${v}Internal;`);
-    if (!primary || primary.from !== st) {
+    if (rootToggles !== st) {
+      s.push(`  // Nothing in the contract says what CHANGES \`${st}\`: no part declares`);
       s.push(
-        `  // The contract declares \`${st}\` as control: shared, so a consumer may set it — but`,
-      );
-      s.push(
-        `  // nothing in the contract says what CHANGES it, so this setter is unreachable and the`,
-      );
-      s.push(
-        `  // uncontrolled form of this state can never move. Pass \`${sh.name}\` to control it.`,
+        `  // \`activates\`. It works when controlled from outside; uncontrolled it cannot move.`,
       );
       s.push(`  void set${pascal(st)}Internal;`);
     }
   }
   if (shared.length) s.push(``);
 
-  if (primary) {
-    const st = primary.from;
-    const v = camel(st);
-    const guards = props
-      .filter((p) => p.role === 'input' && ['disabled', 'readOnly'].includes(p.name))
-      .map((p) => p.name);
-    s.push(`  const activate = useCallback(() => {`);
-    if (guards.length) s.push(`    if (${guards.join(' || ')}) return;`);
-    s.push(`    const next = !${v}Value;`);
-    s.push(`    if (!${v}Controlled) set${pascal(st)}Internal(next);`);
-    s.push(`    on${pascal(st)}Change?.(next);`);
-    s.push(
-      `  }, [${v}Controlled, ${v}Value, on${pascal(st)}Change${guards.length ? ', ' + guards.join(', ') : ''}]);`,
-    );
+  // ---- the collection's own selection
+  if (selShared) {
+    s.push(`  const valueControlled = value !== undefined;`);
+    s.push(`  const [valueInternal, setValueInternal] = useState(defaultValue);`);
+    s.push(`  const selection = valueControlled ? value : valueInternal;`);
+    s.push(``);
+    s.push(`  const toggle = useCallback(`);
+    s.push(`    (${collection.identity}: string) => {`);
+    if (many) {
+      s.push(`      const next = selection.includes(${collection.identity})`);
+      s.push(`        ? selection.filter((v) => v !== ${collection.identity})`);
+      s.push(`        : [...selection, ${collection.identity}];`);
+    } else if (collection.selection.cardinality === 'at-most-one') {
+      s.push(
+        `      const next = selection === ${collection.identity} ? '' : ${collection.identity};`,
+      );
+    } else {
+      s.push(`      const next = ${collection.identity};`);
+      s.push(`      if (next === selection) return;`);
+    }
+    s.push(`      if (!valueControlled) setValueInternal(next);`);
+    s.push(`      onValueChange?.(next);`);
+    s.push(`    },`);
+    s.push(`    [selection, valueControlled, onValueChange],`);
+    s.push(`  );`);
+    s.push(``);
+    s.push(`  const contextValue = useMemo(`);
+    s.push(`    () => ({ selection, toggle, baseId, disabled: disabled ?? false }),`);
+    s.push(`    [selection, toggle, baseId, disabled],`);
+    s.push(`  );`);
     s.push(``);
   }
 
-  s.push(`  return (`);
-  s.push(`    <${el}`);
-  s.push(`      {...rest}`);
-  s.push(`      ref={ref}`);
-  if (el === 'button') s.push(`      type="button"`);
-  if (role) s.push(`      role="${role}"`);
-
-  // state -> attribute, only for states this component actually declares
-  for (const [st, def] of Object.entries(contract.states ?? {})) {
-    const v = camel(st);
-    const isShared = shared.some((x) => x.from === st);
-    const isConsumer = props.some((p) => p.role === 'input' && p.from === st);
-    if (!isShared && !isConsumer) continue;
-    const expr = isShared ? `${v}Value` : v;
-    if (NATIVE_ATTR[st] && el === 'button') {
-      s.push(`      ${NATIVE_ATTR[st]}={${expr}}`);
-    } else if (ARIA_ATTR[st]) {
-      s.push(`      ${ARIA_ATTR[st]}={${expr} || undefined}`);
+  // ---- activation
+  if (activator || rootToggles) {
+    const what = activator?.node.activates.toggles ?? rootToggles;
+    s.push(`  const activate = useCallback(() => {`);
+    const guards = [];
+    if (consumerProps.some((p) => p.name === 'disabled')) guards.push(disabledExpr);
+    if (consumerProps.some((p) => p.name === 'readOnly')) guards.push('readOnly');
+    if (guards.length) s.push(`    if (${guards.join(' || ')}) return;`);
+    if (what === 'member') {
+      s.push(`    ctx.toggle(${member.identity});`);
+      const deps = ['ctx', member.identity];
+      if (consumerProps.some((p) => p.name === 'disabled')) deps.push('disabled');
+      s.push(`  }, [${deps.join(', ')}]);`);
     } else {
-      s.push(`      data-${prefix}-state-${st}={${expr} || undefined}`);
+      const v = camel(what);
+      s.push(`    const next = !${v}Value;`);
+      s.push(`    if (!${v}Controlled) set${pascal(what)}Internal(next);`);
+      s.push(`    on${pascal(what)}Change?.(next);`);
+      s.push(
+        `  }, [${v}Controlled, ${v}Value, on${pascal(what)}Change${guards.length ? ', ' + guards.join(', ') : ''}]);`,
+      );
     }
+    s.push(``);
   }
-  if (primary) s.push(`      onClick={activate}`);
-  s.push(`      data-${prefix}-component="${name}"`);
-  s.push(`      data-${prefix}-part="${root.part}"`);
-  s.push(`      className={className}`);
+
+  // ---- markup
+  s.push(`  return (`);
+  const rootAttrs = [];
+  rootAttrs.push(`{...rest}`);
+  rootAttrs.push(`ref={ref}`);
+  if (el === 'button') rootAttrs.push(`type="button"`);
+  if (rootRole) rootAttrs.push(`role="${rootRole}"`);
+  if (needsIds && !member) rootAttrs.push(`id={baseId}`);
+  for (const [st, def] of Object.entries(contract.states ?? {})) {
+    const isShared = sharedStates.has(st);
+    const isConsumer = consumerProps.some((p) => p.from === st);
+    if (!isShared && !isConsumer) continue;
+    const expr = isShared ? `${camel(st)}Value` : camel(st);
+    if (NATIVE_ATTR[st] && el === 'button') rootAttrs.push(`${NATIVE_ATTR[st]}={${expr}}`);
+    else if (ARIA_ATTR[st]) rootAttrs.push(`${ARIA_ATTR[st]}={${expr} || undefined}`);
+    else rootAttrs.push(`data-${prefix}-state-${st}={${expr} || undefined}`);
+  }
+  if (rootToggles) rootAttrs.push(`onClick={activate}`);
+  rootAttrs.push(`data-${prefix}-component="${name}"`);
+  rootAttrs.push(`data-${prefix}-part="${root.part}"`);
+  rootAttrs.push(`className={className}`);
+
+  s.push(`    <${el}`);
+  for (const a of rootAttrs) s.push(`      ${a}`);
   s.push(`    >`);
 
-  const childParts = Object.entries(root.parts ?? {});
-  for (const [key, node] of childParts) {
-    const slot = slots.find((x) => camel(x.from) === key);
-    if (slot) {
-      s.push(`      <span data-${prefix}-part="${node.part}">{${slot.name}}</span>`);
-    } else {
-      s.push(`      <span data-${prefix}-part="${node.part}" />`);
-    }
-  }
-  // Slots with no matching anatomy part still have to go somewhere.
-  const orphaned = slots.filter((x) => !childParts.some(([k]) => k === camel(x.from)));
+  if (collection) s.push(`      <${name}Context.Provider value={contextValue}>`);
+
+  const kids = Object.entries(root.parts ?? {});
+  for (const [k, node] of kids) s.push(...renderPart(k, node, ctx, collection ? 1 : 0));
+
+  const orphaned = slots.filter(
+    (x) => !allParts.some((p) => (x.part ? p.key === x.part : p.key === camel(x.from))),
+  );
   if (orphaned.length) {
     assume(
       'slots with no anatomy part',
-      `rendered bare, in declaration order: ${orphaned.map((o) => o.name).join(', ')}`,
-      'The contract declares these slots but its anatomy names no part for them, so there is no described region to put them in and no way to style where they land.',
+      `rendered bare: ${orphaned.map((o) => o.name).join(', ')}`,
+      'The contract declares these slots but names no part for them, so there is no described region to put them in and no way to style where they land.',
     );
     for (const o of orphaned) s.push(`      {${o.name}}`);
   }
   if (takesChildren) s.push(`      {children}`);
+  if (collection) s.push(`      </${name}Context.Provider>`);
   s.push(`    </${el}>`);
   s.push(`  );`);
   s.push(`});`);

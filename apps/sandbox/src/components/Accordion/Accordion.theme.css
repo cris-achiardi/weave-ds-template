@@ -2,9 +2,33 @@
  * Accordion — THE CONSUMER'S FILE. Emitted once, empty, never regenerated.
  */
 
+/*
+ * ============================================================================================
+ * THE FIRST TWO DECLARATIONS ARE STRUCTURE, AND THEY ARE IN THE WRONG FILE.
+ *
+ * `inline-size` is here because of a defect you can only see by using the component: without a
+ * definite width, an accordion RESIZES AS YOU OPEN AND CLOSE IT. Collapsed, it is as wide as its
+ * widest heading; expanded, as wide as its widest panel. Every section shifts under the pointer.
+ *
+ * "Opening a section must not change the component's width" is a promise of exactly the kind a
+ * contract should make — the Tabs contract makes the equivalent promise about height in prose.
+ * There is nowhere to put it. The contract has no `layout` block, so this belongs to whoever
+ * happens to write the theme, and nothing checks that anyone did.
+ *
+ * Note also that the contract lists `display` among this part's PAINT channels. It is not paint;
+ * it is structure. The line between the two is drawn in the docs and not in the schema.
+ * ============================================================================================
+ */
+
+[data-ds-component='Accordion'] {
+  inline-size: 46ch;
+  display: block;
+}
+
+/* ==== end of misplaced structure. Everything below is genuinely paint. ==================== */
+
 [data-ds-component='Accordion'] {
   border: 1px solid #3a3a3f;
   border-radius: 0.5rem;
-  max-inline-size: 44ch;
   overflow: hidden;
 }

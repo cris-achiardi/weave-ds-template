@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://example.invalid/schemas/component-contract-3.json",
+  "$id": "https://example.invalid/schemas/component-contract-4.json",
   "title": "Component contract (framework-agnostic)",
   "description": "Describes ONE component completely enough to build it, in any framework. The reasoning is in contracts/README.md.\n\nThis file lives at contracts/ rather than inside a package on purpose: it belongs to no framework. It says what the component IS — its purpose, its behaviour, the states it must be able to show, the axes it exposes, its anatomy, and which family of token paints each part. It does NOT say how any of that is expressed in React, or in React Native, or in a web component. That is a binding, and bindings live beside the implementation.\n\nBuildable means: someone handed this file, the prop map for their framework, and the code standards should be able to produce the component without asking what it is for.",
   "type": "object",
@@ -153,6 +153,68 @@
       }
     },
 
+    "collection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["items", "identity", "selection"],
+      "description": "This component holds a SELECTION across a set of children — which tab is current, which accordion sections are open, which options are chosen. EXPERIMENTAL: added to find out whether an accordion can be compiled at all; not yet recorded in an ADR.\n\nDeclared here rather than as a `state` because a state is a boolean this component is IN, and a selection is a set of identities this component HOLDS. The children declare the other half with `member`.",
+      "properties": {
+        "items": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Za-z0-9]*$",
+          "description": "The component that may be a member. Must name a real contract."
+        },
+        "identity": {
+          "type": "string",
+          "pattern": "^[a-z][a-zA-Z0-9]*$",
+          "description": "What distinguishes one member from another. A NAME, not a prop: each binding spells it in its own vocabulary."
+        },
+        "selection": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["cardinality", "control"],
+          "properties": {
+            "cardinality": {
+              "enum": ["one", "at-most-one", "many"],
+              "description": "`one` — exactly one is always selected; a tab list can never show nothing. `at-most-one` — zero or one; a single-open accordion may close its last section. `many` — any number. Collapsing the first two into a boolean `multiple` loses a real distinction."
+            },
+            "control": {
+              "enum": ["consumer", "shared", "internal"],
+              "description": "Same three values as a state's `control`, and the same meaning. A binding compiles them the same way."
+            },
+            "initial": {
+              "enum": ["none", "first", "first-enabled"],
+              "description": "What is selected before anyone chooses. Omitted means undecided, not `none`."
+            }
+          }
+        }
+      }
+    },
+
+    "member": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["of", "identity", "reflects"],
+      "description": "This component is a member of an ancestor's `collection`. EXPERIMENTAL, as above.\n\nIt is the other half of `collection`: the ancestor owns the selection, and this says how a member finds out whether it is in it.",
+      "properties": {
+        "of": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Za-z0-9]*$",
+          "description": "The ancestor holding the collection. Must match that contract's `collection.items`."
+        },
+        "identity": {
+          "type": "string",
+          "pattern": "^[a-z][a-zA-Z0-9]*$",
+          "description": "This member's own identity. Must match the ancestor's `collection.identity`."
+        },
+        "reflects": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*$",
+          "description": "Which of THIS component's states is true when it is in the selection. That state must be declared with `control: internal` — the ancestor owns it, so no framework may expose an input for it."
+        }
+      }
+    },
+
     "composition": {
       "type": "object",
       "additionalProperties": false,
@@ -181,6 +243,11 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
+        "part": {
+          "type": "string",
+          "pattern": "^[a-z][a-zA-Z0-9]*$",
+          "description": "Which anatomy part this slot's content fills. EXPERIMENTAL.\n\nWithout it, a slot and a part are two vocabularies for the same place and nothing reconciles them: a slot whose name happens to match a part key worked by luck, and one that did not — a field's `control`, an accordion item's `heading` — rendered outside any described region, in declaration order, which put a form control below its own error message."
+        },
         "accepts": { "type": "array", "items": { "type": "string" } },
         "min": { "type": "integer", "minimum": 0 },
         "max": {
@@ -244,6 +311,41 @@
         "internalOnly": {
           "type": "boolean",
           "description": "Structural, deliberately not exposed to consumers. Recording it says the omission was a decision."
+        },
+        "role": {
+          "type": "string",
+          "description": "The semantic role of THIS part, where it is not the root's. EXPERIMENTAL.\n\nTop-level `semantics.role` is the root's role, which is wrong whenever the meaning belongs to an inner region: an accordion item's `button` belongs to its trigger, and putting it on the root makes the whole section — heading and panel together — announce as one control."
+        },
+        "activates": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "What happens when a user activates this part — clicks it, or presses Enter or Space on it. EXPERIMENTAL.\n\nDeliberately NOT a general effect list. It takes one named thing, because the moment it takes an expression this schema has become a programming language.",
+          "properties": {
+            "toggles": {
+              "type": "string",
+              "description": "A state name declared in `states`, or the literal `member` meaning this component's membership of its ancestor's collection."
+            }
+          }
+        },
+        "controls": {
+          "type": "string",
+          "pattern": "^[a-z][a-zA-Z0-9]*$",
+          "description": "Names another part whose presence or visibility this part governs. Compiles to `aria-controls` on the web. EXPERIMENTAL."
+        },
+        "namedBy": {
+          "type": "string",
+          "pattern": "^[a-z][a-zA-Z0-9]*$",
+          "description": "Names another part that supplies this one's accessible name. Compiles to `aria-labelledby` on the web, `accessibilityLabelledBy` elsewhere. EXPERIMENTAL.\n\nThis and `describedBy` are the fields whose absence made the generated Field render four correct regions that knew nothing about each other."
+        },
+        "describedBy": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]*$" },
+          "description": "Names other parts that supply this one's supplementary description, IN ANNOUNCEMENT ORDER. An array because a field's help text and its error are both descriptions and their order is not incidental. EXPERIMENTAL."
+        },
+        "visibleWhen": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*$",
+          "description": "Names a state; this part is hidden whenever that state is false. EXPERIMENTAL.\n\nHidden, not removed: the part stays in the document so find-in-page can reach it and so anything measured inside it survives. A component that must unmount its hidden content is a different decision and has no home here yet."
         },
         "paints": { "$ref": "#/$defs/paints" },
         "states": {

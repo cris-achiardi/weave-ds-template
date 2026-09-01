@@ -20,6 +20,10 @@
   /* no declared layout for this part */
 }
 
+[data-ds-component='Field'] [data-ds-part='control'] {
+  /* no declared layout for this part */
+}
+
 [data-ds-component='Field'] [data-ds-part='description'] {
   /* no declared layout for this part */
 }
