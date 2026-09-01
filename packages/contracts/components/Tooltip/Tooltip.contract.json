@@ -1,0 +1,121 @@
+{
+  "$schema": "../../schema/component.schema.json",
+  "component": "Tooltip",
+
+  "status": {
+    "level": "experimental",
+    "since": "2026-09-01",
+    "note": "Chosen to stress positioning. Note the authority order breaks down here: the W3C ARIA APG's tooltip pattern is explicitly 'work in progress; it does not yet have task force consensus', and does not specify what SHOWS a tooltip — only that Escape dismisses one. So the normative layer is incomplete and the naming layer, Base UI, is doing more of the work than the authority order intends."
+  },
+
+  "intent": {
+    "purpose": "Shows a short label for a control whose own presentation cannot carry it — an icon button, a truncated name — on hover and on focus, without taking focus itself.",
+    "behaviour": [
+      "Opens when the pointer rests on its trigger, after a short delay, and when the trigger receives focus, immediately.",
+      "Closes on Escape, when the pointer leaves both the trigger and the tooltip, and when the trigger loses focus.",
+      "Never takes focus. Focus stays on the trigger the whole time it is open, which is why it cannot hold anything a user needs to reach.",
+      "Positions itself against its trigger on a preferred side, and moves to another side when there is not room.",
+      "Describes its trigger rather than naming it: a control with a tooltip and no name of its own is still unnamed."
+    ],
+    "notFor": [
+      "Anything interactive. A tooltip cannot be reached by keyboard or by a screen-reader's virtual cursor, so a link or a button inside one is unreachable. The APG is explicit: use a non-modal dialog instead.",
+      "Content a user needs. It is supplementary by construction — it disappears on the next pointer move, and touch users may never see it at all.",
+      "Naming a control. A tooltip is `aria-describedby`, not a label; an icon button still needs its own accessible name whether or not it has a tooltip.",
+      "Error messages or validation feedback. Those must persist and be announced; see Field."
+    ]
+  },
+
+  "axes": {
+    "placement": {
+      "values": [
+        "top",
+        "top-start",
+        "top-end",
+        "bottom",
+        "bottom-start",
+        "bottom-end",
+        "left",
+        "right"
+      ],
+      "default": "top",
+      "description": "The PREFERRED side. A tooltip may be moved elsewhere when there is not room, so this is a request rather than a guarantee — a distinction the axis mechanism cannot express."
+    }
+  },
+
+  "states": {
+    "open": {
+      "kind": "authored",
+      "control": "shared",
+      "description": "The tooltip is showing. A consumer may control it; hover and focus on the trigger also change it.",
+      "visual": "The bubble appears beside the trigger."
+    },
+    "disabled": {
+      "kind": "intrinsic",
+      "control": "consumer",
+      "description": "The tooltip never opens. The trigger still works.",
+      "visual": "Nothing appears on hover or focus."
+    }
+  },
+
+  "semantics": {
+    "focusable": false
+  },
+
+  "a11y": {
+    "focusVisible": false,
+    "contrast": "AA",
+    "keyboard": "Escape dismisses. Focus never enters the tooltip and stays on the trigger throughout.",
+    "notes": [
+      "The tooltip DESCRIBES its trigger; it does not name it. A consumer who gives an icon button a tooltip and no accessible name has an unnamed button, and nothing here detects that.",
+      "A pointer user on a touch device may never see this at all — there is no hover. Anything that only appears in a tooltip is invisible on a phone.",
+      "The APG's tooltip pattern is a work in progress without task force consensus, so the accessibility claims here rest on weaker ground than for any other component in this set. In particular the APG does not say what SHOWS a tooltip.",
+      "The delay before opening is deliberately not zero: a tooltip that appears instantly on every pointer crossing is noise. The exact duration is not stated in the contract because there is nowhere to state it."
+    ]
+  },
+
+  "composition": {
+    "slots": {
+      "trigger": {
+        "part": "trigger",
+        "required": true,
+        "max": 1,
+        "description": "The control the tooltip describes. Fills the `trigger` part."
+      },
+      "content": {
+        "part": "popup",
+        "accepts": ["text"],
+        "required": true,
+        "max": 1,
+        "description": "The label itself. Text only — anything interactive would be unreachable. Fills the `popup` part."
+      }
+    }
+  },
+
+  "anatomy": {
+    "root": {
+      "part": "root",
+      "description": "The wrapper holding the trigger and the bubble, so the bubble has something to position against.",
+      "parts": {
+        "trigger": {
+          "part": "trigger",
+          "description": "The control being described. Its hover and focus are what open the tooltip.",
+          "describedBy": ["popup"]
+        },
+        "popup": {
+          "part": "popup",
+          "description": "The bubble. Positioned against the trigger, and out of flow so its arrival moves nothing.",
+          "role": "tooltip",
+          "visibleWhen": "open",
+          "paints": {
+            "background": null,
+            "color": null,
+            "border-radius": null,
+            "padding": null,
+            "font-size": null,
+            "box-shadow": null
+          }
+        }
+      }
+    }
+  }
+}

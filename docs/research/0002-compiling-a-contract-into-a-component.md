@@ -257,6 +257,56 @@ Worth noting alongside: the Accordion contract lists `display` and `gap` among i
 channels. Neither is paint. The paint/layout line is drawn in the documentation and not in the
 schema, so a contract author can put structure in `paints` and every gate stays green.
 
+### A third pass: RadioGroup and Tooltip, chosen to break things
+
+| Contract                   | Verdict     | What broke                                                |
+| -------------------------- | ----------- | --------------------------------------------------------- |
+| `RadioGroup` / `RadioItem` | **partial** | the entire keyboard model                                 |
+| `Tooltip`                  | **shell**   | what opens it, when, what dismisses it, and where it goes |
+
+**`cardinality: one` worked on first use.** Clicking the chosen radio does nothing, where clicking
+an open accordion section closes it — the same `activates: { toggles: "member" }` declaration
+produced both behaviours, because the emitter reads cardinality from the ancestor. The field name is
+now wrong for radios (nothing toggles), which is cosmetic and worth fixing.
+
+**Three emitter bugs, each found by a different means:**
+
+- **A radio with no `aria-checked`.** The state a member reflects is `control: internal`, so it
+  produces no prop — and the state-to-attribute loop walked props. The radio carried `role="radio"`
+  and no checked state at all. Found by reading the output.
+- **`aria-expanded` on a tooltip wrapper.** The state-to-attribute table is keyed by state NAME, and
+  `open` means `aria-expanded` on an accordion trigger and nothing on a tooltip root. The right
+  attribute depends on the **role**, which the state name does not carry. Now gated on the element
+  having a role, which is a heuristic, not a fix.
+- **`semantics.focusable` was declared by two contracts and read by nothing.** Radio items were
+  unreachable by keyboard entirely.
+
+### The keyboard model is the sharpest gap yet
+
+`RadioGroup`'s APG pattern is normative and complete, and requires: arrow keys that move focus **and
+change the selection**; wrapping at both ends; a roving tabindex with exactly one option in the Tab
+sequence, entering on the chosen one; disabled options skipped.
+
+`intent.behaviour` states every one of those in prose. The contract can express none of them. The
+generated group therefore puts every option in the Tab order and ignores the arrow keys — it
+contradicts its own contract, in the one component where the normative source left no room for
+interpretation.
+
+The accordion did not expose this, because the APG had _removed_ roving focus from that pattern and
+plain buttons were enough. That was luck.
+
+### The authority order broke on Tooltip
+
+The APG's tooltip pattern is explicitly _"work in progress; it does not yet have task force
+consensus"_, and **does not specify what shows a tooltip** — only that Escape dismisses one. The
+normative layer, which the whole sourcing order rests on, has a hole exactly where the hard part is.
+
+Base UI fills it with eight parts and roughly twenty positioning props — `Provider`, `Root`,
+`Trigger`, `Portal`, `Positioner`, `Popup`, `Arrow`, `Viewport`; `side`, `sideOffset`, `align`,
+`alignOffset`, `collisionAvoidance`, `collisionBoundary`, `collisionPadding`, `sticky`,
+`positionMethod`, plus CSS variables for anchor and available size. The contract expressed a
+`placement` axis, and nothing reads it.
+
 ## What it appears to mean (inferred)
 
 Every item below is a reading, not a measurement.
@@ -317,6 +367,25 @@ shape ADR 0004 argued for on different evidence.
 That is a rule about permissible layouts rather than a layout. If that reading is right, a `layout`
 block that only lists CSS-shaped declarations will not be able to express the thing that actually
 broke.
+
+**The gaps now sort into three kinds, and they are not equally hard.** One is solved: a parent
+holding a selection across children, closed by `collection` and `member`. One is named but unbuilt:
+the behaviour vocabulary, of which `RadioGroup`'s keyboard model is the clearest instance. One is not
+even named: positioning, where `Tooltip` needs an anchor, a side, collision handling and a layer, and
+`layout` does not exist.
+
+**Positioning may not belong in this schema at all.** Base UI spends eight parts and twenty props on
+it, most of which describe _how to compute a position_ rather than what the component means. A
+contract that absorbed that would stop being a specification and become a layout engine's
+configuration file. The alternative — declaring only the intent, `placement: top`, and leaving the
+computation to each backend — is what the current contract does, and it produced a tooltip that
+cannot flip and is clipped by any scrolling ancestor. Neither answer is obviously right.
+
+**`aria-expanded` on the tooltip suggests the state-to-DOM mapping is keyed on the wrong thing.**
+Keying by state name cannot work, because the same name means different things under different
+roles. A table keyed by `(role, state)` would be correct and is a much larger object — and it is
+knowledge that belongs to the web platform rather than to React, which is an argument for the third
+artifact this report has already proposed.
 
 **Regeneration safety is currently a convention, not a mechanism.** The emitter skips
 `theme.css` when it exists, which is the right behaviour and is enforced by one `existsSync`. Nothing
@@ -387,6 +456,23 @@ to hold it, constraint-shaped or otherwise.
 intent in the sense `paints` documents; both are structure. Nothing distinguishes them, so the
 paint/theme split a consumer relies on is enforced only by the care of whoever wrote the contract.
 
+**11. A generated RadioGroup contradicts its own contract's stated behaviour.**
+Arrow keys do nothing; every option is in the Tab order. `intent.behaviour` describes the opposite,
+in prose, and the APG requires it normatively. This is the first component where the contract's
+prose and its generated output actively disagree.
+
+**12. The state-to-DOM mapping is keyed by state name and cannot be.**
+`open` is `aria-expanded` on an accordion trigger and nothing at all on a tooltip wrapper. The
+emitter now gates ARIA attributes on the element having a role, which suppresses the wrong output
+without producing the right one.
+
+**13. A member's reflected state did not reach the DOM at all.**
+Because it is `internal` it produces no prop, and the attribute loop walked props. Every radio
+rendered `role="radio"` with no `aria-checked`.
+
+**14. `semantics.focusable` was declared and read by nothing.**
+Two contracts set it. Radio items were unreachable by keyboard until the emitter started reading it.
+
 **7. `Field` compiles to something that looks right and does nothing.**
 Every part renders; no relationship is wired. The control is named by its placeholder, the error is
 not announced, `aria-invalid` is absent. The relationships are stated only as prose in
@@ -435,23 +521,34 @@ consequently unusable in a plain HTML form, which a consumer will discover at in
    parsed rows. The first is the smallest and makes the emitter depend on the repo's formatter
    config, which a consumer running it in their own repo will not share.
 
-5. **Where do relationships between parts live?** `Field` needs _this control is named by that
+5. **What is the shape of the navigation primitive?** `RadioGroup` needs roughly: move linearly on
+   the arrow keys, wrap, skip disabled, select as you move, keep one Tab stop on the selected item.
+   Those look like five named parameters on the `collection.selection` block rather than a state
+   machine — but tabs, listboxes, menus and toolbars each vary one or two of them, and it is not yet
+   clear whether the same five cover all of them or whether each pattern adds another.
+
+6. **Does positioning belong in a contract at all?** Declaring intent (`placement: top`) leaves a
+   tooltip that cannot flip and is clipped by any scrolling ancestor. Declaring the mechanism turns
+   the contract into a layout engine's configuration. A third option — naming a positioning
+   _strategy_ the way behaviour names a primitive — has not been tried.
+
+7. **Where do relationships between parts live?** `Field` needs _this control is named by that
    label, described by that description, and invalidated by that error_. It is not styling, not a
    state and not a slot. An `associations` block on the contract is one answer; making it the
    behaviour vocabulary's job is another, since ARIA relationships are arguably interaction wiring.
 
-6. **Does a role belong to a part rather than a component?** And is that a contract fact or a
+8. **Does a role belong to a part rather than a component?** And is that a contract fact or a
    binding one? The evidence says contract — which region carries the meaning is not a framework
    question — but that makes `semantics` a per-part concern rather than a top-level one.
 
-7. **Should a slot name a part?** Something like `"control": { "part": "control" }`, with the schema
+9. **Should a slot name a part?** Something like `"control": { "part": "control" }`, with the schema
    requiring the named part to exist. That reconciles the two vocabularies and gives orphaned slots
    nowhere to hide.
 
-8. **Is `internal` too coarse?** It behaved correctly here, where both `internal` states are
-   platform-observed. It has not been tested against an ancestor-owned state, which is the case ADR
-   0004 flagged as the reason three values might be too few.
+10. **Is `internal` too coarse?** It behaved correctly here, where both `internal` states are
+    platform-observed. It has not been tested against an ancestor-owned state, which is the case ADR
+    0004 flagged as the reason three values might be too few.
 
-9. **What does form participation look like, given the button-not-checkbox choice?** The binding chose
-   a button for styleability and lost form submission. A hidden input alongside is the usual answer
-   and is a decision no contract currently records.
+11. **What does form participation look like, given the button-not-checkbox choice?** The binding chose
+    a button for styleability and lost form submission. A hidden input alongside is the usual answer
+    and is a decision no contract currently records.

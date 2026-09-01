@@ -46,6 +46,7 @@ export const AccordionItem = forwardRef<HTMLDivElement, AccordionItemProps>(func
       {...rest}
       ref={ref}
       aria-disabled={disabled || undefined}
+      aria-expanded={selected || undefined}
       data-ds-component="AccordionItem"
       data-ds-part="root"
       className={className}

@@ -1,0 +1,14 @@
+{
+  "$schema": "./binding.schema.json",
+  "component": "RadioGroup",
+  "contract": "../../contracts/components/RadioGroup/RadioGroup.contract.json",
+  "framework": "react",
+  "element": "div",
+  "refTarget": "root",
+  "classNamePassthrough": "root",
+  "notes": [
+    "Renders a plain `<div>` carrying `role=\"radiogroup\"` rather than a `<fieldset>`. A fieldset brings a legend, and the group's name comes from the consumer here.",
+    "The selection is shared with items through React context. That is a React mechanism, not a contract fact.",
+    "The arrow-key model the contract describes in `intent.behaviour` is NOT generated: nothing in the contract expresses linear navigation, wrapping, roving tabindex, or selection following focus. The emitted group is therefore keyboard-incomplete against its own stated behaviour, which is recorded rather than hidden."
+  ]
+}

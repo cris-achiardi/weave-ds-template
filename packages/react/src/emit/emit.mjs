@@ -32,7 +32,7 @@ const TOGGLE_ROLES = new Set(['switch', 'checkbox']);
 const NATIVE_ATTR = { disabled: 'disabled' };
 // ARIA attributes whose FALSE value is meaningful and must be rendered rather than omitted.
 // A switch that drops aria-checked when off is announced as having no on/off state at all.
-const ARIA_EXPLICIT_FALSE = new Set(['checked']);
+const ARIA_EXPLICIT_FALSE = new Set(['checked', 'selected']);
 
 const ARIA_ATTR = {
   checked: 'aria-checked',
@@ -312,8 +312,8 @@ function emitTsx(name, contract, binding, prefix) {
 
   assume(
     'how a state reaches the DOM',
-    'ARIA attribute where one is conventional, native attribute for disabled, otherwise data-<prefix>-state',
-    'The contract declares that a state exists and who may set it, never how it is exposed. Two backends will diverge here.',
+    'ARIA attribute where one is conventional AND the element has a role, native attribute for disabled, otherwise data-<prefix>-state',
+    'The contract declares that a state exists and who may set it, never how it is exposed. Worse, the right answer depends on the ROLE, not the state name: `open` is aria-expanded on an accordion trigger and nothing at all on a tooltip wrapper. The emitter keeps a state-name table and gates it on the element having a role, which is a heuristic. Two backends will diverge here.',
   );
   if (shared.length && !rootToggles && !activator) {
     assume(
@@ -331,11 +331,10 @@ function emitTsx(name, contract, binding, prefix) {
   }
 
   const idFor = (key) => (key === 'root' ? 'baseId' : '`${baseId}-' + key + '`');
-  const needsIds =
-    Boolean(collection) ||
-    allParts.some(
-      (p) => p.node.role || p.node.controls || p.node.namedBy || (p.node.describedBy ?? []).length,
-    );
+  const referencesParts = allParts.some(
+    (p) => p.node.controls || p.node.namedBy || (p.node.describedBy ?? []).length,
+  );
+  const needsIds = Boolean(collection) || referencesParts;
 
   const ctx = {
     prefix,
@@ -438,7 +437,7 @@ function emitTsx(name, contract, binding, prefix) {
     s.push(
       `  const selected = ${memberMany ? `ctx.selection.includes(${member.identity})` : `ctx.selection === ${member.identity}`};`,
     );
-    s.push(`  const baseId = \`\${ctx.baseId}-\${${member.identity}}\`;`);
+    if (referencesParts) s.push(`  const baseId = \`\${ctx.baseId}-\${${member.identity}}\`;`);
     s.push(``);
   } else if (needsIds) {
     s.push(`  const baseId = useId();`);
@@ -533,11 +532,35 @@ function emitTsx(name, contract, binding, prefix) {
     const isConsumer = consumerProps.some((p) => p.from === st);
     if (!isShared && !isConsumer) continue;
     const expr = isShared ? `${camel(st)}Value` : camel(st);
+    // An ARIA state attribute only means something on an element that HAS a role. `open` maps to
+    // aria-expanded on an accordion trigger and to nothing at all on a tooltip wrapper: the right
+    // attribute depends on the role, and the contract's state name does not carry one.
+    const roleBearing = Boolean(rootRole) || el === 'button' || el === 'input';
+    const ariaOk = ARIA_ATTR[st] && (roleBearing || st === 'disabled');
     if (NATIVE_ATTR[st] && el === 'button') rootAttrs.push(`${NATIVE_ATTR[st]}={${expr}}`);
-    else if (ARIA_ATTR[st] && ARIA_EXPLICIT_FALSE.has(st))
-      rootAttrs.push(`${ARIA_ATTR[st]}={${expr}}`);
-    else if (ARIA_ATTR[st]) rootAttrs.push(`${ARIA_ATTR[st]}={${expr} || undefined}`);
+    else if (ariaOk && ARIA_EXPLICIT_FALSE.has(st)) rootAttrs.push(`${ARIA_ATTR[st]}={${expr}}`);
+    else if (ariaOk) rootAttrs.push(`${ARIA_ATTR[st]}={${expr} || undefined}`);
     else rootAttrs.push(`data-${prefix}-state-${st}={${expr} || undefined}`);
+  }
+  // The state a member reflects is `internal`: no prop, so the loop above never sees it. It
+  // still has to reach the DOM — a radio with no aria-checked is not a radio.
+  if (member && ARIA_ATTR[member.reflects]) {
+    const attr = ARIA_ATTR[member.reflects];
+    rootAttrs.push(
+      ARIA_EXPLICIT_FALSE.has(member.reflects)
+        ? `${attr}={selected}`
+        : `${attr}={selected || undefined}`,
+    );
+  }
+  // Something with a role that takes focus needs to be reachable. `semantics.focusable` says so
+  // and nothing was reading it.
+  if (contract.semantics?.focusable && el !== 'button' && (root.role || contract.semantics?.role)) {
+    rootAttrs.push(`tabIndex={${disabledExpr ? `${disabledExpr} ? -1 : 0` : '0'}}`);
+    assume(
+      'focus order',
+      'every focusable member is given tabIndex 0',
+      'The contract declares `semantics.focusable` and nothing more. A radio group requires a ROVING tabindex — exactly one option in the Tab sequence, the chosen one — and nothing in the contract can express that, so the emitted group puts every option in the Tab order, which is wrong for the pattern its own `intent.behaviour` describes.',
+    );
   }
   if (rootToggles) rootAttrs.push(`onClick={activate}`);
   rootAttrs.push(`data-${prefix}-component="${name}"`);
