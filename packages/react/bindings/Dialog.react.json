@@ -9,6 +9,7 @@
   "notes": [
     "Renders a plain `<div>` wrapper holding the scrim and the panel; the `dialog` role sits on the panel, not the root, which is why the role is declared on the anatomy part rather than in `semantics`.",
     "NOT rendered with the native `<dialog>` element and `showModal()`, which would supply focus containment, background inertness and Escape for free. The native element cannot be portalled into an arbitrary container and brings a top-layer stacking model the unstyled approach cannot reason about — but the trade is severe and worth naming: every one of the three behaviours the native element gives away has to be reimplemented, and none of them is generated here.",
-    "No focus trap, no focus return, no Escape handler, no `inert` on the background. The contract states all four in `intent.behaviour` and `a11y.notes`; none is expressible. The emitted dialog is a styled box that appears and disappears."
+    "No focus trap, no focus return, no Escape handler, no `inert` on the background. The contract states all four in `intent.behaviour` and `a11y.notes`; none is expressible. The emitted dialog is a styled box that appears and disappears.",
+    "Its root declares `visibleWhen: \"open\"`, which compiles to the `hidden` attribute. That alone was NOT enough to hide it: `[hidden] { display: none }` is a browser-stylesheet rule and the theme's `display: flex` on the same element outranks it, so the dialog rendered permanently open with its buttons working the whole time. `Dialog.structure.css` — which is emitter-owned and regenerated — now carries a scoped `[hidden] { display: none !important }` for this reason."
   ]
 }

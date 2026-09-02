@@ -16,6 +16,12 @@
   /* the scoping handle. Everything else is yours, for now. */
 }
 
+/* Hiding is a contract claim, not a style. See the note in the emitter. */
+[data-ds-component='Checkbox'][hidden],
+[data-ds-component='Checkbox'] [hidden] {
+  display: none !important;
+}
+
 [data-ds-component='Checkbox'] [data-ds-part='box'] {
   /* no declared layout for this part */
 }

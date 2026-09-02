@@ -204,7 +204,7 @@ export function App() {
       <Specimen
         name="Dialog"
         verdict="shell"
-        note="A styled box that appears and disappears. Focus does not move into it, Tab leaves it, the page behind stays reachable, and Escape does nothing — all four are stated in the contract and none is expressible. Note what was traded away: a native <dialog> with showModal() supplies every one of them for free, and was rejected because it cannot be portalled and brings a stacking model the unstyled approach cannot reason about."
+        note="A styled box that appears and disappears. It opens and closes from its own buttons now — until the emitter started writing a scoped [hidden] rule into structure.css, the theme&rsquo;s display: flex outranked the browser&rsquo;s [hidden] { display: none } and it was stuck open with its buttons firing the whole time. Still missing: focus does not move into it, Tab leaves it, the page behind stays reachable, and Escape does nothing — all four are stated in the contract and none is expressible. A native <dialog> opened with showModal() supplies every one of them for free; the binding&rsquo;s stated reason for rejecting it — that it cannot be portalled — is measurably wrong, and that is the next thing to spike."
       >
         <Button hierarchy="primary" onClick={() => setDialogOpen(true)}>
           Open the dialog

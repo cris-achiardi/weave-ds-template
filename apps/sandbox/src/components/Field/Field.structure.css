@@ -16,6 +16,12 @@
   /* the scoping handle. Everything else is yours, for now. */
 }
 
+/* Hiding is a contract claim, not a style. See the note in the emitter. */
+[data-ds-component='Field'][hidden],
+[data-ds-component='Field'] [hidden] {
+  display: none !important;
+}
+
 [data-ds-component='Field'] [data-ds-part='label'] {
   /* no declared layout for this part */
 }

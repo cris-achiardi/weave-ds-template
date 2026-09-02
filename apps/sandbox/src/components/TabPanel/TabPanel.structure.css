@@ -15,3 +15,9 @@
 [data-ds-component='TabPanel'] {
   /* the scoping handle. Everything else is yours, for now. */
 }
+
+/* Hiding is a contract claim, not a style. See the note in the emitter. */
+[data-ds-component='TabPanel'][hidden],
+[data-ds-component='TabPanel'] [hidden] {
+  display: none !important;
+}
