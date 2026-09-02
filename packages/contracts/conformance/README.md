@@ -65,6 +65,13 @@ negative requirement in either pattern is expressed: a horizontal tab list must 
 | File                     | Primitive                                        | Patterns transcribed |
 | ------------------------ | ------------------------------------------------ | -------------------- |
 | `linear-navigation.json` | moving focus between the members of a collection | radio group, tabs    |
+| `range-stepping.json`    | moving a number within a bounded, stepped range  | slider               |
 
-Nothing consumes these yet. The React adapter lands with the primitive; the file is the standing
-definition either way.
+Both are consumed by adapters in `packages/react/src/behavior/`. 24 of the navigation cases execute
+there and 5 are deferred to a browser, each naming why; all 29 range cases execute, because range
+stepping is arithmetic and a case needing a rendered DOM would mean the arithmetic had leaked.
+
+There is a sibling of this directory for the WEB PLATFORM mapping — which ARIA attribute a state
+reaches the DOM through — in [`@ds/platform-web/conformance`](../../platform-web/conformance/). It
+is separate because these cases are agnostic and those are not: `ArrowRight` means something on any
+platform, and `aria-checked` does not.

@@ -14,15 +14,17 @@ token system into it. See [`components/README.md`](./components/README.md) §3.
 
 ## What is here
 
-| Path                           | Holds                                                                        | State     |
-| ------------------------------ | ---------------------------------------------------------------------------- | --------- |
-| [`schema/`](./schema/)         | the schemas a contract is validated against                                  | **built** |
-| [`components/`](./components/) | one directory per contract, each with its own changelog                      | **empty** |
-| `prop-canon.json`              | the agnostic vocabulary: axis names, canonical values, anti-synonym glossary | **built** |
+| Path                             | Holds                                                                        | State     |
+| -------------------------------- | ---------------------------------------------------------------------------- | --------- |
+| [`schema/`](./schema/)           | the schemas a contract is validated against                                  | **built** |
+| [`components/`](./components/)   | one directory per contract, each with its own changelog                      | **built** |
+| [`conformance/`](./conformance/) | framework-neutral behaviour cases, as data                                   | **built** |
+| `prop-canon.json`                | the agnostic vocabulary: axis names, canonical values, anti-synonym glossary | **built** |
 
-`components/` ships empty, and that is the design rather than an unfinished state — the same way
-`packages/react` ships with no components. A contract is written against evidence and an accepted
-decision, never scaffolded in advance.
+`components/` shipped empty by design, the same way `packages/react` ships with no components: a
+contract is written against evidence and an accepted decision, never scaffolded in advance. It now
+holds fifteen, written on `spike/compile-switch` to find out what a contract must be able to say
+before it can be compiled at all.
 
 ## Read this when
 

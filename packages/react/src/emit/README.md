@@ -87,6 +87,26 @@ attribute forces JavaScript to track the pointer to do something CSS already doe
 Where an ARIA attribute already carries the state — `aria-selected`, `aria-expanded` — style against
 that attribute rather than emitting a second copy. Two attributes for one fact can disagree.
 
+**That rule is now executable, and it does not live here.** It is data in
+[`@ds/platform-web`](../../../platform-web/README.md) — which ARIA attribute a state maps to, which
+roles accept it, whether its `false` is meaningful, which elements have a native `disabled`, and the
+pseudo-class for each state the browser owns. The emitter reads it; a Vue or Angular emitter would
+read the same file. Twenty conformance cases pin the mapping down, every one of them derived from a
+defect this repository actually shipped.
+
+What deliberately did NOT move, so the boundary is a stated line rather than an accident:
+
+| Stays here                                                                                                   | Because                                                                      |
+| ------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------- |
+| `ATTR_TYPE` / `attrTypeFor`                                                                                  | `ButtonHTMLAttributes` is a React type name                                  |
+| `tabIndex`, `readOnly`, `className`                                                                          | React's spellings of DOM names; they belong with `prop-bindings.json`        |
+| The `<dialog>` effect topology                                                                               | two effects, a composed ref and a MutationObserver are a SHAPE, not a lookup |
+| Three inline branches in `renderPart` (`type="button"`, `disabled` from role, the `aria-expanded` inference) | they consult no table today and unifying them is a behaviour change          |
+
+The last row is a known weakness rather than a design: the child-part path decides from a part's
+ROLE where the root path decides from the element, so a `role="button"` div can be handed a native
+`disabled` it does not support. Recorded in `docs/cris-logs/BACKLOG.md`.
+
 ### 3. Variant axes are real axes, with declared defaults
 
 If the emitter uses `cva`:

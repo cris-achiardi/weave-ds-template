@@ -137,6 +137,7 @@ export const STATUS: ComponentStatus[] = [
       'Slots filled by another contract’s output, and ARIA wiring that now resolves — the control is named by its label and described by its help text and error, in order.',
     remaining: [
       '`invalid`, `touched` and `dirty` are shared states with no declared cause. They work controlled; uncontrolled they cannot move.',
+      '`focused`, `valid` and `filled` are declared `control: internal` and reach the DOM through NO channel — no attribute, no pseudo-class. The theme has a rule for `focused` that can never match, because nothing ever emits the attribute it selects.',
     ],
   },
   {
@@ -168,7 +169,7 @@ export const STATUS: ComponentStatus[] = [
 export const CROSS_CUTTING = [
   'No component emits its own layout. `structure.css` carries only a scoping handle and the hiding rule, because the contract has no way to say where a part sits — so every component’s real layout lives in the consumer’s theme file, which is the wrong place for it.',
   'No generated control takes part in a form. `name`, `value` and `required` are not states, not behaviour and not styling, and no contract can currently carry them.',
-  'The emitter holds eight lookup tables of platform knowledge — which ARIA attribute a state maps to, which elements have a native `disabled`, and so on. None of them are React-specific, and a second backend needs every one.',
+  'The web-platform knowledge the emitter used to hold — which ARIA attribute a state maps to, which roles accept it, which elements have a native `disabled` — now lives in `@ds/platform-web` as data, with twenty conformance cases. Thirteen tables were counted; eleven were not React and moved. A second WEB backend reads them; a Flutter or React Native backend needs its own profile and none of this one.',
 ];
 
 export const COUNTS = STATUS.reduce((acc, s) => ({ ...acc, [s.verdict]: acc[s.verdict] + 1 }), {

@@ -3,7 +3,8 @@
 - **Status:** Draft
 - **Date:** 2026-09-01
 - **Revised:** 2026-09-02 — returned to Draft. The split is real on disk; what it EXISTS to prove
-  is not proven, and cannot be by one backend. See "Why this is still Draft".
+  is not proven, and cannot be by one backend. A third package category was then found and added.
+  See "Why this is still Draft".
 - **Deciders:** cris
 - **Tags:** packaging, governance, components
 - **Related:** [ADR 0001 — Every layer is self-describing, and context is pulled rather than pushed](./0001-every-layer-is-self-describing.md)
@@ -96,8 +97,34 @@ that emits JavaScript objects or platform declarations instead of CSS. That is n
 bolted on afterwards — it is the reason ADR 0003 leaves a paint's source unbound, and the reason a
 token pipeline built on Style Dictionary sits in this repo rather than a hardcoded set of variables.
 
-This record moves to Accepted when a second backend has been built and the contracts package did not
-have to change to accommodate it.
+### A third category, found by looking
+
+This decision names two kinds of thing: agnostic contracts, and framework-specific backends. **There
+is a third, and it was hiding inside the React emitter.**
+
+A survey found 13 lookup tables there, of which exactly 2 were React — the ones mapping an element
+to its React typings. The other eleven were WEB PLATFORM knowledge: which ARIA attribute a state maps
+to, which roles accept it, which elements have a native `disabled`, which are focusable. Every web
+backend needs all eleven; no Flutter or React Native backend needs any of them.
+
+That is neither agnostic nor framework-specific, so this record's two boxes had nowhere to put it and
+it ended up in a React file by default. It now lives in `@ds/platform-web` (2026-09-02), and the
+decision above is amended by extension rather than contradiction:
+
+- Decision 3 still holds unchanged. The web profile could not enter `@ds/contracts` precisely
+  because it is element names and ARIA attributes, and would fail the React Native test on every
+  line. That test did its job.
+- Decision 5 — _adding a framework must not require a change inside `@ds/contracts`_ — now has a
+  sibling: **adding a web framework must not require a change inside `@ds/platform-web` either.** A
+  change that can only be made by editing the profile to suit one framework is the same evidence of
+  a breached split, and the same fix applies: move the fact out.
+
+**This is evidence for the Draft status rather than against it.** The category was not predicted; it
+was found by asking what a second backend would actually need, which is the same question this record
+cannot yet answer. A third missing category may be found the same way.
+
+This record moves to Accepted when a second backend has been built and neither the contracts package
+nor the web profile had to change to accommodate it.
 
 ## Contract
 
@@ -112,6 +139,8 @@ have to change to accommodate it.
 | Where React's idiom differs from the canon     | `packages/react/prop-bindings.json`                                                |
 | Enforcement                                    | `packages/react/scripts/verify-contract.mjs` (`pnpm verify:contract`, gated in CI) |
 | Pointer integrity                              | `scripts/verify-docs.mjs` (`pnpm verify:docs`, gated in CI)                        |
+| The web platform layer, and its boundary       | `packages/platform-web/README.md`                                                  |
+| What a web backend must satisfy                | `packages/platform-web/conformance/aria-mapping.json`                              |
 
 ## Consequences
 
