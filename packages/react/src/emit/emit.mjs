@@ -49,6 +49,44 @@ const ARIA_ATTR = {
   selected: 'aria-selected',
   disabled: 'aria-disabled',
 };
+// ARIA states are not global. `aria-selected` is defined for a tab and meaningless on a tabpanel;
+// putting it there is invalid markup that no typechecker and no linter in this repo would catch.
+// Only the states this emitter actually routes need an entry — an attribute absent from this table
+// is treated as unrestricted, which is true of `aria-disabled` and `aria-invalid`.
+const ARIA_ROLE_SUPPORT = {
+  'aria-selected': new Set([
+    'tab',
+    'option',
+    'row',
+    'gridcell',
+    'columnheader',
+    'rowheader',
+    'treeitem',
+  ]),
+  'aria-checked': new Set([
+    'checkbox',
+    'radio',
+    'switch',
+    'menuitemcheckbox',
+    'menuitemradio',
+    'option',
+    'treeitem',
+  ]),
+  'aria-expanded': new Set([
+    'button',
+    'combobox',
+    'link',
+    'treeitem',
+    'row',
+    'rowheader',
+    'columnheader',
+    'gridcell',
+    'menuitem',
+    'tab',
+  ]),
+};
+const ariaFits = (attr, role) => !ARIA_ROLE_SUPPORT[attr] || ARIA_ROLE_SUPPORT[attr].has(role);
+
 const NATIVE_PSEUDO = {
   hover: ':hover',
   'focus-visible': ':focus-visible',
@@ -69,6 +107,13 @@ const EMITTER_ASSUMPTIONS = [];
 const assume = (topic, decision, why) => EMITTER_ASSUMPTIONS.push({ topic, decision, why });
 
 const readJson = (p) => JSON.parse(readFileSync(p, 'utf8'));
+// Which component names a collection admits as members. `collection.items` is a string when there
+// is one kind and a list when there are several; every reader has to normalise, so it happens once.
+const admittedBy = (ancestor) => {
+  const declared = readJson(join(CONTRACTS, 'components', ancestor, `${ancestor}.contract.json`))
+    .collection?.items;
+  return Array.isArray(declared) ? declared : declared ? [declared] : [];
+};
 const camel = (s) => s.replace(/-([a-z0-9])/g, (_, c) => c.toUpperCase());
 const kebab = (s) => s.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
 const pascal = (s) => {
@@ -223,7 +268,7 @@ function partsOf(node, out = [], key = 'root') {
 // Render one anatomy part and everything under it. Recursive, so a role or a relationship on a
 // nested part lands where the contract put it rather than on the root.
 function renderPart(key, node, ctx, depth) {
-  const { prefix, slots, contract, idFor } = ctx;
+  const { prefix, slots, contract, idFor, refId } = ctx;
   const pad = '  '.repeat(depth + 3);
   const slot = slots.find((x) => (x.part ? x.part === key : camel(x.from) === key));
   const takesChildrenHere = ctx.childrenPart === key;
@@ -236,8 +281,8 @@ function renderPart(key, node, ctx, depth) {
   if (node.role || node.controls || node.namedBy || (node.describedBy ?? []).length) {
     attrs.push(`id={${idFor(key)}}`);
   }
-  if (node.controls) attrs.push(`aria-controls={${idFor(node.controls)}}`);
-  if (node.namedBy) attrs.push(`aria-labelledby={${idFor(node.namedBy)}}`);
+  if (node.controls) attrs.push(`aria-controls={${refId(node.controls)}}`);
+  if (node.namedBy) attrs.push(`aria-labelledby={${refId(node.namedBy)}}`);
   if ((node.describedBy ?? []).length) {
     const live = node.describedBy.filter((d) => {
       const target = Object.entries(contract.anatomy.root.parts ?? {}).find(([k]) => k === d);
@@ -262,7 +307,7 @@ function renderPart(key, node, ctx, depth) {
     if (dis) attrs.push(`disabled={${dis}}`);
   }
   // aria-expanded belongs on whatever controls a part whose visibility is a state
-  if (node.controls) {
+  if (typeof node.controls === 'string') {
     const target = Object.entries(contract.anatomy.root.parts ?? {}).find(
       ([k]) => k === node.controls,
     );
@@ -333,8 +378,7 @@ function emitTsx(name, contract, binding, prefix) {
       );
     }
     const ancestor = readJson(ancestorPath);
-    const declared = ancestor.collection?.items;
-    const admitted = Array.isArray(declared) ? declared : declared ? [declared] : [];
+    const admitted = admittedBy(member.of);
     if (!admitted.includes(name)) {
       throw new Error(
         `${name} says it is a member of ${member.of}, but ${member.of}.collection.items admits ` +
@@ -419,10 +463,46 @@ function emitTsx(name, contract, binding, prefix) {
   }
 
   const idFor = (key) => (key === 'root' ? 'baseId' : '`${baseId}-' + key + '`');
-  const referencesParts = allParts.some(
-    (p) => p.node.controls || p.node.namedBy || (p.node.describedBy ?? []).length,
+
+  // A reference is either a string — a part of THIS component, resolved by `idFor` — or an object
+  // naming a part of a sibling MEMBER of the same collection. The second form is the one a tab
+  // needs to point at its panel, and it is the reason a member's id root carries its component
+  // name: a tab and its panel share one identity, so `<collection>-<identity>` alone would give
+  // both of them the same id and the reference would point at whichever rendered last.
+  const crossRefs = [];
+  const refId = (spec) => {
+    if (typeof spec === 'string') return idFor(spec);
+    if (!member) {
+      throw new Error(
+        `${name} references member "${spec.member}" but is not itself a member of any collection, ` +
+          `so there is no shared ancestor to resolve the reference against.`,
+      );
+    }
+    crossRefs.push(spec);
+    const root = '`${ctx.baseId}-' + spec.member + '-${' + member.identity + '}`';
+    return spec.part === 'root' ? root : root.slice(0, -1) + '-' + spec.part + '`';
+  };
+  const refsOf = (node) => [
+    ...(node.controls ? [node.controls] : []),
+    ...(node.namedBy ? [node.namedBy] : []),
+    ...(node.describedBy ?? []),
+  ];
+  const referencesParts = allParts.some((p) => refsOf(p.node).length);
+  // A member whose root is POINTED AT from a sibling needs an id even if it references nothing
+  // itself. Nothing in this contract can know that, so the flag is set from the ancestor's roster.
+  const referencedByASibling = Boolean(
+    member &&
+    // `collection.items` is a string OR a list — a collection with one member kind may name it
+    // directly. Both forms have to normalise here, or a single-kind collection throws.
+    admittedBy(member.of)
+      .filter((sib) => sib !== name)
+      .some((sib) => {
+        const f = join(CONTRACTS, 'components', sib, `${sib}.contract.json`);
+        if (!existsSync(f)) return false;
+        return JSON.stringify(readJson(f)).includes(`"member": "${name}"`);
+      }),
   );
-  const needsIds = Boolean(collection) || referencesParts;
+  const needsIds = Boolean(collection) || referencesParts || referencedByASibling;
 
   const ctx = {
     prefix,
@@ -431,6 +511,7 @@ function emitTsx(name, contract, binding, prefix) {
     idFor,
     childrenPart,
     memberReflects: member?.reflects,
+    refId,
     sharedStates,
     disabledExpr,
   };
@@ -571,7 +652,9 @@ function emitTsx(name, contract, binding, prefix) {
     s.push(
       `  const selected = ${memberMany ? `ctx.selection.includes(${member.identity})` : `ctx.selection === ${member.identity}`};`,
     );
-    if (referencesParts) s.push(`  const baseId = \`\${ctx.baseId}-\${${member.identity}}\`;`);
+    if (needsIds) {
+      s.push(`  const baseId = \`\${ctx.baseId}-${name}-\${${member.identity}}\`;`);
+    }
     if (registers) {
       const dis = disabledExpr ?? 'ctx.disabled';
       // `register`/`unregister` are pulled off the context ON PURPOSE rather than closing over
@@ -754,7 +837,7 @@ function emitTsx(name, contract, binding, prefix) {
   if (rootRole && IMPLICIT_ROLE[el] !== rootRole) {
     rootAttrs.push(`role="${rootRole}"`);
   }
-  if (needsIds && !member) rootAttrs.push(`id={baseId}`);
+  if (needsIds) rootAttrs.push(`id={baseId}`);
   for (const [st, def] of Object.entries(contract.states ?? {})) {
     const isShared = sharedStates.has(st);
     const isConsumer = consumerProps.some((p) => p.from === st);
@@ -790,7 +873,15 @@ function emitTsx(name, contract, binding, prefix) {
   // The state a member reflects is `internal`: no prop, so the loop above never sees it. It
   // still has to reach the DOM — a radio with no aria-checked is not a radio.
   if (member) {
-    const attr = ARIA_ATTR[member.reflects];
+    const declared = ARIA_ATTR[member.reflects];
+    const attr = declared && ariaFits(declared, rootRole) ? declared : null;
+    if (declared && !attr) {
+      assume(
+        'a member state whose ARIA attribute its role does not support',
+        `${member.reflects} does not reach ${declared} on role="${rootRole}" — emitted data-${prefix}-state-${member.reflects} instead`,
+        `A tab panel reflects the same \`selected\` state its tab does, and ${declared} is defined for a tab and invalid on a tabpanel. The contract states the SHARED FACT and cannot know that one member's role accepts the attribute and the other's does not; the mapping is emitter knowledge, and until this check existed the emitter wrote the attribute onto whichever role it landed on.`,
+      );
+    }
     if (attr) {
       rootAttrs.push(
         ARIA_EXPLICIT_FALSE.has(member.reflects)
@@ -860,6 +951,16 @@ function emitTsx(name, contract, binding, prefix) {
   // `visibleWhen` on the ROOT was handled only for child parts, so a panel that hides itself and a
   // dialog that appears were both rendered permanently visible.
   if (root.visibleWhen) rootAttrs.push(`hidden={!(${stateExpr(root.visibleWhen, ctx)})}`);
+  // The root part's own references. Every one of these was handled for CHILD parts only, so a
+  // component whose outermost node is the thing that points — a tab at its panel, a panel back at
+  // its tab — generated nothing at all and nothing detected it.
+  if (root.controls) rootAttrs.push(`aria-controls={${refId(root.controls)}}`);
+  if (root.namedBy) rootAttrs.push(`aria-labelledby={${refId(root.namedBy)}}`);
+  if ((root.describedBy ?? []).length) {
+    rootAttrs.push(
+      `aria-describedby={[${root.describedBy.map((d) => refId(d)).join(', ')}].filter(Boolean).join(' ') || undefined}`,
+    );
+  }
   if (navigation) rootAttrs.push(`onKeyDown={nav.onKeyDown}`);
   if (rootToggles) rootAttrs.push(`onClick={activate}`);
   rootAttrs.push(`data-${prefix}-component="${name}"`);

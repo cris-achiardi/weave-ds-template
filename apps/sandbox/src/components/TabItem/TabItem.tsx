@@ -32,6 +32,7 @@ export const TabItem = forwardRef<HTMLButtonElement, TabItemProps>(function TabI
     );
   }
   const selected = ctx.selection === value;
+  const baseId = `${ctx.baseId}-TabItem-${value}`;
   const { register, unregister } = ctx;
 
   const rootRef = useCallback(
@@ -60,9 +61,11 @@ export const TabItem = forwardRef<HTMLButtonElement, TabItemProps>(function TabI
       ref={rootRef}
       type="button"
       role="tab"
+      id={baseId}
       aria-disabled={disabled || undefined}
       aria-selected={selected}
       tabIndex={ctx.isTabStop(value) ? 0 : -1}
+      aria-controls={`${ctx.baseId}-TabPanel-${value}`}
       onClick={activate}
       data-ds-component="TabItem"
       data-ds-part="root"

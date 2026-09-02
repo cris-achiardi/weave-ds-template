@@ -8,8 +8,9 @@
   "classNamePassthrough": "root",
   "notes": [
     "Renders a `<div role=\"tabpanel\">`, hidden when its value is not the selection.",
-    "`aria-labelledby` pointing at its tab is NOT generated, for the same reason `aria-controls` is not generated on TabItem: the reference crosses a component boundary and `namedBy` can only name a sibling part.",
+    "`aria-labelledby` pointing back at its tab IS generated, from `namedBy: { member: \"TabItem\", part: \"root\" }`, the mirror of the tab's `controls`.",
     "It declares `member` of the same collection as TabItem. `collection.items` names both, and the emitter checks that the two contracts agree.",
-    "It does NOT register with the navigation protocol, and that is not an omission. A panel shares its `value` with its tab, and a registry keyed by that value cannot hold both; a panel is also not a place arrow keys travel to. The emitter derives this from the contract — a member registers iff its root declares `activates` — so neither contract has to state it."
+    "It does NOT register with the navigation protocol, and that is not an omission. A panel shares its `value` with its tab, and a registry keyed by that value cannot hold both; a panel is also not a place arrow keys travel to. The emitter derives this from the contract — a member registers iff its root declares `activates` — so neither contract has to state it.",
+    "It reflects the same `selected` state its tab does, and does NOT emit `aria-selected` for it: that attribute is defined for a tab and invalid on a tabpanel. The emitter checks the state's ARIA attribute against the part's role and falls back to `data-ds-state-selected`, which is a styling hook rather than an announcement."
   ]
 }

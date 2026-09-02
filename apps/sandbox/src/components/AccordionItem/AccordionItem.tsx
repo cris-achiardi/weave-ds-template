@@ -34,7 +34,7 @@ export const AccordionItem = forwardRef<HTMLDivElement, AccordionItemProps>(func
     );
   }
   const selected = ctx.selection.includes(value);
-  const baseId = `${ctx.baseId}-${value}`;
+  const baseId = `${ctx.baseId}-AccordionItem-${value}`;
 
   const activate = useCallback(() => {
     if (disabled || ctx.disabled) return;
@@ -45,8 +45,9 @@ export const AccordionItem = forwardRef<HTMLDivElement, AccordionItemProps>(func
     <div
       {...rest}
       ref={ref}
+      id={baseId}
       aria-disabled={disabled || undefined}
-      aria-expanded={selected || undefined}
+      data-ds-state-open={selected || undefined}
       data-ds-component="AccordionItem"
       data-ds-part="root"
       className={className}
