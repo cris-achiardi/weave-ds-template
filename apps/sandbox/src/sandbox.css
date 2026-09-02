@@ -163,3 +163,89 @@ code {
   color: #8b8b93;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
+
+/* --- the status board --------------------------------------------------------------------- */
+
+.status-board .specimen-note {
+  max-inline-size: 78ch;
+}
+
+.status-table {
+  inline-size: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  line-height: 1.55;
+  text-align: start;
+}
+
+.status-table th,
+.status-table td {
+  border-block-end: 1px solid #2a2a2e;
+  padding: 0.55rem 0.75rem 0.55rem 0;
+  vertical-align: top;
+  text-align: start;
+}
+
+.status-table thead th {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #77777f;
+  font-weight: 600;
+}
+
+.status-table tbody th {
+  inline-size: 12rem;
+  white-space: nowrap;
+  color: #f2f2f4;
+  font-weight: 600;
+}
+
+.status-table tbody th .verdict {
+  margin-inline-start: 0.4rem;
+}
+
+.status-table tbody th a {
+  color: inherit;
+  text-decoration: none;
+  border-block-end: 1px dotted #55555f;
+}
+
+.status-table tbody th a:hover {
+  border-block-end-color: #a3a3ab;
+}
+
+.status-table td {
+  color: #a3a3ab;
+  max-inline-size: 34rem;
+}
+
+.status-table ul,
+.cross-cutting {
+  margin: 0;
+  padding-inline-start: 1.1rem;
+}
+
+.status-table li,
+.cross-cutting li {
+  margin-block-end: 0.3rem;
+}
+
+.status-table .nothing {
+  color: #4a7a5c;
+}
+
+.status-board h3 {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #77777f;
+  margin-block: 1.5rem 0.6rem;
+}
+
+.cross-cutting {
+  font-size: 0.8rem;
+  line-height: 1.6;
+  color: #a3a3ab;
+  max-inline-size: 78ch;
+}
