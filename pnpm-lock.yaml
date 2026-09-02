@@ -55,8 +55,15 @@ importers:
         specifier: ^7.0.0
         version: 7.3.6(@types/node@24.13.3)(yaml@2.9.0)
 
+  packages/contracts: {}
+
+  packages/platform-web: {}
+
   packages/react:
     dependencies:
+      '@ds/platform-web':
+        specifier: workspace:*
+        version: link:../platform-web
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
