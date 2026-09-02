@@ -1,0 +1,239 @@
+{
+  "primitive": "range-stepping",
+  "source": "W3C ARIA APG, Slider pattern — Keyboard Interaction. https://www.w3.org/WAI/ARIA/apg/patterns/slider/",
+  "note": "Framework-neutral cases. A backend passes this file or it has not implemented the primitive. `apg` records how the specification treats each case: `unmarked` is stated plainly, `optional` is offered as a choice, `not-addressed` is OURS and says so. Every pointer case is `not-addressed`, because the APG specifies a slider's KEYBOARD and says nothing at all about pointer behaviour — that part of a slider is inherently visual and the specification declines to describe it.",
+  "cases": [
+    {
+      "id": "right-arrow-increases-by-one-step",
+      "given": { "min": 0, "max": 100, "step": 1, "value": 40 },
+      "press": "ArrowRight",
+      "expect": { "value": 41, "handled": true },
+      "apg": "unmarked",
+      "quote": "Right Arrow: Increase the value of the slider by one step."
+    },
+    {
+      "id": "up-arrow-increases-by-one-step",
+      "given": { "min": 0, "max": 100, "step": 1, "value": 40 },
+      "press": "ArrowUp",
+      "expect": { "value": 41, "handled": true },
+      "apg": "unmarked",
+      "quote": "Up Arrow: Increase the value of the slider by one step."
+    },
+    {
+      "id": "left-arrow-decreases-by-one-step",
+      "given": { "min": 0, "max": 100, "step": 1, "value": 40 },
+      "press": "ArrowLeft",
+      "expect": { "value": 39, "handled": true },
+      "apg": "unmarked",
+      "quote": "Left Arrow: Decrease the value of the slider by one step."
+    },
+    {
+      "id": "down-arrow-decreases-by-one-step",
+      "given": { "min": 0, "max": 100, "step": 1, "value": 40 },
+      "press": "ArrowDown",
+      "expect": { "value": 39, "handled": true },
+      "apg": "unmarked",
+      "quote": "Down Arrow: Decrease the value of the slider by one step."
+    },
+    {
+      "id": "a-slider-answers-both-axes-unlike-a-tab-list",
+      "given": { "min": 0, "max": 10, "step": 1, "value": 5, "orientation": "horizontal" },
+      "press": "ArrowUp",
+      "expect": { "value": 6, "handled": true },
+      "apg": "unmarked",
+      "quote": "The APG lists all four arrows for a slider without qualifying them by orientation, which is the opposite of the rule it gives a tab list. A horizontal slider still answers Up and Down."
+    },
+    {
+      "id": "home-goes-to-the-minimum",
+      "given": { "min": 0, "max": 100, "step": 1, "value": 40 },
+      "press": "Home",
+      "expect": { "value": 0, "handled": true },
+      "apg": "unmarked",
+      "quote": "Home: Set the slider to the first allowed value in its range."
+    },
+    {
+      "id": "end-goes-to-the-maximum",
+      "given": { "min": 0, "max": 100, "step": 1, "value": 40 },
+      "press": "End",
+      "expect": { "value": 100, "handled": true },
+      "apg": "unmarked",
+      "quote": "End: Set the slider to the last allowed value in its range."
+    },
+    {
+      "id": "page-up-increases-by-a-larger-jump",
+      "given": { "min": 0, "max": 100, "step": 1, "pageStep": 10, "value": 40 },
+      "press": "PageUp",
+      "expect": { "value": 50, "handled": true },
+      "apg": "optional",
+      "quote": "Page Up (Optional): Increase the value of the slider by an amount larger than the step change made by Up Arrow."
+    },
+    {
+      "id": "page-down-decreases-by-a-larger-jump",
+      "given": { "min": 0, "max": 100, "step": 1, "pageStep": 10, "value": 40 },
+      "press": "PageDown",
+      "expect": { "value": 30, "handled": true },
+      "apg": "optional",
+      "quote": "Page Down (Optional): Decrease the value of the slider by an amount larger than the step change made by Down Arrow."
+    },
+    {
+      "id": "page-keys-are-left-alone-when-no-jump-is-declared",
+      "given": { "min": 0, "max": 100, "step": 1, "value": 40 },
+      "press": "PageUp",
+      "expect": { "handled": false },
+      "apg": "optional",
+      "quote": "Page Up and Page Down are marked Optional, so a contract that declares no jump size has not asked for them, and the key must reach the page instead of being swallowed."
+    },
+    {
+      "id": "increasing-stops-at-the-maximum",
+      "given": { "min": 0, "max": 100, "step": 1, "value": 100 },
+      "press": "ArrowRight",
+      "expect": { "value": 100, "handled": true },
+      "apg": "unmarked",
+      "quote": "A slider does not wrap. Its range has ends, unlike a collection of members where the last is adjacent to the first."
+    },
+    {
+      "id": "decreasing-stops-at-the-minimum",
+      "given": { "min": 0, "max": 100, "step": 1, "value": 0 },
+      "press": "ArrowLeft",
+      "expect": { "value": 0, "handled": true },
+      "apg": "unmarked",
+      "quote": "A slider does not wrap."
+    },
+    {
+      "id": "a-page-jump-clamps-rather-than-overshooting",
+      "given": { "min": 0, "max": 100, "step": 1, "pageStep": 10, "value": 95 },
+      "press": "PageUp",
+      "expect": { "value": 100, "handled": true },
+      "apg": "unmarked",
+      "quote": "Never reports a value outside its range."
+    },
+    {
+      "id": "a-step-larger-than-one-moves-by-that-step",
+      "given": { "min": 0, "max": 100, "step": 25, "value": 25 },
+      "press": "ArrowRight",
+      "expect": { "value": 50, "handled": true },
+      "apg": "unmarked",
+      "quote": "Increase the value of the slider by one step — the step is the contract's, not the platform's."
+    },
+    {
+      "id": "end-lands-on-the-last-allowed-value-not-the-maximum",
+      "given": { "min": 0, "max": 100, "step": 30, "value": 0 },
+      "press": "End",
+      "expect": { "value": 90, "handled": true },
+      "apg": "unmarked",
+      "quote": "Set the slider to the last ALLOWED value in its range. With a step of 30 counted from 0, the maximum of 100 is not an allowed value and 90 is."
+    },
+    {
+      "id": "a-range-that-does-not-start-at-zero-still-steps-from-its-minimum",
+      "given": { "min": 5, "max": 25, "step": 5, "value": 5 },
+      "press": "ArrowRight",
+      "expect": { "value": 10, "handled": true },
+      "apg": "unmarked",
+      "quote": "Steps are counted from the minimum, not from zero."
+    },
+    {
+      "id": "a-fractional-step-does-not-accumulate-error",
+      "given": { "min": 0, "max": 1, "step": 0.1, "value": 0.7 },
+      "press": "ArrowRight",
+      "expect": { "value": 0.8, "handled": true },
+      "apg": "not-addressed",
+      "quote": "OURS. Repeated floating-point addition drifts, and a slider reporting 0.7999999999999999 through aria-valuenow is announced as that number."
+    },
+    {
+      "id": "a-value-arriving-between-steps-is-snapped",
+      "given": { "min": 0, "max": 100, "step": 10, "value": 43 },
+      "press": "ArrowRight",
+      "expect": { "value": 50, "handled": true },
+      "apg": "not-addressed",
+      "quote": "OURS. A controlled value is the consumer's to set and may be off-step; the contract says the slider never reports a value between steps."
+    },
+    {
+      "id": "a-value-arriving-out-of-range-is-clamped",
+      "given": { "min": 0, "max": 100, "step": 1, "value": 500 },
+      "press": "ArrowLeft",
+      "expect": { "value": 99, "handled": true },
+      "apg": "not-addressed",
+      "quote": "OURS. Clamp first, then step, so one press brings a wild controlled value back inside the range rather than moving it further out."
+    },
+    {
+      "id": "a-key-that-is-not-ours-is-left-alone",
+      "given": { "min": 0, "max": 100, "step": 1, "pageStep": 10, "value": 40 },
+      "press": "Enter",
+      "expect": { "handled": false },
+      "apg": "not-addressed",
+      "quote": "OURS, and the same rule the navigation primitive follows: consuming a key the pattern does not define breaks whatever else would have used it."
+    },
+    {
+      "id": "tab-is-left-alone",
+      "given": { "min": 0, "max": 100, "step": 1, "value": 40 },
+      "press": "Tab",
+      "expect": { "handled": false },
+      "apg": "unmarked",
+      "quote": "A slider is a single Tab stop; Tab must leave it."
+    },
+    {
+      "id": "the-start-of-the-track-is-the-minimum",
+      "given": { "min": 0, "max": 100, "step": 1, "fraction": 0 },
+      "press": null,
+      "expect": { "value": 0 },
+      "apg": "not-addressed",
+      "quote": "OURS. The APG specifies no pointer behaviour for a slider at all."
+    },
+    {
+      "id": "the-end-of-the-track-is-the-maximum",
+      "given": { "min": 0, "max": 100, "step": 1, "fraction": 1 },
+      "press": null,
+      "expect": { "value": 100 },
+      "apg": "not-addressed",
+      "quote": "OURS."
+    },
+    {
+      "id": "a-press-partway-along-the-track-snaps-to-the-nearest-step",
+      "given": { "min": 0, "max": 100, "step": 10, "fraction": 0.44 },
+      "press": null,
+      "expect": { "value": 40 },
+      "apg": "not-addressed",
+      "quote": "OURS. Snapping to the NEAREST step, not to the one below it: a thumb dragged to 0.46 of a ten-step range is closer to 50 than to 40 and should give 50."
+    },
+    {
+      "id": "a-press-nearer-the-higher-step-snaps-up",
+      "given": { "min": 0, "max": 100, "step": 10, "fraction": 0.46 },
+      "press": null,
+      "expect": { "value": 50 },
+      "apg": "not-addressed",
+      "quote": "OURS."
+    },
+    {
+      "id": "a-pointer-dragged-past-the-end-of-the-track-clamps",
+      "given": { "min": 0, "max": 100, "step": 1, "fraction": 1.8 },
+      "press": null,
+      "expect": { "value": 100 },
+      "apg": "not-addressed",
+      "quote": "OURS. A pointer keeps sending coordinates after it leaves the track, and the value must not follow it out of range."
+    },
+    {
+      "id": "a-pointer-dragged-before-the-start-of-the-track-clamps",
+      "given": { "min": 0, "max": 100, "step": 1, "fraction": -0.5 },
+      "press": null,
+      "expect": { "value": 0 },
+      "apg": "not-addressed",
+      "quote": "OURS."
+    },
+    {
+      "id": "the-fraction-of-a-value-is-what-draws-the-fill",
+      "given": { "min": 0, "max": 100, "step": 1, "value": 25 },
+      "press": null,
+      "expect": { "fraction": 0.25 },
+      "apg": "not-addressed",
+      "quote": "OURS. The fill's length and the thumb's offset ARE the value, and a backend needs exactly one number to draw both."
+    },
+    {
+      "id": "a-degenerate-range-reports-a-fraction-rather-than-dividing-by-zero",
+      "given": { "min": 5, "max": 5, "step": 1, "value": 5 },
+      "press": null,
+      "expect": { "fraction": 0 },
+      "apg": "not-addressed",
+      "quote": "OURS. A minimum equal to its maximum is a legal contract, and the obvious arithmetic divides by zero."
+    }
+  ]
+}

@@ -3,10 +3,22 @@
 //
 // Chooses a number from a continuous range where the approximate value matters more than the exact one — a volume, a zoom level, a price ceiling.
 
-import { forwardRef, useState } from 'react';
+import { forwardRef, useState, useCallback } from 'react';
 import type { HTMLAttributes } from 'react';
+import { snap, useRangeControl, type RangeOptions } from '@ds/react/behavior';
 import './Slider.structure.css';
 import './Slider.theme.css';
+
+// Transcribed from Slider.contract.json: the `range` block, plus min/max/step from the
+// `value` state. The cases this commits us to are in
+// @ds/contracts/conformance/range-stepping.json.
+const RANGE: RangeOptions = {
+  min: 0,
+  max: 100,
+  step: 1,
+  orientation: 'horizontal',
+  pageStep: 10,
+};
 
 export interface SliderProps extends Omit<
   HTMLAttributes<HTMLDivElement>,
@@ -29,9 +41,15 @@ export const Slider = forwardRef<HTMLDivElement, SliderProps>(function Slider(
   const valueControlled = value !== undefined;
   const [valueInternal, setValueInternal] = useState(defaultValue);
   const valueValue = valueControlled ? value : valueInternal;
-  // Nothing in the contract says what CHANGES `value`: no part declares
-  // `activates`. It works when controlled from outside; uncontrolled it cannot move.
-  void setValueInternal;
+
+  const setValue = useCallback(
+    (next: number) => {
+      if (!valueControlled) setValueInternal(next);
+      onValueChange?.(next);
+    },
+    [valueControlled, onValueChange],
+  );
+  const range = useRangeControl(RANGE, valueValue, setValue, disabled);
 
   return (
     <div
@@ -39,15 +57,22 @@ export const Slider = forwardRef<HTMLDivElement, SliderProps>(function Slider(
       ref={ref}
       role="slider"
       aria-disabled={disabled || undefined}
+      data-ds-state-dragging={range.dragging || undefined}
       tabIndex={disabled ? -1 : 0}
       aria-valuemin={0}
       aria-valuemax={100}
-      aria-valuenow={valueValue}
+      aria-valuenow={snap(valueValue, RANGE)}
+      onKeyDown={range.onKeyDown}
+      onPointerDown={range.onPointerDown}
+      onPointerMove={range.onPointerMove}
+      onPointerUp={range.onPointerUp}
+      onPointerCancel={range.onPointerUp}
+      style={{ ...rest.style, ['--ds-fraction' as string]: range.fraction }}
       data-ds-component="Slider"
       data-ds-part="root"
       className={className}
     >
-      <div data-ds-part="track" />
+      <div ref={range.trackRef} data-ds-part="track" />
       <div data-ds-part="fill" />
       <div data-ds-part="thumb" />
     </div>

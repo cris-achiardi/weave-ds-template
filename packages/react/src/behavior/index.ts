@@ -9,10 +9,16 @@
 // entry in the contract layer's behaviour vocabulary, and each maps to a behaviour the W3C ARIA
 // APG defines normatively, so the specification work is citation rather than invention.
 //
-// Keep this list alphabetical.
+// Every primitive answers "what does this key mean" with a function that may return null, and each
+// of those is called `intentFor` inside its own module. They are exported here under distinct
+// names: two primitives may be used by one component, and a bare `intentFor` would then be
+// ambiguous at the import site rather than at the definition.
+//
+// Keep this list alphabetical by primitive.
 
+// --- linear navigation: moving between the members of a collection
 export {
-  intentFor,
+  intentFor as navigationIntentFor,
   navigable,
   resolve,
   tabStop,
@@ -26,3 +32,19 @@ export type {
   NavigationOptions,
   Orientation,
 } from './useLinearNavigation.js';
+
+// --- range stepping: moving a number within a bounded, stepped range
+export {
+  apply,
+  fractionOf,
+  intentFor as rangeIntentFor,
+  snap,
+  useRangeControl,
+  valueAt,
+} from './useRangeControl.js';
+export type {
+  RangeControl,
+  RangeIntent,
+  RangeOptions,
+  RangeOrientation,
+} from './useRangeControl.js';
