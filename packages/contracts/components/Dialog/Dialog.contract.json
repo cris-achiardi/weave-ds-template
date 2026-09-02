@@ -1,13 +1,11 @@
 {
   "$schema": "../../schema/component.schema.json",
   "component": "Dialog",
-
   "status": {
     "level": "experimental",
     "since": "2026-09-01",
-    "note": "Chosen for modality. Tooltip established that layering has no home; a dialog adds focus containment, background inertness and a dismissal key, and none of those are the same problem. Sourced from the W3C ARIA APG modal dialog pattern, which is normative and complete."
+    "note": "Chosen for modality. Tooltip established that layering has no home; a dialog adds focus containment, background inertness and a dismissal key, and none of those are the same problem. Sourced from the W3C ARIA APG modal dialog pattern. SPIKE 2026-09-02: rebound onto the native `<dialog>` element, which supplies containment, inertness, focus restoration and Escape from the platform rather than from a declaration. See the binding's notes for what that measured."
   },
-
   "intent": {
     "purpose": "Interrupts what a person was doing to ask for something that cannot wait, and refuses to let them continue until they answer or leave.",
     "behaviour": [
@@ -24,7 +22,6 @@
       "Anything long enough to scroll on a phone. A full-screen sheet is a different pattern with different dismissal rules."
     ]
   },
-
   "states": {
     "open": {
       "kind": "authored",
@@ -33,7 +30,6 @@
       "visual": "The scrim covers the page and the panel appears above it."
     }
   },
-
   "axes": {
     "size": {
       "values": ["s", "m", "l"],
@@ -41,24 +37,21 @@
       "description": "How wide the panel is. A contiguous subset of the canon's ladder."
     }
   },
-
   "semantics": {
     "focusable": false
   },
-
   "a11y": {
     "focusVisible": false,
     "contrast": "AA",
-    "keyboard": "Escape closes from anywhere inside. Tab and Shift+Tab cycle within the dialog and never leave it while it is open.",
+    "keyboard": "Escape closes from anywhere inside, supplied by the platform. Tab and Shift+Tab cycle within the dialog and cannot reach the page behind it.",
     "notes": [
-      "Focus containment is the whole pattern, and NONE of it is expressible here. A dialog that can be tabbed out of is not modal, and a screen-reader user who reaches the page behind it is being lied to about what is interactive.",
-      "The background must be inert, not merely covered. A scrim that only paints over the page still leaves every control behind it focusable and readable, which is the most common way this pattern is got wrong.",
-      "Focus must return to the element that opened the dialog. Nothing here records what that was, and dropping focus to the document start is disorienting in a way sighted users never see.",
-      "The dialog is named by its title. A dialog with no title is announced as an unnamed dialog, and nothing here detects that.",
-      "Escape must close it. That is a keyboard behaviour that is not activation, and there is no way to declare one."
+      "Focus containment, background inertness, focus restoration and Escape are all supplied by the PLATFORM, because the binding renders a native `<dialog>` opened with `showModal()`. None of the four is expressible in this contract and none had to be: they follow from an element name.",
+      "The containment is not a trap, and that is deliberate on the W3C's part rather than a shortfall. Tab cannot reach the page behind, but it can reach the browser's own chrome before cycling back. The APG's wording — that Tab does not move focus outside the dialog — describes a hand-rolled implementation; the platform's behaviour is what the W3C's own accessibility group settled on.",
+      "The dialog is named by its title. A dialog with no title is announced as an unnamed dialog, and NOTHING DETECTS THAT — not even axe, whose rule for it matches `[role=\"dialog\"]` literally and so skips a native `<dialog>` entirely. The title slot is `required` here, which is the only thing standing between a consumer and a silently unnamed dialog.",
+      "There is no Escape key on a phone. A modal with no visible close control is unclosable on iOS, where the platform supplies no backstop, so an `actions` slot that always contains a way out is a consumer obligation this contract cannot check.",
+      "Backdrop-press dismissal is NOT supplied. The backdrop is a pseudo-element and never an event target: a press on it reports the dialog itself as the target. This is the one behaviour of the four that still needs the dismissal vocabulary."
     ]
   },
-
   "composition": {
     "slots": {
       "title": {
@@ -81,47 +74,60 @@
       }
     }
   },
-
   "anatomy": {
     "root": {
       "part": "root",
-      "description": "The layer holding the scrim and the panel. Covers the viewport while open.",
+      "role": "dialog",
+      "namedBy": "title",
       "visibleWhen": "open",
-      "paints": { "background": null },
+      "description": "The dialog itself. Named by its title, and the region focus is held inside. It is ONE node, not a scrim wrapping a panel: the platform paints the layer behind it and does not give that layer an element.",
+      "paints": {
+        "background": null,
+        "border-radius": null,
+        "padding": null,
+        "box-shadow": null,
+        "max-inline-size": null
+      },
+      "backdrop": {
+        "paints": {
+          "background": null
+        }
+      },
+      "whenAxis": {
+        "size=s": {
+          "inline-size": null
+        },
+        "size=m": {
+          "inline-size": null
+        },
+        "size=l": {
+          "inline-size": null
+        }
+      },
       "parts": {
-        "panel": {
-          "part": "panel",
-          "role": "dialog",
-          "namedBy": "title",
-          "description": "The dialog itself. Named by its title, and the region focus is held inside.",
+        "title": {
+          "part": "title",
+          "description": "The heading. Supplies the dialog's accessible name.",
           "paints": {
-            "background": null,
-            "border-radius": null,
-            "padding": null,
-            "box-shadow": null,
-            "max-inline-size": null
-          },
-          "whenAxis": {
-            "size=s": { "inline-size": null },
-            "size=m": { "inline-size": null },
-            "size=l": { "inline-size": null }
-          },
-          "parts": {
-            "title": {
-              "part": "title",
-              "description": "The heading. Supplies the dialog's accessible name.",
-              "paints": { "color": null, "font-size": null, "font-weight": null }
-            },
-            "body": {
-              "part": "body",
-              "description": "The content.",
-              "paints": { "color": null, "font-size": null }
-            },
-            "actions": {
-              "part": "actions",
-              "description": "The row of buttons that resolve it.",
-              "paints": { "gap": null, "padding-block-start": null }
-            }
+            "color": null,
+            "font-size": null,
+            "font-weight": null
+          }
+        },
+        "body": {
+          "part": "body",
+          "description": "The content.",
+          "paints": {
+            "color": null,
+            "font-size": null
+          }
+        },
+        "actions": {
+          "part": "actions",
+          "description": "The row of buttons that resolve it.",
+          "paints": {
+            "gap": null,
+            "padding-block-start": null
           }
         }
       }

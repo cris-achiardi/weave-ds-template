@@ -198,8 +198,8 @@ export function App() {
 
       <Specimen
         name="Dialog"
-        verdict="shell"
-        note="A styled box that appears and disappears. It opens and closes from its own buttons now — until the emitter started writing a scoped [hidden] rule into structure.css, the theme&rsquo;s display: flex outranked the browser&rsquo;s [hidden] { display: none } and it was stuck open with its buttons firing the whole time. Still missing: focus does not move into it, Tab leaves it, the page behind stays reachable, and Escape does nothing — all four are stated in the contract and none is expressible. A native <dialog> opened with showModal() supplies every one of them for free; the binding&rsquo;s stated reason for rejecting it — that it cannot be portalled — is measurably wrong, and that is the next thing to spike."
+        verdict="partial"
+        note="Now a native <dialog> opened with showModal(). Focus moves inside on open, the page behind is genuinely inert — a programmatic focus() on a button back there is refused — Escape closes it, and focus returns to whatever opened it. The contract states all four and can declare none of them; they follow from an element name. The costs are real and visible: the theme file opens with a reset cancelling the browser&rsquo;s own border, padding and colours, and the open state has to be synced back from the element&rsquo;s attribute with a MutationObserver because the close event never fired. Still missing: pressing the backdrop does nothing, because a backdrop is a pseudo-element and can never be an event target."
       >
         <Button hierarchy="primary" onClick={() => setDialogOpen(true)}>
           Open the dialog

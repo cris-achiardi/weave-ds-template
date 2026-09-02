@@ -3,13 +3,17 @@
   "component": "Dialog",
   "contract": "../../contracts/components/Dialog/Dialog.contract.json",
   "framework": "react",
-  "element": "div",
+  "element": "dialog",
   "refTarget": "root",
   "classNamePassthrough": "root",
   "notes": [
-    "Renders a plain `<div>` wrapper holding the scrim and the panel; the `dialog` role sits on the panel, not the root, which is why the role is declared on the anatomy part rather than in `semantics`.",
-    "NOT rendered with the native `<dialog>` element and `showModal()`, which would supply focus containment, background inertness and Escape for free. The native element cannot be portalled into an arbitrary container and brings a top-layer stacking model the unstyled approach cannot reason about — but the trade is severe and worth naming: every one of the three behaviours the native element gives away has to be reimplemented, and none of them is generated here.",
-    "No focus trap, no focus return, no Escape handler, no `inert` on the background. The contract states all four in `intent.behaviour` and `a11y.notes`; none is expressible. The emitted dialog is a styled box that appears and disappears.",
-    "Its root declares `visibleWhen: \"open\"`, which compiles to the `hidden` attribute. That alone was NOT enough to hide it: `[hidden] { display: none }` is a browser-stylesheet rule and the theme's `display: flex` on the same element outranks it, so the dialog rendered permanently open with its buttons working the whole time. `Dialog.structure.css` — which is emitter-owned and regenerated — now carries a scoped `[hidden] { display: none !important }` for this reason."
+    "Renders a NATIVE `<dialog>` opened with `showModal()`. The previous note here claimed the native element was rejected because it cannot be portalled and brings a stacking model this approach cannot reason about. BOTH HALVES WERE WRONG: a modal `<dialog>` can be portalled anywhere in the DOM, is never clipped by an ancestor's `overflow: hidden`, and cannot be trapped by an ancestor `transform` — none of which is true of the hand-rolled fixed div it replaced.",
+    "Focus containment, background inertness, focus restoration and Escape are all supplied by the platform. Measured, not assumed: a programmatic `.focus()` on a button behind the open dialog is REFUSED, and `elementFromPoint` over that button returns the dialog. The contract states all four in prose and can declare none of them; they follow from an element name.",
+    "It is opened by CALLING `showModal()` from an effect, never by rendering the `open` attribute — React sets the attribute on the first render and `showModal()` then throws `InvalidStateError`. This is the FIRST `useEffect` in generated code, and the first time a generated component has held a ref to its own root.",
+    "The open state is synced back from the element's own `open` attribute through a `MutationObserver`, NOT from the `close` event. Measured: `close` did not fire in Chrome 153 — not through React's `onClose` prop, not through `addEventListener`, and not through the `onclose` property, on this element or on a bare probe dialog. a11y-dialog documents the same unreliability. The observer also catches every other way the platform can close the element behind the component's back.",
+    "Getting that sync wrong is not cosmetic. Once the state says open and the element says closed, the effect sees no change, `showModal()` is never called again, and the dialog can never be shown for the rest of the session. That failure was reached during the spike.",
+    "The scrim is `::backdrop` and is declared by the root's `backdrop` block rather than as a part, because on this platform IT IS NOT ONE: it cannot hold a child, carry an attribute, or be an event target. That last point is why backdrop-press dismissal is NOT supplied — a press on the backdrop reports the dialog itself as the target.",
+    "The theme file now opens with a reset that cancels the UA stylesheet's border, padding, background, colour and max-inline-size. That reset is a real cost and was accepted deliberately: consumers of this library bring their own token system, so cancelling browser defaults is work they were always going to do.",
+    "`Dialog.structure.css` carries `:not([open]) { display: none !important }` alongside the `[hidden]` rule. `dialog:not([open]) { display: none }` is a browser-stylesheet rule and any `display` a theme puts on the element outranks it — the same cascade trap that previously left this component permanently on screen, under a different selector."
   ]
 }

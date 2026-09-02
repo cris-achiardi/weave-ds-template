@@ -111,7 +111,9 @@ export const Field = forwardRef<HTMLDivElement, FieldProps>(function Field(
       data-ds-part="root"
       className={className}
     >
-      <div data-ds-part="label">{label}</div>
+      <div id={`${baseId}-label`} data-ds-part="label">
+        {label}
+      </div>
       <div
         id={`${baseId}-control`}
         aria-labelledby={`${baseId}-label`}
@@ -124,8 +126,10 @@ export const Field = forwardRef<HTMLDivElement, FieldProps>(function Field(
       >
         {control}
       </div>
-      <div data-ds-part="description">{description}</div>
-      <div hidden={!invalidValue} data-ds-part="error">
+      <div id={`${baseId}-description`} data-ds-part="description">
+        {description}
+      </div>
+      <div id={`${baseId}-error`} hidden={!invalidValue} data-ds-part="error">
         {error}
       </div>
       {children}

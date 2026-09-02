@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://example.invalid/schemas/component-contract-10.json",
+  "$id": "https://example.invalid/schemas/component-contract-11.json",
   "title": "Component contract (framework-agnostic)",
   "description": "Describes ONE component completely enough to build it, in any framework. The reasoning is in contracts/README.md.\n\nThis file lives at contracts/ rather than inside a package on purpose: it belongs to no framework. It says what the component IS — its purpose, its behaviour, the states it must be able to show, the axes it exposes, its anatomy, and which family of token paints each part. It does NOT say how any of that is expressed in React, or in React Native, or in a web component. That is a binding, and bindings live beside the implementation.\n\nBuildable means: someone handed this file, the prop map for their framework, and the code standards should be able to produce the component without asking what it is for.",
   "type": "object",
@@ -642,6 +642,17 @@
         },
         "paints": {
           "$ref": "#/$defs/paints"
+        },
+        "backdrop": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["paints"],
+          "description": "The obscuring layer this part draws over everything behind it while it is showing. EXPERIMENTAL.\n\nDeclared here rather than as a child part because on some platforms it IS NOT ONE. A native `<dialog>` renders its backdrop as a pseudo-element: it can be painted, and it can never hold a child, carry an attribute, or be the target of an event. A contract that modelled it as a part would be promising three things the platform cannot give.\n\nSo this says only what is true everywhere: there is a layer, it belongs to this part, and these are its paint channels. A backend that has a real element for it may render one; a backend that gets it from the platform styles what the platform gives.",
+          "properties": {
+            "paints": {
+              "$ref": "#/$defs/paints"
+            }
+          }
         },
         "states": {
           "type": "object",

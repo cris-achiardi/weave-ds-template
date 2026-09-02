@@ -17,11 +17,28 @@
 }
 
 /* Hiding is a contract claim, not a style. See the note in the emitter. */
+[data-ds-component='Dialog']:not([open]),
 [data-ds-component='Dialog'][hidden],
 [data-ds-component='Dialog'] [hidden] {
   display: none !important;
 }
 
-[data-ds-component='Dialog'] [data-ds-part='panel'] {
+/*
+ * The first selector above is the SAME trap as [hidden], under a different name.
+ * `dialog:not([open]) { display: none }` is a browser-stylesheet rule, so any
+ * `display` a theme puts on this element outranks it and the closed dialog stays
+ * on screen with showModal() never having been called. Give the display to a part
+ * inside instead, or scope it to [open].
+ */
+
+[data-ds-component='Dialog'] [data-ds-part='title'] {
+  /* no declared layout for this part */
+}
+
+[data-ds-component='Dialog'] [data-ds-part='body'] {
+  /* no declared layout for this part */
+}
+
+[data-ds-component='Dialog'] [data-ds-part='actions'] {
   /* no declared layout for this part */
 }
