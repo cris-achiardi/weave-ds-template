@@ -12,7 +12,7 @@
     {
       "id": "forward-moves-to-next",
       "patterns": ["radio", "tabs"],
-      "given": { "orientation": "inline", "items": ["a", "b", "c"], "focused": "a" },
+      "given": { "orientation": "horizontal", "items": ["a", "b", "c"], "focused": "a" },
       "press": "ArrowRight",
       "expect": { "focused": "b" },
       "apg": "unmarked",
@@ -21,7 +21,7 @@
     {
       "id": "backward-moves-to-previous",
       "patterns": ["radio", "tabs"],
-      "given": { "orientation": "inline", "items": ["a", "b", "c"], "focused": "b" },
+      "given": { "orientation": "horizontal", "items": ["a", "b", "c"], "focused": "b" },
       "press": "ArrowLeft",
       "expect": { "focused": "a" },
       "apg": "unmarked",
@@ -30,7 +30,7 @@
     {
       "id": "wrap-forward-from-last",
       "patterns": ["radio", "tabs"],
-      "given": { "orientation": "inline", "items": ["a", "b", "c"], "focused": "c" },
+      "given": { "orientation": "horizontal", "items": ["a", "b", "c"], "focused": "c" },
       "press": "ArrowRight",
       "expect": { "focused": "a" },
       "apg": "unmarked",
@@ -40,7 +40,7 @@
     {
       "id": "wrap-backward-from-first",
       "patterns": ["radio", "tabs"],
-      "given": { "orientation": "inline", "items": ["a", "b", "c"], "focused": "a" },
+      "given": { "orientation": "horizontal", "items": ["a", "b", "c"], "focused": "a" },
       "press": "ArrowLeft",
       "expect": { "focused": "c" },
       "apg": "unmarked",
@@ -70,7 +70,7 @@
     {
       "id": "horizontal-tabs-must-ignore-down",
       "patterns": ["tabs"],
-      "given": { "orientation": "inline", "items": ["a", "b", "c"], "focused": "a" },
+      "given": { "orientation": "horizontal", "items": ["a", "b", "c"], "focused": "a" },
       "press": "ArrowDown",
       "expect": { "focused": "a", "handled": false },
       "apg": "unmarked",
@@ -80,7 +80,7 @@
     {
       "id": "horizontal-tabs-must-ignore-up",
       "patterns": ["tabs"],
-      "given": { "orientation": "inline", "items": ["a", "b", "c"], "focused": "b" },
+      "given": { "orientation": "horizontal", "items": ["a", "b", "c"], "focused": "b" },
       "press": "ArrowUp",
       "expect": { "focused": "b", "handled": false },
       "apg": "unmarked",
@@ -89,7 +89,7 @@
     {
       "id": "vertical-tabs-use-down-as-forward",
       "patterns": ["tabs"],
-      "given": { "orientation": "block", "items": ["a", "b", "c"], "focused": "a" },
+      "given": { "orientation": "vertical", "items": ["a", "b", "c"], "focused": "a" },
       "press": "ArrowDown",
       "expect": { "focused": "b" },
       "apg": "unmarked",
@@ -98,7 +98,7 @@
     {
       "id": "vertical-tabs-left-right-unspecified",
       "patterns": ["tabs"],
-      "given": { "orientation": "block", "items": ["a", "b", "c"], "focused": "a" },
+      "given": { "orientation": "vertical", "items": ["a", "b", "c"], "focused": "a" },
       "press": "ArrowRight",
       "expect": { "focused": "a", "handled": false },
       "apg": "not-addressed",
@@ -109,7 +109,7 @@
       "id": "selection-follows-focus-when-declared",
       "patterns": ["radio", "tabs"],
       "given": {
-        "orientation": "inline",
+        "orientation": "horizontal",
         "items": ["a", "b", "c"],
         "focused": "a",
         "selected": "a",
@@ -125,7 +125,7 @@
       "id": "tabs-may-move-without-activating",
       "patterns": ["tabs"],
       "given": {
-        "orientation": "inline",
+        "orientation": "horizontal",
         "items": ["a", "b", "c"],
         "focused": "a",
         "selected": "a",
@@ -141,7 +141,7 @@
       "id": "tabs-space-activates-when-focus-does-not",
       "patterns": ["tabs"],
       "given": {
-        "orientation": "inline",
+        "orientation": "horizontal",
         "items": ["a", "b", "c"],
         "focused": "b",
         "selected": "a",

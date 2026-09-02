@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://example.invalid/schemas/component-contract-7.json",
+  "$id": "https://example.invalid/schemas/component-contract-8.json",
   "title": "Component contract (framework-agnostic)",
   "description": "Describes ONE component completely enough to build it, in any framework. The reasoning is in contracts/README.md.\n\nThis file lives at contracts/ rather than inside a package on purpose: it belongs to no framework. It says what the component IS — its purpose, its behaviour, the states it must be able to show, the axes it exposes, its anatomy, and which family of token paints each part. It does NOT say how any of that is expressed in React, or in React Native, or in a web component. That is a binding, and bindings live beside the implementation.\n\nBuildable means: someone handed this file, the prop map for their framework, and the code standards should be able to produce the component without asking what it is for.",
   "type": "object",
@@ -275,6 +275,34 @@
             "initial": {
               "enum": ["none", "first", "first-enabled"],
               "description": "What is selected before anyone chooses. Omitted means undecided, not `none`."
+            }
+          }
+        },
+        "navigation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["orientation", "wrap", "followsFocus", "disabledItems"],
+          "description": "How a user moves between this collection's members with the keyboard. EXPERIMENTAL.\n\nA named primitive with named parameters, never a key map. Every parameter below corresponds to something the W3C ARIA APG states about the radio-group and tabs patterns, and the cases a backend must satisfy are transcribed as data in packages/contracts/conformance/linear-navigation.json. The specification work is citation, not invention.\n\nDeclaring this block also declares the composite's focus behaviour: exactly one member sits in the page's tab sequence, so Tab enters the collection and then leaves it. HOW that is achieved — a roving tabindex, or aria-activedescendant — is a backend's choice and deliberately not stated here. The APG demonstrates both for radio groups and states no preference; the conformance cases assert the OUTCOME, one tab stop, not the technique.",
+          "properties": {
+            "orientation": {
+              "enum": ["horizontal", "vertical", "both"],
+              "description": "Which arrow keys move between members. Vocabulary from prop-canon.json, which is also what aria-orientation takes.\n\nTHIS DECIDES A NEGATIVE REQUIREMENT, not just a positive one. A `horizontal` collection must LEAVE Up and Down alone — the APG is explicit that a horizontal tab list \"does not listen for Down Arrow or Up Arrow so those keys can provide their normal browser scrolling functions even when focus is inside the tab list\". Consuming a key you were told not to handle breaks page scrolling for a keyboard user.\n\n`both` is not a convenience. A radio group answers all four arrows regardless of how it is laid out — the APG groups \"Right Arrow and Down Arrow\" in a single bullet, as strict equivalents — and never mentions aria-orientation on that pattern at all."
+            },
+            "wrap": {
+              "type": "boolean",
+              "description": "Whether moving past the last member returns to the first, and vice versa. Unmarked — therefore stated unconditionally — in both patterns the APG describes.\n\nWorth noticing where the APG put its marker: in the tabs pattern the wrap clause and an explicitly optional activation clause sit in the SAME sentence, and only one of them is marked. That contrast is deliberate."
+            },
+            "followsFocus": {
+              "type": "boolean",
+              "description": "Whether moving focus also changes the selection.\n\nFor a radio group this is not a choice: the APG writes it into the arrow key's own definition — the keys \"move focus to the next radio button in the group, uncheck the previously focused button, and check the newly focused button\". A radio group whose arrows move without checking is not implementing the pattern.\n\nFor a tab list it is explicitly optional, and the APG gives the deciding criterion: automatic where a panel is already in the DOM, manual where displaying one causes a network request or a page refresh. Its threshold phrase is \"noticeable latency\".\n\nWhen false, activation moves to the member's own `activates` — a native button already answers Space and Enter, which is exactly what the APG asks for: \"Activates the tab if it was not activated automatically on focus.\""
+            },
+            "disabledItems": {
+              "enum": ["skip", "focusable"],
+              "description": "What arrow navigation does when it reaches a disabled member. NOT A BOOLEAN, because the two patterns the APG describes want opposite answers and it is a real trade rather than an oversight.\n\n`focusable` — the member keeps its place in the arrow path and is marked disabled for assistive technology. This is the APG's own convention and it names tabs explicitly: \"aria-disabled='true' is applied so that it will remain focusable ... Tab elements in a set of Tabs\". Its reasoning is that \"screen reader users are far less likely to discover disabled elements that are not focusable because moving focus is one of their primary methods of discovery\".\n\n`skip` — navigation passes over it. Fewer key presses, and the cost is that a keyboard user cannot land on the member to find out it exists and is unavailable. The radio pattern page never mentions disabled items and radio buttons are absent from the APG's stay-focusable list, so choosing `skip` there is OUR decision and the contract should say so in its a11y notes."
+            },
+            "homeEnd": {
+              "type": "boolean",
+              "description": "Whether Home and End jump to the first and last member. Marked `(Optional)` by the APG for tabs, and not addressed at all for radio groups — the radio pattern lists no Home or End key. Omit it rather than assume it."
             }
           }
         }

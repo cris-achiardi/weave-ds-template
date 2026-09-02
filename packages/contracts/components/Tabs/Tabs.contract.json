@@ -4,16 +4,17 @@
   "status": {
     "level": "experimental",
     "since": "2026-09-01",
-    "note": "Chosen to test whether one navigation gap serves two components. Uses cardinality: one, like RadioGroup, and needs the same arrow-key model — but its members come in TWO kinds, a tab and a panel, which collection.items cannot say."
+    "note": "A collection whose members come in TWO kinds — a tab and a panel — which is why `collection.items` is a list. Its keyboard model is declared with the EXPERIMENTAL `collection.navigation` block, and it is the same primitive RadioGroup uses with different parameters, which was the point of building the two together. Sourced from the W3C ARIA APG tabs pattern; the conformance cases are in packages/contracts/conformance/linear-navigation.json."
   },
   "intent": {
     "purpose": "Holds which one of several sections is showing, in a fixed area, so a person can move between them without losing their place on the page.",
     "behaviour": [
       "Holds exactly one selected value. Unlike an accordion, the selection can never be emptied — there is always a visible panel.",
       "Renders its tabs inside a tablist and its panels as siblings of it, because a tablist may contain only tabs.",
-      "Moves between tabs on the arrow keys, wrapping at both ends, and selects as it moves.",
+      "Moves between tabs on the LEFT and RIGHT arrow keys only, wrapping at both ends, and selects as it moves. It deliberately leaves Up and Down alone so those keys keep scrolling the page while focus is inside the strip — the APG is explicit that a horizontal tab list must not listen for them.",
+      "Jumps to the first or last tab on Home and End.",
       "Keeps exactly one tab in the Tab order, so Tab enters the strip and then leaves it for the panel.",
-      "Skips disabled tabs when moving."
+      "Keeps disabled tabs in the arrow path rather than skipping them, marked as disabled for assistive technology, so a screen-reader user can still discover that they exist."
     ],
     "notFor": [
       "Navigation between routes. These panels show and hide in place; nothing here changes the URL or manages history.",
@@ -29,6 +30,13 @@
       "cardinality": "one",
       "control": "shared",
       "initial": "first-enabled"
+    },
+    "navigation": {
+      "orientation": "horizontal",
+      "wrap": true,
+      "followsFocus": true,
+      "disabledItems": "focusable",
+      "homeEnd": true
     }
   },
   "states": {
@@ -45,10 +53,11 @@
   "a11y": {
     "focusVisible": false,
     "contrast": "not-applicable",
-    "keyboard": "Tab enters the strip on the selected tab and leaves it for the panel. Arrow keys move between tabs and select as they move, wrapping at both ends.",
+    "keyboard": "Tab enters the strip on the selected tab and leaves it for the panel. Left and Right move between tabs and select as they move, wrapping at both ends; Home and End jump to the ends. Up and Down are deliberately not handled, so they still scroll the page.",
     "notes": [
-      "The tablist has no accessible name of its own. A consumer must supply one via aria-label or aria-labelledby, or assistive technology announces an unnamed set of tabs.",
-      "Selection follows focus, which suits panels already in memory and is the wrong default for a panel that fetches. That distinction is a real design decision and this contract cannot express which was chosen.",
+      "The tablist has no accessible name of its own. A consumer must supply one via `aria-label` or `aria-labelledby`, or assistive technology announces an unnamed set of tabs.",
+      "Selection follows focus. The APG marks that OPTIONAL for this pattern and recommends it wherever a panel's content is already in the document, because arrowing across a strip then costs nothing. It is the wrong default for a panel that fetches: its threshold phrase is 'noticeable latency'. This contract chooses automatic activation, and a consumer whose panels fetch on display needs a different one.",
+      "Disabled tabs stay focusable rather than being skipped, which is the APG's own convention and the opposite of what this library does for radio options. Its reasoning: screen-reader users discover elements by moving focus, so a disabled tab removed from the arrow path is a tab they will never find out about.",
       "Exactly one tab is reachable with Tab. A controlled value matching no rendered tab leaves the whole strip unreachable by keyboard, and nothing here detects it.",
       "Content hidden in an unselected panel is invisible to find-in-page. That is the cost of the pattern and no option here mitigates it."
     ]
