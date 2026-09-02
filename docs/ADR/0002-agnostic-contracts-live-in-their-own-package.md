@@ -1,7 +1,9 @@
 # ADR 0002 — Agnostic contracts live in their own package, not at the repo root
 
-- **Status:** Accepted
+- **Status:** Draft
 - **Date:** 2026-09-01
+- **Revised:** 2026-09-02 — returned to Draft. The split is real on disk; what it EXISTS to prove
+  is not proven, and cannot be by one backend. See "Why this is still Draft".
 - **Deciders:** cris
 - **Tags:** packaging, governance, components
 - **Related:** [ADR 0001 — Every layer is self-describing, and context is pulled rather than pushed](./0001-every-layer-is-self-describing.md)
@@ -56,6 +58,47 @@ agnosticism enforceable at a package boundary rather than by convention about a 
    framework is evidence the split has been breached, and the fix is to move the fact out, not to
    widen the schema.
 
+## Why this is still Draft
+
+Everything in the decision above is on disk and gated. It is held at Draft anyway, because a
+packaging boundary is not the point — **it is a mechanism for a claim, and the claim is untested.**
+
+The claim is that a component contract is a source of truth that many backends can compile. Today
+exactly one does: a React emitter, into a sandbox, on the web. One backend cannot demonstrate
+agnosticism, because nothing distinguishes "this contract is framework-neutral" from "this contract
+happens to suit the only compiler that has ever read it." Every field in the schema was added
+because a React emitter needed it, and that is precisely the bias the package boundary is meant to
+catch and currently cannot.
+
+**The proof is a second backend, and it is a specific test, not a feeling:** a compiler for another
+target reads the same contracts and the same conformance definitions, and changes NOTHING inside
+`@ds/contracts` to do it. Decision 5 already states this as a rule for future work; until something
+exercises it, the rule has never been tried.
+
+The targets that would actually test it are deliberately unlike each other, because a second web
+framework would prove much less than it appears to:
+
+| Target                | What it would falsify                                                         |
+| --------------------- | ----------------------------------------------------------------------------- |
+| Vue, Angular, Svelte  | that the prop and event model is React's idiom wearing agnostic clothing      |
+| Web components        | that the contract assumes a virtual DOM and a component-function render model |
+| React Native, Flutter | that the contract assumes CSS, a cascade, and a document at all               |
+
+The third row is the sharp one. Several things that read as agnostic today are not: ADR 0003's
+decision 5 says the emitter produces two **stylesheets**, and there is no stylesheet in Flutter.
+That is a backend's answer to an agnostic question — how a paint channel is delivered — recorded as
+though it were the answer.
+
+**Emitters are recipes, not a fixed set.** The intent is that this repo ships a core contract set and
+a handful of worked emitters, and that a consumer can write their own for a target or a styling model
+nobody here anticipated: Tailwind classes rather than custom properties, NativeWind, a token system
+that emits JavaScript objects or platform declarations instead of CSS. That is not a stretch goal
+bolted on afterwards — it is the reason ADR 0003 leaves a paint's source unbound, and the reason a
+token pipeline built on Style Dictionary sits in this repo rather than a hardcoded set of variables.
+
+This record moves to Accepted when a second backend has been built and the contracts package did not
+have to change to accommodate it.
+
 ## Contract
 
 | Concern                                        | Where                                                                              |
@@ -108,6 +151,10 @@ agnosticism enforceable at a package boundary rather than by convention about a 
     against `cva` axes in a TSX. With component source generated rather than written, that
     comparison is circular. It is harmless today only because there are zero components, and the
     schema README says so out loud precisely so it is not discovered later as a surprise.
+  - **The package boundary catches an import, not an assumption.** "Would this compile without React
+    installed?" is the test the decision names, and a contract can pass it while still assuming a
+    DOM, a cascade, or a stylesheet. Nothing in this repo detects that, and the emitter's own printed
+    assumptions are currently the only place such a bias is visible at all.
 
 ## Alternatives considered
 
