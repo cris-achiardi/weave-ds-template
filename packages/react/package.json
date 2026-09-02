@@ -4,9 +4,6 @@
   "private": true,
   "type": "module",
   "description": "React component library.",
-  "sideEffects": [
-    "*.css"
-  ],
   "main": "./dist/index.cjs",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -15,7 +12,11 @@
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     },
-    "./styles.css": "./dist/styles.css"
+    "./behavior": {
+      "types": "./dist/behavior/index.d.ts",
+      "import": "./dist/behavior.js",
+      "require": "./dist/behavior.cjs"
+    }
   },
   "files": [
     "dist"

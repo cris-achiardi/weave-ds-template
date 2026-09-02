@@ -6,16 +6,12 @@
 // repository from a contract in @ds/contracts, and is theirs from that moment on. There is
 // nothing here to re-export and there never will be.
 //
-// What this barrel will eventually export is the BEHAVIOUR RUNTIME: the interaction primitives
-// that emitted components import rather than copy — focus management, keyboard navigation,
-// selection. See ./behavior/README.md for why those are a dependency when everything else is
-// handed over.
+// The BEHAVIOUR RUNTIME does not live here. It has its own entry point, `@ds/react/behavior`,
+// so a consumer importing a keyboard primitive does not also resolve this barrel. See
+// ./behavior/README.md for why those primitives are a dependency when everything else is handed
+// over to the consumer.
 //
-// Nothing is implemented yet. The behaviour vocabulary that these primitives implement does not
-// exist in the schema either, so there is nothing to build against.
-//
-// A `./behavior` export subpath is deliberately NOT declared in package.json until there is a
-// built file behind it: an exports entry pointing at nothing is a runtime failure that no gate
-// here would catch.
+// This barrel therefore exports nothing, and is kept only because it is the package's `.` entry
+// and something has to be there.
 
 export {};
