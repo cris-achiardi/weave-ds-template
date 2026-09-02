@@ -9,6 +9,6 @@
   "notes": [
     "Renders a plain `<div>` carrying `role=\"radiogroup\"` rather than a `<fieldset>`. A fieldset brings a legend, and the group's name comes from the consumer here.",
     "The selection is shared with items through React context. That is a React mechanism, not a contract fact.",
-    "The arrow-key model the contract describes in `intent.behaviour` is NOT generated: nothing in the contract expresses linear navigation, wrapping, roving tabindex, or selection following focus. The emitted group is therefore keyboard-incomplete against its own stated behaviour, which is recorded rather than hidden."
+    "The keyboard model is generated from `collection.navigation` and executed by `useLinearNavigation` from `@ds/react/behavior` — an imported dependency, not copied code. The context additionally carries `register`/`unregister`/`isTabStop`, which is how this backend learns which DOM nodes its members are. That protocol is a React invention; the conformance cases in `@ds/contracts/conformance/linear-navigation.json` are what keep a second backend's different invention equivalent."
   ]
 }

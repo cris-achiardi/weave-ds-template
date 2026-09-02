@@ -179,7 +179,7 @@ export function App() {
       <Specimen
         name="Tabs + TabItem + TabPanel"
         verdict="partial"
-        note="A collection whose members come in TWO kinds. collection.items had to become a list — a tab and its panel both read the same selection, and a single component name could only admit one of them. Mouse selection works and the panels swap. The keyboard does not, and neither aria-controls nor aria-labelledby is generated: those references cross a component boundary, and controls/namedBy can only name a sibling part."
+        note="A collection whose members come in TWO kinds. collection.items had to become a list — a tab and its panel both read the same selection, and a single component name could only admit one of them. The keyboard is now generated from collection.navigation: Left/Right move and select, wrapping; Home/End jump to the ends; Down and Up are deliberately left alone so the page still scrolls. The disabled tab stays focusable and refuses to be chosen, which is why it carries aria-disabled rather than the native attribute — a disabled button cannot be focused at all. What is still missing is the two ARIA references: aria-controls to the panel and aria-labelledby back to the tab both cross a component boundary, and controls/namedBy can only name a sibling part."
       >
         <Tabs value={tab} onValueChange={setTab} aria-label="Project sections">
           <TabItem value="overview" label="Overview" />
@@ -271,8 +271,8 @@ export function App() {
 
       <Specimen
         name="RadioGroup + RadioItem"
-        verdict="partial"
-        note="Mouse selection works, and cardinality: one behaves correctly — clicking the chosen option does nothing, unlike the accordion. The KEYBOARD does not. The APG requires arrow keys that move and select, wrapping, and a roving tabindex with exactly one option in the Tab order. Nothing in the contract can express any of that, so every option is tabbable and the arrows do nothing. Tab through it and compare with what the contract describes in prose."
+        verdict="works"
+        note="Mouse selection works, and cardinality: one behaves correctly — clicking the chosen option does nothing, unlike the accordion. The keyboard now works too, and from the same primitive the tabs use: all four arrows move and select, because the APG groups Right with Down; the sold-out option is skipped rather than kept focusable, which is the one place these two contracts disagree; and exactly one option sits in the Tab order. Home and End are left alone, since the APG lists neither for this pattern — press them and the page scrolls."
       >
         <RadioGroup
           aria-label="Billing period"

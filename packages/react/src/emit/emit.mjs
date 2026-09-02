@@ -324,6 +324,7 @@ function emitTsx(name, contract, binding, prefix) {
   // A member contract is NOT self-contained: whether its selection is a set or a single value
   // lives in the ancestor's contract, so the emitter has to open that file to compile this one.
   let memberMany = false;
+  let memberNav = null;
   if (member) {
     const ancestorPath = join(CONTRACTS, 'components', member.of, `${member.of}.contract.json`);
     if (!existsSync(ancestorPath)) {
@@ -341,12 +342,29 @@ function emitTsx(name, contract, binding, prefix) {
       );
     }
     memberMany = ancestor.collection.selection.cardinality === 'many';
+    memberNav = ancestor.collection.navigation ?? null;
     assume(
       'a member contract is not self-contained',
       `read ${member.of}.contract.json to learn the selection is ${memberMany ? 'a set' : 'a single value'}`,
       'Cardinality lives on the ancestor, so this component cannot be compiled from its own contract alone. Nothing in the repo checks that the two contracts agree; the emitter now does, and it is the only thing that does.',
     );
   }
+
+  // Linear navigation, from whichever side of the collection this component is on.
+  const navigation = collection?.navigation ?? null;
+  // A member is in the arrow path iff its root declares `activates` — a thing you choose is a
+  // thing you arrow onto. That is what excludes a TabPanel from the arrow path while including a
+  // TabItem, WITHOUT either contract having to say so: both are members of the same collection and
+  // only one of them is activated. If this ever needs to be declared explicitly, that is a schema
+  // change, not an emitter table.
+  const registers = Boolean(memberNav && root.activates);
+  // A member the arrows must still be able to land on cannot carry the NATIVE `disabled`
+  // attribute: the platform makes such an element unfocusable, full stop, and no amount of
+  // tabIndex or .focus() overrides it. Found by pressing the key, not by reading the code — the
+  // generated tab list looked correct and typechecked, and its disabled tab was simply
+  // unreachable. `aria-disabled` is what the APG uses for exactly this reason; the activation
+  // guard the emitter already writes is what keeps the member from being chosen.
+  const ariaDisabledOnly = registers && memberNav.disabledItems === 'focusable';
 
   const sharedStates = new Set(shared.map((s) => s.from));
   const consumerProps = props.filter((p) => p.role === 'input');
@@ -385,6 +403,13 @@ function emitTsx(name, contract, binding, prefix) {
       'No part declares `activates`, and nothing else in the contract says what causes these to change.',
     );
   }
+  if (navigation) {
+    assume(
+      'how a collection moves focus between its members',
+      'a member registration protocol over React context, plus useLinearNavigation from @ds/react/behavior',
+      'The contract declares WHAT the keyboard does — orientation, wrap, whether selection follows focus, what happens at a disabled member — and says nothing about how a backend learns which DOM nodes its members are. React does it with a context carrying register/unregister and a callback ref; a web component would use slot assignment; a template compiler could resolve it statically. The protocol belongs to this backend and the conformance cases are what keep the inventions equivalent.',
+    );
+  }
   if (member) {
     assume(
       'how a member reaches its collection',
@@ -421,6 +446,7 @@ function emitTsx(name, contract, binding, prefix) {
   if (needsIds && !member) hooks.push('useId');
   if (shared.length || selShared) hooks.push('useState');
   if (rootToggles || activator || collection || nativelyEdited) hooks.push('useCallback');
+  if (registers) hooks.push('useCallback');
   if (collection) hooks.push('createContext', 'useMemo');
   if (member) hooks.push('useContext');
   s.push(`import { ${[...new Set(hooks)].join(', ')} } from 'react';`);
@@ -428,12 +454,39 @@ function emitTsx(name, contract, binding, prefix) {
   if (slots.length) types.push('ReactNode');
   if (nativelyEdited) types.push('ChangeEvent');
   s.push(`import type { ${types.join(', ')} } from 'react';`);
+  if (navigation) {
+    // A real package import, not copied code. What you can see you own; what must be correct you
+    // depend on. The TYPE is imported too, so a `collection.navigation` block that has drifted
+    // from the primitive's option shape fails to typecheck in the generated component rather than
+    // failing silently at runtime.
+    s.push(
+      `import {
+  useLinearNavigation,
+  type MemberRegistration,
+  type NavigationOptions,
+} from '@ds/react/behavior';`,
+    );
+  }
   if (member) {
     s.push(`import { ${member.of}Context } from '../${member.of}/${member.of}';`);
   }
   s.push(`import './${name}.structure.css';`);
   s.push(`import './${name}.theme.css';`);
   s.push(``);
+
+  // ---- the declared keyboard model, module-level so its identity is stable across renders
+  if (navigation) {
+    s.push(`// Transcribed field for field from ${name}.contract.json > collection.navigation.`);
+    s.push(
+      `// The cases this commits us to are in @ds/contracts/conformance/linear-navigation.json.`,
+    );
+    s.push(`const NAVIGATION: NavigationOptions = {`);
+    for (const [k, v] of Object.entries(navigation)) {
+      s.push(`  ${k}: ${typeof v === 'string' ? `'${v}'` : String(v)},`);
+    }
+    s.push(`};`);
+    s.push(``);
+  }
 
   // ---- the context a collection publishes to its members
   if (collection) {
@@ -447,6 +500,15 @@ function emitTsx(name, contract, binding, prefix) {
     s.push(`  baseId: string;`);
     s.push(`  /** True when the whole collection is disabled. */`);
     s.push(`  disabled: boolean;`);
+    if (navigation) {
+      s.push(
+        `  /** A member announces its DOM node, so the collection can move focus between them. */`,
+      );
+      s.push(`  register: (${collection.identity}: string, entry: MemberRegistration) => void;`);
+      s.push(`  unregister: (${collection.identity}: string) => void;`);
+      s.push(`  /** True for the one member that sits in the page's tab sequence. */`);
+      s.push(`  isTabStop: (${collection.identity}: string) => boolean;`);
+    }
     s.push(`}`);
     s.push(``);
     s.push(`export const ${name}Context = createContext<${name}ContextValue | null>(null);`);
@@ -510,6 +572,37 @@ function emitTsx(name, contract, binding, prefix) {
       `  const selected = ${memberMany ? `ctx.selection.includes(${member.identity})` : `ctx.selection === ${member.identity}`};`,
     );
     if (referencesParts) s.push(`  const baseId = \`\${ctx.baseId}-\${${member.identity}}\`;`);
+    if (registers) {
+      const dis = disabledExpr ?? 'ctx.disabled';
+      // `register`/`unregister` are pulled off the context ON PURPOSE rather than closing over
+      // `ctx`. They are the two stable fields on it; the rest change with the selection. A ref
+      // callback that depended on the whole context would be re-created on every selection change,
+      // which detaches and re-attaches the node, which re-registers it, which re-renders the
+      // collection — a loop with no exit.
+      s.push(`  const { register, unregister } = ctx;`);
+      s.push(``);
+      s.push(`  const rootRef = useCallback(`);
+      s.push(`    (node: ${elType} | null) => {`);
+      s.push(`      if (node) {`);
+      s.push(`        register(${member.identity}, { element: node, disabled: ${dis} });`);
+      s.push(`      } else {`);
+      s.push(`        unregister(${member.identity});`);
+      s.push(`      }`);
+      s.push(`      // The consumer's own ref still has to land. Swallowing it would break every`);
+      s.push(`      // measurement and every imperative focus call made from outside.`);
+      s.push(`      if (typeof ref === 'function') ref(node);`);
+      s.push(`      else if (ref) ref.current = node;`);
+      s.push(`    },`);
+      const refDeps = ['register', 'unregister', member.identity];
+      if (disabledExpr) {
+        refDeps.push('disabled', 'ctx.disabled');
+      } else {
+        refDeps.push('ctx.disabled');
+      }
+      refDeps.push('ref');
+      s.push(`    [${refDeps.join(', ')}],`);
+      s.push(`  );`);
+    }
     s.push(``);
   } else if (needsIds) {
     s.push(`  const baseId = useId();`);
@@ -559,9 +652,33 @@ function emitTsx(name, contract, binding, prefix) {
     s.push(`    [selection, valueControlled, onValueChange],`);
     s.push(`  );`);
     s.push(``);
+    if (navigation) {
+      s.push(
+        `  // \`toggle\` is the selection setter, and \`followsFocus\` is what decides whether the`,
+      );
+      s.push(
+        `  // primitive calls it. With followsFocus false it is never called from here and arrowing`,
+      );
+      s.push(`  // only moves focus.`);
+      s.push(`  const nav = useLinearNavigation(NAVIGATION, selection, toggle);`);
+      s.push(``);
+    }
+    const fields = ['selection', 'toggle', 'baseId', 'disabled: disabled ?? false'];
+    const deps = ['selection', 'toggle', 'baseId', 'disabled'];
+    if (navigation) {
+      // Deliberately NOT `...nav`. `nav.onKeyDown` changes identity whenever the member list moves
+      // and is used only on this component's own root, so putting it in the context would
+      // re-render every member for nothing.
+      fields.push(
+        'register: nav.register',
+        'unregister: nav.unregister',
+        'isTabStop: nav.isTabStop',
+      );
+      deps.push('nav.register', 'nav.unregister', 'nav.isTabStop');
+    }
     s.push(`  const contextValue = useMemo(`);
-    s.push(`    () => ({ selection, toggle, baseId, disabled: disabled ?? false }),`);
-    s.push(`    [selection, toggle, baseId, disabled],`);
+    s.push(`    () => ({ ${fields.join(', ')} }),`);
+    s.push(`    [${deps.join(', ')}],`);
     s.push(`  );`);
     s.push(``);
   }
@@ -630,7 +747,7 @@ function emitTsx(name, contract, binding, prefix) {
   s.push(`  return (`);
   const rootAttrs = [];
   rootAttrs.push(`{...rest}`);
-  rootAttrs.push(`ref={ref}`);
+  rootAttrs.push(registers ? `ref={rootRef}` : `ref={ref}`);
   if (el === 'button') rootAttrs.push(`type="button"`);
   // A <button> already IS role=button; restating it is noise the linters flag.
   const IMPLICIT_ROLE = { button: 'button', input: 'textbox', textarea: 'textbox' };
@@ -659,7 +776,9 @@ function emitTsx(name, contract, binding, prefix) {
       );
       continue;
     }
-    if (NATIVE_ATTR[st] && NATIVE_OK.has(el)) rootAttrs.push(`${NATIVE_ATTR[st]}={${expr}}`);
+    if (st === 'disabled' && ariaDisabledOnly)
+      rootAttrs.push(`aria-disabled={${expr} || undefined}`);
+    else if (NATIVE_ATTR[st] && NATIVE_OK.has(el)) rootAttrs.push(`${NATIVE_ATTR[st]}={${expr}}`);
     else if (ariaOk && ARIA_EXPLICIT_FALSE.has(st)) rootAttrs.push(`${ARIA_ATTR[st]}={${expr}}`);
     else if (ariaOk) rootAttrs.push(`${ARIA_ATTR[st]}={${expr} || undefined}`);
     else if (def.valueType) {
@@ -690,10 +809,17 @@ function emitTsx(name, contract, binding, prefix) {
       );
     }
   }
+  // The roving tab stop. Emitted for a member of a navigable collection REGARDLESS of whether its
+  // element is natively focusable: a <button> is in the tab sequence by default, and for this
+  // pattern all but one of them must be taken out of it.
+  if (registers) {
+    rootAttrs.push(`tabIndex={ctx.isTabStop(${member.identity}) ? 0 : -1}`);
+  }
   // Something with a role that takes focus needs to be reachable. `semantics.focusable` says so
   // and nothing was reading it.
   const NATIVELY_FOCUSABLE = new Set(['button', 'input', 'textarea', 'select', 'a']);
   if (
+    !registers &&
     contract.semantics?.focusable &&
     !NATIVELY_FOCUSABLE.has(el) &&
     (root.role || contract.semantics?.role)
@@ -702,7 +828,7 @@ function emitTsx(name, contract, binding, prefix) {
     assume(
       'focus order',
       'every focusable member is given tabIndex 0',
-      'The contract declares `semantics.focusable` and nothing more. A radio group requires a ROVING tabindex — exactly one option in the Tab sequence, the chosen one — and nothing in the contract can express that, so the emitted group puts every option in the Tab order, which is wrong for the pattern its own `intent.behaviour` describes.',
+      'The contract declares `semantics.focusable` and nothing more. Where the collection also declares `collection.navigation` the emitter now generates a roving tab stop from it; this fallback fires only for a focusable component whose collection declares no keyboard model, and it puts every member in the Tab order.',
     );
   }
   // An axis has to be visible to CSS or a variant cannot be styled at all. Without CSS Modules
@@ -734,6 +860,7 @@ function emitTsx(name, contract, binding, prefix) {
   // `visibleWhen` on the ROOT was handled only for child parts, so a panel that hides itself and a
   // dialog that appears were both rendered permanently visible.
   if (root.visibleWhen) rootAttrs.push(`hidden={!(${stateExpr(root.visibleWhen, ctx)})}`);
+  if (navigation) rootAttrs.push(`onKeyDown={nav.onKeyDown}`);
   if (rootToggles) rootAttrs.push(`onClick={activate}`);
   rootAttrs.push(`data-${prefix}-component="${name}"`);
   rootAttrs.push(`data-${prefix}-part="${root.part}"`);

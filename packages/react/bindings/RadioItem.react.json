@@ -9,6 +9,6 @@
   "notes": [
     "The contract's `semantics` names no role for the root; the role `radio` is declared on the anatomy root itself, which is where it belongs.",
     "Renders a `<div role=\"radio\">` rather than a hidden `<input type=\"radio\">` plus label. The native input brings form participation, which no contract can currently express, and brings styling constraints the unstyled model cannot accept. The cost is that a generated RadioGroup does not take part in form submission at all.",
-    "Roving tabindex is not generated, because nothing in the contract declares it. Every item is therefore in the Tab order, which is wrong for this pattern."
+    "Registers its root node with the group through the context and takes its `tabIndex` from `isTabStop`, so exactly one item is in the page's Tab sequence. The registering ref composes with the consumer's forwarded ref rather than replacing it."
   ]
 }

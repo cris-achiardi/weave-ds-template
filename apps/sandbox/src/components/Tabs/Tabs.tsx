@@ -5,8 +5,23 @@
 
 import { forwardRef, useId, useState, useCallback, createContext, useMemo } from 'react';
 import type { HTMLAttributes } from 'react';
+import {
+  useLinearNavigation,
+  type MemberRegistration,
+  type NavigationOptions,
+} from '@ds/react/behavior';
 import './Tabs.structure.css';
 import './Tabs.theme.css';
+
+// Transcribed field for field from Tabs.contract.json > collection.navigation.
+// The cases this commits us to are in @ds/contracts/conformance/linear-navigation.json.
+const NAVIGATION: NavigationOptions = {
+  orientation: 'horizontal',
+  wrap: true,
+  followsFocus: true,
+  disabledItems: 'focusable',
+  homeEnd: true,
+};
 
 export interface TabsContextValue {
   /** The current selection, by member value. */
@@ -17,6 +32,11 @@ export interface TabsContextValue {
   baseId: string;
   /** True when the whole collection is disabled. */
   disabled: boolean;
+  /** A member announces its DOM node, so the collection can move focus between them. */
+  register: (value: string, entry: MemberRegistration) => void;
+  unregister: (value: string) => void;
+  /** True for the one member that sits in the page's tab sequence. */
+  isTabStop: (value: string) => boolean;
 }
 
 export const TabsContext = createContext<TabsContextValue | null>(null);
@@ -55,9 +75,22 @@ export const Tabs = forwardRef<HTMLDivElement, TabsProps>(function Tabs(
     [selection, valueControlled, onValueChange],
   );
 
+  // `toggle` is the selection setter, and `followsFocus` is what decides whether the
+  // primitive calls it. With followsFocus false it is never called from here and arrowing
+  // only moves focus.
+  const nav = useLinearNavigation(NAVIGATION, selection, toggle);
+
   const contextValue = useMemo(
-    () => ({ selection, toggle, baseId, disabled: disabled ?? false }),
-    [selection, toggle, baseId, disabled],
+    () => ({
+      selection,
+      toggle,
+      baseId,
+      disabled: disabled ?? false,
+      register: nav.register,
+      unregister: nav.unregister,
+      isTabStop: nav.isTabStop,
+    }),
+    [selection, toggle, baseId, disabled, nav.register, nav.unregister, nav.isTabStop],
   );
 
   return (
@@ -66,6 +99,7 @@ export const Tabs = forwardRef<HTMLDivElement, TabsProps>(function Tabs(
       ref={ref}
       id={baseId}
       aria-disabled={disabled || undefined}
+      onKeyDown={nav.onKeyDown}
       data-ds-component="Tabs"
       data-ds-part="root"
       className={className}

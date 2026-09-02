@@ -32,6 +32,22 @@ export const TabItem = forwardRef<HTMLButtonElement, TabItemProps>(function TabI
     );
   }
   const selected = ctx.selection === value;
+  const { register, unregister } = ctx;
+
+  const rootRef = useCallback(
+    (node: HTMLButtonElement | null) => {
+      if (node) {
+        register(value, { element: node, disabled: disabled || ctx.disabled });
+      } else {
+        unregister(value);
+      }
+      // The consumer's own ref still has to land. Swallowing it would break every
+      // measurement and every imperative focus call made from outside.
+      if (typeof ref === 'function') ref(node);
+      else if (ref) ref.current = node;
+    },
+    [register, unregister, value, disabled, ctx.disabled, ref],
+  );
 
   const activate = useCallback(() => {
     if (disabled || ctx.disabled) return;
@@ -41,11 +57,12 @@ export const TabItem = forwardRef<HTMLButtonElement, TabItemProps>(function TabI
   return (
     <button
       {...rest}
-      ref={ref}
+      ref={rootRef}
       type="button"
       role="tab"
-      disabled={disabled}
+      aria-disabled={disabled || undefined}
       aria-selected={selected}
+      tabIndex={ctx.isTabStop(value) ? 0 : -1}
       onClick={activate}
       data-ds-component="TabItem"
       data-ds-part="root"
