@@ -1,20 +1,18 @@
 {
   "$schema": "../../schema/component.schema.json",
   "component": "RadioGroup",
-
   "status": {
     "level": "experimental",
     "since": "2026-09-01",
-    "note": "Sourced from the W3C ARIA APG radio group pattern, which is normative and complete for this widget, and Base UI's RadioGroup for API naming consensus. First use of `cardinality: one`, and the first component whose keyboard model the contract cannot express."
+    "note": "Sourced from the W3C ARIA APG radio group pattern, which is normative and complete for this widget, and Base UI's RadioGroup for API naming consensus. First use of `cardinality: one`. Its keyboard model is declared with the EXPERIMENTAL `collection.navigation` block; the cases a backend must satisfy are in packages/contracts/conformance/linear-navigation.json. The APG's TOOLBAR variant of this pattern — where arrows escape the group and never change the checked state — is deliberately not covered."
   },
-
   "intent": {
     "purpose": "Holds one choice from a small set of mutually exclusive options, all visible at once. It exists so the chosen option has exactly one home: the items compare against it rather than each holding a copy.",
     "behaviour": [
       "Holds exactly one selected value. Unlike an accordion, the selection cannot be emptied by the user — choosing another option is the only way to change it.",
-      "Moves between options on the arrow keys, wrapping at both ends, and SELECTS as it moves: arrowing to an option chooses it in the same action.",
+      "Moves between options on ANY of the four arrow keys, wrapping at both ends, and SELECTS as it moves: arrowing to an option chooses it in the same action. The APG groups Right with Down and Left with Up as strict equivalents, so a radio group answers all four regardless of how it is laid out.",
       "Keeps exactly one option in the Tab order — the selected one, or the first when nothing is selected — so Tab enters and leaves the group rather than walking through it.",
-      "Skips disabled options when moving.",
+      "Skips disabled options when moving. That is this library's choice, not the APG's, which does not address disabled radio buttons at all.",
       "Announces itself as a group with a name the consumer supplies. It has no name of its own."
     ],
     "notFor": [
@@ -24,7 +22,6 @@
       "An action. Choosing an option records a choice; it does not do a thing."
     ]
   },
-
   "collection": {
     "items": "RadioItem",
     "identity": "value",
@@ -32,9 +29,14 @@
       "cardinality": "one",
       "control": "shared",
       "initial": "none"
+    },
+    "navigation": {
+      "orientation": "both",
+      "wrap": true,
+      "followsFocus": true,
+      "disabledItems": "skip"
     }
   },
-
   "states": {
     "disabled": {
       "kind": "intrinsic",
@@ -49,24 +51,21 @@
       "visual": "NOT DECIDED. No treatment has been designed, and inventing one here would be a guess."
     }
   },
-
   "semantics": {
     "role": "radiogroup",
     "focusable": false
   },
-
   "a11y": {
     "focusVisible": false,
     "contrast": "not-applicable",
-    "keyboard": "Tab enters the group on the selected option, or the first when nothing is selected, and leaves it entirely. Arrow keys move between options and select as they move, wrapping at both ends. Space selects the focused option.",
+    "keyboard": "Tab enters the group on the selected option, or the first when nothing is selected, and leaves it entirely. All four arrow keys move between options and select as they move, wrapping at both ends. Space selects the focused option. Home and End are not implemented: the APG's radio pattern lists neither.",
     "notes": [
       "The group has no accessible name of its own. A consumer must supply one via `aria-label` or `aria-labelledby`, or assistive technology announces an unnamed set of options. This component cannot supply a sensible default and does not try.",
-      "Selection follows focus, which is the APG's specified behaviour for this pattern, and is why arrow keys cannot be used to browse the options without choosing. A consumer who needs browsing without committing wants a listbox, not a radio group.",
+      "Selection follows focus, and for this pattern that is not a choice: the APG writes it into the arrow key's own definition — the keys move focus, uncheck the previously focused button and check the newly focused one. A radio group whose arrows move without choosing is not implementing the pattern. A consumer who needs to browse without committing wants a listbox.",
       "Exactly one option is reachable with Tab. A controlled `value` matching no rendered option therefore leaves the whole group unreachable by keyboard, and nothing here detects that — it cannot tell a not-yet-rendered value from a wrong one.",
-      "The APG says nothing about whether arrow navigation skips disabled options. This component skips them, which means a keyboard user cannot land on a disabled option to discover that it exists and is unavailable."
+      "Disabled options are skipped by arrow movement, so a keyboard user cannot land on one to discover that it exists and is unavailable. This is a deliberate trade and it is OURS: the APG's radio pattern never mentions disabled items, and radio buttons are absent from its list of composites whose disabled members should stay focusable. Tabs are on that list; radios are not."
     ]
   },
-
   "composition": {
     "children": {
       "accepts": ["RadioItem"],
@@ -74,7 +73,6 @@
       "description": "The options, in order. A radio group with one option is a checkbox with extra steps."
     }
   },
-
   "anatomy": {
     "root": {
       "part": "root",
