@@ -100,6 +100,7 @@ const ATTR_TYPE = {
   input: ['InputHTMLAttributes', 'HTMLInputElement'],
   label: ['LabelHTMLAttributes', 'HTMLLabelElement'],
   a: ['AnchorHTMLAttributes', 'HTMLAnchorElement'],
+  dialog: ['DialogHTMLAttributes', 'HTMLDialogElement'],
 };
 const attrTypeFor = (el) => ATTR_TYPE[el] ?? ['HTMLAttributes', 'HTMLDivElement'];
 
@@ -278,7 +279,13 @@ function renderPart(key, node, ctx, depth) {
   if (node.role && !(nodeEl === 'button' && node.role === 'button')) {
     attrs.push(`role="${node.role}"`);
   }
-  if (node.role || node.controls || node.namedBy || (node.describedBy ?? []).length) {
+  if (
+    node.role ||
+    node.controls ||
+    node.namedBy ||
+    (node.describedBy ?? []).length ||
+    ctx.referenced.has(key)
+  ) {
     attrs.push(`id={${idFor(key)}}`);
   }
   if (node.controls) attrs.push(`aria-controls={${refId(node.controls)}}`);
@@ -463,6 +470,22 @@ function emitTsx(name, contract, binding, prefix) {
   }
   const rangeShared = range ? shared.find((x) => x.from === range.state) : null;
 
+  // A native <dialog> does not take an attribute to become visible. It is opened by CALLING
+  // showModal() and closed by calling close(), and in exchange the platform supplies focus
+  // containment, an inert background, focus restoration and Escape — four things this contract
+  // states in prose and cannot declare.
+  //
+  // The trigger is the element name plus a root whose visibility is a state. That is platform
+  // knowledge sitting in an emitter, and it belongs with the other eight tables the same way.
+  const platformModal = el === 'dialog' && root.visibleWhen ? root.visibleWhen : null;
+  const modalShared = platformModal ? shared.find((x) => x.from === platformModal) : null;
+  if (platformModal && !modalShared) {
+    throw new Error(
+      `${name} renders a <dialog> whose visibility depends on "${platformModal}", but that state is ` +
+        `not \`control: shared\` — nothing could open it and nothing could hear it close.`,
+    );
+  }
+
   const editable = el === 'input' || el === 'textarea';
   const valueState = shared.find(
     (x) => contract.states?.[x.from]?.valueType === 'string' && x.name === 'value',
@@ -482,7 +505,14 @@ function emitTsx(name, contract, binding, prefix) {
       'The contract names the track and the axis, which is as far as a framework-agnostic statement can go — it says WHAT the geometry is measured against without knowing about pixels, events or a rendering model. Everything after that is this backend: getBoundingClientRect, setPointerCapture, and the decision to jump to the pressed point rather than requiring the thumb to be grabbed. A backend on a platform without pointer capture would need a different answer and the same conformance cases.',
     );
   }
-  if (shared.length && !rootToggles && !activator && !nativelyEdited && !range) {
+  if (platformModal) {
+    assume(
+      'how a modal opens and closes',
+      'the binding renders <dialog>, so showModal() and close() are driven from an effect and the platform supplies containment, inertness, focus restoration and Escape',
+      "THE FIRST useEffect IN GENERATED CODE, and it is not incidental. A <dialog> cannot be opened by rendering an attribute — React sets `open` on the first render and showModal() then throws InvalidStateError — so it has to be called after commit. The dialog also closes ITSELF on Escape, which means the component is no longer the only writer of its own state and has to listen for `close` to stay in sync. A backend without a modal element in its platform gets none of this and has to implement four separate behaviours, with only this contract's prose to go on.",
+    );
+  }
+  if (shared.length && !rootToggles && !activator && !nativelyEdited && !range && !platformModal) {
     assume(
       'what changes a shared state',
       `no event wired — ${shared.map((s) => s.name).join(', ')} exposed as storage only`,
@@ -530,6 +560,20 @@ function emitTsx(name, contract, binding, prefix) {
     ...(node.describedBy ?? []),
   ];
   const referencesParts = allParts.some((p) => refsOf(p.node).length);
+
+  // Which parts are POINTED AT from inside this component. A part was given an id only when it
+  // referenced something, so every part that was merely referenced had none — and the attribute
+  // pointing at it named an id nothing rendered.
+  //
+  // That is not a cosmetic defect. A Field's control claimed to be labelled by its label and
+  // described by its description and its error, and all three references were dangling: assistive
+  // technology reports the control as unnamed. It typechecks, it renders, and the only way to see it
+  // is to resolve the id in a browser.
+  const referenced = new Set(
+    [{ key: 'root', node: root }, ...allParts]
+      .flatMap((p) => refsOf(p.node))
+      .filter((r) => typeof r === 'string'),
+  );
   // A member whose root is POINTED AT from a sibling needs an id even if it references nothing
   // itself. Nothing in this contract can know that, so the flag is set from the ancestor's roster.
   const referencedByASibling = Boolean(
@@ -554,6 +598,7 @@ function emitTsx(name, contract, binding, prefix) {
     childrenPart,
     memberReflects: member?.reflects,
     rangeTrack: range && range.track !== 'root' ? range.track : null,
+    referenced,
     refId,
     sharedStates,
     disabledExpr,
@@ -572,6 +617,7 @@ function emitTsx(name, contract, binding, prefix) {
   if (rootToggles || activator || collection || nativelyEdited) hooks.push('useCallback');
   if (registers) hooks.push('useCallback');
   if (range) hooks.push('useCallback');
+  if (platformModal) hooks.push('useCallback', 'useEffect', 'useRef');
   if (collection) hooks.push('createContext', 'useMemo');
   if (member) hooks.push('useContext');
   s.push(`import { ${[...new Set(hooks)].join(', ')} } from 'react';`);
@@ -764,12 +810,82 @@ function emitTsx(name, contract, binding, prefix) {
     s.push(`  const [${v}Internal, set${pascal(st)}Internal] = useState(default${pascal(st)});`);
     s.push(`  const ${v}Value = ${v}Controlled ? ${sh.name} : ${v}Internal;`);
     const operatedByRange = range && range.state === st;
-    if (rootToggles !== st && !operatedByRange) {
+    if (rootToggles !== st && !operatedByRange && platformModal !== st) {
       s.push(`  // Nothing in the contract says what CHANGES \`${st}\`: no part declares`);
       s.push(
         `  // \`activates\`. It works when controlled from outside; uncontrolled it cannot move.`,
       );
       s.push(`  void set${pascal(st)}Internal;`);
+    }
+    if (platformModal === st) {
+      s.push(``);
+      s.push(`  // A <dialog> is opened by CALLING showModal(), never by rendering an attribute:`);
+      s.push(`  // React would set \`open\` on the first render and showModal() then throws`);
+      s.push(`  // InvalidStateError. So the element is held by a ref and driven after commit.`);
+      s.push(`  const dialogRef = useRef<${elType} | null>(null);`);
+      s.push(``);
+      s.push(`  useEffect(() => {`);
+      s.push(`    const node = dialogRef.current;`);
+      s.push(`    if (!node) return;`);
+      s.push(
+        `    // \`open\` reflects showModal() having been called, so it is also the guard against`,
+      );
+      s.push(`    // calling it twice — which throws in Safari 16 and is merely wasteful after.`);
+      s.push(`    if (${v}Value && !node.open) node.showModal();`);
+      s.push(`    else if (!${v}Value && node.open) node.close();`);
+      s.push(`  }, [${v}Value]);`);
+      s.push(``);
+      s.push(`  const setDialogRef = useCallback(`);
+      s.push(`    (node: ${elType} | null) => {`);
+      s.push(`      dialogRef.current = node;`);
+      s.push(
+        `      // The consumer's ref still has to land, and for a dialog it is the one way to`,
+      );
+      s.push(`      // reach showModal() from outside.`);
+      s.push(`      if (typeof ref === 'function') ref(node);`);
+      s.push(`      else if (ref) ref.current = node;`);
+      s.push(`    },`);
+      s.push(`    [ref],`);
+      s.push(`  );`);
+      s.push(``);
+      s.push(`  // The dialog closes ITSELF on Escape, so this component is no longer the only`);
+      s.push(
+        `  // writer of its own state. Without this the platform would hide the element while`,
+      );
+      s.push(`  // \`${st}\` stayed true, and the next open would be a no-op.`);
+      s.push(`  const handleClose = useCallback(() => {`);
+      s.push(`    if (!${v}Controlled) set${pascal(st)}Internal(false);`);
+      s.push(`    on${pascal(st)}Change?.(false);`);
+      s.push(`  }, [${v}Controlled, on${pascal(st)}Change]);`);
+      s.push(``);
+      s.push(`  // Synced from the ELEMENT's own \`open\` attribute, not from a \`close\` event.`);
+      s.push(`  //`);
+      s.push(
+        `  // Measured, not assumed: \`close\` did not fire in Chrome 153 — not through React's`,
+      );
+      s.push(
+        `  // \`onClose\` prop, not through addEventListener, and not through the \`onclose\``,
+      );
+      s.push(`  // property, on this element or on a bare probe dialog. a11y-dialog documents the`);
+      s.push(`  // same unreliability. Observing the attribute reads what is TRUE rather than`);
+      s.push(`  // trusting a notification, and it catches every way the platform can close this`);
+      s.push(
+        `  // element behind the component's back: Escape, \`closedby\`, a form submitted with`,
+      );
+      s.push(`  // method="dialog".`);
+      s.push(`  //`);
+      s.push(`  // Getting this wrong is not a cosmetic desync. Once \`${st}\` says open and the`);
+      s.push(`  // element says closed, the next open is a no-op and the dialog can never be`);
+      s.push(`  // shown again.`);
+      s.push(`  useEffect(() => {`);
+      s.push(`    const node = dialogRef.current;`);
+      s.push(`    if (!node) return;`);
+      s.push(`    const observer = new MutationObserver(() => {`);
+      s.push(`      if (!node.open) handleClose();`);
+      s.push(`    });`);
+      s.push(`    observer.observe(node, { attributes: true, attributeFilter: ['open'] });`);
+      s.push(`    return () => observer.disconnect();`);
+      s.push(`  }, [handleClose]);`);
     }
     if (operatedByRange) {
       s.push(``);
@@ -907,10 +1023,15 @@ function emitTsx(name, contract, binding, prefix) {
   s.push(`  return (`);
   const rootAttrs = [];
   rootAttrs.push(`{...rest}`);
-  rootAttrs.push(registers ? `ref={rootRef}` : `ref={ref}`);
+  rootAttrs.push(platformModal ? `ref={setDialogRef}` : registers ? `ref={rootRef}` : `ref={ref}`);
   if (el === 'button') rootAttrs.push(`type="button"`);
   // A <button> already IS role=button; restating it is noise the linters flag.
-  const IMPLICIT_ROLE = { button: 'button', input: 'textbox', textarea: 'textbox' };
+  const IMPLICIT_ROLE = {
+    button: 'button',
+    input: 'textbox',
+    textarea: 'textbox',
+    dialog: 'dialog',
+  };
   if (rootRole && IMPLICIT_ROLE[el] !== rootRole) {
     rootAttrs.push(`role="${rootRole}"`);
   }
@@ -925,7 +1046,8 @@ function emitTsx(name, contract, binding, prefix) {
     // aria-expanded on an accordion trigger and to nothing at all on a tooltip wrapper: the right
     // attribute depends on the role, and the contract's state name does not carry one.
     const roleBearing = Boolean(rootRole) || el === 'button' || el === 'input';
-    const ariaOk = ARIA_ATTR[st] && (roleBearing || st === 'disabled');
+    const ariaOk =
+      ARIA_ATTR[st] && (roleBearing || st === 'disabled') && ariaFits(ARIA_ATTR[st], rootRole);
     if (def.values && ariaOk) {
       const map = def.values.map((v) => `${expr} === '${v}' ? '${ARIA_VALUE[v] ?? v}'`).join(' : ');
       rootAttrs.push(`${ARIA_ATTR[st]}={${map} : undefined}`);
@@ -1039,7 +1161,11 @@ function emitTsx(name, contract, binding, prefix) {
   }
   // `visibleWhen` on the ROOT was handled only for child parts, so a panel that hides itself and a
   // dialog that appears were both rendered permanently visible.
-  if (root.visibleWhen) rootAttrs.push(`hidden={!(${stateExpr(root.visibleWhen, ctx)})}`);
+  // NOT for a platform modal. A <dialog> hides itself when closed — `dialog:not([open])` is a UA
+  // rule — and adding `hidden` on top would fight showModal() for control of the same thing.
+  if (root.visibleWhen && !platformModal) {
+    rootAttrs.push(`hidden={!(${stateExpr(root.visibleWhen, ctx)})}`);
+  }
   // The root part's own references. Every one of these was handled for CHILD parts only, so a
   // component whose outermost node is the thing that points — a tab at its panel, a panel back at
   // its tab — generated nothing at all and nothing detected it.
@@ -1111,11 +1237,13 @@ function emitTsx(name, contract, binding, prefix) {
 // ---------------------------------------------------------------------------------------
 // structure.css
 // ---------------------------------------------------------------------------------------
-function emitStructure(name, contract, prefix) {
+function emitStructure(name, contract, binding, prefix) {
   const root = contract.anatomy.root;
   const kids = Object.values(root.parts ?? {});
   // Does anything in this component hide itself? `visibleWhen` is the only way a contract says so.
   const hides = JSON.stringify(contract.anatomy).includes('"visibleWhen"');
+  // A root the PLATFORM hides has the identical cascade problem under a different selector.
+  const platformHidden = binding.element === 'dialog' && root.visibleWhen ? ':not([open])' : null;
 
   assume(
     'structural CSS',
@@ -1165,11 +1293,22 @@ function emitStructure(name, contract, prefix) {
   // `visibleWhen`, not fight the cascade.
   if (hides) {
     L.push(`/* Hiding is a contract claim, not a style. See the note in the emitter. */`);
+    if (platformHidden) L.push(`[data-${prefix}-component='${name}']${platformHidden},`);
     L.push(`[data-${prefix}-component='${name}'][hidden],`);
     L.push(`[data-${prefix}-component='${name}'] [hidden] {`);
     L.push(`  display: none !important;`);
     L.push(`}`);
     L.push(``);
+    if (platformHidden) {
+      L.push(`/*`);
+      L.push(` * The first selector above is the SAME trap as [hidden], under a different name.`);
+      L.push(` * \`dialog:not([open]) { display: none }\` is a browser-stylesheet rule, so any`);
+      L.push(` * \`display\` a theme puts on this element outranks it and the closed dialog stays`);
+      L.push(` * on screen with showModal() never having been called. Give the display to a part`);
+      L.push(` * inside instead, or scope it to [open].`);
+      L.push(` */`);
+      L.push(``);
+    }
   }
   for (const node of kids) {
     L.push(`[data-${prefix}-component='${name}'] [data-${prefix}-part='${node.part}'] {`);
@@ -1268,7 +1407,11 @@ const prefix = readJson(join(REPO_ROOT, 'ds.config.json')).dataPrefix;
 
 mkdirSync(outDir, { recursive: true });
 writeFileSync(join(outDir, `${name}.tsx`), emitTsx(name, contract, binding, prefix), 'utf8');
-writeFileSync(join(outDir, `${name}.structure.css`), emitStructure(name, contract, prefix), 'utf8');
+writeFileSync(
+  join(outDir, `${name}.structure.css`),
+  emitStructure(name, contract, binding, prefix),
+  'utf8',
+);
 
 const themePath = join(outDir, `${name}.theme.css`);
 if (existsSync(themePath)) {

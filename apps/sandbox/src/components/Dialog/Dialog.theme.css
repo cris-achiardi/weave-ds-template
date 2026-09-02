@@ -1,41 +1,62 @@
 /* Dialog — THE CONSUMER'S FILE. Emitted once, empty, never regenerated. */
 
-/* --- structure, in the wrong file -------------------------------------------------------- */
+/*
+ * ==========================================================================================
+ * THIS IS A NATIVE <dialog>, AND THE BROWSER HAS OPINIONS ABOUT IT.
+ *
+ * Everything in the first block below cancels a rule from the browser's own stylesheet. That
+ * is real: an "unstyled" dialog arrives with a border, 1em of padding, system colours and a
+ * grey scrim already applied. The browser themed it before we got here.
+ *
+ * The trade was made knowingly. What that reset buys is focus containment, an inert page
+ * behind, focus restoration on close and Escape — four behaviours the contract states in
+ * prose and cannot declare, supplied here by an element name.
+ *
+ * NOTE the `[open]` on the display rule. `dialog:not([open]) { display: none }` is a
+ * browser rule and an unscoped `display` here would outrank it, leaving a closed dialog on
+ * screen. That is the exact bug that made this component look broken before.
+ * ==========================================================================================
+ */
+
+/* --- cancelling the UA stylesheet -------------------------------------------------------- */
 [data-ds-component='Dialog'] {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10;
+  border: none;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  max-inline-size: none;
+  max-block-size: none;
 }
-[data-ds-component='Dialog'] [data-ds-part='panel'] {
+[data-ds-component='Dialog'][open] {
   display: flex;
   flex-direction: column;
 }
-[data-ds-component='Dialog'] [data-ds-part='actions'] {
-  display: flex;
-  justify-content: flex-end;
-}
-/* --- end of misplaced structure ---------------------------------------------------------- */
+/* --- end of the reset -------------------------------------------------------------------- */
 
 [data-ds-component='Dialog'] {
-  background: rgb(0 0 0 / 0.6);
-}
-[data-ds-component='Dialog'] [data-ds-part='panel'] {
   background: #202024;
   border-radius: 0.6rem;
   padding: 1.25rem;
   box-shadow: 0 16px 48px rgb(0 0 0 / 0.5);
   max-inline-size: calc(100vw - 2rem);
 }
-[data-ds-component='Dialog'][data-ds-size='s'] [data-ds-part='panel'] {
+
+/*
+ * The scrim. It is a pseudo-element, not a part: it can be painted and it can never hold a
+ * child, carry an attribute, or be the target of an event. That last one is why pressing it
+ * does not close the dialog — the press reports the dialog itself as its target.
+ */
+[data-ds-component='Dialog']::backdrop {
+  background: rgb(0 0 0 / 0.6);
+}
+
+[data-ds-component='Dialog'][data-ds-size='s'] {
   inline-size: 22rem;
 }
-[data-ds-component='Dialog'][data-ds-size='m'] [data-ds-part='panel'] {
+[data-ds-component='Dialog'][data-ds-size='m'] {
   inline-size: 30rem;
 }
-[data-ds-component='Dialog'][data-ds-size='l'] [data-ds-part='panel'] {
+[data-ds-component='Dialog'][data-ds-size='l'] {
   inline-size: 40rem;
 }
 [data-ds-component='Dialog'] [data-ds-part='title'] {
@@ -50,6 +71,8 @@
   padding-block: 0.6rem 0.2rem;
 }
 [data-ds-component='Dialog'] [data-ds-part='actions'] {
+  display: flex;
+  justify-content: flex-end;
   gap: 0.5rem;
   padding-block-start: 1rem;
 }
