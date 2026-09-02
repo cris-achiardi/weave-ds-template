@@ -1,13 +1,11 @@
 {
   "$schema": "../../schema/component.schema.json",
   "component": "Slider",
-
   "status": {
     "level": "experimental",
     "since": "2026-09-01",
-    "note": "Chosen because its value is a NUMBER IN A RANGE — not a boolean, not one of a fixed set, and not a set of identities. Sourced from the W3C ARIA APG slider pattern, which is normative and complete."
+    "note": "Chosen because its value is a NUMBER IN A RANGE — not a boolean, not one of a fixed set, and not a set of identities. Sourced from the W3C ARIA APG slider pattern, which is normative and complete for the keyboard and silent on the pointer. Its keyboard and drag are declared with the EXPERIMENTAL `range` block; the cases a backend must satisfy are in packages/contracts/conformance/range-stepping.json."
   },
-
   "intent": {
     "purpose": "Chooses a number from a continuous range where the approximate value matters more than the exact one — a volume, a zoom level, a price ceiling.",
     "behaviour": [
@@ -24,7 +22,6 @@
       "Anything where being one step out matters. A slider cannot be operated precisely on a touch screen."
     ]
   },
-
   "states": {
     "value": {
       "kind": "authored",
@@ -61,12 +58,17 @@
       "visual": "A ring is drawn around the thumb."
     }
   },
-
   "semantics": {
     "role": "slider",
     "focusable": true
   },
-
+  "range": {
+    "state": "value",
+    "track": "track",
+    "orientation": "horizontal",
+    "pageStep": 10,
+    "drag": true
+  },
   "a11y": {
     "focusVisible": true,
     "minHitArea": 44,
@@ -76,29 +78,42 @@
       "The slider has no accessible name of its own and must be given one. Unnamed, it is announced only as a number.",
       "A bare number is meaningless for some ranges — a five-point rating, a date, a set of named tiers. Those need text alongside the number, and this contract has no way to declare that the text is required.",
       "The thumb must be at least 44px in its hit area even where it is drawn smaller, or it cannot be operated on a touch screen. The drawn size and the target size are different numbers and only one of them is stated here.",
-      "Keyboard operation must reach every step. A range of 0–100 with a step of 1 is 100 arrow presses end to end, which is technically conformant and practically unusable; Page Up and Page Down exist for that and their jump size is not stated in this contract."
+      "Keyboard operation must reach every step. A range of 0–100 with a step of 1 is 100 arrow presses end to end, which is technically conformant and practically unusable. `range.pageStep` states the larger jump — 10 here — and omitting it is a real answer rather than an oversight: the APG marks Page Up and Page Down Optional, and a range that declares no jump leaves those keys to the page.",
+      "The pointer target and the drawn thumb are different boxes, and only the drawn one is styled here. A press anywhere on the track moves the value, so the operable area is the track's full length rather than the thumb's 14 pixels — but the track's THICKNESS is still whatever the theme draws, and 4px of it does not meet the 44px this contract asks for. Padding the root is the consumer's to do and nothing here checks it.",
+      "Dragging is declared by `range.drag` and is NOT a conformance requirement: the APG specifies a slider's keyboard and says nothing whatever about pointer behaviour. Everything the drag does — jumping to the pressed point, snapping to the nearest step rather than the one below, continuing to track a pointer that has left the element — is this system's decision, and is recorded as `not-addressed` in the conformance cases so a reader can tell ours from the specification's."
     ]
   },
-
   "composition": {
-    "children": { "max": 0, "description": "None. The value is a number, not content." }
+    "children": {
+      "max": 0,
+      "description": "None. The value is a number, not content."
+    }
   },
-
   "anatomy": {
     "root": {
       "part": "root",
       "description": "The slider. Owns the keyboard, the drag and the focus ring.",
-      "paints": { "block-size": null, "padding-block": null },
+      "paints": {
+        "block-size": null,
+        "padding-block": null
+      },
       "parts": {
         "track": {
           "part": "track",
           "description": "The full range, drawn as a line.",
-          "paints": { "block-size": null, "background": null, "border-radius": null }
+          "paints": {
+            "block-size": null,
+            "background": null,
+            "border-radius": null
+          }
         },
         "fill": {
           "part": "fill",
           "description": "The portion of the track below the value. Its length IS the value made visible, which is the one thing here that cannot be static CSS.",
-          "paints": { "background": null, "border-radius": null }
+          "paints": {
+            "background": null,
+            "border-radius": null
+          }
         },
         "thumb": {
           "part": "thumb",
@@ -111,9 +126,17 @@
             "box-shadow": null
           },
           "states": {
-            "hover": { "inline-size": null, "block-size": null },
-            "dragging": { "box-shadow": null },
-            "focus-visible": { "outline": null, "outline-offset": null }
+            "hover": {
+              "inline-size": null,
+              "block-size": null
+            },
+            "dragging": {
+              "box-shadow": null
+            },
+            "focus-visible": {
+              "outline": null,
+              "outline-offset": null
+            }
           }
         }
       }

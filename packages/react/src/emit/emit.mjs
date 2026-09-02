@@ -315,6 +315,9 @@ function renderPart(key, node, ctx, depth) {
       attrs.push(`aria-expanded={${stateExpr(target[1].visibleWhen, ctx)}}`);
     }
   }
+  // The part the contract names as the range's track is the box a pointer is measured against, so
+  // it is the one part that needs a ref of its own.
+  if (ctx.rangeTrack === key) attrs.push(`ref={range.trackRef}`);
   attrs.push(`data-${prefix}-part="${node.part}"`);
 
   const el = nodeEl;
@@ -428,6 +431,38 @@ function emitTsx(name, contract, binding, prefix) {
     'ARIA attribute where one is conventional AND the element has a role, native attribute for disabled, otherwise data-<prefix>-state',
     'The contract declares that a state exists and who may set it, never how it is exposed. Worse, the right answer depends on the ROLE, not the state name: `open` is aria-expanded on an accordion trigger and nothing at all on a tooltip wrapper. The emitter keeps a state-name table and gates it on the element having a role, which is a heuristic. Two backends will diverge here.',
   );
+  // Range stepping. The block says HOW the number is operated; the operated state says what the
+  // number IS. The emitter needs both, and refuses to compile a `range` that names a state which is
+  // not a number — otherwise the arithmetic would run on a boolean and produce NaN silently.
+  const range = contract.range ?? null;
+  let rangeState = null;
+  if (range) {
+    rangeState = contract.states?.[range.state];
+    if (!rangeState || rangeState.valueType !== 'number') {
+      throw new Error(
+        `${name}.range.state names "${range.state}", which is not a state with valueType "number".`,
+      );
+    }
+    if (
+      rangeState.min === undefined ||
+      rangeState.max === undefined ||
+      rangeState.step === undefined
+    ) {
+      throw new Error(
+        `${name}.range.state "${range.state}" must declare min, max and step — a range with an ` +
+          `open end cannot be stepped or drawn.`,
+      );
+    }
+    const parts = partsOf(root).map((x) => x.key);
+    if (range.track !== 'root' && !parts.includes(range.track)) {
+      throw new Error(
+        `${name}.range.track names part "${range.track}", which this component's anatomy does not ` +
+          `render. A pointer would have nothing to measure against.`,
+      );
+    }
+  }
+  const rangeShared = range ? shared.find((x) => x.from === range.state) : null;
+
   const editable = el === 'input' || el === 'textarea';
   const valueState = shared.find(
     (x) => contract.states?.[x.from]?.valueType === 'string' && x.name === 'value',
@@ -440,7 +475,14 @@ function emitTsx(name, contract, binding, prefix) {
       'Nothing in the contract says typing changes the value — `activates` covers activation, not editing. The emitter knows it because an <input> edits its own value, which is PLATFORM knowledge sitting in a React emitter. A backend rendering something other than a native input would have to reimplement editing from scratch with nothing to guide it.',
     );
   }
-  if (shared.length && !rootToggles && !activator && !nativelyEdited) {
+  if (range) {
+    assume(
+      'how a pointer becomes a number',
+      `measured against the "${range.track}" part's box, with pointer capture on the root`,
+      'The contract names the track and the axis, which is as far as a framework-agnostic statement can go — it says WHAT the geometry is measured against without knowing about pixels, events or a rendering model. Everything after that is this backend: getBoundingClientRect, setPointerCapture, and the decision to jump to the pressed point rather than requiring the thumb to be grabbed. A backend on a platform without pointer capture would need a different answer and the same conformance cases.',
+    );
+  }
+  if (shared.length && !rootToggles && !activator && !nativelyEdited && !range) {
     assume(
       'what changes a shared state',
       `no event wired — ${shared.map((s) => s.name).join(', ')} exposed as storage only`,
@@ -511,6 +553,7 @@ function emitTsx(name, contract, binding, prefix) {
     idFor,
     childrenPart,
     memberReflects: member?.reflects,
+    rangeTrack: range && range.track !== 'root' ? range.track : null,
     refId,
     sharedStates,
     disabledExpr,
@@ -528,6 +571,7 @@ function emitTsx(name, contract, binding, prefix) {
   if (shared.length || selShared) hooks.push('useState');
   if (rootToggles || activator || collection || nativelyEdited) hooks.push('useCallback');
   if (registers) hooks.push('useCallback');
+  if (range) hooks.push('useCallback');
   if (collection) hooks.push('createContext', 'useMemo');
   if (member) hooks.push('useContext');
   s.push(`import { ${[...new Set(hooks)].join(', ')} } from 'react';`);
@@ -535,6 +579,9 @@ function emitTsx(name, contract, binding, prefix) {
   if (slots.length) types.push('ReactNode');
   if (nativelyEdited) types.push('ChangeEvent');
   s.push(`import type { ${types.join(', ')} } from 'react';`);
+  if (range) {
+    s.push(`import { snap, useRangeControl, type RangeOptions } from '@ds/react/behavior';`);
+  }
   if (navigation) {
     // A real package import, not copied code. What you can see you own; what must be correct you
     // depend on. The TYPE is imported too, so a `collection.navigation` block that has drifted
@@ -554,6 +601,23 @@ function emitTsx(name, contract, binding, prefix) {
   s.push(`import './${name}.structure.css';`);
   s.push(`import './${name}.theme.css';`);
   s.push(``);
+
+  // ---- the declared range, module-level so its identity is stable across renders
+  if (range) {
+    s.push(
+      `// Transcribed from ${name}.contract.json: the \`range\` block, plus min/max/step from the`,
+    );
+    s.push(`// \`${range.state}\` state. The cases this commits us to are in`);
+    s.push(`// @ds/contracts/conformance/range-stepping.json.`);
+    s.push(`const RANGE: RangeOptions = {`);
+    s.push(`  min: ${rangeState.min},`);
+    s.push(`  max: ${rangeState.max},`);
+    s.push(`  step: ${rangeState.step},`);
+    s.push(`  orientation: '${range.orientation}',`);
+    if (range.pageStep !== undefined) s.push(`  pageStep: ${range.pageStep},`);
+    s.push(`};`);
+    s.push(``);
+  }
 
   // ---- the declared keyboard model, module-level so its identity is stable across renders
   if (navigation) {
@@ -699,12 +763,25 @@ function emitTsx(name, contract, binding, prefix) {
     s.push(`  const ${v}Controlled = ${sh.name} !== undefined;`);
     s.push(`  const [${v}Internal, set${pascal(st)}Internal] = useState(default${pascal(st)});`);
     s.push(`  const ${v}Value = ${v}Controlled ? ${sh.name} : ${v}Internal;`);
-    if (rootToggles !== st) {
+    const operatedByRange = range && range.state === st;
+    if (rootToggles !== st && !operatedByRange) {
       s.push(`  // Nothing in the contract says what CHANGES \`${st}\`: no part declares`);
       s.push(
         `  // \`activates\`. It works when controlled from outside; uncontrolled it cannot move.`,
       );
       s.push(`  void set${pascal(st)}Internal;`);
+    }
+    if (operatedByRange) {
+      s.push(``);
+      s.push(`  const set${pascal(st)} = useCallback(`);
+      s.push(`    (next: number) => {`);
+      s.push(`      if (!${v}Controlled) set${pascal(st)}Internal(next);`);
+      s.push(`      on${pascal(st)}Change?.(next);`);
+      s.push(`    },`);
+      s.push(`    [${v}Controlled, on${pascal(st)}Change],`);
+      s.push(`  );`);
+      const dis = consumerProps.some((x) => x.name === 'disabled') ? 'disabled' : 'false';
+      s.push(`  const range = useRangeControl(RANGE, ${v}Value, set${pascal(st)}, ${dis});`);
     }
   }
   if (shared.length) s.push(``);
@@ -906,6 +983,11 @@ function emitTsx(name, contract, binding, prefix) {
   if (registers) {
     rootAttrs.push(`tabIndex={ctx.isTabStop(${member.identity}) ? 0 : -1}`);
   }
+  // A range's `dragging` state is `control: internal` — no prop, so the loop above never sees it,
+  // exactly as a member's reflected state does not. It exists to be styled and nothing else.
+  if (range && contract.states?.dragging) {
+    rootAttrs.push(`data-${prefix}-state-dragging={range.dragging || undefined}`);
+  }
   // Something with a role that takes focus needs to be reachable. `semantics.focusable` says so
   // and nothing was reading it.
   const NATIVELY_FOCUSABLE = new Set(['button', 'input', 'textarea', 'select', 'a']);
@@ -946,7 +1028,14 @@ function emitTsx(name, contract, binding, prefix) {
     const expr = sharedStates.has(rs) ? `${camel(rs)}Value` : camel(rs);
     if (rd.min !== undefined) rootAttrs.push(`aria-valuemin={${rd.min}}`);
     if (rd.max !== undefined) rootAttrs.push(`aria-valuemax={${rd.max}}`);
-    rootAttrs.push(`aria-valuenow={${expr}}`);
+    // Announce the value the contract says this component holds, not the one it was handed. A
+    // controlled value may arrive off-step or out of range, and reporting it raw would have the
+    // thumb drawn at one number and announced as another.
+    rootAttrs.push(
+      range && range.state === rs
+        ? `aria-valuenow={snap(${expr}, RANGE)}`
+        : `aria-valuenow={${expr}}`,
+    );
   }
   // `visibleWhen` on the ROOT was handled only for child parts, so a panel that hides itself and a
   // dialog that appears were both rendered permanently visible.
@@ -960,6 +1049,21 @@ function emitTsx(name, contract, binding, prefix) {
     rootAttrs.push(
       `aria-describedby={[${root.describedBy.map((d) => refId(d)).join(', ')}].filter(Boolean).join(' ') || undefined}`,
     );
+  }
+  if (range) {
+    rootAttrs.push(`onKeyDown={range.onKeyDown}`);
+    if (range.drag) {
+      rootAttrs.push(`onPointerDown={range.onPointerDown}`);
+      rootAttrs.push(`onPointerMove={range.onPointerMove}`);
+      rootAttrs.push(`onPointerUp={range.onPointerUp}`);
+      rootAttrs.push(`onPointerCancel={range.onPointerUp}`);
+    }
+    // The fill's length and the thumb's offset ARE the value, and neither is static CSS. The
+    // component knows the number, so it hands it to CSS as a custom property rather than leaving
+    // the consumer to compute it and pass it back in — which is what the sandbox had to do.
+    // `rest.style` is spread FIRST so a consumer's own inline styles still land, and the property
+    // last so a consumer cannot accidentally break the geometry with an unrelated style prop.
+    rootAttrs.push(`style={{ ...rest.style, ['--${prefix}-fraction' as string]: range.fraction }}`);
   }
   if (navigation) rootAttrs.push(`onKeyDown={nav.onKeyDown}`);
   if (rootToggles) rootAttrs.push(`onClick={activate}`);

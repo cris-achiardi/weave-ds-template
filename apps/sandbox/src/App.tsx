@@ -150,15 +150,10 @@ export function App() {
 
       <Specimen
         name="Slider"
-        verdict="shell"
-        note="A number in a range — valueType: number with min, max and step, all new to the schema. aria-valuemin/max/now are generated from them. Nothing else is: no arrow keys, no drag, no stepping. And the fill's length and the thumb's offset ARE the value. The page has to hand the number back in as a CSS custom property for the theme to do arithmetic on, because the contract cannot say that a part's size is derived from a state."
+        verdict="works"
+        note="A number in a range — valueType: number with min, max and step. It now steps and drags: all four arrows move by one step whatever the orientation, Page Up and Page Down by the jump the contract declares, Home and End to the ends, and a press anywhere on the track jumps the value there and follows the pointer. The fill and the thumb are positioned from --ds-fraction, which the component publishes on its own root, so the page no longer computes geometry and hands it back. What is still the consumer&rsquo;s: the 44px hit area, and aria-valuetext for a range where a bare number means nothing."
       >
-        <Slider
-          value={volume}
-          onValueChange={setVolume}
-          aria-label="Volume"
-          style={{ ['--value' as string]: volume }}
-        />
+        <Slider value={volume} onValueChange={setVolume} aria-label="Volume" />
         <span className="readout">value: {volume}</span>
         <button
           type="button"

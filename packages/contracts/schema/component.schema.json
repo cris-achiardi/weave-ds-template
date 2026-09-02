@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://example.invalid/schemas/component-contract-9.json",
+  "$id": "https://example.invalid/schemas/component-contract-10.json",
   "title": "Component contract (framework-agnostic)",
   "description": "Describes ONE component completely enough to build it, in any framework. The reasoning is in contracts/README.md.\n\nThis file lives at contracts/ rather than inside a package on purpose: it belongs to no framework. It says what the component IS — its purpose, its behaviour, the states it must be able to show, the axes it exposes, its anatomy, and which family of token paints each part. It does NOT say how any of that is expressed in React, or in React Native, or in a web component. That is a binding, and bindings live beside the implementation.\n\nBuildable means: someone handed this file, the prop map for their framework, and the code standards should be able to produce the component without asking what it is for.",
   "type": "object",
@@ -328,6 +328,37 @@
           "type": "string",
           "pattern": "^[a-z][a-z0-9-]*$",
           "description": "Which of THIS component's states is true when it is in the selection. That state must be declared with `control: internal` — the ancestor owns it, so no framework may expose an input for it."
+        }
+      }
+    },
+    "range": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "track", "orientation"],
+      "description": "This component is OPERATED as a number in a range: a slider, a progress-setter, a zoom control. EXPERIMENTAL.\n\nThe range itself — `min`, `max`, `step` — already lives on the state, because those are facts about the VALUE. This block says how a person moves it, which is a different question and the one no contract could previously answer. It is the sibling of `collection.navigation`: named parameters only, no expressions, and every field maps to a case in `packages/contracts/conformance/range-stepping.json`.\n\nNaming a `track` is what makes dragging expressible at all. A pointer position is meaningless until something says which box it is measured against, and that box is a part of this component's anatomy — so the contract can state it without knowing anything about pixels, events or a rendering model.",
+      "properties": {
+        "state": {
+          "type": "string",
+          "description": "The state this operates. It must be declared in `states` with `valueType: \"number\"`, and its `min`, `max` and `step` are the range."
+        },
+        "track": {
+          "type": "string",
+          "pattern": "^[a-z][a-zA-Z0-9]*$",
+          "description": "The part whose extent is the full range. A pointer's position is measured against this part's box: its start is the minimum and its end is the maximum. `root` is legal and is the usual answer when the track is drawn edge to edge."
+        },
+        "orientation": {
+          "type": "string",
+          "enum": ["horizontal", "vertical"],
+          "description": "Which way the value increases: along the inline axis, or up the block axis. This governs the POINTER only. All four arrow keys move a slider whatever its orientation — the APG says so plainly, and it is the opposite of the rule for a tab list."
+        },
+        "pageStep": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "How far Page Up and Page Down move. The APG marks these keys Optional, so OMITTING this field is a real answer: the keys are then left alone and scroll the page. A range of 0–100 stepping by 1 is a hundred presses end to end, which is conformant and unusable, and this is the field that fixes it."
+        },
+        "drag": {
+          "type": "boolean",
+          "description": "Whether a pointer press and drag along the track sets the value. The APG specifies no pointer behaviour for a slider at all, so this is not a conformance requirement — it is this system stating an affordance the specification declines to describe."
         }
       }
     },
