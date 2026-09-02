@@ -1301,7 +1301,10 @@ function stateSelector(base, spec, prefix) {
   let on;
   if (pseudoClassFor(state, WEB)) on = pseudoClassFor(state, WEB);
   else if (ariaAttributeFor(state, WEB)) on = `[${ariaAttributeFor(state, WEB)}='true']`;
-  else on = `[data-state~='${state}']`;
+  // The prefix is not optional and the operator is not `~=`. The TSX emits
+  // `data-<prefix>-state-<name>` as a bare attribute, so an unprefixed `[data-state~=...]`
+  // matches nothing at all — a dead rule that styles nothing and reports no error.
+  else on = `[data-${prefix}-state-${state}]`;
   return isChild ? `${rootSel}${on} ${childSel}` : `${base}${on}`;
 }
 

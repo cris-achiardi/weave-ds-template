@@ -22,7 +22,9 @@
 }
 
 /* state: focused — The label takes its focused treatment. */
-[data-ds-component='Field'][data-state~='focused'] [data-ds-part='label'] {
+/* Correct selector syntax now, but still matches nothing: `focused` is control: internal, and
+   the emitter only routes shared and consumer states to the DOM. See status.ts. */
+[data-ds-component='Field'][data-ds-state-focused] [data-ds-part='label'] {
   /* color: ; */
 }
 
