@@ -24,75 +24,32 @@ const REPO_ROOT = resolve(HERE, '../../../..');
 const CONTRACTS = join(REPO_ROOT, 'packages/contracts');
 const BINDINGS = join(REPO_ROOT, 'packages/react/bindings');
 
-// Roles whose state is toggled by activating the element itself. Outside this list the emitter
-// does NOT wire an event, because nothing in a contract says what causes a state to change.
-const TOGGLE_ROLES = new Set(['switch', 'checkbox']);
+// The WEB PLATFORM, as data. Eleven tables used to live here, and not one of them was React's:
+// which ARIA attribute a state maps to, which roles accept it, which elements have a native
+// `disabled`, which are focusable, which carry an implicit role. A Vue or Angular emitter needs
+// every one; a Flutter emitter needs none of them. See packages/platform-web/README.md.
+//
+// A real dependency rather than a relative path, so a generated component's provenance is
+// "contract vN + web profile vM" in a lockfile rather than a claim in a README.
+import {
+  ariaAttributeFor,
+  ariaFitsRole,
+  ariaValueFor,
+  channelFor,
+  defaultElement,
+  editsOwnValue,
+  implicitRole,
+  isNativelyFocusable,
+  isVoid,
+  loadProfile,
+  pseudoClassFor,
+  relationAttribute,
+  rendersFalse,
+  submitsByDefault,
+  visibilityOf,
+} from '@ds/platform-web';
 
-// Which DOM attribute carries a state. Not stated in any contract — see the logged assumption.
-const NATIVE_ATTR = { disabled: 'disabled' };
-// Elements that actually have a `disabled` attribute. A div does not.
-const NATIVE_OK = new Set(['button', 'input', 'textarea', 'select', 'fieldset']);
-// A contract's state VALUES are its own words; ARIA has its own. `mixed` happens to coincide,
-// `checked`/`unchecked` do not map to `true`/`false` by name. This table is emitter knowledge and
-// lives in neither schema — the same gap the state-to-attribute mapping already has.
-const ARIA_VALUE = { checked: 'true', unchecked: 'false', mixed: 'mixed' };
-
-// ARIA attributes whose FALSE value is meaningful and must be rendered rather than omitted.
-// A switch that drops aria-checked when off is announced as having no on/off state at all.
-const ARIA_EXPLICIT_FALSE = new Set(['checked', 'selected']);
-
-const ARIA_ATTR = {
-  checked: 'aria-checked',
-  'read-only': 'aria-readonly',
-  invalid: 'aria-invalid',
-  open: 'aria-expanded',
-  selected: 'aria-selected',
-  disabled: 'aria-disabled',
-};
-// ARIA states are not global. `aria-selected` is defined for a tab and meaningless on a tabpanel;
-// putting it there is invalid markup that no typechecker and no linter in this repo would catch.
-// Only the states this emitter actually routes need an entry — an attribute absent from this table
-// is treated as unrestricted, which is true of `aria-disabled` and `aria-invalid`.
-const ARIA_ROLE_SUPPORT = {
-  'aria-selected': new Set([
-    'tab',
-    'option',
-    'row',
-    'gridcell',
-    'columnheader',
-    'rowheader',
-    'treeitem',
-  ]),
-  'aria-checked': new Set([
-    'checkbox',
-    'radio',
-    'switch',
-    'menuitemcheckbox',
-    'menuitemradio',
-    'option',
-    'treeitem',
-  ]),
-  'aria-expanded': new Set([
-    'button',
-    'combobox',
-    'link',
-    'treeitem',
-    'row',
-    'rowheader',
-    'columnheader',
-    'gridcell',
-    'menuitem',
-    'tab',
-  ]),
-};
-const ariaFits = (attr, role) => !ARIA_ROLE_SUPPORT[attr] || ARIA_ROLE_SUPPORT[attr].has(role);
-
-const NATIVE_PSEUDO = {
-  hover: ':hover',
-  'focus-visible': ':focus-visible',
-  disabled: ':disabled',
-  active: ':active',
-};
+const WEB = loadProfile();
 
 // React's typing for a given intrinsic element. Another thing no contract states.
 const ATTR_TYPE = {
@@ -288,8 +245,8 @@ function renderPart(key, node, ctx, depth) {
   ) {
     attrs.push(`id={${idFor(key)}}`);
   }
-  if (node.controls) attrs.push(`aria-controls={${refId(node.controls)}}`);
-  if (node.namedBy) attrs.push(`aria-labelledby={${refId(node.namedBy)}}`);
+  if (node.controls) attrs.push(`${relationAttribute('controls', WEB)}={${refId(node.controls)}}`);
+  if (node.namedBy) attrs.push(`${relationAttribute('namedBy', WEB)}={${refId(node.namedBy)}}`);
   if ((node.describedBy ?? []).length) {
     const live = node.describedBy.filter((d) => {
       const target = Object.entries(contract.anatomy.root.parts ?? {}).find(([k]) => k === d);
@@ -304,11 +261,14 @@ function renderPart(key, node, ctx, depth) {
         return `(${stateExpr(st, ctx)} ? ${idFor(d)} : null)`;
       }),
     ];
-    attrs.push(`aria-describedby={[${pieces.join(', ')}].filter(Boolean).join(' ') || undefined}`);
+    attrs.push(
+      `${relationAttribute('describedBy', WEB)}={[${pieces.join(', ')}].filter(Boolean).join(' ') || undefined}`,
+    );
   }
   if (node.activates?.toggles) attrs.push(`onClick={activate}`);
   if (node.activates?.toggles && node.role === 'button') attrs.push(`type="button"`);
-  if (node.visibleWhen) attrs.push(`hidden={!(${stateExpr(node.visibleWhen, ctx)})}`);
+  if (node.visibleWhen)
+    attrs.push(`${WEB.visibility.attribute}={!(${stateExpr(node.visibleWhen, ctx)})}`);
   if (node.role === 'button') {
     const dis = ctx.disabledExpr;
     if (dis) attrs.push(`disabled={${dis}}`);
@@ -477,7 +437,8 @@ function emitTsx(name, contract, binding, prefix) {
   //
   // The trigger is the element name plus a root whose visibility is a state. That is platform
   // knowledge sitting in an emitter, and it belongs with the other eight tables the same way.
-  const platformModal = el === 'dialog' && root.visibleWhen ? root.visibleWhen : null;
+  const platformModal =
+    visibilityOf(el, WEB).mode === 'imperative' && root.visibleWhen ? root.visibleWhen : null;
   const modalShared = platformModal ? shared.find((x) => x.from === platformModal) : null;
   if (platformModal && !modalShared) {
     throw new Error(
@@ -486,7 +447,7 @@ function emitTsx(name, contract, binding, prefix) {
     );
   }
 
-  const editable = el === 'input' || el === 'textarea';
+  const editable = editsOwnValue(el, WEB);
   const valueState = shared.find(
     (x) => contract.states?.[x.from]?.valueType === 'string' && x.name === 'value',
   );
@@ -1024,15 +985,9 @@ function emitTsx(name, contract, binding, prefix) {
   const rootAttrs = [];
   rootAttrs.push(`{...rest}`);
   rootAttrs.push(platformModal ? `ref={setDialogRef}` : registers ? `ref={rootRef}` : `ref={ref}`);
-  if (el === 'button') rootAttrs.push(`type="button"`);
+  if (submitsByDefault(el, WEB)) rootAttrs.push(`type="button"`);
   // A <button> already IS role=button; restating it is noise the linters flag.
-  const IMPLICIT_ROLE = {
-    button: 'button',
-    input: 'textbox',
-    textarea: 'textbox',
-    dialog: 'dialog',
-  };
-  if (rootRole && IMPLICIT_ROLE[el] !== rootRole) {
+  if (rootRole && implicitRole(el, WEB) !== rootRole) {
     rootAttrs.push(`role="${rootRole}"`);
   }
   if (needsIds) rootAttrs.push(`id={baseId}`);
@@ -1042,28 +997,37 @@ function emitTsx(name, contract, binding, prefix) {
     if (!isShared && !isConsumer) continue;
     const expr = isShared ? `${camel(st)}Value` : camel(st);
     void def;
-    // An ARIA state attribute only means something on an element that HAS a role. `open` maps to
-    // aria-expanded on an accordion trigger and to nothing at all on a tooltip wrapper: the right
-    // attribute depends on the role, and the contract's state name does not carry one.
-    const roleBearing = Boolean(rootRole) || el === 'button' || el === 'input';
-    const ariaOk =
-      ARIA_ATTR[st] && (roleBearing || st === 'disabled') && ariaFits(ARIA_ATTR[st], rootRole);
-    if (def.values && ariaOk) {
-      const map = def.values.map((v) => `${expr} === '${v}' ? '${ARIA_VALUE[v] ?? v}'`).join(' : ');
-      rootAttrs.push(`${ARIA_ATTR[st]}={${map} : undefined}`);
-      assume(
-        'a valued state reaching ARIA',
-        `mapped ${st}'s values onto ${ARIA_ATTR[st]} by a table in the emitter`,
-        "A contract's state values are its own words and ARIA has its own. `mixed` coincides; `checked`/`unchecked` do not map to `true`/`false` by name. The table is emitter knowledge and lives in neither schema.",
-      );
+    // Which channel this state reaches the DOM through is a WEB PLATFORM decision, not a React
+    // one: it depends on the role, on whether the element bears one at all, and on whether the
+    // attribute's `false` is meaningful. `channelFor` answers it, and the cases pinning that
+    // answer down live in @ds/platform-web/conformance/aria-mapping.json.
+    const decision = channelFor(
+      {
+        state: st,
+        element: el,
+        role: rootRole ?? null,
+        hasValues: Boolean(def.values),
+        hasValueType: Boolean(def.valueType),
+        mustStayFocusable: st === 'disabled' && ariaDisabledOnly,
+      },
+      WEB,
+    );
+    // A valued state builds a ternary over its own words. The JSX shape stays here; the word
+    // mapping is the platform's.
+    if (def.values && decision.channel === 'aria') {
+      const map = def.values
+        .map((v) => `${expr} === '${v}' ? '${ariaValueFor(v, WEB)}'`)
+        .join(' : ');
+      rootAttrs.push(`${decision.attribute}={${map} : undefined}`);
       continue;
     }
-    if (st === 'disabled' && ariaDisabledOnly)
-      rootAttrs.push(`aria-disabled={${expr} || undefined}`);
-    else if (NATIVE_ATTR[st] && NATIVE_OK.has(el)) rootAttrs.push(`${NATIVE_ATTR[st]}={${expr}}`);
-    else if (ariaOk && ARIA_EXPLICIT_FALSE.has(st)) rootAttrs.push(`${ARIA_ATTR[st]}={${expr}}`);
-    else if (ariaOk) rootAttrs.push(`${ARIA_ATTR[st]}={${expr} || undefined}`);
-    else if (def.valueType) {
+    if (decision.channel === 'native' || decision.channel === 'aria') {
+      rootAttrs.push(
+        decision.rendersFalse
+          ? `${decision.attribute}={${expr}}`
+          : `${decision.attribute}={${expr} || undefined}`,
+      );
+    } else if (decision.channel === 'none') {
       // Deliberately nothing. A boolean or an enumerated state is a styling hook; free text is
       // CONTENT, and mirroring it into an attribute leaks whatever the person typed.
     } else if (def.values) rootAttrs.push(`data-${prefix}-state-${st}={${expr}}`);
@@ -1072,8 +1036,8 @@ function emitTsx(name, contract, binding, prefix) {
   // The state a member reflects is `internal`: no prop, so the loop above never sees it. It
   // still has to reach the DOM — a radio with no aria-checked is not a radio.
   if (member) {
-    const declared = ARIA_ATTR[member.reflects];
-    const attr = declared && ariaFits(declared, rootRole) ? declared : null;
+    const declared = ariaAttributeFor(member.reflects, WEB);
+    const attr = declared && ariaFitsRole(declared, rootRole ?? null, WEB) ? declared : null;
     if (declared && !attr) {
       assume(
         'a member state whose ARIA attribute its role does not support',
@@ -1083,9 +1047,7 @@ function emitTsx(name, contract, binding, prefix) {
     }
     if (attr) {
       rootAttrs.push(
-        ARIA_EXPLICIT_FALSE.has(member.reflects)
-          ? `${attr}={selected}`
-          : `${attr}={selected || undefined}`,
+        rendersFalse(attr, WEB) ? `${attr}={selected}` : `${attr}={selected || undefined}`,
       );
     } else {
       // No ARIA mapping for this state name. Previously that emitted NOTHING at all, which is how
@@ -1112,11 +1074,10 @@ function emitTsx(name, contract, binding, prefix) {
   }
   // Something with a role that takes focus needs to be reachable. `semantics.focusable` says so
   // and nothing was reading it.
-  const NATIVELY_FOCUSABLE = new Set(['button', 'input', 'textarea', 'select', 'a']);
   if (
     !registers &&
     contract.semantics?.focusable &&
-    !NATIVELY_FOCUSABLE.has(el) &&
+    !isNativelyFocusable(el, WEB) &&
     (root.role || contract.semantics?.role)
   ) {
     rootAttrs.push(`tabIndex={${disabledExpr ? `${disabledExpr} ? -1 : 0` : '0'}}`);
@@ -1148,15 +1109,15 @@ function emitTsx(name, contract, binding, prefix) {
   if (ranged && rootRole) {
     const [rs, rd] = ranged;
     const expr = sharedStates.has(rs) ? `${camel(rs)}Value` : camel(rs);
-    if (rd.min !== undefined) rootAttrs.push(`aria-valuemin={${rd.min}}`);
-    if (rd.max !== undefined) rootAttrs.push(`aria-valuemax={${rd.max}}`);
+    if (rd.min !== undefined) rootAttrs.push(`${WEB.range.min}={${rd.min}}`);
+    if (rd.max !== undefined) rootAttrs.push(`${WEB.range.max}={${rd.max}}`);
     // Announce the value the contract says this component holds, not the one it was handed. A
     // controlled value may arrive off-step or out of range, and reporting it raw would have the
     // thumb drawn at one number and announced as another.
     rootAttrs.push(
       range && range.state === rs
-        ? `aria-valuenow={snap(${expr}, RANGE)}`
-        : `aria-valuenow={${expr}}`,
+        ? `${WEB.range.value}={snap(${expr}, RANGE)}`
+        : `${WEB.range.value}={${expr}}`,
     );
   }
   // `visibleWhen` on the ROOT was handled only for child parts, so a panel that hides itself and a
@@ -1164,16 +1125,17 @@ function emitTsx(name, contract, binding, prefix) {
   // NOT for a platform modal. A <dialog> hides itself when closed — `dialog:not([open])` is a UA
   // rule — and adding `hidden` on top would fight showModal() for control of the same thing.
   if (root.visibleWhen && !platformModal) {
-    rootAttrs.push(`hidden={!(${stateExpr(root.visibleWhen, ctx)})}`);
+    rootAttrs.push(`${WEB.visibility.attribute}={!(${stateExpr(root.visibleWhen, ctx)})}`);
   }
   // The root part's own references. Every one of these was handled for CHILD parts only, so a
   // component whose outermost node is the thing that points — a tab at its panel, a panel back at
   // its tab — generated nothing at all and nothing detected it.
-  if (root.controls) rootAttrs.push(`aria-controls={${refId(root.controls)}}`);
-  if (root.namedBy) rootAttrs.push(`aria-labelledby={${refId(root.namedBy)}}`);
+  if (root.controls)
+    rootAttrs.push(`${relationAttribute('controls', WEB)}={${refId(root.controls)}}`);
+  if (root.namedBy) rootAttrs.push(`${relationAttribute('namedBy', WEB)}={${refId(root.namedBy)}}`);
   if ((root.describedBy ?? []).length) {
     rootAttrs.push(
-      `aria-describedby={[${root.describedBy.map((d) => refId(d)).join(', ')}].filter(Boolean).join(' ') || undefined}`,
+      `${relationAttribute('describedBy', WEB)}={[${root.describedBy.map((d) => refId(d)).join(', ')}].filter(Boolean).join(' ') || undefined}`,
     );
   }
   if (range) {
@@ -1197,7 +1159,7 @@ function emitTsx(name, contract, binding, prefix) {
   rootAttrs.push(`data-${prefix}-part="${root.part}"`);
   rootAttrs.push(`className={className}`);
 
-  const voidEl = el === 'input';
+  const voidEl = isVoid(el, WEB);
   s.push(`    <${el}`);
   for (const a of rootAttrs) s.push(`      ${a}`);
   if (voidEl) {
@@ -1243,7 +1205,9 @@ function emitStructure(name, contract, binding, prefix) {
   // Does anything in this component hide itself? `visibleWhen` is the only way a contract says so.
   const hides = JSON.stringify(contract.anatomy).includes('"visibleWhen"');
   // A root the PLATFORM hides has the identical cascade problem under a different selector.
-  const platformHidden = binding.element === 'dialog' && root.visibleWhen ? ':not([open])' : null;
+  const visibility = visibilityOf(binding.element, WEB);
+  const platformHidden =
+    visibility.mode === 'imperative' && root.visibleWhen ? visibility.hiddenSelector : null;
 
   assume(
     'structural CSS',
@@ -1335,8 +1299,8 @@ function stateSelector(base, spec, prefix) {
   const rootSel = isChild ? base.split('] [')[0] + ']' : base;
   const childSel = isChild ? '[' + base.split('] [')[1] : '';
   let on;
-  if (NATIVE_PSEUDO[state]) on = NATIVE_PSEUDO[state];
-  else if (ARIA_ATTR[state]) on = `[${ARIA_ATTR[state]}='true']`;
+  if (pseudoClassFor(state, WEB)) on = pseudoClassFor(state, WEB);
+  else if (ariaAttributeFor(state, WEB)) on = `[${ariaAttributeFor(state, WEB)}='true']`;
   else on = `[data-state~='${state}']`;
   return isChild ? `${rootSel}${on} ${childSel}` : `${base}${on}`;
 }
