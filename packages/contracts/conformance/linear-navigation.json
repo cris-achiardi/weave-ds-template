@@ -1,0 +1,248 @@
+{
+  "primitive": "linear-navigation",
+  "_doc": "Moving focus between the members of a collection with the arrow keys. Transcribed from the W3C ARIA APG, not written from any implementation. See ./README.md for what the `apg` field means — in particular that `unmarked` is the APG's default voice and NOT the APG saying 'required'.",
+  "sources": [
+    "https://www.w3.org/WAI/ARIA/apg/patterns/radio/",
+    "https://www.w3.org/WAI/ARIA/apg/patterns/tabs/",
+    "https://www.w3.org/WAI/ARIA/apg/practices/keyboard-interface/"
+  ],
+  "_scope": "The radio group's TOOLBAR variant is deliberately excluded. The APG gives it a second, incompatible key map — Left/Right escape the group into the surrounding toolbar and no arrow changes the checked state — which is the Toolbar pattern's business, not this primitive's. A radio group inside a toolbar is out of scope until a Toolbar contract exists.",
+
+  "cases": [
+    {
+      "id": "forward-moves-to-next",
+      "patterns": ["radio", "tabs"],
+      "given": { "orientation": "inline", "items": ["a", "b", "c"], "focused": "a" },
+      "press": "ArrowRight",
+      "expect": { "focused": "b" },
+      "apg": "unmarked",
+      "quote": "Moves focus to the next tab."
+    },
+    {
+      "id": "backward-moves-to-previous",
+      "patterns": ["radio", "tabs"],
+      "given": { "orientation": "inline", "items": ["a", "b", "c"], "focused": "b" },
+      "press": "ArrowLeft",
+      "expect": { "focused": "a" },
+      "apg": "unmarked",
+      "quote": "moves focus to the previous tab."
+    },
+    {
+      "id": "wrap-forward-from-last",
+      "patterns": ["radio", "tabs"],
+      "given": { "orientation": "inline", "items": ["a", "b", "c"], "focused": "c" },
+      "press": "ArrowRight",
+      "expect": { "focused": "a" },
+      "apg": "unmarked",
+      "quote": "If focus is on the last button, focus moves to the first button.",
+      "_note": "Unmarked in BOTH patterns. Worth noticing that in the tabs pattern this wrap clause sits in the same sentence as an explicitly optional activation clause — the APG marked one and not the other, deliberately."
+    },
+    {
+      "id": "wrap-backward-from-first",
+      "patterns": ["radio", "tabs"],
+      "given": { "orientation": "inline", "items": ["a", "b", "c"], "focused": "a" },
+      "press": "ArrowLeft",
+      "expect": { "focused": "c" },
+      "apg": "unmarked",
+      "quote": "If focus is on the first button, focus moves to the last button."
+    },
+
+    {
+      "id": "radio-treats-down-as-forward",
+      "patterns": ["radio"],
+      "given": { "orientation": "both", "items": ["a", "b", "c"], "focused": "a" },
+      "press": "ArrowDown",
+      "expect": { "focused": "b" },
+      "apg": "unmarked",
+      "quote": "Right Arrow and Down Arrow move focus to the next radio button in the group",
+      "_note": "The APG groups the two keys in one bullet, so they are strict equivalents. A radio group answers all four arrows regardless of how it is laid out, and `aria-orientation` is never mentioned on the radio pattern page."
+    },
+    {
+      "id": "radio-treats-up-as-backward",
+      "patterns": ["radio"],
+      "given": { "orientation": "both", "items": ["a", "b", "c"], "focused": "b" },
+      "press": "ArrowUp",
+      "expect": { "focused": "a" },
+      "apg": "unmarked",
+      "quote": "Left Arrow and Up Arrow move focus to the previous radio button in the group"
+    },
+
+    {
+      "id": "horizontal-tabs-must-ignore-down",
+      "patterns": ["tabs"],
+      "given": { "orientation": "inline", "items": ["a", "b", "c"], "focused": "a" },
+      "press": "ArrowDown",
+      "expect": { "focused": "a", "handled": false },
+      "apg": "unmarked",
+      "quote": "If the tab list is horizontal, it does not listen for Down Arrow or Up Arrow so those keys can provide their normal browser scrolling functions even when focus is inside the tab list.",
+      "_note": "THE ONE NEGATIVE REQUIREMENT in either pattern, and the sharpest contrast with radio. The event must not be consumed: the page still has to scroll. A shared arrow-key handler that answers all four keys for every pattern fails here."
+    },
+    {
+      "id": "horizontal-tabs-must-ignore-up",
+      "patterns": ["tabs"],
+      "given": { "orientation": "inline", "items": ["a", "b", "c"], "focused": "b" },
+      "press": "ArrowUp",
+      "expect": { "focused": "b", "handled": false },
+      "apg": "unmarked",
+      "quote": "it does not listen for Down Arrow or Up Arrow"
+    },
+    {
+      "id": "vertical-tabs-use-down-as-forward",
+      "patterns": ["tabs"],
+      "given": { "orientation": "block", "items": ["a", "b", "c"], "focused": "a" },
+      "press": "ArrowDown",
+      "expect": { "focused": "b" },
+      "apg": "unmarked",
+      "quote": "Down Arrow performs as Right Arrow is described above."
+    },
+    {
+      "id": "vertical-tabs-left-right-unspecified",
+      "patterns": ["tabs"],
+      "given": { "orientation": "block", "items": ["a", "b", "c"], "focused": "a" },
+      "press": "ArrowRight",
+      "expect": { "focused": "a", "handled": false },
+      "apg": "not-addressed",
+      "_note": "OUR DECISION, and recorded as ours. The APG defines the horizontal exclusion of Up/Down and says nothing about Left/Right in a vertical tab list — symmetry is an assumption, not a transcription. We mirror the horizontal rule so the unused axis keeps its native behaviour."
+    },
+
+    {
+      "id": "selection-follows-focus-when-declared",
+      "patterns": ["radio", "tabs"],
+      "given": {
+        "orientation": "inline",
+        "items": ["a", "b", "c"],
+        "focused": "a",
+        "selected": "a",
+        "followsFocus": true
+      },
+      "press": "ArrowRight",
+      "expect": { "focused": "b", "selected": "b" },
+      "apg": "unmarked",
+      "quote": "move focus to the next radio button in the group, uncheck the previously focused button, and check the newly focused button.",
+      "_note": "For radio this is not separable from movement — the APG writes it into the arrow key's own definition, so a radio group whose arrows move without checking is not implementing the pattern. For tabs the same outcome is explicitly OPTIONAL: see the next two cases."
+    },
+    {
+      "id": "tabs-may-move-without-activating",
+      "patterns": ["tabs"],
+      "given": {
+        "orientation": "inline",
+        "items": ["a", "b", "c"],
+        "focused": "a",
+        "selected": "a",
+        "followsFocus": false
+      },
+      "press": "ArrowRight",
+      "expect": { "focused": "b", "selected": "a" },
+      "apg": "optional",
+      "quote": "Optionally, activates the newly focused tab",
+      "_note": "Manual activation. The APG recommends automatic activation where panels are already in the DOM, and manual where displaying a panel causes a network request or a page refresh — its threshold phrase is 'noticeable latency'. Both are first-class and each has an official example."
+    },
+    {
+      "id": "tabs-space-activates-when-focus-does-not",
+      "patterns": ["tabs"],
+      "given": {
+        "orientation": "inline",
+        "items": ["a", "b", "c"],
+        "focused": "b",
+        "selected": "a",
+        "followsFocus": false
+      },
+      "press": " ",
+      "expect": { "focused": "b", "selected": "b" },
+      "apg": "conditional",
+      "quote": "Activates the tab if it was not activated automatically on focus.",
+      "_note": "Complementary to the case above: Space and Enter become the activation path precisely when automatic activation is off."
+    },
+    {
+      "id": "reselecting-the-selected-member-is-inert",
+      "patterns": ["radio", "tabs"],
+      "given": { "items": ["a", "b", "c"], "focused": "a", "selected": "a" },
+      "press": " ",
+      "expect": { "selected": "a", "changed": false },
+      "apg": "unmarked",
+      "quote": "checks the focused radio button if it is not already checked.",
+      "_note": "Follows from cardinality: one. A collection that always holds exactly one selection cannot be emptied by the user, so re-activating the current member does nothing — unlike an accordion, where the same declaration closes the section."
+    },
+
+    {
+      "id": "entry-lands-on-the-selected-member",
+      "patterns": ["radio", "tabs"],
+      "given": { "items": ["a", "b", "c"], "selected": "b", "focusWithin": false },
+      "press": "Tab",
+      "expect": { "focused": "b" },
+      "apg": "unmarked",
+      "quote": "If a radio button is checked, focus is set on the checked button.",
+      "_note": "The tabs pattern says 'places focus on the active tab element' — the same element carrying aria-selected='true'."
+    },
+    {
+      "id": "entry-with-nothing-selected-lands-on-first",
+      "patterns": ["radio"],
+      "given": { "items": ["a", "b", "c"], "selected": null, "focusWithin": false },
+      "press": "Tab",
+      "expect": { "focused": "a" },
+      "apg": "unmarked",
+      "quote": "If none of the radio buttons are checked, focus is set on the first radio button in the group.",
+      "_note": "Explicit for radio, in both directions. The APG adds a note that some browsers focus the LAST radio on Shift+Tab for native groups — that is described as browser behaviour, not as a permitted alternative, so the rule stays 'first'. For TABS this case is deliberately absent: the APG assumes a tab list always has an active tab and does not address the empty state at all."
+    },
+    {
+      "id": "exactly-one-member-in-the-tab-sequence",
+      "patterns": ["radio", "tabs"],
+      "given": { "items": ["a", "b", "c"], "selected": "b" },
+      "press": null,
+      "expect": { "tabbable": ["b"] },
+      "apg": "unmarked",
+      "quote": "However, only one of the radio buttons is included in the tab sequence.",
+      "_note": "The roving tabindex. The APG demonstrates both roving tabindex and aria-activedescendant for radio and states no preference; for tabs it names neither, though both official examples use roving tabindex. This case asserts the OUTCOME — one tab stop — not the technique."
+    },
+
+    {
+      "id": "disabled-members-are-skipped-when-declared-skip",
+      "patterns": ["radio"],
+      "given": {
+        "items": ["a", "b", "c"],
+        "disabled": ["b"],
+        "focused": "a",
+        "disabledItems": "skip"
+      },
+      "press": "ArrowRight",
+      "expect": { "focused": "c" },
+      "apg": "not-addressed",
+      "_note": "OUR DECISION. The radio pattern page never mentions disabled items, and radio buttons are absent from the practice page's list of composites whose disabled members should stay focusable. The cost is real and recorded in the contract's a11y notes: a keyboard user cannot land on a disabled option to discover it exists."
+    },
+    {
+      "id": "disabled-members-stay-focusable-when-declared-focusable",
+      "patterns": ["tabs"],
+      "given": {
+        "items": ["a", "b", "c"],
+        "disabled": ["b"],
+        "focused": "a",
+        "disabledItems": "focusable"
+      },
+      "press": "ArrowRight",
+      "expect": { "focused": "b" },
+      "apg": "unmarked",
+      "quote": "When a disabled element does need to remain discoverable, aria-disabled=\"true\" is applied so that it will remain focusable. For example: … Tab elements in a set of Tabs",
+      "_note": "THE APG'S CONVENTION FOR TABS IS THE OPPOSITE OF SKIPPING, and it names tabs explicitly. Its reasoning: 'screen reader users are far less likely to discover disabled elements that are not focusable because moving focus is one of their primary methods of discovery.' This is why the parameter cannot be a boolean — the two patterns want different answers, and the quote lives on the practice page rather than either pattern page."
+    },
+
+    {
+      "id": "home-moves-to-first",
+      "patterns": ["tabs"],
+      "given": { "items": ["a", "b", "c"], "focused": "c" },
+      "press": "Home",
+      "expect": { "focused": "a" },
+      "apg": "optional",
+      "quote": "Home (Optional): Moves focus to the first tab.",
+      "_note": "Optional for tabs, and NOT ADDRESSED for radio — the radio pattern lists no Home or End at all. Implementing it for a radio group would be our addition, not the APG's."
+    },
+    {
+      "id": "end-moves-to-last",
+      "patterns": ["tabs"],
+      "given": { "items": ["a", "b", "c"], "focused": "a" },
+      "press": "End",
+      "expect": { "focused": "c" },
+      "apg": "optional",
+      "quote": "End (Optional): Moves focus to the last tab."
+    }
+  ]
+}

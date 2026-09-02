@@ -7,11 +7,13 @@
   "exports": {
     "./schema/*": "./schema/*",
     "./components/*": "./components/*",
+    "./conformance/*": "./conformance/*",
     "./prop-canon.json": "./prop-canon.json"
   },
   "files": [
     "schema",
     "components",
-    "prop-canon.json"
+    "prop-canon.json",
+    "conformance"
   ]
 }
