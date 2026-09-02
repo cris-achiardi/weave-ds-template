@@ -13,15 +13,28 @@ export default defineConfig({
   },
   build: {
     lib: {
-      entry: resolve(__dirname, 'src/index.ts'),
+      // TWO entries, and the second one is the point.
+      //
+      // `index` is the package barrel and exports no components — it never will, because a
+      // component is generated into a consumer's own repository. `behavior` is the interaction
+      // runtime that emitted components IMPORT rather than copy, which is the one place this
+      // package ships JavaScript a consumer depends on. Keeping them separate means a consumer
+      // pulling in a keyboard primitive does not also pull in everything else.
+      entry: {
+        index: resolve(__dirname, 'src/index.ts'),
+        behavior: resolve(__dirname, 'src/behavior/index.ts'),
+      },
       formats: ['es', 'cjs'],
-      fileName: (format) => (format === 'es' ? 'index.js' : 'index.cjs'),
+      fileName: (format, entryName) => (format === 'es' ? `${entryName}.js` : `${entryName}.cjs`),
     },
-    // Emit ONE stylesheet rather than injecting <style> tags at runtime.
+    // Kept, but it no longer has anything to do.
     //
-    // A consumer may be an Electron renderer under a CSP with no remote origins and a webpack
-    // config that has a single global `.css` rule and no CSS-Modules setup. A prebuilt
-    // stylesheet imports cleanly there; runtime injection and *.module.css files do not.
+    // This existed to emit ONE prebuilt stylesheet for awkward consumers — an Electron renderer
+    // under a strict CSP, a bundler with a single global `.css` rule and no CSS-Modules setup.
+    // That reasoning was sound while this package shipped components. It no longer does: a
+    // component's CSS is emitted into the CONSUMER's repository, so this package has no styles to
+    // bundle and never will. The `./styles.css` export was removed for the same reason — it
+    // pointed at a file that can no longer be produced.
     cssCodeSplit: false,
     rollupOptions: {
       external: ['react', 'react-dom', 'react/jsx-runtime'],
