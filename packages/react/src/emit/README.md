@@ -103,9 +103,13 @@ What deliberately did NOT move, so the boundary is a stated line rather than an 
 | The `<dialog>` effect topology                                                                               | two effects, a composed ref and a MutationObserver are a SHAPE, not a lookup |
 | Three inline branches in `renderPart` (`type="button"`, `disabled` from role, the `aria-expanded` inference) | they consult no table today and unifying them is a behaviour change          |
 
-The last row is a known weakness rather than a design: the child-part path decides from a part's
-ROLE where the root path decides from the element, so a `role="button"` div can be handed a native
-`disabled` it does not support. Recorded in `docs/cris-logs/BACKLOG.md`.
+The last row is a known weakness rather than a design, and it is worth stating in full because
+nothing detects it: **the child-part path decides from a part's ROLE where the root path decides
+from the element.** So a part declaring `role="button"` is handed a native `disabled` whatever
+element it actually renders — and since a child part is only ever a `<button>` when it declares
+`activates`, a `role="button"` part without one becomes a `<div disabled>`, which is invalid HTML the
+browser ignores. The same split means `type="button"` is applied by two different rules in the two
+paths. Unifying them is a behaviour change and needs its own diff.
 
 ### 3. Variant axes are real axes, with declared defaults
 
