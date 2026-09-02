@@ -1010,6 +1010,8 @@ function emitTsx(name, contract, binding, prefix) {
 function emitStructure(name, contract, prefix) {
   const root = contract.anatomy.root;
   const kids = Object.values(root.parts ?? {});
+  // Does anything in this component hide itself? `visibleWhen` is the only way a contract says so.
+  const hides = JSON.stringify(contract.anatomy).includes('"visibleWhen"');
 
   assume(
     'structural CSS',
@@ -1043,6 +1045,28 @@ function emitStructure(name, contract, prefix) {
   L.push(`  /* the scoping handle. Everything else is yours, for now. */`);
   L.push(`}`);
   L.push(``);
+
+  // The one structural rule the emitter is willing to write, because it is not a guess about
+  // layout: it is what makes a `visibleWhen` in the contract TRUE.
+  //
+  // `[hidden] { display: none }` comes from the browser's own stylesheet, and every rule in a
+  // theme file outranks it. So a theme that gives a part a `display` — which any dialog, tooltip
+  // or panel needs — silently cancels hiding, and the part is permanently visible however
+  // correct the state behind it is. That is not hypothetical: it is what made the sandbox's
+  // Dialog render open and unclosable, with its buttons working the whole time.
+  //
+  // `!important` is deliberate and is the point. Whether a part is SHOWING is a claim the
+  // contract makes, not an appearance choice, so it is not the consumer's to override by
+  // accident. A consumer who genuinely wants a hidden part visible should stop declaring
+  // `visibleWhen`, not fight the cascade.
+  if (hides) {
+    L.push(`/* Hiding is a contract claim, not a style. See the note in the emitter. */`);
+    L.push(`[data-${prefix}-component='${name}'][hidden],`);
+    L.push(`[data-${prefix}-component='${name}'] [hidden] {`);
+    L.push(`  display: none !important;`);
+    L.push(`}`);
+    L.push(``);
+  }
   for (const node of kids) {
     L.push(`[data-${prefix}-component='${name}'] [data-${prefix}-part='${node.part}'] {`);
     L.push(`  /* no declared layout for this part */`);
