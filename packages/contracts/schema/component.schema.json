@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://example.invalid/schemas/component-contract-8.json",
+  "$id": "https://example.invalid/schemas/component-contract-9.json",
   "title": "Component contract (framework-agnostic)",
   "description": "Describes ONE component completely enough to build it, in any framework. The reasoning is in contracts/README.md.\n\nThis file lives at contracts/ rather than inside a package on purpose: it belongs to no framework. It says what the component IS — its purpose, its behaviour, the states it must be able to show, the axes it exposes, its anatomy, and which family of token paints each part. It does NOT say how any of that is expressed in React, or in React Native, or in a web component. That is a binding, and bindings live beside the implementation.\n\nBuildable means: someone handed this file, the prop map for their framework, and the code standards should be able to produce the component without asking what it is for.",
   "type": "object",
@@ -541,14 +541,60 @@
           }
         },
         "controls": {
-          "type": "string",
-          "pattern": "^[a-z][a-zA-Z0-9]*$",
-          "description": "Names another part whose presence or visibility this part governs. Compiles to `aria-controls` on the web. EXPERIMENTAL."
+          "description": "Names another part whose presence or visibility this part governs. Compiles to `aria-controls` on the web. EXPERIMENTAL.\n\nA plain string names a part of this same component. The object form crosses to a sibling member of the same collection — the reference a tab makes to its panel, which no sibling-only form could express: a tab and its panel are different components that share one collection and one identity.",
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-z][a-zA-Z0-9]*$",
+              "description": "A part of THIS component."
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["member", "part"],
+              "properties": {
+                "member": {
+                  "type": "string",
+                  "pattern": "^[A-Z][A-Za-z0-9]*$",
+                  "description": "The sibling MEMBER KIND holding the referenced part. It must be a component the shared ancestor admits in `collection.items`, and both members must carry the same `member.identity` — that identity is what pairs one tab with one panel. Naming a component here is no more coupling than `member.of` already is: it is a contract name, not a framework one."
+                },
+                "part": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-zA-Z0-9]*$",
+                  "description": "The part within that member. `root` names the member's own outermost node."
+                }
+              },
+              "description": "A part of a sibling member of the same collection."
+            }
+          ]
         },
         "namedBy": {
-          "type": "string",
-          "pattern": "^[a-z][a-zA-Z0-9]*$",
-          "description": "Names another part that supplies this one's accessible name. Compiles to `aria-labelledby` on the web, `accessibilityLabelledBy` elsewhere. EXPERIMENTAL.\n\nThis and `describedBy` are the fields whose absence made the generated Field render four correct regions that knew nothing about each other."
+          "description": "Names another part that supplies this one's accessible name. Compiles to `aria-labelledby` on the web, `accessibilityLabelledBy` elsewhere. EXPERIMENTAL.\n\nA plain string names a part of this same component; the object form crosses to a sibling member of the same collection, which is how a tab panel is named by its tab. This and `describedBy` are the fields whose absence made the generated Field render four correct regions that knew nothing about each other.",
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-z][a-zA-Z0-9]*$",
+              "description": "A part of THIS component."
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["member", "part"],
+              "properties": {
+                "member": {
+                  "type": "string",
+                  "pattern": "^[A-Z][A-Za-z0-9]*$",
+                  "description": "The sibling MEMBER KIND holding the referenced part. It must be a component the shared ancestor admits in `collection.items`, and both members must carry the same `member.identity` — that identity is what pairs one tab with one panel. Naming a component here is no more coupling than `member.of` already is: it is a contract name, not a framework one."
+                },
+                "part": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-zA-Z0-9]*$",
+                  "description": "The part within that member. `root` names the member's own outermost node."
+                }
+              },
+              "description": "A part of a sibling member of the same collection."
+            }
+          ]
         },
         "describedBy": {
           "type": "array",

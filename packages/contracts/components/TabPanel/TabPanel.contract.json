@@ -57,6 +57,10 @@
   "anatomy": {
     "root": {
       "part": "root",
+      "namedBy": {
+        "member": "TabItem",
+        "part": "root"
+      },
       "visibleWhen": "selected",
       "description": "The panel region. Its only paint is the space separating it from the strip.",
       "paints": {

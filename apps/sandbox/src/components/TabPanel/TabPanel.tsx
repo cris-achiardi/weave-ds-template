@@ -25,15 +25,18 @@ export const TabPanel = forwardRef<HTMLDivElement, TabPanelProps>(function TabPa
     );
   }
   const selected = ctx.selection === value;
+  const baseId = `${ctx.baseId}-TabPanel-${value}`;
 
   return (
     <div
       {...rest}
       ref={ref}
       role="tabpanel"
-      aria-selected={selected}
+      id={baseId}
+      data-ds-state-selected={selected || undefined}
       tabIndex={0}
       hidden={!selected}
+      aria-labelledby={`${ctx.baseId}-TabItem-${value}`}
       data-ds-component="TabPanel"
       data-ds-part="root"
       className={className}

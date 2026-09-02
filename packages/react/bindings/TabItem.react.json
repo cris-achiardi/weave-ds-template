@@ -8,7 +8,7 @@
   "classNamePassthrough": "root",
   "notes": [
     "Renders a native `<button>` carrying `role=\"tab\"`.",
-    "`aria-controls` pointing at its panel is NOT generated. `controls` names a sibling part within the same component, and a tab's panel is a different component entirely — the schema has no way to reference across a collection.",
+    "`aria-controls` pointing at its panel IS generated, from `controls: { member: \"TabPanel\", part: \"root\" }` on the anatomy root. The id is `<collection baseId>-<Component>-<identity>`; the component name is in there because a tab and its panel share one identity and would otherwise collide on one id.",
     "Registers its root node with the tablist and takes its `tabIndex` from `isTabStop`. A native `<button>` is in the Tab sequence by default, so this is what takes the other tabs OUT of it.",
     "Its disabled state reaches the DOM as `aria-disabled`, NOT the native `disabled` attribute. The collection declares `disabledItems: \"focusable\"`, and a natively disabled button cannot be focused by any means — the roving tabIndex and a programmatic .focus() are both ignored. The emitter derives this from the ancestor’s navigation block; the activation guard it already writes is what keeps the member from being chosen."
   ]

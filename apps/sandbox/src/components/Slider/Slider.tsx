@@ -38,7 +38,6 @@ export const Slider = forwardRef<HTMLDivElement, SliderProps>(function Slider(
       {...rest}
       ref={ref}
       role="slider"
-      data-ds-state-value={valueValue || undefined}
       aria-disabled={disabled || undefined}
       tabIndex={disabled ? -1 : 0}
       aria-valuemin={0}

@@ -64,7 +64,8 @@
       "The accessible name is whatever is passed as the label. A tab given a non-text child has no name and nothing detects that.",
       "disabled renders a natively disabled button, so a keyboard user cannot land on it to discover it exists.",
       "The chosen state must not be carried by colour alone. The indicator is the non-colour signal.",
-      "This tab points at a panel that may not be rendered. Nothing here checks that a panel of the same value exists, and a tab referencing a missing id is reported by some assistive technology."
+      "This tab points at a panel that may not be rendered. Nothing here checks that a panel of the same value exists, and a tab referencing a missing id is reported by some assistive technology.",
+      "Its `aria-controls` is built from the shared identity, so it names an id whether or not a panel with that identity was rendered. A tab with no matching panel therefore points at nothing, which assistive technology reports as a broken reference. Nothing here detects it and nothing can: a panel that has not mounted yet and a panel that will never exist are indistinguishable from inside this component. Rendering one panel per tab is the consumer's obligation."
     ]
   },
   "composition": {
@@ -82,6 +83,10 @@
     "root": {
       "part": "root",
       "role": "tab",
+      "controls": {
+        "member": "TabPanel",
+        "part": "root"
+      },
       "activates": {
         "toggles": "member"
       },
