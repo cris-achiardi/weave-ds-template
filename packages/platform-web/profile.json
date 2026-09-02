@@ -1,0 +1,160 @@
+{
+  "platform": "web",
+  "version": "0.0.0",
+  "_doc": "What the WEB PLATFORM is, as data: element capabilities, the ARIA state vocabulary, and the mapping from a contract's words to the platform's. Extracted verbatim from packages/react/src/emit/emit.mjs. This file is a TRANSCRIPTION, not a correction — where a list is incomplete against the W3C specification it is incomplete here too, and the `_note` says so. Completing one is a separate change with its own diff.",
+  "_boundary": "Nothing framework-shaped may enter. `tabIndex`, `readOnly`, `className` and `htmlFor` are REACT's spellings of DOM names and belong in packages/react. The test is the mirror of @ds/contracts': if it would still be true in a Vue, Svelte or Lit backend rendering the same DOM, it belongs here.",
+  "sources": [
+    "https://www.w3.org/TR/wai-aria-1.2/",
+    "https://html.spec.whatwg.org/multipage/",
+    "https://www.w3.org/TR/html-aria/"
+  ],
+
+  "defaults": {
+    "_doc": "The element a backend reaches for when the contract names none. `activatable` is what a part declaring `activates` becomes; `container` is everything else.",
+    "container": "div",
+    "activatable": "button"
+  },
+
+  "elements": {
+    "div": {
+      "_note": "The neutral container. Deliberately featureless: bears no role, is not focusable, takes no native state attribute. Listed rather than omitted so its emptiness is a statement rather than an oversight."
+    },
+    "button": {
+      "implicitRole": "button",
+      "bearsRole": true,
+      "focusable": true,
+      "submitsByDefault": true,
+      "nativeAttributes": ["disabled"]
+    },
+    "input": {
+      "implicitRole": "textbox",
+      "bearsRole": true,
+      "focusable": true,
+      "void": true,
+      "editsOwnValue": true,
+      "nativeAttributes": ["disabled"],
+      "_note": "`implicitRole` is `textbox` only for a type-less or text input. This profile has no `type` axis, matching the emitter it was extracted from."
+    },
+    "textarea": {
+      "implicitRole": "textbox",
+      "bearsRole": false,
+      "focusable": true,
+      "editsOwnValue": true,
+      "nativeAttributes": ["disabled"],
+      "_note": "INCONSISTENT ON PURPOSE, preserved from the emitter. `implicitRole` says this element already announces as a textbox; `bearsRole` says an ARIA state attribute may not attach to it. Those cannot both be right. The emitter's role-bearing check listed only button and input while its implicit-role table listed four elements, and no binding renders a <textarea>, so the disagreement has never been observable. Fixing it is a behaviour change and belongs in its own commit."
+    },
+    "dialog": {
+      "implicitRole": "dialog",
+      "bearsRole": false,
+      "visibility": {
+        "mode": "imperative",
+        "show": "showModal",
+        "hide": "close",
+        "reflects": "open",
+        "hiddenSelector": ":not([open])",
+        "closesItself": true,
+        "supplies": [
+          "focus-containment",
+          "background-inertness",
+          "focus-restoration",
+          "escape-to-dismiss"
+        ],
+        "_note": "`closesItself` is the load-bearing field: the platform writes this element's state behind the component's back, so a backend that only WRITES visibility and never reads it back will desync permanently and the element can never be shown again. `reflects` names the attribute to observe. `supplies` lists the four behaviours a backend WITHOUT this element owes by hand, so the omission is visible rather than assumed."
+      },
+      "_note": "Same implicitRole/bearsRole disagreement as textarea, and unobservable for the same kind of reason: Dialog's contract declares `role: \"dialog\"` on its anatomy root, which satisfies the role-bearing check by the other branch."
+    },
+    "select": { "focusable": true, "nativeAttributes": ["disabled"] },
+    "fieldset": { "nativeAttributes": ["disabled"] },
+    "a": {
+      "focusable": true,
+      "_note": "Transcribed as unconditionally focusable. On the platform it is focusable only WITH an href. No binding renders an anchor, so the simplification has never been exercised."
+    }
+  },
+
+  "states": {
+    "_doc": "A contract's state name, and the channels the platform offers for carrying it. An entry says what is POSSIBLE; which channel WINS is a decision, and lives in resolve.mjs.",
+    "disabled": { "native": "disabled", "aria": "aria-disabled", "pseudo": ":disabled" },
+    "checked": { "aria": "aria-checked" },
+    "selected": { "aria": "aria-selected" },
+    "open": { "aria": "aria-expanded" },
+    "read-only": {
+      "aria": "aria-readonly",
+      "_note": "NO `native` key, deliberately. The platform has a `readonly` attribute on input and textarea, and adding it here would reroute TextField's read-only state from aria-readonly to the native attribute. TextField currently emits BOTH — aria-readonly from this table and readOnly from the natively-edited block — which is the duplication packages/react/src/emit/README.md section 2 warns against. Recorded, not fixed."
+    },
+    "invalid": { "aria": "aria-invalid" },
+    "hover": { "pseudo": ":hover" },
+    "focus-visible": { "pseudo": ":focus-visible" },
+    "active": { "pseudo": ":active" }
+  },
+
+  "aria": {
+    "_doc": "Keyed by ATTRIBUTE, because that is how WAI-ARIA defines these facts, and because two contract words may map to one attribute. An entry with no `roles` places no role restriction — which is this profile's position rather than the specification's, and is marked as such on each one.",
+    "aria-checked": {
+      "rendersFalse": true,
+      "roles": [
+        "checkbox",
+        "radio",
+        "switch",
+        "menuitemcheckbox",
+        "menuitemradio",
+        "option",
+        "treeitem"
+      ]
+    },
+    "aria-selected": {
+      "rendersFalse": true,
+      "roles": ["tab", "option", "row", "gridcell", "columnheader", "rowheader", "treeitem"]
+    },
+    "aria-expanded": {
+      "roles": [
+        "button",
+        "combobox",
+        "link",
+        "treeitem",
+        "row",
+        "rowheader",
+        "columnheader",
+        "gridcell",
+        "menuitem",
+        "tab"
+      ],
+      "_note": "INCOMPLETE against WAI-ARIA 1.2, which also lists application, checkbox, listbox and switch. Transcribed as found. Completing it is a behaviour change — it would let a switch that also declares `open` acquire aria-expanded — so it needs its own commit and its own diff."
+    },
+    "aria-disabled": {
+      "_note": "No `roles`, so treated as unrestricted. OURS, not the specification's: aria-disabled is supported per role, not global. It has never mattered because `disabled` is also the one state allowed to reach ARIA on an element carrying no role at all."
+    },
+    "aria-invalid": { "_note": "No `roles`, so treated as unrestricted. Ours, as above." },
+    "aria-readonly": {
+      "_note": "No `roles`, so treated as unrestricted. Ours, as above. RadioGroup emits aria-readonly on role=radiogroup on the strength of it."
+    }
+  },
+
+  "valueWords": {
+    "_doc": "A contract's state VALUES are its own words; ARIA has its own. Global rather than nested under a state, because the mapping applies to any valued state. A word absent here passes through unchanged.",
+    "unchecked": "false",
+    "checked": "true",
+    "mixed": "mixed"
+  },
+
+  "relations": {
+    "_doc": "A contract's word for a relationship between parts, and the ARIA attribute that carries it.",
+    "controls": "aria-controls",
+    "namedBy": "aria-labelledby",
+    "describedBy": "aria-describedby"
+  },
+
+  "range": {
+    "_doc": "A numeric state's facets, and the ARIA attributes that announce them.",
+    "min": "aria-valuemin",
+    "max": "aria-valuemax",
+    "value": "aria-valuenow"
+  },
+
+  "visibility": {
+    "_doc": "How the platform hides something that has no element of its own to do it.",
+    "attribute": "hidden",
+    "selector": "[hidden]",
+    "outrankedByAuthorStyles": true,
+    "_note": "`outrankedByAuthorStyles` is why an emitted stylesheet must write `display: none !important`. `[hidden] { display: none }` comes from the UA stylesheet and any author `display` beats it — the cascade trap that shipped a permanently-visible Dialog."
+  }
+}

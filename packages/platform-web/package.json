@@ -1,0 +1,17 @@
+{
+  "name": "@ds/platform-web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "What the web platform is, as data. Element capabilities and the ARIA state vocabulary, extracted from the React emitter so a second web backend can read them instead of re-deriving them.",
+  "exports": {
+    ".": "./resolve.mjs",
+    "./profile.json": "./profile.json",
+    "./conformance/*": "./conformance/*"
+  },
+  "files": [
+    "profile.json",
+    "resolve.mjs",
+    "conformance"
+  ]
+}

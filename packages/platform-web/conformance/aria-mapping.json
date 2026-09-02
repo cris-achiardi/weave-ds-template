@@ -1,0 +1,191 @@
+{
+  "primitive": "aria-mapping",
+  "_doc": "Which channel a contract state reaches the DOM through: a native attribute, an ARIA attribute, a data attribute, or nothing at all. Every case below is derived from a defect this repository actually shipped and then fixed. `aria` records what WAI-ARIA did; `unrestricted` is OURS and is marked as ours, exactly as `not-addressed` is in @ds/contracts/conformance/linear-navigation.json.",
+  "sources": [
+    "https://www.w3.org/TR/wai-aria-1.2/#aria-checked",
+    "https://www.w3.org/TR/wai-aria-1.2/#aria-selected",
+    "https://www.w3.org/TR/wai-aria-1.2/#aria-expanded",
+    "https://www.w3.org/TR/wai-aria-1.2/#tabpanel",
+    "https://www.w3.org/WAI/ARIA/apg/patterns/tabs/"
+  ],
+  "_scope": "The ROOT-element decision only. The member-reflection path in the React emitter deliberately does not apply the role-bearing gate these cases assume; that divergence is documented in ../README.md and is not asserted here, because asserting it would freeze an inconsistency as a requirement.",
+
+  "cases": [
+    {
+      "id": "radio-must-carry-aria-checked",
+      "patterns": ["radio"],
+      "given": { "state": "checked", "element": "div", "role": "radio" },
+      "expect": { "channel": "aria", "attribute": "aria-checked" },
+      "aria": "supported",
+      "_bug": "A radio with no aria-checked is not a radio. RadioItem's `checked` is control: internal, so the state loop never saw it and it reached the DOM through no channel at all."
+    },
+    {
+      "id": "radio-renders-aria-checked-false-rather-than-dropping-it",
+      "patterns": ["radio"],
+      "given": { "state": "checked", "element": "div", "role": "radio" },
+      "expect": { "channel": "aria", "attribute": "aria-checked", "rendersFalse": true },
+      "aria": "supported",
+      "quote": "false: The element does not support being checked.",
+      "_note": "THE EXPLICIT-FALSE RULE. Omitting the attribute when off is not the same as writing false: an unchecked radio that drops it is announced as having no checked state at all, rather than as unchecked."
+    },
+    {
+      "id": "tab-must-carry-aria-selected",
+      "patterns": ["tabs"],
+      "given": { "state": "selected", "element": "button", "role": "tab" },
+      "expect": { "channel": "aria", "attribute": "aria-selected", "rendersFalse": true },
+      "aria": "supported",
+      "_bug": "A tab shipped with no aria-selected. The state-to-attribute table is a closed list, and `selected` fell through a branch that had no else."
+    },
+    {
+      "id": "tabpanel-must-not-carry-aria-selected",
+      "patterns": ["tabs"],
+      "given": { "state": "selected", "element": "div", "role": "tabpanel" },
+      "expect": { "channel": "data", "attribute": null },
+      "aria": "prohibited",
+      "_bug": "INVALID MARKUP THAT NOTHING CAUGHT. A panel reflects the same `selected` state its tab does; aria-selected is defined for a tab and is not in tabpanel's supported set. No typechecker and no linter in this repo would have seen it. The contract states the shared fact and cannot know that one member's role accepts the attribute and the other's does not."
+    },
+    {
+      "id": "dialog-must-not-carry-aria-expanded",
+      "patterns": ["dialog"],
+      "given": { "state": "open", "element": "dialog", "role": "dialog" },
+      "expect": { "channel": "data", "attribute": null },
+      "aria": "prohibited",
+      "_bug": "`open` mapped to aria-expanded by state NAME, so a dialog announced itself as an expandable widget. A dialog's openness is its presence, not an expansion."
+    },
+    {
+      "id": "roleless-element-must-not-carry-aria-expanded",
+      "patterns": ["tooltip"],
+      "given": { "state": "open", "element": "div", "role": null },
+      "expect": { "channel": "data", "attribute": null },
+      "aria": "no-role",
+      "_bug": "A tooltip wrapper carried a bogus aria-expanded. `open` is aria-expanded on an accordion trigger and NOTHING on a roleless wrapper: the right answer depends on the role, and a contract's state name does not carry one. Two independent guards now reject it — the element bears no role, AND a null role is not in aria-expanded's supported set."
+    },
+    {
+      "id": "accordion-item-root-reflects-open-as-data",
+      "patterns": ["accordion"],
+      "given": { "state": "open", "element": "div", "role": null },
+      "expect": { "channel": "data", "attribute": null },
+      "aria": "no-role",
+      "_note": "The same rule reaching the right answer for a DIFFERENT reason than the tooltip: here the aria-expanded that belongs to this component sits on the trigger part, which does have role=button. The root is only a wrapper."
+    },
+    {
+      "id": "aria-expanded-fits-a-button",
+      "patterns": ["accordion"],
+      "given": { "state": "open", "element": "button", "role": "button" },
+      "expect": { "channel": "aria", "attribute": "aria-expanded", "rendersFalse": false },
+      "aria": "supported",
+      "_note": "The positive counterpart to the two rejections above, and the reason those are a role check rather than a blanket ban on aria-expanded."
+    },
+    {
+      "id": "switch-checked-is-aria-checked",
+      "patterns": ["switch"],
+      "given": { "state": "checked", "element": "button", "role": "switch" },
+      "expect": { "channel": "aria", "attribute": "aria-checked", "rendersFalse": true },
+      "aria": "supported",
+      "_note": "A switch that drops aria-checked when off is announced as having no on/off state at all."
+    },
+    {
+      "id": "checkbox-value-words-map-onto-aria-tokens",
+      "patterns": ["checkbox"],
+      "given": { "values": ["unchecked", "checked", "mixed"] },
+      "expect": { "ariaValues": ["false", "true", "mixed"] },
+      "aria": "supported",
+      "_note": "A contract's state values are its own words, and ARIA has its own."
+    },
+    {
+      "id": "unchecked-is-not-false-by-name",
+      "patterns": ["checkbox"],
+      "given": { "values": ["unchecked"] },
+      "expect": { "ariaValues": ["false"] },
+      "aria": "supported",
+      "_note": "The trap. `unchecked` looks like it should pass through, and passing it through emits aria-checked=\"unchecked\", which is not a legal token."
+    },
+    {
+      "id": "mixed-is-the-one-word-that-coincides",
+      "patterns": ["checkbox"],
+      "given": { "values": ["mixed"] },
+      "expect": { "ariaValues": ["mixed"] },
+      "aria": "supported",
+      "_note": "It coincides by accident, which is precisely why the mapping cannot be `pass through unless it is a boolean`."
+    },
+    {
+      "id": "an-unmapped-value-word-passes-through",
+      "patterns": [],
+      "given": { "values": ["indeterminate"] },
+      "expect": { "ariaValues": ["indeterminate"] },
+      "aria": "unrestricted",
+      "_note": "OURS. The map is not a closed vocabulary; an unlisted word is emitted verbatim rather than dropped. Recorded so a backend does not invent a throw."
+    },
+    {
+      "id": "disabled-prefers-the-native-attribute",
+      "patterns": ["button", "switch", "checkbox"],
+      "given": { "state": "disabled", "element": "button", "role": "switch" },
+      "expect": { "channel": "native", "attribute": "disabled" },
+      "aria": "not-aria",
+      "_note": "The platform owns this one: the browser enforces it, :disabled styles it, and a second aria-disabled copy could disagree with it."
+    },
+    {
+      "id": "disabled-on-an-element-without-the-attribute-falls-to-aria",
+      "patterns": ["radio"],
+      "given": { "state": "disabled", "element": "div", "role": "radiogroup" },
+      "expect": { "channel": "aria", "attribute": "aria-disabled", "rendersFalse": false },
+      "aria": "unrestricted",
+      "_note": "A div has no disabled attribute. Writing one produces markup the browser ignores entirely."
+    },
+    {
+      "id": "disabled-needs-no-role-to-reach-aria",
+      "patterns": ["tooltip", "field"],
+      "given": { "state": "disabled", "element": "div", "role": null },
+      "expect": { "channel": "aria", "attribute": "aria-disabled" },
+      "aria": "unrestricted",
+      "_note": "OURS, and the single exception to the rule that an ARIA state attribute needs a role to attach to. Recorded as an exception rather than smoothed away, because it is the only state that has one."
+    },
+    {
+      "id": "a-member-the-arrows-must-reach-cannot-be-natively-disabled",
+      "patterns": ["tabs"],
+      "given": {
+        "state": "disabled",
+        "element": "button",
+        "role": "tab",
+        "mustStayFocusable": true
+      },
+      "expect": { "channel": "aria", "attribute": "aria-disabled" },
+      "aria": "unrestricted",
+      "_bug": "FOUND BY PRESSING THE KEY, NOT BY READING THE CODE. The generated tab list looked correct and typechecked, and its disabled tab was simply unreachable: the platform makes a natively disabled element unfocusable, full stop, and neither a roving tabIndex nor a programmatic .focus() overrides it. The collection declares disabledItems: focusable, so this outranks the native attribute."
+    },
+    {
+      "id": "invalid-on-a-roleless-element-reaches-no-aria",
+      "patterns": ["field"],
+      "given": { "state": "invalid", "element": "div", "role": null },
+      "expect": { "channel": "data", "attribute": null },
+      "aria": "no-role",
+      "_note": "The contrast case for disabled-needs-no-role. Field's `invalid` and `disabled` are both consumer states on the same roleless div, and only one of them reaches ARIA."
+    },
+    {
+      "id": "free-text-reaches-no-attribute-at-all",
+      "patterns": ["text-field"],
+      "given": {
+        "state": "value",
+        "element": "input",
+        "role": "textbox",
+        "hasValueType": true
+      },
+      "expect": { "channel": "none", "attribute": null },
+      "aria": "not-aria",
+      "_note": "A boolean or enumerated state is a styling hook; free text is CONTENT, and mirroring it into an attribute leaks whatever the person typed into the DOM."
+    },
+    {
+      "id": "a-numeric-state-reaches-no-state-attribute-either",
+      "patterns": ["slider"],
+      "given": {
+        "state": "value",
+        "element": "div",
+        "role": "slider",
+        "hasValueType": true
+      },
+      "expect": { "channel": "none", "attribute": null },
+      "aria": "not-aria",
+      "_note": "Same branch as free text, and easy to get wrong on a port: a number is announced by aria-valuenow, which is a separate mapping keyed by the state's min/max/current facets rather than by its name."
+    }
+  ]
+}
