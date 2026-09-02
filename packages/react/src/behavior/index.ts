@@ -11,4 +11,18 @@
 //
 // Keep this list alphabetical.
 
-export {};
+export {
+  intentFor,
+  navigable,
+  resolve,
+  tabStop,
+  useLinearNavigation,
+} from './useLinearNavigation.js';
+export type {
+  DisabledItems,
+  LinearNavigation,
+  Member,
+  MemberRegistration,
+  NavigationOptions,
+  Orientation,
+} from './useLinearNavigation.js';
