@@ -1,7 +1,10 @@
 # ADR 0004 — A state declares who may set it, and prop names are generated from that
 
-- **Status:** Accepted
+- **Status:** Draft
 - **Date:** 2026-09-01
+- **Revised:** 2026-09-02 — returned to Draft. The five decisions below have all held under
+  compilation; the record stays open because the vocabulary AROUND them is still moving, and each
+  new component keeps finding the next thing a contract cannot say.
 - **Deciders:** cris
 - **Tags:** components, governance, packaging, a11y
 - **Related:** [ADR 0002 — Agnostic contracts live in their own package, not at the repo root](./0002-agnostic-contracts-live-in-their-own-package.md)
@@ -63,6 +66,35 @@ surviving only in prose:
    without a special case: its `open` state is owned by the surrounding Accordion, so the item gets
    no open prop in any framework, and the contract says so mechanically rather than in a note.
 
+## Why this is still Draft
+
+The three-value `control` field is mechanized and has compiled fifteen components without a special
+case, which would ordinarily make this Accepted. It is held at Draft because **this record is now a
+chapter of a vocabulary it does not describe.** Everything below was added after it was written, and
+none of it is recorded in any ADR:
+
+| Added                                                                  | Answers                                                     |
+| ---------------------------------------------------------------------- | ----------------------------------------------------------- |
+| `states.*.values` / `default`                                          | a state with more than two values                           |
+| `states.*.valueType` / `min` / `max` / `step`                          | a state that is free text, or a number in a range           |
+| `activates`, and `activates.between`                                   | what CHANGES a state, and which two values a user may reach |
+| `collection` + `member`                                                | a selection held by a parent on behalf of its children      |
+| `collection.navigation`                                                | how a keyboard moves between those children                 |
+| `range`                                                                | how a keyboard and a pointer move a number                  |
+| part-level `role`, `controls`, `namedBy`, `describedBy`, `visibleWhen` | that an anatomy is a graph, not a tree of boxes             |
+| `controls` / `namedBy` in `{ member, part }` form                      | a reference that crosses a component boundary               |
+| `backdrop`                                                             | a layer that on some platforms is not an element            |
+
+Recording each of those as it landed would have produced nine records describing one decision taken
+nine times. The intent is a single successor covering the vocabulary as a whole, written once the
+core component set is large enough that its shape has stopped changing — the same reason this one is
+not being edited into that shape now.
+
+**Until then, the schema is the specification and this record is the reasoning behind one field of
+it.** A reader who needs the current vocabulary should read
+`packages/contracts/schema/component.schema.json`, whose field descriptions carry the argument for
+each block, and `packages/contracts/components/README.md`.
+
 ## Contract
 
 | Concern                                  | Where                                                                                                     |
@@ -99,6 +131,12 @@ surviving only in prose:
   ancestor-owned state will need a distinction this field does not make.
 - **Nothing checks that a binding's rules cover every `control` value.** A framework could ship
   `prop-bindings.json` handling `consumer` and `shared` and silently emit nothing for `internal`.
+- **`control` answers who may SET a state, and says nothing about what CHANGES it.** That turned out
+  to be a separate question and the larger one. A `shared` state with no declared cause compiles to
+  storage: it works when driven from outside and cannot move on its own. `Field`'s `invalid`,
+  `touched` and `dirty` are all in that position today, and a Switch shipped unable to toggle for
+  exactly this reason before `activates` existed. Whatever eventually closes that gap will sit beside
+  `control`, not inside it.
 - **The rule form is unproven off React.** Decision 4 is the load-bearing claim and every contract
   behind it was read through one framework's documentation — the condition least likely to expose a
   mismatch. Vue's `v-model` allows exactly one primary two-way binding per component, and a component
