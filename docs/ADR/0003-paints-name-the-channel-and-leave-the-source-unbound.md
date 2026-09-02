@@ -41,7 +41,9 @@ reverse-engineer a stylesheet to find out — which is the failure this library 
 4. **`@ds/tokens` is a reference implementation, not a dependency.** It is one worked example of
    wiring a token system to an unbound surface. Nothing in `@ds/contracts` or the emitters requires
    it, and a consumer may ignore it entirely.
-5. **The emitter produces two stylesheets, not one.** A token-free `<Name>.structure.css` that it
+5. **The emitter produces two stylesheets, not one.** _This decision is the WEB BACKEND's, not the
+   contract's_ — see the note under Consequences. A stylesheet is one delivery mechanism for an
+   unbound channel; it is not the only one and must not become the definition. A token-free `<Name>.structure.css` that it
    owns and regenerates; and a `<Name>.theme.css` emitted once, empty but for one commented socket
    per unbound channel, which belongs to the consumer and is never rewritten.
 
@@ -108,6 +110,18 @@ reverse-engineer a stylesheet to find out — which is the failure this library 
 - **Nothing enforces decision 3.** A contract in this package could name a token policy and every
   gate would stay green, because the schema permits it for the consumer's sake. The unstyled
   commitment is a convention here, not a mechanism.
+- **Decision 5 is scoped to a backend, and was written as though it were universal.** The contract's
+  half of this record — a channel is named, its source is unbound, `null` and omission differ — holds
+  on any target. "Two stylesheets" does not: there is no stylesheet in Flutter, and a Tailwind or
+  NativeWind backend delivers the same unbound channel as a class rather than a custom property. The
+  wording is left in place because it accurately describes what the React emitter does today, and
+  flagged here because it is exactly the kind of web assumption a second backend exists to catch —
+  see ADR 0002, "Why this is still Draft".
+- **Leaving the source unbound is what makes those backends possible at all.** A channel that named
+  a CSS custom property would have decided the delivery mechanism for every target in advance. `null`
+  says the library does not know where the value comes from, which is equally true of a design token
+  resolved to a Dart constant, a Tailwind class, or a JavaScript object — and is why the token
+  pipeline here is a Style Dictionary reference implementation rather than a fixed set of variables.
 - **`structure.css` not carrying layout is the reason this record is Draft.** Three incompatible
   shapes of layout have surfaced — declarations (a thumb out of flow), constraints (a size that must
   not depend on which parts are visible), and arithmetic over a state (a fill's length that IS the
