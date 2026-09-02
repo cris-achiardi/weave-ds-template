@@ -1,7 +1,9 @@
 # ADR 0003 — A paint names the channel and leaves its source unbound
 
-- **Status:** Accepted
+- **Status:** Draft
 - **Date:** 2026-09-01
+- **Revised:** 2026-09-02 — returned to Draft; decision 5 corrected against what the emitter
+  actually produces, and decisions 6 and 7 added.
 - **Deciders:** cris
 - **Tags:** components, tokens, packaging
 - **Related:** [ADR 0002 — Agnostic contracts live in their own package, not at the repo root](./0002-agnostic-contracts-live-in-their-own-package.md)
@@ -40,9 +42,38 @@ reverse-engineer a stylesheet to find out — which is the failure this library 
    wiring a token system to an unbound surface. Nothing in `@ds/contracts` or the emitters requires
    it, and a consumer may ignore it entirely.
 5. **The emitter produces two stylesheets, not one.** A token-free `<Name>.structure.css` that it
-   owns and regenerates, holding only the layout that a contract's stated behaviour depends on; and a
-   `<Name>.theme.css` emitted once, empty but for one commented socket per unbound channel, which
-   belongs to the consumer and is never rewritten.
+   owns and regenerates; and a `<Name>.theme.css` emitted once, empty but for one commented socket
+   per unbound channel, which belongs to the consumer and is never rewritten.
+
+   **`structure.css` currently emits almost nothing, and that is the open question in this record.**
+   The intended content was "the layout a contract's stated behaviour depends on" — but a contract
+   has no way to say where a part sits, so there is nothing to derive it from and the emitter
+   refuses to guess. It emits exactly two things: a scoping handle, and the rule below.
+
+   The consequence is that every component's real layout lives in the consumer's `theme.css`, which
+   is the wrong file for it. That is a known gap, not a settled design.
+
+6. **A part's visibility is a contract claim, and `structure.css` enforces it.** Where a contract
+   declares `visibleWhen`, the emitter writes a scoped `display: none !important` for the hidden
+   state. This is the one structural rule the emitter is willing to write, because it is not a guess
+   about layout: it is what makes a statement the contract already makes come true.
+
+   `!important` is deliberate. Whether a part is showing is not the consumer's to cancel by accident
+   while styling something else — a single `display` in a theme file otherwise outranks the
+   browser's own `[hidden]` rule and silently disables hiding. This is not hypothetical; it is what
+   made the generated Dialog render permanently open with its buttons firing the whole time.
+
+7. **A paint channel names appearance, never structure.** The schema carries a denylist of
+   structural channels — `display`, `position`, `inset*`, `float` and the rest — because a contract
+   that paints `display` has moved layout into the consumer's file by another route, and the
+   paint/theme split a consumer relies on would hold only by the care of whoever wrote the contract.
+   `gap` deliberately stays a paint: spacing carries design intent.
+
+8. **The obscuring layer behind a part is declared as `backdrop`, not as a child part.** It holds
+   paints and nothing else, because on some platforms IT IS NOT AN ELEMENT: a native `<dialog>`
+   renders its backdrop as a pseudo-element that can be painted and can never hold a child, carry an
+   attribute, or be the target of an event. Modelling it as a part would promise three things the
+   platform cannot give.
 
 ## Contract
 
@@ -77,6 +108,12 @@ reverse-engineer a stylesheet to find out — which is the failure this library 
 - **Nothing enforces decision 3.** A contract in this package could name a token policy and every
   gate would stay green, because the schema permits it for the consumer's sake. The unstyled
   commitment is a convention here, not a mechanism.
+- **`structure.css` not carrying layout is the reason this record is Draft.** Three incompatible
+  shapes of layout have surfaced — declarations (a thumb out of flow), constraints (a size that must
+  not depend on which parts are visible), and arithmetic over a state (a fill's length that IS the
+  value). The third now has an answer: the component publishes a number as a custom property and the
+  theme turns it into a percentage. The other two do not, and designing a `layout` block before they
+  do would mean designing it wrong.
 - **How it will fail quietly:** the `null`-versus-omitted distinction is the load-bearing part of
   decision 2 and **nothing checks it**. A channel dropped by accident and a channel deliberately left
   for the consumer are indistinguishable to every tool in this repo; the difference lives only in
