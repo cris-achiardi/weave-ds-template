@@ -146,7 +146,11 @@ function main() {
   );
   if (!components.length) {
     console.log(
-      'No components exist yet. Nothing to check — the template’s intended starting state.',
+      'Nothing checked, and this one is genuinely VOID here rather than merely blind.\n' +
+        'It resolves part -> class -> declarations -> var() against a stylesheet in this package,\n' +
+        'and emitted stylesheets live in the CONSUMER repository. Every paint this library ships\n' +
+        'is `null` by design, so there would be no policy to compare against either.\n' +
+        'This report belongs in a consumer repo, run against their theme. See ADR 0003.',
     );
   }
   if (findings.length) {

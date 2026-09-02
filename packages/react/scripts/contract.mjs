@@ -22,6 +22,9 @@ import { extractProps } from './extract/props.mjs';
 import { extractCvaAxes, flattenAxes } from './extract/cva.mjs';
 import { extractParts } from './extract/parts.mjs';
 import {
+  listContracts,
+  listBindings,
+  contractPaths,
   listComponents,
   componentPaths,
   readJson,
@@ -54,29 +57,52 @@ export function composeComponent(name) {
   });
 }
 
+/**
+ * Coverage, asked the right way round.
+ *
+ * This used to ask "which COMPONENTS have contracts?" — the right question when components were
+ * hand-written and a contract was optional annotation. Components are now generated FROM
+ * contracts, so the contract is the population and the question is "which contracts can this
+ * backend compile?". A contract with no binding is a specification this backend cannot build.
+ *
+ * Asked the old way, this repo answered "0/0 components contracted. No components exist yet — the
+ * intended starting state, not a gap." Confidently wrong: fifteen contracts existed and no script
+ * could see any of them.
+ */
 function coverage() {
-  const all = listComponents();
-  if (!all.length) {
-    console.log('0/0 components contracted. No components exist yet — this is the template’s');
-    console.log('intended starting state, not a gap. See docs/ADR/README.md.');
+  const contracts = listContracts();
+  const bindings = listBindings();
+
+  if (!contracts.length) {
+    console.log('0 contracts. `packages/contracts/components/` is empty — the intended');
+    console.log('starting state, not a gap. See docs/ADR/README.md.');
     return 0;
   }
-  const rows = all.map((name) => ({
+
+  const rows = contracts.map((name) => ({
     name,
-    contracted: existsSync(componentPaths(name).contract),
-    exported: isExported(name),
+    bound: existsSync(contractPaths(name).binding),
   }));
-  const done = rows.filter((r) => r.contracted).length;
-  console.log(`${done}/${rows.length} components contracted.\n`);
-  for (const r of rows.sort((a, b) => byCodePoint(a.name, b.name))) {
-    const flags = [r.contracted ? 'contract' : 'UNCONTRACTED', r.exported ? '' : 'NOT EXPORTED']
-      .filter(Boolean)
-      .join(', ');
-    console.log(`  ${r.name.padEnd(24)} ${flags}`);
+  const bound = rows.filter((r) => r.bound).length;
+  console.log(`${bound}/${rows.length} contracts have a React binding.`);
+  console.log('');
+  for (const r of rows) {
+    const flag = r.bound ? 'bound' : 'UNBOUND — this backend cannot compile it';
+    console.log(`  ${r.name.padEnd(24)} ${flag}`);
   }
-  console.log(
-    '\nUncontracted components are reported, never failed. Backfilling is deliberate work.',
-  );
+
+  // A binding with no contract is the other orphan, and the more dangerous one: it points at a
+  // specification that does not exist, and nothing else in this repo would notice.
+  const orphans = bindings.filter((b) => !contracts.includes(b));
+  if (orphans.length) {
+    console.log('');
+    console.log('ORPHAN BINDINGS — no contract of this name exists:');
+    for (const o of orphans) console.log(`  ${o}`);
+  }
+
+  console.log('');
+  console.log('An unbound contract is reported, never failed: a contract is written before any');
+  console.log('backend compiles it, and that order is the point rather than a gap.');
   return 0;
 }
 

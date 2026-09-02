@@ -11,9 +11,15 @@
 
 **Coverage:** 0 components · 0 props · 0 flags.
 
-> **State: canon-only.** No components exist yet. §1 and §2 below are the *declared*
-> canon — the vocabulary a design proposal must be written in. §3 and §4 measure
-> reality against it and are empty by construction, not by omission.
+> **State: canon-only, and §3–§4 are BLIND rather than empty.** §1 and §2 below are
+> the *declared* canon — the vocabulary a design proposal must be written in. §3 and
+> §4 measure reality against it by reading hand-written component source, and there
+> is none: components are generated from contracts into a consumer repository.
+>
+> This is a GAP, not the intended state. Fifteen contracts declare axes, and a prop
+> surface is derivable from a contract without any source — the emitter already does
+> it. Until the measured half is repointed at contracts, nothing checks that the
+> vocabulary a contract uses is the canon.
 
 ## How to use this
 
