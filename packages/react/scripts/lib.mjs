@@ -18,6 +18,10 @@ export const REPO_ROOT = resolve(here, '../../..');
 export const COMPONENTS_DIR = join(PKG_ROOT, 'src/components');
 export const BARREL = join(PKG_ROOT, 'src/index.ts');
 
+/** Where the agnostic contracts live, and where this backend's bindings for them live. */
+export const CONTRACTS_DIR = join(REPO_ROOT, 'packages/contracts/components');
+export const BINDINGS_DIR = join(PKG_ROOT, 'bindings');
+
 /** Fixed code-point comparator. Never localeCompare — it makes generated output machine-dependent. */
 export const byCodePoint = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
 
@@ -31,8 +35,52 @@ export function dsConfig() {
 }
 
 /**
- * Every component directory, sorted. A directory counts as a component when it holds
- * `<Name>.tsx`; a contract is optional, and its absence is a reportable state, never a failure.
+ * Every CONTRACT, sorted. This is the population now.
+ *
+ * The inversion matters and is the whole reason this function exists beside `listComponents`.
+ * When components were hand-written, they were the population and a contract was optional
+ * annotation — so the question was "which components have contracts?". Components are now
+ * GENERATED FROM contracts into a consumer's own repository, so the contract is the population
+ * and the question is "which contracts can this backend compile?".
+ *
+ * Asking the old question of the new repo returns zero, which is true and useless: it was
+ * reported as "no components exist yet — the intended starting state", while fifteen contracts
+ * sat in the tree.
+ */
+export function listContracts() {
+  if (!existsSync(CONTRACTS_DIR)) return [];
+  return readdirSync(CONTRACTS_DIR, { withFileTypes: true })
+    .filter((e) => e.isDirectory())
+    .map((e) => e.name)
+    .filter((name) => existsSync(join(CONTRACTS_DIR, name, `${name}.contract.json`)))
+    .sort(byCodePoint);
+}
+
+/** Where a contract and this backend's binding for it live. Neither is assumed to exist. */
+export function contractPaths(name) {
+  return {
+    dir: join(CONTRACTS_DIR, name),
+    contract: join(CONTRACTS_DIR, name, `${name}.contract.json`),
+    changelog: join(CONTRACTS_DIR, name, 'CHANGELOG.md'),
+    binding: join(BINDINGS_DIR, `${name}.react.json`),
+  };
+}
+
+/** Every binding this backend ships, sorted — so an orphan binding is findable. */
+export function listBindings() {
+  if (!existsSync(BINDINGS_DIR)) return [];
+  return readdirSync(BINDINGS_DIR)
+    .filter((f) => f.endsWith('.react.json'))
+    .map((f) => f.replace(/\.react\.json$/, ''))
+    .sort(byCodePoint);
+}
+
+/**
+ * Every HAND-WRITTEN component directory, sorted. A directory counts when it holds `<Name>.tsx`.
+ *
+ * This correctly returns nothing: `src/components/` no longer exists, because component source is
+ * generated into a consumer's repository rather than authored here. Kept because the extraction
+ * readers still work and a consumer's own repo is exactly where they apply.
  */
 export function listComponents() {
   if (!existsSync(COMPONENTS_DIR)) return [];

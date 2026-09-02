@@ -192,10 +192,12 @@ function buildJson(canon, m, flags) {
     ...(empty
       ? {
           _stateNote:
-            'No components exist yet. The axis registry and value glossary below are the DECLARED ' +
-            'canon, carried over from prop-canon.json. Nothing has been measured against ' +
-            'them. This is a valid and useful state: it is the vocabulary a proposal must be ' +
-            'written in.',
+            'Nothing measured. The axis registry and value glossary below are the DECLARED canon, ' +
+            'carried over from prop-canon.json. The measured half reads HAND-WRITTEN component ' +
+            'source, and there is none: components are generated from contracts into a consumer ' +
+            'repository. Contracts DO declare axes, and a prop surface is derivable from one — see ' +
+            'surfaceFrom() in the emitter — so this half is repairable and simply has not been ' +
+            'repaired. It is a gap, not the intended state.',
         }
       : {}),
     generatedFrom: {
@@ -245,9 +247,15 @@ function buildMd(json, canon) {
   L.push('');
 
   if (empty) {
-    L.push('> **State: canon-only.** No components exist yet. §1 and §2 below are the *declared*');
-    L.push('> canon — the vocabulary a design proposal must be written in. §3 and §4 measure');
-    L.push('> reality against it and are empty by construction, not by omission.');
+    L.push('> **State: canon-only, and §3–§4 are BLIND rather than empty.** §1 and §2 below are');
+    L.push('> the *declared* canon — the vocabulary a design proposal must be written in. §3 and');
+    L.push('> §4 measure reality against it by reading hand-written component source, and there');
+    L.push('> is none: components are generated from contracts into a consumer repository.');
+    L.push('>');
+    L.push('> This is a GAP, not the intended state. Fifteen contracts declare axes, and a prop');
+    L.push('> surface is derivable from a contract without any source — the emitter already does');
+    L.push('> it. Until the measured half is repointed at contracts, nothing checks that the');
+    L.push('> vocabulary a contract uses is the canon.');
     L.push('');
   }
 
