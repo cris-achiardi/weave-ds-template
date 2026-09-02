@@ -14,15 +14,19 @@ export type { DisabledItems, Member, NavigationOptions, Orientation } from './li
 /**
  * What a member registers about itself.
  *
- * `navigable` is false for a member that belongs to the collection but is not a place focus travels
- * to. A tab list has two kinds of member — the tab and its panel — and only the tab is in the arrow
- * path. That is derivable from the contract rather than guessed: a member whose root declares
+ * ONLY members in the arrow path register. A tab list has two kinds of member — the tab and its
+ * panel — and the panel is not a place focus travels to, so it never appears here. That is not a
+ * simplification: the two share an identity, and a registry keyed by identity cannot hold both.
+ * Which kind a member is is derivable rather than guessed — a member whose root declares
  * `activates` is a thing you choose, and therefore a thing you arrow onto.
+ *
+ * A member that is merely DISABLED still registers, and reports itself through `disabled`. The two
+ * are different questions: one is what kind of member this is, the other is whether this member is
+ * available right now. `disabledItems` decides what the second one costs.
  */
 export interface MemberRegistration {
   element: HTMLElement | null;
   disabled: boolean;
-  navigable: boolean;
 }
 
 export interface LinearNavigation {
@@ -64,12 +68,7 @@ export function useLinearNavigation(
     const previous = registry.current.get(value);
     registry.current.set(value, entry);
     // Only re-render when something the tab stop depends on actually moved.
-    if (
-      !previous ||
-      previous.element !== entry.element ||
-      previous.disabled !== entry.disabled ||
-      previous.navigable !== entry.navigable
-    ) {
+    if (!previous || previous.element !== entry.element || previous.disabled !== entry.disabled) {
       bump((n) => n + 1);
     }
   }, []);
@@ -81,7 +80,7 @@ export function useLinearNavigation(
   const members = useMemo<Member[]>(() => {
     void version;
     return [...registry.current.entries()]
-      .filter(([, entry]) => entry.navigable && entry.element)
+      .filter(([, entry]) => entry.element)
       .sort(([, a], [, b]) => {
         if (!a.element || !b.element) return 0;
         const rel = a.element.compareDocumentPosition(b.element);
@@ -108,13 +107,22 @@ export function useLinearNavigation(
       if (event.defaultPrevented) return;
 
       const active = registry.current;
+
+      // Which member holds focus? `contains` rather than `===` because a member's root may have
+      // focusable content of its own, and the arrow keys still belong to the collection there.
       let from: string | null = null;
+      const focused = document.activeElement;
       for (const [value, entry] of active) {
-        if (entry.element && entry.element === document.activeElement) {
+        if (entry.element && focused && entry.element.contains(focused)) {
           from = value;
           break;
         }
       }
+
+      // Focus is not on a member at all. The event reached this root by bubbling from somewhere
+      // else the collection wraps — the content of a tab PANEL, say. Arrowing inside a panel must
+      // not move the tabs, so the collection declines the event and lets it carry on up.
+      if (from === null) return;
 
       const target = resolve(intent, from, members, options);
       if (!target) return;

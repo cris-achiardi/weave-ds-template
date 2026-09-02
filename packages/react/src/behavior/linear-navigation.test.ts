@@ -181,6 +181,17 @@ describe('linear-navigation: the parts the cases do not reach', () => {
     expect(tabStop('nope', members, base)).toBe('a');
   });
 
+  it('does not park the tab stop on a member the arrows cannot reach', () => {
+    const members: Member[] = [
+      { value: 'a', disabled: false },
+      { value: 'b', disabled: true },
+    ];
+    // Under `skip` the disabled selection is outside the arrow path, so the stop moves to a
+    // member that is inside it. Under `focusable` the member IS reachable, and keeps the stop.
+    expect(tabStop('b', members, base)).toBe('a');
+    expect(tabStop('b', members, { ...base, disabledItems: 'focusable' })).toBe('b');
+  });
+
   it('reads a set selection by its first entry, for a many-cardinality collection', () => {
     const members: Member[] = [
       { value: 'a', disabled: false },

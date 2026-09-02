@@ -32,6 +32,22 @@ export const RadioItem = forwardRef<HTMLDivElement, RadioItemProps>(function Rad
     );
   }
   const selected = ctx.selection === value;
+  const { register, unregister } = ctx;
+
+  const rootRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (node) {
+        register(value, { element: node, disabled: disabled || ctx.disabled });
+      } else {
+        unregister(value);
+      }
+      // The consumer's own ref still has to land. Swallowing it would break every
+      // measurement and every imperative focus call made from outside.
+      if (typeof ref === 'function') ref(node);
+      else if (ref) ref.current = node;
+    },
+    [register, unregister, value, disabled, ctx.disabled, ref],
+  );
 
   const activate = useCallback(() => {
     if (disabled || ctx.disabled) return;
@@ -41,11 +57,11 @@ export const RadioItem = forwardRef<HTMLDivElement, RadioItemProps>(function Rad
   return (
     <div
       {...rest}
-      ref={ref}
+      ref={rootRef}
       role="radio"
       aria-disabled={disabled || undefined}
       aria-checked={selected}
-      tabIndex={disabled || ctx.disabled ? -1 : 0}
+      tabIndex={ctx.isTabStop(value) ? 0 : -1}
       onClick={activate}
       data-ds-component="RadioItem"
       data-ds-part="root"

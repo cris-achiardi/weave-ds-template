@@ -118,8 +118,11 @@ export function tabStop(
   members: readonly Member[],
   options: NavigationOptions,
 ): string | null {
-  const selected = Array.isArray(selection) ? selection[0] : selection;
-  if (selected != null && members.some((m) => m.value === selected)) return selected;
   const path = navigable(members, options);
+  const selected = Array.isArray(selection) ? selection[0] : selection;
+  // The selection holds the tab stop only if it is somewhere the arrows can also reach. Under
+  // `skip` a disabled selection is NOT in the path, and giving it the stop would put Tab and the
+  // arrows in disagreement: focus would enter on a member no arrow key can return to.
+  if (selected != null && path.some((m) => m.value === selected)) return selected;
   return path[0]?.value ?? members[0]?.value ?? null;
 }

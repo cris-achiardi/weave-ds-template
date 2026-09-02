@@ -5,8 +5,22 @@
 
 import { forwardRef, useId, useState, useCallback, createContext, useMemo } from 'react';
 import type { HTMLAttributes } from 'react';
+import {
+  useLinearNavigation,
+  type MemberRegistration,
+  type NavigationOptions,
+} from '@ds/react/behavior';
 import './RadioGroup.structure.css';
 import './RadioGroup.theme.css';
+
+// Transcribed field for field from RadioGroup.contract.json > collection.navigation.
+// The cases this commits us to are in @ds/contracts/conformance/linear-navigation.json.
+const NAVIGATION: NavigationOptions = {
+  orientation: 'both',
+  wrap: true,
+  followsFocus: true,
+  disabledItems: 'skip',
+};
 
 export interface RadioGroupContextValue {
   /** The current selection, by member value. */
@@ -17,6 +31,11 @@ export interface RadioGroupContextValue {
   baseId: string;
   /** True when the whole collection is disabled. */
   disabled: boolean;
+  /** A member announces its DOM node, so the collection can move focus between them. */
+  register: (value: string, entry: MemberRegistration) => void;
+  unregister: (value: string) => void;
+  /** True for the one member that sits in the page's tab sequence. */
+  isTabStop: (value: string) => boolean;
 }
 
 export const RadioGroupContext = createContext<RadioGroupContextValue | null>(null);
@@ -57,9 +76,22 @@ export const RadioGroup = forwardRef<HTMLDivElement, RadioGroupProps>(function R
     [selection, valueControlled, onValueChange],
   );
 
+  // `toggle` is the selection setter, and `followsFocus` is what decides whether the
+  // primitive calls it. With followsFocus false it is never called from here and arrowing
+  // only moves focus.
+  const nav = useLinearNavigation(NAVIGATION, selection, toggle);
+
   const contextValue = useMemo(
-    () => ({ selection, toggle, baseId, disabled: disabled ?? false }),
-    [selection, toggle, baseId, disabled],
+    () => ({
+      selection,
+      toggle,
+      baseId,
+      disabled: disabled ?? false,
+      register: nav.register,
+      unregister: nav.unregister,
+      isTabStop: nav.isTabStop,
+    }),
+    [selection, toggle, baseId, disabled, nav.register, nav.unregister, nav.isTabStop],
   );
 
   return (
@@ -70,6 +102,7 @@ export const RadioGroup = forwardRef<HTMLDivElement, RadioGroupProps>(function R
       id={baseId}
       aria-disabled={disabled || undefined}
       aria-readonly={readOnly || undefined}
+      onKeyDown={nav.onKeyDown}
       data-ds-component="RadioGroup"
       data-ds-part="root"
       className={className}
