@@ -113,16 +113,24 @@ export function isExported(name) {
 }
 
 /**
- * Merge the three descriptions of a component into one answer.
+ * Merge the descriptions of a component into one answer.
  *
- *   contract  — what it IS, on any framework          (authored, agnostic)
- *   binding   — what it becomes in React              (authored, framework-specific)
- *   source    — what the implementation actually does (derived, read on demand)
+ *   contract  — what it IS, on any framework      (authored, agnostic)
+ *   binding   — what it becomes in React          (authored, framework-specific)
+ *   surface   — the props the contract implies    (derived from the contract, at read time)
  *
- * None of the three is authoritative alone. The contract says what should be true, the source says
- * what is true, and where they overlap `verify:contract` asserts they agree. Nothing
- * derived is ever committed — this runs at read time, which is why it works on a fresh clone with
- * no build.
+ * THE THIRD ONE USED TO BE THE IMPLEMENTATION, and that is the change worth understanding. When
+ * components were hand-written, this merged what the contract PROMISED with what the code DID, and
+ * `verify:contract` asserted they agreed where they overlapped. Components are now generated from
+ * the contract, so there is no independent second opinion to merge: the props here come from
+ * `surfaceFrom`, the emitter's own function, which means this view and the generated component
+ * cannot disagree.
+ *
+ * That is a real loss of safety, not a simplification, and it is recorded as one — see the note on
+ * parity at the top of `verify-contract.mjs`.
+ *
+ * Nothing derived is ever committed; this runs at read time, so it works on a fresh clone with no
+ * build.
  */
 export function compose({ name, props, cvaAxes, parts, contract, binding, warnings, degraded }) {
   const merged = {};
@@ -151,8 +159,9 @@ export function compose({ name, props, cvaAxes, parts, contract, binding, warnin
   return {
     component: name,
     _doc:
-      'Composed at read time from the agnostic contract, the React binding, and the ' +
-      'implementation. Not committed anywhere. Regenerate with `pnpm contract ' +
+      'Composed at read time from the agnostic contract, the React binding, and the prop ' +
+      'surface DERIVED FROM THAT CONTRACT — not from any implementation, which is generated ' +
+      'output and cannot serve as a second opinion. Not committed anywhere. Regenerate with `pnpm contract ' +
       name +
       '`.',
     // --- what it IS (agnostic) ---
@@ -174,7 +183,7 @@ export function compose({ name, props, cvaAxes, parts, contract, binding, warnin
           propOverrides: binding.propOverrides ?? null,
         }
       : null,
-    // --- what the implementation actually does ---
+    // --- the props the contract implies, and the parts and states it declares ---
     props: merged,
     rendered: parts,
     contracted: Boolean(contract),
