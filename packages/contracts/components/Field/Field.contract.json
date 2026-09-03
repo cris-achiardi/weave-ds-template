@@ -30,10 +30,10 @@
       "description": "The control ignores interaction. Set on the field so the label and description can dim with it.",
       "visual": "Label, control and description all take the disabled treatment."
     },
-    "focused": {
+    "focus-within": {
       "kind": "intrinsic",
       "control": "internal",
-      "description": "The control inside has focus. Hoisted to the field so the label can respond to focus on its control.",
+      "description": "Focus is on the control inside, or anywhere within the field. Named for the platform state that actually provides it — `:focus-within` — because a field is a WRAPPER and that is the whole reason the pseudo-class exists.",
       "visual": "The label takes its focused treatment."
     },
     "invalid": {
@@ -135,7 +135,7 @@
             "disabled": {
               "color": null
             },
-            "focused": {
+            "focus-within": {
               "color": null
             }
           }

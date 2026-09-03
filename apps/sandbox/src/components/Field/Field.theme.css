@@ -21,11 +21,13 @@
   /* color: ; */
 }
 
-/* state: focused — The label takes its focused treatment. */
-/* Correct selector syntax now, but still matches nothing: `focused` is control: internal, and
-   the emitter only routes shared and consumer states to the DOM. See status.ts. */
-[data-ds-component='Field'][data-ds-state-focused] [data-ds-part='label'] {
-  /* color: ; */
+/* state: focus-within — The label takes its focused treatment. */
+/* Hand-patched: this file is emitted ONCE and never rewritten, so renaming the state in the
+   contract fixed the emitter's output and not this. The rule was dead twice over — the selector
+   syntax was wrong, and the state it named (`focused`) is not one any platform provides, so
+   nothing was ever going to set it. `:focus-within` needs no attribute at all. */
+[data-ds-component='Field']:focus-within [data-ds-part='label'] {
+  color: #c9c6f5;
 }
 
 [data-ds-component='Field'] [data-ds-part='description'] {

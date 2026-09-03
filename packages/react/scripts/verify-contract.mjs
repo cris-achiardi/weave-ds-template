@@ -32,6 +32,7 @@
 import { existsSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import Ajv from 'ajv/dist/2020.js';
+import { loadProfile } from '@ds/platform-web';
 import {
   REPO_ROOT,
   listContracts,
@@ -41,6 +42,12 @@ import {
   walkAnatomy,
   byCodePoint,
 } from './lib.mjs';
+
+// What the WEB PLATFORM actually provides, read from the profile rather than from a second copy
+// kept here. A state a contract calls `intrinsic` is a claim that the platform tracks it, and the
+// profile is now the only place that list lives.
+const WEB = loadProfile();
+const PLATFORM_STATES = Object.keys(WEB.states).filter((k) => !k.startsWith('_'));
 
 const failures = [];
 const reports = [];
@@ -200,6 +207,28 @@ function check(name, validateContract, validateBinding) {
       } else if (!existsSync(contractPaths(ref.member).contract)) {
         fail(name, 'reference', `references member "${ref.member}", which has no contract.`);
       }
+    }
+  }
+
+  // --- an intrinsic state must be one the platform actually provides -----------------------
+  //
+  // `kind: "intrinsic"` says the PLATFORM tracks this state — the component does not have to, and
+  // will not. So a name the platform does not know is a state nothing will ever set: it reaches no
+  // pseudo-class, and the emitter's state loop only routes `shared` and `consumer` states, so an
+  // internal one reaches no attribute either. It goes nowhere at all, silently.
+  //
+  // This check needs NO source, which is why dropping it during the move to contract-only checking
+  // was a mistake rather than a consequence. Its whitelist was left behind as an orphaned
+  // constant, and that dead code was the only visible symptom.
+  for (const [state, def] of Object.entries(contract.states ?? {})) {
+    if (def.kind === 'intrinsic' && !PLATFORM_STATES.includes(state)) {
+      fail(
+        name,
+        'invented',
+        `state "${state}" is declared intrinsic, but no platform state has that name. ` +
+          `@ds/platform-web knows: ${PLATFORM_STATES.join(', ')}. ` +
+          `An authored state has to be tracked by the implementation instead.`,
+      );
     }
   }
 
