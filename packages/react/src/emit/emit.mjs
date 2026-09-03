@@ -232,8 +232,11 @@ function renderPart(key, node, ctx, depth) {
   const takesChildrenHere = ctx.childrenPart === key;
   const attrs = [];
 
-  const nodeEl = node.activates?.toggles ? 'button' : 'div';
-  if (node.role && !(nodeEl === 'button' && node.role === 'button')) {
+  const nodeEl = defaultElement(node.activates?.toggles ? 'activatable' : 'container', WEB);
+  // Unified with the ROOT path, which asks the same question two hundred lines below. Equivalent
+  // to the old inline check by cases: a container has no implicit role so it never suppresses,
+  // and an activatable suppresses exactly when the declared role is the one it already carries.
+  if (node.role && implicitRole(nodeEl, WEB) !== node.role) {
     attrs.push(`role="${node.role}"`);
   }
   if (
@@ -327,7 +330,6 @@ function emitTsx(name, contract, binding, prefix) {
 
   const shared = props.filter((p) => p.role === 'controlled' && p.from !== 'selection');
   const slots = props.filter((p) => p.role === 'slot');
-  const identity = props.find((p) => p.role === 'identity');
   const takesChildren = (contract.composition?.children?.max ?? 1) !== 0;
   const childrenPart = contract.composition?.children?.part;
 
@@ -428,7 +430,6 @@ function emitTsx(name, contract, binding, prefix) {
       );
     }
   }
-  const rangeShared = range ? shared.find((x) => x.from === range.state) : null;
 
   // A native <dialog> does not take an attribute to become visible. It is opened by CALLING
   // showModal() and closed by calling close(), and in exchange the platform supplies focus

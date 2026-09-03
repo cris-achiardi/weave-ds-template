@@ -30,8 +30,6 @@ import {
   readJson,
   dsConfig,
   compose,
-  isExported,
-  byCodePoint,
 } from './lib.mjs';
 
 export function composeComponent(name) {

@@ -25,14 +25,7 @@
  */
 
 import { existsSync, readFileSync } from 'node:fs';
-import {
-  listComponents,
-  componentPaths,
-  readJson,
-  dsConfig,
-  walkAnatomy,
-  byCodePoint,
-} from './lib.mjs';
+import { listComponents, componentPaths, readJson, walkAnatomy, byCodePoint } from './lib.mjs';
 
 /** Very small CSS reader: `.class { prop: value; ... }` -> Map<class, Map<prop, value>>. */
 function parseModule(css) {
@@ -91,7 +84,6 @@ function satisfies(policy, value) {
 }
 
 function main() {
-  const cfg = dsConfig();
   const components = listComponents();
   const findings = [];
   let checked = 0;
