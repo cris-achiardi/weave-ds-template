@@ -17,42 +17,64 @@
  *   pnpm contract --coverage        who is contracted and who is not
  */
 
-import { existsSync, readFileSync } from 'node:fs';
-import { extractProps } from './extract/props.mjs';
-import { extractCvaAxes, flattenAxes } from './extract/cva.mjs';
-import { extractParts } from './extract/parts.mjs';
+import { existsSync } from 'node:fs';
+import { surfaceFrom } from '../src/emit/surface.mjs';
 import {
   listContracts,
   listBindings,
   contractPaths,
-  listComponents,
-  componentPaths,
   readJson,
-  dsConfig,
   compose,
+  walkAnatomy,
+  byCodePoint,
 } from './lib.mjs';
 
 export function composeComponent(name) {
-  const paths = componentPaths(name);
-  if (!existsSync(paths.tsx)) return null;
+  const paths = contractPaths(name);
+  if (!existsSync(paths.contract)) return null;
 
-  const source = readFileSync(paths.tsx, 'utf8');
-  const { props, warnings, degraded } = extractProps(paths.tsx);
-  const { axes, conflicts } = flattenAxes(extractCvaAxes(source, paths.tsx));
-  const parts = extractParts(source, dsConfig().dataPrefix);
-  const contract = existsSync(paths.contract) ? readJson(paths.contract) : null;
+  const contract = readJson(paths.contract);
   const binding = existsSync(paths.binding) ? readJson(paths.binding) : null;
 
-  return compose({
-    name,
-    props,
-    cvaAxes: axes,
-    parts,
-    contract,
-    binding,
-    warnings: [...warnings, ...conflicts.map((c) => `${c.axis}: ${c.detail}`)],
-    degraded,
-  });
+  // The prop surface a contract IMPLIES, derived with no source at all. This is what replaced the
+  // third half of the old merged view: not what the code happens to do, but what the contract says
+  // the surface is. `surfaceFrom` is the emitter's own function, so this view and the generated
+  // component cannot disagree about the props.
+  const surface = surfaceFrom(contract);
+  const props = Object.fromEntries(
+    surface.map((entry) => [
+      entry.name,
+      {
+        type: entry.type,
+        default: entry.default,
+        required: Boolean(entry.required),
+        description: entry.description,
+        // Which half of the contract asked for this prop, and why it exists. `from` is the state,
+        // axis or slot it came from; `role` is what it does.
+        from: entry.from,
+        role: entry.role,
+        source: 'contract',
+      },
+    ]),
+  );
+
+  // Every part and every state the contract DECLARES. The old view listed what the source
+  // rendered, which was a different claim and is no longer answerable here — see the note in the
+  // `_doc` this produces.
+  const parts = { parts: [], states: Object.keys(contract.states ?? {}).sort(byCodePoint) };
+  for (const [, node] of walkAnatomy(contract.anatomy?.root)) {
+    if (node.part) parts.parts.push(node.part);
+  }
+  parts.parts.sort(byCodePoint);
+
+  const warnings = [];
+  if (!binding) {
+    warnings.push(
+      `no ${name}.react.json — this backend cannot compile it, so the react half below is null.`,
+    );
+  }
+
+  return compose({ name, props, cvaAxes: {}, parts, contract, binding, warnings });
 }
 
 /**
@@ -148,7 +170,7 @@ function pretty(view) {
     if (p.description) lines.push(`    ${p.description}`);
   }
 
-  lines.push('', `## Renders`, '');
+  lines.push('', `## Declares`, '');
   lines.push(`- parts: ${view.rendered.parts.join(', ') || '(none)'}`);
   lines.push(`- states: ${view.rendered.states.join(', ') || '(none)'}`);
 
@@ -172,12 +194,13 @@ function main() {
 
   const view = composeComponent(name);
   if (!view) {
-    const known = listComponents();
-    console.error(`No component named "${name}".`);
+    const known = listContracts();
+    console.error(`No contract named "${name}".`);
     console.error(
       known.length
-        ? `Known components: ${known.join(', ')}`
-        : 'No components exist yet. This template ships empty — build one with the ds-component skill.',
+        ? `Known contracts: ${known.join(', ')}`
+        : 'No contracts exist yet. `packages/contracts/components/` is empty — the intended\n' +
+            'starting state. Write a contract against an accepted decision; do not scaffold one.',
     );
     process.exit(1);
   }

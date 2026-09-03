@@ -51,6 +51,10 @@ import {
 
 const WEB = loadProfile();
 
+// The prop surface a contract implies. Shared with the contract tooling, which needs the same
+// answer and cannot import this file — see the CLI guard at the bottom.
+import { camel, pascal, surfaceFrom } from './surface.mjs';
+
 // React's typing for a given intrinsic element. Another thing no contract states.
 const ATTR_TYPE = {
   button: ['ButtonHTMLAttributes', 'HTMLButtonElement'],
@@ -72,12 +76,7 @@ const admittedBy = (ancestor) => {
     .collection?.items;
   return Array.isArray(declared) ? declared : declared ? [declared] : [];
 };
-const camel = (s) => s.replace(/-([a-z0-9])/g, (_, c) => c.toUpperCase());
 const kebab = (s) => s.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
-const pascal = (s) => {
-  const c = camel(s);
-  return c.charAt(0).toUpperCase() + c.slice(1);
-};
 
 // ---------------------------------------------------------------------------------------
 // load + validate
@@ -112,109 +111,6 @@ function load(name) {
     throw new Error(`binding.contract points at ${target}, not ${contractPath}`);
   }
   return { contract, binding };
-}
-
-// ---------------------------------------------------------------------------------------
-// states -> the public prop surface, per ADR 0004's controlRules
-// slots  -> content props
-// ---------------------------------------------------------------------------------------
-function surfaceFrom(contract) {
-  const props = [];
-
-  for (const [state, def] of Object.entries(contract.states ?? {})) {
-    const n = camel(state);
-    // A state with `values` is an enumeration, not a boolean. Everything downstream — the prop
-    // type, the default, the comparison in a `visibleWhen` — follows from this one fact.
-    // Three shapes: enumerated, free (string/number), or — saying nothing — boolean.
-    let t = 'boolean';
-    let dflt = false;
-    if (def.values) {
-      t = def.values.map((v) => `'${v}'`).join(' | ');
-      dflt = def.default;
-    } else if (def.valueType === 'string') {
-      t = 'string';
-      dflt = '';
-    } else if (def.valueType === 'number') {
-      t = 'number';
-      dflt = def.min ?? 0;
-    }
-    if (def.control === 'shared') {
-      props.push(
-        { name: n, type: t, from: state, role: 'controlled' },
-        {
-          name: `default${pascal(state)}`,
-          type: t,
-          from: state,
-          role: 'uncontrolled',
-          default: dflt,
-        },
-        {
-          name: `on${pascal(state)}Change`,
-          type: `(${n}: ${t}) => void`,
-          from: state,
-          role: 'callback',
-        },
-      );
-    } else if (def.control === 'consumer') {
-      props.push({ name: n, type: t, from: state, role: 'input', default: dflt });
-    }
-    // `internal` emits nothing. That is the whole point of the value.
-  }
-
-  // An axis is a closed set of values the consumer chooses from. It is not a state — nothing is
-  // IN it — so ADR 0004's controlRules do not cover it, and this mapping is recorded nowhere.
-  for (const [axis, def] of Object.entries(contract.axes ?? {})) {
-    props.push({
-      name: axis,
-      type: def.values.map((v) => `'${v}'`).join(' | '),
-      from: axis,
-      role: 'axis',
-      default: def.default,
-      description: def.description,
-    });
-  }
-
-  // A collection's selection compiles exactly like a `shared` state, except its value is a set
-  // of member identities rather than a boolean. Same three props, different type.
-  const sel = contract.collection?.selection;
-  if (sel && sel.control === 'shared') {
-    const many = sel.cardinality === 'many';
-    const t = many ? 'string[]' : 'string';
-    props.push(
-      { name: 'value', type: t, from: 'selection', role: 'controlled' },
-      { name: 'defaultValue', type: t, from: 'selection', role: 'uncontrolled' },
-      { name: 'onValueChange', type: `(value: ${t}) => void`, from: 'selection', role: 'callback' },
-    );
-  }
-
-  // A member's identity is a required prop. It is not a state — nothing is IN it — so ADR 0004's
-  // controlRules do not cover it, and this mapping is recorded nowhere.
-  if (contract.member) {
-    props.push({
-      name: contract.member.identity,
-      type: 'string',
-      from: 'member',
-      role: 'identity',
-      required: true,
-      description: `Distinguishes this ${contract.component} from its siblings. The ancestor ${contract.member.of} compares against it to decide whether this one is in the selection.`,
-    });
-  }
-
-  // A named slot becomes a content prop. ADR 0004 covers states only; this is the obvious
-  // analogue and is NOT recorded anywhere, which is itself worth reporting.
-  for (const [slot, def] of Object.entries(contract.composition?.slots ?? {})) {
-    props.push({
-      name: camel(slot),
-      type: 'ReactNode',
-      from: slot,
-      role: 'slot',
-      part: def.part,
-      required: def.required === true,
-      description: def.description,
-    });
-  }
-
-  return props;
 }
 
 function partsOf(node, out = [], key = 'root') {
