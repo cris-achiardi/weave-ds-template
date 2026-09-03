@@ -21,7 +21,7 @@
     "adr-index": "node scripts/adr-index.mjs",
     "adr-index:check": "node scripts/adr-index.mjs --check",
     "report:paints": "node packages/react/scripts/report-paints.mjs",
-    "verify": "pnpm format:check && pnpm typecheck && pnpm verify:contract && pnpm prop-map:check && pnpm adr-index:check && pnpm verify:docs && pnpm verify:figma && pnpm build && pnpm test",
+    "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm verify:contract && pnpm prop-map:check && pnpm adr-index:check && pnpm verify:docs && pnpm verify:figma && pnpm build && pnpm test",
     "verify:contract": "node packages/react/scripts/verify-contract.mjs",
     "verify:figma": "node scripts/verify-figma.mjs",
     "verify:docs": "node scripts/verify-docs.mjs",
@@ -29,11 +29,13 @@
     "test": "vitest run --passWithNoTests",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "lint": "eslint .",
     "clean": "node -e \"for (const p of ['packages/tokens/build','packages/react/dist','node_modules/.vite']) require('fs').rmSync(p,{recursive:true,force:true})\""
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
     "ajv": "^8.17.1",
+    "eslint": "^10.9.1",
     "prettier": "^3.4.2",
     "react-docgen-typescript": "^2.4.0",
     "typescript": "~5.9.3",
