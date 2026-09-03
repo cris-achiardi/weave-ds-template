@@ -29,12 +29,9 @@
  * be switched off within the week, and a switched-off gate protects nothing.
  */
 
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import Ajv from 'ajv/dist/2020.js';
-import { extractProps } from './extract/props.mjs';
-import { extractCvaAxes, flattenAxes } from './extract/cva.mjs';
-import { extractParts, extractStyleKeys } from './extract/parts.mjs';
 import {
   REPO_ROOT,
   listContracts,
@@ -44,24 +41,6 @@ import {
   walkAnatomy,
   byCodePoint,
 } from './lib.mjs';
-
-/** Interaction states a platform provides. A contract may declare these as `intrinsic`. */
-const INTRINSIC = [
-  'active',
-  'checked',
-  'disabled',
-  'focus',
-  'focus-visible',
-  'focus-within',
-  'hover',
-  'indeterminate',
-  'invalid',
-  'placeholder-shown',
-  'read-only',
-  'required',
-  'valid',
-  'visited',
-];
 
 const failures = [];
 const reports = [];

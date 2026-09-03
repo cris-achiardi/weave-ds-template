@@ -24,14 +24,7 @@ import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { extractProps } from './extract/props.mjs';
 import { extractCvaAxes, flattenAxes } from './extract/cva.mjs';
-import {
-  PKG_ROOT,
-  REPO_ROOT,
-  listComponents,
-  componentPaths,
-  readJson,
-  byCodePoint,
-} from './lib.mjs';
+import { REPO_ROOT, listComponents, componentPaths, readJson, byCodePoint } from './lib.mjs';
 
 const OUT_DIR = join(REPO_ROOT, '.ai/maps');
 const OUT_JSON = join(OUT_DIR, 'prop-map.json');
