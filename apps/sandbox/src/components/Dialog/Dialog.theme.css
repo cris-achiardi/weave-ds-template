@@ -43,8 +43,13 @@
 
 /*
  * The scrim. It is a pseudo-element, not a part: it can be painted and it can never hold a
- * child, carry an attribute, or be the target of an event. That last one is why pressing it
- * does not close the dialog — the press reports the dialog itself as its target.
+ * child, carry an attribute, or be the target of an event.
+ *
+ * That last one is why a press here reports THE DIALOG ITSELF as its target, which is how
+ * `dismisses: outside-press` recognises a backdrop press without a document-level listener.
+ * It is also why the recognition needs a second test: the dialog's own padding reports the
+ * same target while being visibly inside the panel, so the press must ALSO fall outside the
+ * dialog's box. Pressing here closes it; pressing the padding does not.
  */
 [data-ds-component='Dialog']::backdrop {
   background: rgb(0 0 0 / 0.6);

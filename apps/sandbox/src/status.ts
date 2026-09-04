@@ -166,6 +166,7 @@ export const STATUS: ComponentStatus[] = [
 export const CROSS_CUTTING = [
   'No component emits its own layout. `structure.css` carries only a scoping handle and the hiding rule, because the contract has no way to say where a part sits — so every component’s real layout lives in the consumer’s theme file, which is the wrong place for it.',
   'No generated control takes part in a form. `name`, `value` and `required` are not states, not behaviour and not styling, and no contract can currently carry them.',
+  'Eight conformance cases across two primitives are deferred to a browser, and there is no browser lane — no jsdom, no Playwright, `vitest` runs in node. They were verified by hand on this page, which is the standard every verdict here is held to, but nothing automated would catch a regression in them. Among them is the geometry test that fixed a press inside the Dialog closing it.',
   'The web-platform knowledge the emitter used to hold — which ARIA attribute a state maps to, which roles accept it, which elements have a native `disabled` — now lives in `@ds/platform-web` as data, with twenty conformance cases. Thirteen tables were counted; eleven were not React and moved. A second WEB backend reads them; a Flutter or React Native backend needs its own profile and none of this one.',
 ];
 
