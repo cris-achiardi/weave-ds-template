@@ -13,8 +13,9 @@ Where the two disagree, this one wins for anything under `packages/react/`.
 > nothing. The library is becoming contract-driven: a contract in `packages/contracts/components/`
 > is the source, and component code is generated from it into a consumer's own repository.
 >
-> What is still accurate below: every command, the extraction readers and the TypeScript pin, the
-> build-output reasoning, and the gate/report split. Those describe code that exists and runs.
+> What is still accurate below: every command, the build-output reasoning, and the gate/report
+> split. Those describe code that exists and runs. The extraction readers do not — they were
+> deleted, and the section on them now records why.
 >
 > What has reversed: **"the source owns everything derivable"**. With no source to derive from, the
 > contract must carry the props, and the parity check that compares a contract's axes against `cva`
@@ -92,22 +93,24 @@ Everything above depends on these. They are stated with their reasons in
 2. Every variant axis is a `cva` axis with a `defaultVariants` entry.
 3. No generic wrapper around a variant type.
 
-## Extraction, and the one thing that can quietly break it
+## Extraction is gone, and why it is not coming back
 
-The derived half comes from a hybrid reader in `scripts/extract/`:
+`scripts/extract/` held three readers that pulled prop types, `cva` axes and rendered parts out of
+hand-written TSX. **Deleted 2026-09-03**, along with its `react-docgen-typescript` dependency.
 
-| File        | Owns                               | Why                                                                                     |
-| ----------- | ---------------------------------- | --------------------------------------------------------------------------------------- |
-| `cva.mjs`   | variant axes, values, **defaults** | Syntax only, no type checker. The sole source for `defaultVariants`, and version-proof. |
-| `props.mjs` | everything else, plus prose        | Follows imports and `extends` across files, which syntax cannot.                        |
-| `parts.mjs` | rendered parts and states          | Replaces a generated manifest's inventory.                                              |
+It went because it had become unreachable rather than merely unused. Components are generated from
+contracts into a consumer's repository, so there is no hand-written source here to read — and the
+check it existed to serve, comparing a contract's axes against the code, is **circular** once the
+code is derived from the contract. Repointing the prop map at the contracts removed its last
+importer, and a file-scoped lint finds an unused import but never an orphaned module.
 
-**`typescript` is tilde-pinned in the root `package.json` on purpose.** Measured: under
-`typescript@6.0.3`, `react-docgen-typescript` stops classifying `VariantProps`-derived props as
-enums — value arrays come back empty and only a union string survives. Its peer range is
-`>= 4.3.x`, so nothing warns you. `props.mjs` recovers the values from the union string and flags
-`degraded: true`, so a bad bump is visible instead of silently thinning every answer. **Read the
-extraction warnings before trusting a thin-looking result.**
+The cost of leaving it was concrete, not tidiness: `typescript` was tilde-pinned for the whole
+monorepo solely to protect that one library from a silent regression, so **dead code was holding the
+toolchain version hostage.** The pin is still there and its note now says the reason is gone.
+
+The one use that would justify bringing it back: a consumer who HAND-EDITS their generated
+components and wants drift against the contract detected. That is speculative, nobody does it, and
+git has the code.
 
 ## Build output
 
@@ -129,7 +132,6 @@ reason — a consumer on classic Node resolution ignores `exports` entirely.
 | `typecheck`, `build` | **gate**       | the ordinary things                                                      |
 | `report:paints`      | report         | a declaration that does not satisfy its declared token policy            |
 | contract coverage    | report         | uncontracted components                                                  |
-| extraction warnings  | report         | a prop the reader could not fully resolve                                |
 
 Two rules behind that split, both worth internalising:
 
