@@ -4,7 +4,7 @@
   "_regenerate": "pnpm prop-map (reads the contracts directly — no build required)",
   "_state": "measured",
   "generatedFrom": {
-    "components": null,
+    "components": "packages/contracts/components/",
     "canon": "packages/contracts/prop-canon.json",
     "prose": "packages/contracts/components/README.md §2"
   },
