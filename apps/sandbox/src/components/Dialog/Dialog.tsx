@@ -5,8 +5,18 @@
 
 import { forwardRef, useId, useState, useCallback, useEffect, useRef } from 'react';
 import type { DialogHTMLAttributes, ReactNode } from 'react';
+import { useDismissal, type DismissalOptions } from '@ds/react/behavior';
 import './Dialog.structure.css';
 import './Dialog.theme.css';
+
+// Transcribed from Dialog.contract.json > dismisses. The cases this commits us to
+// are in @ds/contracts/conformance/dismissal.json.
+//
+// The contract also declares escape, which is NOT generated: the
+// platform supplies it for a <dialog>. See @ds/platform-web > visibility.supplies.
+const DISMISSAL: DismissalOptions = {
+  on: ['outside-press'],
+};
 
 export interface DialogProps extends Omit<
   DialogHTMLAttributes<HTMLDialogElement>,
@@ -105,6 +115,8 @@ export const Dialog = forwardRef<HTMLDialogElement, DialogProps>(function Dialog
     return () => observer.disconnect();
   }, [handleClose]);
 
+  const dismissal = useDismissal(DISMISSAL, openValue, handleClose);
+
   return (
     <dialog
       {...rest}
@@ -113,6 +125,7 @@ export const Dialog = forwardRef<HTMLDialogElement, DialogProps>(function Dialog
       data-ds-state-open={openValue || undefined}
       data-ds-size={size}
       aria-labelledby={`${baseId}-title`}
+      onPointerDown={dismissal.onPointerDown}
       data-ds-component="Dialog"
       data-ds-part="root"
       className={className}

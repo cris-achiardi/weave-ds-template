@@ -244,6 +244,7 @@ function check(name, validateContract, validateBinding) {
   const commitments = [
     [contract.collection?.navigation, 'linear-navigation.json'],
     [contract.range, 'range-stepping.json'],
+    [contract.dismisses, 'dismissal.json'],
   ];
   for (const [declared, file] of commitments) {
     if (declared && !existsSync(join(CONFORMANCE, file))) {

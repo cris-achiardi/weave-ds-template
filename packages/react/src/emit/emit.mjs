@@ -344,6 +344,24 @@ function emitTsx(name, contract, binding, prefix) {
     );
   }
 
+  // What closes this component. The platform may already supply some of it: a native <dialog>
+  // answers Escape itself, and `profile.json` records that in `visibility.supplies`. So the emitter
+  // generates only the causes the platform does NOT already answer, and a contract declaring both
+  // still gets one handler. That is the platform profile earning its keep a second time.
+  const dismisses = contract.dismisses ?? null;
+  let dismissCauses = [];
+  if (dismisses) {
+    const dismissState = shared.find((x) => x.from === dismisses.state);
+    if (!dismissState) {
+      throw new Error(
+        `${name}.dismisses names state "${dismisses.state}", which is not \`control: shared\` — ` +
+          `a dismissal writes it, so something outside has to be able to hear that.`,
+      );
+    }
+    const supplied = visibilityOf(el, WEB).supplies ?? [];
+    dismissCauses = dismisses.on.filter((c) => !supplied.includes(`${c}-to-dismiss`));
+  }
+
   const editable = editsOwnValue(el, WEB);
   const valueState = shared.find(
     (x) => contract.states?.[x.from]?.valueType === 'string' && x.name === 'value',
@@ -370,7 +388,25 @@ function emitTsx(name, contract, binding, prefix) {
       "THE FIRST useEffect IN GENERATED CODE, and it is not incidental. A <dialog> cannot be opened by rendering an attribute — React sets `open` on the first render and showModal() then throws InvalidStateError — so it has to be called after commit. The dialog also closes ITSELF on Escape, which means the component is no longer the only writer of its own state and has to listen for `close` to stay in sync. A backend without a modal element in its platform gets none of this and has to implement four separate behaviours, with only this contract's prose to go on.",
     );
   }
-  if (shared.length && !rootToggles && !activator && !nativelyEdited && !range && !platformModal) {
+  if (dismisses) {
+    const skipped = dismisses.on.filter((c) => !dismissCauses.includes(c));
+    assume(
+      'what a platform already supplies of a dismissal',
+      dismissCauses.length
+        ? `generated ${dismissCauses.join(' and ')}${skipped.length ? `; ${skipped.join(' and ')} left to the platform` : ''}`
+        : `nothing generated — the platform supplies ${skipped.join(' and ')}`,
+      'The contract declares WHAT closes the component and cannot know what any platform already answers. `@ds/platform-web` records that a native <dialog> supplies Escape, so declaring a cause is not the same as generating it. A backend on a platform that supplies none of them generates all of them from the same declaration, which is the whole point of the split.',
+    );
+  }
+  if (
+    shared.length &&
+    !rootToggles &&
+    !activator &&
+    !nativelyEdited &&
+    !range &&
+    !platformModal &&
+    !dismisses
+  ) {
     assume(
       'what changes a shared state',
       `no event wired — ${shared.map((s) => s.name).join(', ')} exposed as storage only`,
@@ -475,6 +511,7 @@ function emitTsx(name, contract, binding, prefix) {
   if (rootToggles || activator || collection || nativelyEdited) hooks.push('useCallback');
   if (registers) hooks.push('useCallback');
   if (range) hooks.push('useCallback');
+  if (dismissCauses.length) hooks.push('useCallback');
   if (platformModal) hooks.push('useCallback', 'useEffect', 'useRef');
   if (collection) hooks.push('createContext', 'useMemo');
   if (member) hooks.push('useContext');
@@ -485,6 +522,9 @@ function emitTsx(name, contract, binding, prefix) {
   s.push(`import type { ${types.join(', ')} } from 'react';`);
   if (range) {
     s.push(`import { snap, useRangeControl, type RangeOptions } from '@ds/react/behavior';`);
+  }
+  if (dismissCauses.length) {
+    s.push(`import { useDismissal, type DismissalOptions } from '@ds/react/behavior';`);
   }
   if (navigation) {
     // A real package import, not copied code. What you can see you own; what must be correct you
@@ -505,6 +545,22 @@ function emitTsx(name, contract, binding, prefix) {
   s.push(`import './${name}.structure.css';`);
   s.push(`import './${name}.theme.css';`);
   s.push(``);
+
+  // ---- what closes this, module-level so its identity is stable across renders
+  if (dismissCauses.length) {
+    s.push(`// Transcribed from ${name}.contract.json > dismisses. The cases this commits us to`);
+    s.push(`// are in @ds/contracts/conformance/dismissal.json.`);
+    if (dismissCauses.length !== dismisses.on.length) {
+      const left = dismisses.on.filter((c) => !dismissCauses.includes(c));
+      s.push(`//`);
+      s.push(`// The contract also declares ${left.join(' and ')}, which is NOT generated: the`);
+      s.push(`// platform supplies it for a <${el}>. See @ds/platform-web > visibility.supplies.`);
+    }
+    s.push(`const DISMISSAL: DismissalOptions = {`);
+    s.push(`  on: [${dismissCauses.map((c) => `'${c}'`).join(', ')}],`);
+    s.push(`};`);
+    s.push(``);
+  }
 
   // ---- the declared range, module-level so its identity is stable across renders
   if (range) {
@@ -668,7 +724,8 @@ function emitTsx(name, contract, binding, prefix) {
     s.push(`  const [${v}Internal, set${pascal(st)}Internal] = useState(default${pascal(st)});`);
     s.push(`  const ${v}Value = ${v}Controlled ? ${sh.name} : ${v}Internal;`);
     const operatedByRange = range && range.state === st;
-    if (rootToggles !== st && !operatedByRange && platformModal !== st) {
+    const dismissible = dismissCauses.length > 0 && dismisses.state === st;
+    if (rootToggles !== st && !operatedByRange && platformModal !== st && !dismissible) {
       s.push(`  // Nothing in the contract says what CHANGES \`${st}\`: no part declares`);
       s.push(
         `  // \`activates\`. It works when controlled from outside; uncontrolled it cannot move.`,
@@ -744,6 +801,21 @@ function emitTsx(name, contract, binding, prefix) {
       s.push(`    observer.observe(node, { attributes: true, attributeFilter: ['open'] });`);
       s.push(`    return () => observer.disconnect();`);
       s.push(`  }, [handleClose]);`);
+    }
+    if (dismissible) {
+      // A platform modal already emitted `handleClose` for this same state, and a second identical
+      // writer would be noise in generated code. Reuse it: one close path is also one place for a
+      // reader to look when the state and the element disagree.
+      const writer = platformModal === st ? 'handleClose' : `dismiss${pascal(st)}`;
+      s.push(``);
+      if (writer !== 'handleClose') {
+        s.push(`  const ${writer} = useCallback(() => {`);
+        s.push(`    if (!${v}Controlled) set${pascal(st)}Internal(false);`);
+        s.push(`    on${pascal(st)}Change?.(false);`);
+        s.push(`  }, [${v}Controlled, on${pascal(st)}Change]);`);
+        s.push(``);
+      }
+      s.push(`  const dismissal = useDismissal(DISMISSAL, ${v}Value, ${writer});`);
     }
     if (operatedByRange) {
       s.push(``);
@@ -1049,6 +1121,10 @@ function emitTsx(name, contract, binding, prefix) {
     // `rest.style` is spread FIRST so a consumer's own inline styles still land, and the property
     // last so a consumer cannot accidentally break the geometry with an unrelated style prop.
     rootAttrs.push(`style={{ ...rest.style, ['--${prefix}-fraction' as string]: range.fraction }}`);
+  }
+  if (dismissCauses.includes('escape')) rootAttrs.push(`onKeyDown={dismissal.onKeyDown}`);
+  if (dismissCauses.includes('outside-press')) {
+    rootAttrs.push(`onPointerDown={dismissal.onPointerDown}`);
   }
   if (navigation) rootAttrs.push(`onKeyDown={nav.onKeyDown}`);
   if (rootToggles) rootAttrs.push(`onClick={activate}`);
