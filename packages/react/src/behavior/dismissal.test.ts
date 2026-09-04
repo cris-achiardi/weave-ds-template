@@ -3,10 +3,15 @@
 // Same arrangement as the other two primitives: the cases are DATA owned by the contracts package,
 // and this file is the React adapter for them.
 //
-// NOTHING IS DEFERRED TO A BROWSER, and that is deliberate rather than lucky. Dismissal is two
-// questions — is this key Escape, and did this press land on the region itself — and both are
-// answerable from plain values. A case here that needed a rendered DOM would mean the decision had
-// leaked out of the pure core and into the hook.
+// THREE CASES ARE DEFERRED TO A BROWSER, and an earlier version of this file claimed none were.
+// That claim was wrong in a way that cost a shipped bug: whether a point falls inside an element's
+// box is NOT answerable from plain values, so the mapping from a real event to the word `region`
+// was never tested here at all. Every executable case passed while a press on the dialog's own
+// padding closed it.
+//
+// The deferred cases are listed below with a reason each, following the pattern
+// `linear-navigation.test.ts` established, so the gap between "tested here" and "verified
+// somewhere" stays visible instead of looking like completeness.
 
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -19,10 +24,24 @@ interface Case {
   patterns: string[];
   given: { state: string; on: DismissalCause[]; isOpen: boolean };
   press: string | null;
-  pointer?: { target: 'region' | 'descendant' | 'nested-descendant'; button: string };
+  pointer?: { target: string; button: string; releasedOn?: string };
   expect: { dismissed: boolean; handled: boolean };
   apg: string;
+  needsARenderedDOM?: boolean;
 }
+
+/**
+ * Cases whose assertion is about GEOMETRY or event sequencing rather than about the decision logic.
+ * Each names why, so this list cannot quietly become a dumping ground for anything inconvenient.
+ */
+const NEEDS_A_BROWSER: Record<string, string> = {
+  'a-press-on-the-regions-own-padding-does-not-dismiss':
+    'a point inside the box, on the element itself — geometry, not a decision',
+  'a-press-on-a-child-outside-the-regions-box-does-not-dismiss':
+    'a descendant rendered outside its parent box — geometry again',
+  'a-press-beginning-on-the-backdrop-and-released-inside-does-not-dismiss':
+    'press and release on different targets — the event sequence a click collapses',
+};
 
 const SUITE = JSON.parse(
   readFileSync(
@@ -32,7 +51,28 @@ const SUITE = JSON.parse(
 ) as { primitive: string; cases: Case[] };
 
 describe(`conformance: ${SUITE.primitive}`, () => {
+  it('every case is either executed here or explicitly deferred to a browser', () => {
+    const ids = SUITE.cases.map((c) => c.id);
+    for (const deferred of Object.keys(NEEDS_A_BROWSER)) {
+      expect(ids, `${deferred} is deferred but no longer exists in the suite`).toContain(deferred);
+    }
+    // And the reverse, which the navigation suite does not assert: a case flagged in the DATA as
+    // needing a DOM must be named here with a reason, so one cannot be added and silently skipped.
+    for (const c of SUITE.cases) {
+      if (c.needsARenderedDOM) {
+        expect(
+          NEEDS_A_BROWSER,
+          `${c.id} is flagged needsARenderedDOM but names no reason`,
+        ).toHaveProperty(c.id);
+      }
+    }
+  });
+
   for (const c of SUITE.cases) {
+    if (c.id in NEEDS_A_BROWSER) {
+      it.skip(`${c.id} — in a browser: ${NEEDS_A_BROWSER[c.id]}`, () => {});
+      continue;
+    }
     it(`${c.id} [apg: ${c.apg}]`, () => {
       const options: DismissalOptions = { on: c.given.on };
 

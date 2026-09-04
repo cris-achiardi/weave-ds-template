@@ -65,6 +65,19 @@ const ATTR_TYPE = {
 };
 const attrTypeFor = (el) => ATTR_TYPE[el] ?? ['HTMLAttributes', 'HTMLDivElement'];
 
+// Every event a generated root can attach. None of these names can be produced by `surfaceFrom`,
+// so none is ever in the props type's `Omit` list — which means a consumer can always pass one and
+// it must always be composed rather than overwritten.
+const CONSUMER_MAY_ALSO_PASS = [
+  'onChange',
+  'onClick',
+  'onKeyDown',
+  'onPointerCancel',
+  'onPointerDown',
+  'onPointerMove',
+  'onPointerUp',
+];
+
 const EMITTER_ASSUMPTIONS = [];
 const assume = (topic, decision, why) => EMITTER_ASSUMPTIONS.push({ topic, decision, why });
 
@@ -733,6 +746,7 @@ function emitTsx(name, contract, binding, prefix) {
       s.push(`  void set${pascal(st)}Internal;`);
     }
     if (platformModal === st) {
+      const vis = visibilityOf(el, WEB);
       s.push(``);
       s.push(`  // A <dialog> is opened by CALLING showModal(), never by rendering an attribute:`);
       s.push(`  // React would set \`open\` on the first render and showModal() then throws`);
@@ -746,8 +760,8 @@ function emitTsx(name, contract, binding, prefix) {
         `    // \`open\` reflects showModal() having been called, so it is also the guard against`,
       );
       s.push(`    // calling it twice — which throws in Safari 16 and is merely wasteful after.`);
-      s.push(`    if (${v}Value && !node.open) node.showModal();`);
-      s.push(`    else if (!${v}Value && node.open) node.close();`);
+      s.push(`    if (${v}Value && !node.open) node.${vis.show}();`);
+      s.push(`    else if (!${v}Value && node.open) node.${vis.hide}();`);
       s.push(`  }, [${v}Value]);`);
       s.push(``);
       s.push(`  const setDialogRef = useCallback(`);
@@ -796,25 +810,39 @@ function emitTsx(name, contract, binding, prefix) {
       s.push(`    const node = dialogRef.current;`);
       s.push(`    if (!node) return;`);
       s.push(`    const observer = new MutationObserver(() => {`);
-      s.push(`      if (!node.open) handleClose();`);
+      s.push(`      if (!node.${vis.reflects}) handleClose();`);
       s.push(`    });`);
-      s.push(`    observer.observe(node, { attributes: true, attributeFilter: ['open'] });`);
+      s.push(
+        `    observer.observe(node, { attributes: true, attributeFilter: ['${vis.reflects}'] });`,
+      );
       s.push(`    return () => observer.disconnect();`);
       s.push(`  }, [handleClose]);`);
     }
     if (dismissible) {
-      // A platform modal already emitted `handleClose` for this same state, and a second identical
-      // writer would be noise in generated code. Reuse it: one close path is also one place for a
-      // reader to look when the state and the element disagree.
-      const writer = platformModal === st ? 'handleClose' : `dismiss${pascal(st)}`;
+      const writer = `dismiss${pascal(st)}`;
       s.push(``);
-      if (writer !== 'handleClose') {
+      if (platformModal === st) {
+        const vis2 = visibilityOf(el, WEB);
+        // A platform modal is closed BY THE ELEMENT, never by writing the state.
+        //
+        // Writing the state directly fired `on<State>Change` TWICE: the state write ran the effect,
+        // the effect called close(), the attribute changed, the MutationObserver saw it and called
+        // handleClose — a second notification for one dismissal. Invisible in a sandbox, and a
+        // double count for any consumer with analytics on it.
+        //
+        // Closing the element instead leaves the observer as the single writer, exactly as it
+        // already is for the Escape the platform supplies. One close path, one place to look when
+        // the state and the element disagree.
+        s.push(`  const ${writer} = useCallback(() => {`);
+        s.push(`    dialogRef.current?.${vis2.hide}();`);
+        s.push(`  }, []);`);
+      } else {
         s.push(`  const ${writer} = useCallback(() => {`);
         s.push(`    if (!${v}Controlled) set${pascal(st)}Internal(false);`);
         s.push(`    on${pascal(st)}Change?.(false);`);
         s.push(`  }, [${v}Controlled, on${pascal(st)}Change]);`);
-        s.push(``);
       }
+      s.push(``);
       s.push(`  const dismissal = useDismissal(DISMISSAL, ${v}Value, ${writer});`);
     }
     if (operatedByRange) {
@@ -953,6 +981,23 @@ function emitTsx(name, contract, binding, prefix) {
   s.push(`  return (`);
   const rootAttrs = [];
   rootAttrs.push(`{...rest}`);
+
+  // Event handlers are COLLECTED, not pushed, and emitted composed at the end.
+  //
+  // Pushing them directly produced duplicate JSX props whenever a contract declared more than one
+  // primitive — `onKeyDown` could be pushed three times, by range, by dismissal and by navigation —
+  // and JSX silently keeps the last, so a primitive went dead with no error anywhere. It also meant
+  // a consumer's own handler, which is NOT omitted from the props type, was overwritten by
+  // `{...rest}` being first.
+  //
+  // `emit/README.md` §4 authorises spreading before the attributes that constitute IDENTITY — role,
+  // id, tabIndex. It says nothing about handlers, so clobbering them was never sanctioned.
+  // `takesEvent` is not a detail. `activate` is generated as `() => {...}` and takes no argument,
+  // so composing it as `activate(event)` is a type error — caught by `pnpm typecheck`, which is
+  // exactly the gate that covers emitted output.
+  const handlers = {};
+  const onEvent = (name, expr, takesEvent = true) =>
+    (handlers[name] ??= []).push({ expr, takesEvent });
   rootAttrs.push(platformModal ? `ref={setDialogRef}` : registers ? `ref={rootRef}` : `ref={ref}`);
   if (submitsByDefault(el, WEB)) rootAttrs.push(`type="button"`);
   // A <button> already IS role=button; restating it is noise the linters flag.
@@ -1070,7 +1115,7 @@ function emitTsx(name, contract, binding, prefix) {
   }
   if (nativelyEdited) {
     rootAttrs.push(`value={${camel(valueState.from)}Value}`);
-    rootAttrs.push(`onChange={handleChange}`);
+    onEvent('onChange', 'handleChange');
     rootAttrs.push(`readOnly={readOnly}`);
   }
   // A slider's range is part of what it MEANS, and ARIA has attributes for exactly it.
@@ -1108,12 +1153,12 @@ function emitTsx(name, contract, binding, prefix) {
     );
   }
   if (range) {
-    rootAttrs.push(`onKeyDown={range.onKeyDown}`);
+    onEvent('onKeyDown', 'range.onKeyDown');
     if (range.drag) {
-      rootAttrs.push(`onPointerDown={range.onPointerDown}`);
-      rootAttrs.push(`onPointerMove={range.onPointerMove}`);
-      rootAttrs.push(`onPointerUp={range.onPointerUp}`);
-      rootAttrs.push(`onPointerCancel={range.onPointerUp}`);
+      onEvent('onPointerDown', 'range.onPointerDown');
+      onEvent('onPointerMove', 'range.onPointerMove');
+      onEvent('onPointerUp', 'range.onPointerUp');
+      onEvent('onPointerCancel', 'range.onPointerUp');
     }
     // The fill's length and the thumb's offset ARE the value, and neither is static CSS. The
     // component knows the number, so it hands it to CSS as a custom property rather than leaving
@@ -1122,12 +1167,31 @@ function emitTsx(name, contract, binding, prefix) {
     // last so a consumer cannot accidentally break the geometry with an unrelated style prop.
     rootAttrs.push(`style={{ ...rest.style, ['--${prefix}-fraction' as string]: range.fraction }}`);
   }
-  if (dismissCauses.includes('escape')) rootAttrs.push(`onKeyDown={dismissal.onKeyDown}`);
+  if (dismissCauses.includes('escape')) onEvent('onKeyDown', 'dismissal.onKeyDown');
+  // A CLICK, not a pointerdown: a click needs press AND release on the same target, so a drag that
+  // starts on the backdrop and ends inside the panel — or the reverse, selecting text and releasing
+  // past the edge — is not a dismissal.
   if (dismissCauses.includes('outside-press')) {
-    rootAttrs.push(`onPointerDown={dismissal.onPointerDown}`);
+    onEvent('onPointerDown', 'dismissal.onPointerDown');
+    onEvent('onClick', 'dismissal.onClick');
   }
-  if (navigation) rootAttrs.push(`onKeyDown={nav.onKeyDown}`);
-  if (rootToggles) rootAttrs.push(`onClick={activate}`);
+  if (navigation) onEvent('onKeyDown', 'nav.onKeyDown');
+  if (rootToggles) onEvent('onClick', 'activate', false);
+
+  // Consumer first, so they can `preventDefault()` and win. Each primitive then guards on
+  // `defaultPrevented` before acting, which makes the chain self-terminating rather than merely
+  // ordered — the order below is a tiebreak, not a correctness requirement.
+  for (const [event, exprs] of Object.entries(handlers)) {
+    if (exprs.length === 1 && !CONSUMER_MAY_ALSO_PASS.includes(event)) {
+      rootAttrs.push(`${event}={${exprs[0].expr}}`);
+      continue;
+    }
+    const calls = [
+      `rest.${event}?.(event)`,
+      ...exprs.map((e) => (e.takesEvent ? `${e.expr}(event)` : `${e.expr}()`)),
+    ];
+    rootAttrs.push(`${event}={(event) => { ${calls.join('; ')}; }}`);
+  }
   rootAttrs.push(`data-${prefix}-component="${name}"`);
   rootAttrs.push(`data-${prefix}-part="${root.part}"`);
   rootAttrs.push(`className={className}`);

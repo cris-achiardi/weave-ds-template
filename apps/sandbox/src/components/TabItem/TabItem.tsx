@@ -66,7 +66,10 @@ export const TabItem = forwardRef<HTMLButtonElement, TabItemProps>(function TabI
       aria-selected={selected}
       tabIndex={ctx.isTabStop(value) ? 0 : -1}
       aria-controls={`${ctx.baseId}-TabPanel-${value}`}
-      onClick={activate}
+      onClick={(event) => {
+        rest.onClick?.(event);
+        activate();
+      }}
       data-ds-component="TabItem"
       data-ds-part="root"
       className={className}

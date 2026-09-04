@@ -62,7 +62,10 @@ export const RadioItem = forwardRef<HTMLDivElement, RadioItemProps>(function Rad
       aria-disabled={disabled || undefined}
       aria-checked={selected}
       tabIndex={ctx.isTabStop(value) ? 0 : -1}
-      onClick={activate}
+      onClick={(event) => {
+        rest.onClick?.(event);
+        activate();
+      }}
       data-ds-component="RadioItem"
       data-ds-part="root"
       className={className}

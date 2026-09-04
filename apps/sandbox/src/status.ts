@@ -150,7 +150,7 @@ export const STATUS: ComponentStatus[] = [
     component: 'Tooltip',
     verdict: 'partial',
     supplies:
-      'Correct structure: role=tooltip, the trigger described by the popup only while open. Escape dismisses it, declared by `dismisses`.',
+      'Correct structure: role=tooltip, the trigger described by the popup only while open. Escape dismisses it — but only while focus is inside the wrapper, since the handler sits on the root and the tooltip never takes focus itself.',
     remaining: [
       'Nothing opens it. The contract says hover-after-a-delay and focus, in prose; `activates` covers clicks only, and a delay has nowhere to live — the schema has no concept of time.',
       'No positioning: no anchor, no side, no collision handling. The `placement` axis it declares is read by nothing.',

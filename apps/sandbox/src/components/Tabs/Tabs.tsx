@@ -99,7 +99,10 @@ export const Tabs = forwardRef<HTMLDivElement, TabsProps>(function Tabs(
       ref={ref}
       id={baseId}
       aria-disabled={disabled || undefined}
-      onKeyDown={nav.onKeyDown}
+      onKeyDown={(event) => {
+        rest.onKeyDown?.(event);
+        nav.onKeyDown(event);
+      }}
       data-ds-component="Tabs"
       data-ds-part="root"
       className={className}
