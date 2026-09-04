@@ -62,8 +62,17 @@ function measure() {
       // The VALUE SET comes off the contract directly rather than out of the rendered TypeScript
       // union in `entry.type`. Re-parsing `'s' | 'm' | 'l'` back into an array would be a second,
       // lossier answer to a question the contract already answers exactly.
-      const values =
-        entry.role === 'axis'
+      //
+      // ONLY FOR THE ROLES THAT CARRY ONE. `surfaceFrom` emits several props from one state, and
+      // they do not all take its values: `checked` and `defaultChecked` are the enumeration,
+      // `onCheckedChange` is a FUNCTION. Keying the lookup off the state name alone gave all three
+      // the same value set, so the glossary recorded `onCheckedChange` as `kind: "enum"` carrying
+      // `unchecked | checked | mixed` — and that fed the canon flags, where a callback would have
+      // been compared against every axis for a possible synonym.
+      const CARRIES_VALUES = ['axis', 'controlled', 'uncontrolled', 'input'];
+      const values = !CARRIES_VALUES.includes(entry.role)
+        ? null
+        : entry.role === 'axis'
           ? (contract.axes?.[entry.from]?.values ?? null)
           : (contract.states?.[entry.from]?.values ?? null);
 
