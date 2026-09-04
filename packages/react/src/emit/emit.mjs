@@ -65,19 +65,6 @@ const ATTR_TYPE = {
 };
 const attrTypeFor = (el) => ATTR_TYPE[el] ?? ['HTMLAttributes', 'HTMLDivElement'];
 
-// Every event a generated root can attach. None of these names can be produced by `surfaceFrom`,
-// so none is ever in the props type's `Omit` list — which means a consumer can always pass one and
-// it must always be composed rather than overwritten.
-const CONSUMER_MAY_ALSO_PASS = [
-  'onChange',
-  'onClick',
-  'onKeyDown',
-  'onPointerCancel',
-  'onPointerDown',
-  'onPointerMove',
-  'onPointerUp',
-];
-
 const EMITTER_ASSUMPTIONS = [];
 const assume = (topic, decision, why) => EMITTER_ASSUMPTIONS.push({ topic, decision, why });
 
@@ -921,13 +908,11 @@ function emitTsx(name, contract, binding, prefix) {
   if (activator || rootToggles) {
     const what = activator?.node.activates.toggles ?? rootToggles;
     s.push(`  const activate = useCallback((event?: { defaultPrevented: boolean }) => {`);
-    s.push(
-      `    // Guards like every other handler, so a composed chain terminates here too. Without`,
-    );
-    s.push(
-      `    // it a consumer's own onClick calling preventDefault() was ignored, and a root that`,
-    );
-    s.push(`    // both toggles and dismisses would do both on one press.`);
+    s.push(`    // Guards, because this runs on a CLICK and the platform guards there too: calling`);
+    s.push(`    // preventDefault() in a click handler is what cancels a native checkbox's toggle.`);
+    s.push(`    // Honouring it here makes a generated control agree with the element it replaces.`);
+    s.push(`    // Without it a consumer's own onClick calling preventDefault() was ignored, and a`);
+    s.push(`    // root that both toggles and dismisses did both on one press.`);
     s.push(`    if (event?.defaultPrevented) return;`);
     const guards = [];
     if (consumerProps.some((p) => p.name === 'disabled')) guards.push(disabledExpr);
@@ -1187,19 +1172,31 @@ function emitTsx(name, contract, binding, prefix) {
   if (navigation) onEvent('onKeyDown', 'nav.onKeyDown');
   if (rootToggles) onEvent('onClick', 'activate');
 
-  // Consumer first, so they can `preventDefault()` and win. Every handler in the chain then guards
-  // on `defaultPrevented` before acting, which makes it self-terminating rather than merely ordered
-  // — the order is a tiebreak, not a correctness requirement.
+  // Consumer first, so they can `preventDefault()` and win. ALWAYS composed, never emitted bare:
+  // no event name here can be produced by `surfaceFrom`, so none is ever in the props type's `Omit`
+  // list, which means a consumer can always pass one and there is no case where overwriting is
+  // safe. A fast path that skipped composition for a single handler was unreachable for exactly
+  // that reason, and is gone.
   //
-  // `activate` did NOT guard, and this comment claimed the property anyway. A consumer passing
-  // `onClick={(e) => e.preventDefault()}` still toggled, and a contract declaring both
-  // `activates.toggles` and `outside-press` would have dismissed AND toggled on one press. It takes
-  // the event and guards now; if a future handler cannot, it does not belong in a chain.
+  // WHICH EVENTS TERMINATE THE CHAIN, and this is a rule rather than a habit, because guessing it
+  // per handler produced a bug in both directions inside one review cycle.
+  //
+  //   keydown, click  — a handler guards on `defaultPrevented` and stops. On these two the call
+  //                     unambiguously means "I claimed this", and the platform itself obeys it:
+  //                     `preventDefault()` on a click is what cancels a native checkbox's toggle.
+  //                     So `dismissal`, `nav`, `range.onKeyDown` and `activate` all guard.
+  //
+  //   pointermove/up  — NO handler guards. There `preventDefault()` is the ordinary way to suppress
+  //                     selection and scrolling, not a claim, and a drag already owns the pointer.
+  //                     Guarding froze a slider mid-drag for a consumer doing something reasonable.
+  //
+  //   change          — no handler guards, and none can meaningfully: `preventDefault()` on a
+  //                     change event cancels nothing natively, so there is no established meaning
+  //                     to honour. Composed in order and left at that.
+  //
+  // So the chain is self-terminating for the first group only. For the other two the order below is
+  // load-bearing rather than a tiebreak: every handler runs.
   for (const [event, exprs] of Object.entries(handlers)) {
-    if (exprs.length === 1 && !CONSUMER_MAY_ALSO_PASS.includes(event)) {
-      rootAttrs.push(`${event}={${exprs[0].expr}}`);
-      continue;
-    }
     const calls = [
       `rest.${event}?.(event)`,
       ...exprs.map((e) => (e.takesEvent ? `${e.expr}(event)` : `${e.expr}()`)),

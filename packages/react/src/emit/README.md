@@ -131,6 +131,38 @@ Accessibility attributes a consumer may legitimately want to supply — `aria-la
 element — go before the spread instead, deliberately, and the contract's `a11y.notes` records which
 way each one went and why.
 
+### 5. Event handlers are composed, never overridden
+
+The rule above is about **identity** attributes and it does not extend to handlers. Handlers are
+collected per event name and emitted as one inline arrow that calls the consumer's first, then each
+primitive:
+
+```tsx
+onKeyDown={(event) => { rest.onKeyDown?.(event); dismissal.onKeyDown(event); nav.onKeyDown(event); }}
+```
+
+Two failures made this a rule rather than a preference, and neither produced an error:
+
+- **Primitives clobbered each other.** A contract declaring `range`, `dismisses` and a navigation
+  pattern pushed `onKeyDown` three times. JSX keeps the last, so two primitives went dead silently.
+- **The consumer was clobbered.** No handler name is produced by `surfaceFrom`, so none is ever in
+  the props type's `Omit` list — a consumer can always pass one, and with `{...rest}` spread first it
+  was overwritten. There is no case where emitting a handler bare is safe.
+
+**Which events terminate the chain.** A handler that guards on `defaultPrevented` and returns stops
+everything after it. That is correct for some events and wrong for others, and guessing per handler
+produced a bug in each direction inside one review cycle:
+
+| Event            | Guards? | Why                                                                                                                                                       |
+| ---------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `keydown`        | yes     | `preventDefault()` means "I claimed this key" and nothing else.                                                                                           |
+| `click`          | yes     | Same, and the platform agrees: `preventDefault()` on a click is what cancels a native checkbox's toggle, so guarding makes the output match it.           |
+| `pointermove/up` | **no**  | There it is the ordinary way to suppress selection and scrolling, not a claim — and a drag already owns the pointer. Guarding froze a slider mid-gesture. |
+| `change`         | **no**  | `preventDefault()` cancels nothing natively on a change event, so there is no established meaning to honour.                                              |
+
+So the chain is self-terminating for the first group only. For the rest, order is load-bearing:
+every handler runs.
+
 ## Rules that retired with the old flow
 
 For the record, since deleting them silently would lose the reasoning:
