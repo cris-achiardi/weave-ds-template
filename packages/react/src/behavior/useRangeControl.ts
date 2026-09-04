@@ -102,17 +102,26 @@ export function useRangeControl(
     [disabled, setFromPointer],
   );
 
+  // NEITHER MOVE NOR UP GUARDS ON `defaultPrevented`, and move did briefly — added for symmetry
+  // with the keyboard handlers, removed once that symmetry turned out to be false.
+  //
+  // On a key or a click, `preventDefault()` means "I claimed this". On a pointermove it does not:
+  // it is the ordinary way to suppress text selection and scrolling, and a consumer who writes it
+  // for that reason is not claiming the drag. With the guard in place they got a slider that
+  // captured the pointer, set `dragging`, and then silently stopped moving for the rest of the
+  // gesture — no error, no way to see why.
+  //
+  // A drag already owns the pointer by the time these fire; nothing may take it back mid-gesture.
   const onPointerMove = useCallback(
     (event: PointerEvent) => {
       if (!dragging) return;
-      if (event.defaultPrevented) return;
       setFromPointer(event);
     },
     [dragging, setFromPointer],
   );
 
-  // Deliberately NOT guarded on `defaultPrevented`. Releasing the capture has to happen whatever
-  // else claimed the event, or the pointer stays captured and the next drag starts broken.
+  // Releasing the capture in particular has to happen whatever else claimed the event, or the
+  // pointer stays captured and the next drag starts broken.
   const onPointerUp = useCallback((event: PointerEvent) => {
     setDragging(false);
     try {

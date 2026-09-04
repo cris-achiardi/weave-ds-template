@@ -34,9 +34,11 @@ export const Switch = forwardRef<HTMLButtonElement, SwitchProps>(function Switch
 
   const activate = useCallback(
     (event?: { defaultPrevented: boolean }) => {
-      // Guards like every other handler, so a composed chain terminates here too. Without
-      // it a consumer's own onClick calling preventDefault() was ignored, and a root that
-      // both toggles and dismisses would do both on one press.
+      // Guards, because this runs on a CLICK and the platform guards there too: calling
+      // preventDefault() in a click handler is what cancels a native checkbox's toggle.
+      // Honouring it here makes a generated control agree with the element it replaces.
+      // Without it a consumer's own onClick calling preventDefault() was ignored, and a
+      // root that both toggles and dismisses did both on one press.
       if (event?.defaultPrevented) return;
       if (disabled || readOnly) return;
       const next = !checkedValue;
