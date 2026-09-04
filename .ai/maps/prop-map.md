@@ -9,17 +9,7 @@
 > [`prop-canon.json`](../../packages/contracts/prop-canon.json) (data) and
 > `packages/contracts/components/README.md` §2 (prose).
 
-**Coverage:** 0 components · 0 props · 0 flags.
-
-> **State: canon-only, and §3–§4 are BLIND rather than empty.** §1 and §2 below are
-> the *declared* canon — the vocabulary a design proposal must be written in. §3 and
-> §4 measure reality against it by reading hand-written component source, and there
-> is none: components are generated from contracts into a consumer repository.
->
-> This is a GAP, not the intended state. Fifteen contracts declare axes, and a prop
-> surface is derivable from a contract without any source — the emitter already does
-> it. Until the measured half is repointed at contracts, nothing checks that the
-> vocabulary a contract uses is the canon.
+**Coverage:** 15 components · 39 props · 0 flags.
 
 ## How to use this
 
@@ -38,11 +28,11 @@ never a synonym.
 
 | Axis | Concept | Canonical values | Default | Used on |
 | --- | --- | --- | --- | ---: |
-| `hierarchy` | How much emphasis an action carries. Orthogonal to `variant`, which chooses the colour, and distinct from a paint treatment. Actions have a rank; surfaces do not — so this axis is for interactive components only. | primary · secondary · tertiary | `primary` | 0 |
-| `orientation` | Layout axis along which the component and its children flow. | horizontal · vertical | — | 0 |
-| `placement` | Where the component sits relative to its anchor or host. Two profiles — a component picks one whole profile, never a mix of the two. | _overlay_: top · top-start · top-end · bottom · bottom-start · bottom-end · left · left-start · left-end · right · right-start · right-end<br>_edge_: top · bottom · start · end | — | 0 |
-| `size` | One ordered scale, shared with the token ladder (--ds-space-*, --ds-font-size-*). A component exposes a contiguous subset of it, never a gap. | xs · s · m · l · xl | `m` | 0 |
-| `variant` | Semantic intent, which selects the colour role. Orthogonal to `hierarchy`, which decides how much emphasis is applied. | neutral · brand · success · warning · danger | `neutral` | 0 |
+| `hierarchy` | How much emphasis an action carries. Orthogonal to `variant`, which chooses the colour, and distinct from a paint treatment. Actions have a rank; surfaces do not — so this axis is for interactive components only. | primary · secondary · tertiary | `primary` | 1 |
+| `orientation` | Layout axis along which the component and its children flow. | horizontal · vertical | — | 1 |
+| `placement` | Where the component sits relative to its anchor or host. Two profiles — a component picks one whole profile, never a mix of the two. | _overlay_: top · top-start · top-end · bottom · bottom-start · bottom-end · left · left-start · left-end · right · right-start · right-end<br>_edge_: top · bottom · start · end | — | 1 |
+| `size` | One ordered scale, shared with the token ladder (--ds-space-*, --ds-font-size-*). A component exposes a contiguous subset of it, never a gap. | xs · s · m · l · xl | `m` | 3 |
+| `variant` | Semantic intent, which selects the colour role. Orthogonal to `hierarchy`, which decides how much emphasis is applied. | neutral · brand · success · warning · danger | `neutral` | 1 |
 
 ## 2. Value glossary (anti-synonym list)
 
@@ -67,11 +57,48 @@ One spelling, one meaning. A new value is added here in the same change that int
 
 ## 3. Prop index
 
-_No components yet. Nothing has been measured._
+| Prop | Kind | Values / type | Used on |
+| --- | --- | --- | --- |
+| `actions` | node | ReactNode | Dialog |
+| `body` | node | ReactNode | Dialog |
+| `checked` | enum | unchecked · checked · mixed | Checkbox, Switch |
+| `content` | node | ReactNode | Tooltip |
+| `control` | node | ReactNode | Field |
+| `defaultChecked` | enum | unchecked · checked · mixed | Checkbox, Switch |
+| `defaultDirty` | boolean | boolean | Field |
+| `defaultInvalid` | boolean | boolean | Field |
+| `defaultOpen` | boolean | boolean | Dialog, Tooltip |
+| `defaultTouched` | boolean | boolean | Field |
+| `defaultValue` | local | number, string, string[] | Accordion, RadioGroup, Slider, Tabs, TextField |
+| `description` | node | ReactNode | Field |
+| `dirty` | boolean | boolean | Field |
+| `disabled` | boolean | boolean | Accordion, AccordionItem, Button, Checkbox, Field, RadioGroup, RadioItem, Slider, Switch, TabItem, Tabs, TextField, Tooltip |
+| `error` | node | ReactNode | Field |
+| `heading` | node | ReactNode | AccordionItem |
+| `hierarchy` | axis | primary · secondary · tertiary | Button |
+| `iconEnd` | node | ReactNode | Button |
+| `iconStart` | node | ReactNode | Button |
+| `invalid` | boolean | boolean | Checkbox, Field, TextField |
+| `label` | node | ReactNode | Checkbox, Field, RadioItem, TabItem |
+| `loading` | boolean | boolean | Button |
+| `onCheckedChange` | enum | unchecked · checked · mixed | Checkbox, Switch |
+| `onDirtyChange` | local | (dirty: boolean) => void | Field |
+| `onInvalidChange` | local | (invalid: boolean) => void | Field |
+| `onOpenChange` | local | (open: boolean) => void | Dialog, Tooltip |
+| `onTouchedChange` | local | (touched: boolean) => void | Field |
+| `onValueChange` | local | (value: number) => void, (value: string) => void, (value: string[]) => void | Accordion, RadioGroup, Slider, Tabs, TextField |
+| `open` | boolean | boolean | Dialog, Tooltip |
+| `orientation` | axis | vertical | Accordion |
+| `panel` | node | ReactNode | AccordionItem |
+| `placement` | axis | top · top-start · top-end · bottom · bottom-start · bottom-end · left · right | Tooltip |
+| `readOnly` | boolean | boolean | RadioGroup, Switch, TextField |
+| `size` | axis | s · m · l | Button, Dialog, TextField |
+| `title` | node | ReactNode | Dialog |
+| `touched` | boolean | boolean | Field |
+| `trigger` | node | ReactNode | Tooltip |
+| `value` | local | number, string, string[] | Accordion, AccordionItem, RadioGroup, RadioItem, Slider, TabItem, TabPanel, Tabs, TextField |
+| `variant` | axis | neutral · brand · danger | Button |
 
 ## 4. Drift report
 
 _No divergences._
-
-Nothing has been measured. A prop that diverges from §1 and has no disposition in
-`prop-map.config.json` will appear here as `unreviewed`.
