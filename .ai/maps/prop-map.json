@@ -12,10 +12,10 @@
   "propCount": 39,
   "kindCounts": {
     "axis": 5,
-    "enum": 3,
+    "enum": 2,
     "boolean": 11,
     "node": 13,
-    "local": 7
+    "local": 8
   },
   "conventions": {
     "propCase": "camelCase",
@@ -444,15 +444,9 @@
       "usedCount": 1
     },
     "onCheckedChange": {
-      "kind": "enum",
+      "kind": "local",
       "axis": null,
-      "valueSets": [
-        [
-          "unchecked",
-          "checked",
-          "mixed"
-        ]
-      ],
+      "valueSets": [],
       "types": [
         "(checked: 'unchecked' | 'checked' | 'mixed') => void",
         "(checked: boolean) => void"

@@ -81,7 +81,7 @@ One spelling, one meaning. A new value is added here in the same change that int
 | `invalid` | boolean | boolean | Checkbox, Field, TextField |
 | `label` | node | ReactNode | Checkbox, Field, RadioItem, TabItem |
 | `loading` | boolean | boolean | Button |
-| `onCheckedChange` | enum | unchecked · checked · mixed | Checkbox, Switch |
+| `onCheckedChange` | local | (checked: 'unchecked' | 'checked' | 'mixed') => void, (checked: boolean) => void | Checkbox, Switch |
 | `onDirtyChange` | local | (dirty: boolean) => void | Field |
 | `onInvalidChange` | local | (invalid: boolean) => void | Field |
 | `onOpenChange` | local | (open: boolean) => void | Dialog, Tooltip |
