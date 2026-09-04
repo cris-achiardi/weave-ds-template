@@ -66,6 +66,14 @@ describe(`conformance: ${SUITE.primitive}`, () => {
     const ids = SUITE.cases.map((c) => c.id);
     for (const deferred of Object.keys(NEEDS_A_BROWSER)) {
       expect(ids, `${deferred} is deferred but no longer exists in the suite`).toContain(deferred);
+      // AND THE DATA HAS TO AGREE THAT IT NEEDS A DOM. Without this, adding an id and a sentence
+      // to the map above silences any case at all — which is the dumping ground its own comment
+      // says it must not become. The flag lives in the contracts package, so silencing a case now
+      // takes an edit a backend cannot make alone.
+      expect(
+        SUITE.cases.find((c) => c.id === deferred)?.needsARenderedDOM,
+        `${deferred} is deferred here but the suite does not flag it needsARenderedDOM`,
+      ).toBe(true);
     }
     // And the reverse, which the navigation suite does not assert: a case flagged in the DATA as
     // needing a DOM must be named here with a reason, so one cannot be added and silently skipped.

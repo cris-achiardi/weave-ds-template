@@ -137,6 +137,7 @@
       "kind": "node",
       "axis": null,
       "valueSets": [],
+      "valuelessOn": [],
       "types": [
         "ReactNode"
       ],
@@ -149,6 +150,7 @@
       "kind": "node",
       "axis": null,
       "valueSets": [],
+      "valuelessOn": [],
       "types": [
         "ReactNode"
       ],
@@ -161,11 +163,24 @@
       "kind": "enum",
       "axis": null,
       "valueSets": [
-        [
-          "unchecked",
-          "checked",
-          "mixed"
-        ]
+        {
+          "values": [
+            "unchecked",
+            "checked",
+            "mixed"
+          ],
+          "on": [
+            "Checkbox"
+          ]
+        }
+      ],
+      "valuelessOn": [
+        {
+          "type": "boolean",
+          "on": [
+            "Switch"
+          ]
+        }
       ],
       "types": [
         "'unchecked' | 'checked' | 'mixed'",
@@ -181,6 +196,7 @@
       "kind": "node",
       "axis": null,
       "valueSets": [],
+      "valuelessOn": [],
       "types": [
         "ReactNode"
       ],
@@ -193,6 +209,7 @@
       "kind": "node",
       "axis": null,
       "valueSets": [],
+      "valuelessOn": [],
       "types": [
         "ReactNode"
       ],
@@ -205,11 +222,24 @@
       "kind": "enum",
       "axis": null,
       "valueSets": [
-        [
-          "unchecked",
-          "checked",
-          "mixed"
-        ]
+        {
+          "values": [
+            "unchecked",
+            "checked",
+            "mixed"
+          ],
+          "on": [
+            "Checkbox"
+          ]
+        }
+      ],
+      "valuelessOn": [
+        {
+          "type": "boolean",
+          "on": [
+            "Switch"
+          ]
+        }
       ],
       "types": [
         "'unchecked' | 'checked' | 'mixed'",
@@ -225,6 +255,14 @@
       "kind": "boolean",
       "axis": null,
       "valueSets": [],
+      "valuelessOn": [
+        {
+          "type": "boolean",
+          "on": [
+            "Field"
+          ]
+        }
+      ],
       "types": [
         "boolean"
       ],
@@ -237,6 +275,14 @@
       "kind": "boolean",
       "axis": null,
       "valueSets": [],
+      "valuelessOn": [
+        {
+          "type": "boolean",
+          "on": [
+            "Field"
+          ]
+        }
+      ],
       "types": [
         "boolean"
       ],
@@ -249,6 +295,15 @@
       "kind": "boolean",
       "axis": null,
       "valueSets": [],
+      "valuelessOn": [
+        {
+          "type": "boolean",
+          "on": [
+            "Dialog",
+            "Tooltip"
+          ]
+        }
+      ],
       "types": [
         "boolean"
       ],
@@ -262,6 +317,14 @@
       "kind": "boolean",
       "axis": null,
       "valueSets": [],
+      "valuelessOn": [
+        {
+          "type": "boolean",
+          "on": [
+            "Field"
+          ]
+        }
+      ],
       "types": [
         "boolean"
       ],
@@ -274,6 +337,28 @@
       "kind": "local",
       "axis": null,
       "valueSets": [],
+      "valuelessOn": [
+        {
+          "type": "number",
+          "on": [
+            "Slider"
+          ]
+        },
+        {
+          "type": "string",
+          "on": [
+            "RadioGroup",
+            "Tabs",
+            "TextField"
+          ]
+        },
+        {
+          "type": "string[]",
+          "on": [
+            "Accordion"
+          ]
+        }
+      ],
       "types": [
         "number",
         "string",
@@ -292,6 +377,7 @@
       "kind": "node",
       "axis": null,
       "valueSets": [],
+      "valuelessOn": [],
       "types": [
         "ReactNode"
       ],
@@ -304,6 +390,14 @@
       "kind": "boolean",
       "axis": null,
       "valueSets": [],
+      "valuelessOn": [
+        {
+          "type": "boolean",
+          "on": [
+            "Field"
+          ]
+        }
+      ],
       "types": [
         "boolean"
       ],
@@ -316,6 +410,26 @@
       "kind": "boolean",
       "axis": null,
       "valueSets": [],
+      "valuelessOn": [
+        {
+          "type": "boolean",
+          "on": [
+            "Accordion",
+            "AccordionItem",
+            "Button",
+            "Checkbox",
+            "Field",
+            "RadioGroup",
+            "RadioItem",
+            "Slider",
+            "Switch",
+            "TabItem",
+            "Tabs",
+            "TextField",
+            "Tooltip"
+          ]
+        }
+      ],
       "types": [
         "boolean"
       ],
@@ -340,6 +454,7 @@
       "kind": "node",
       "axis": null,
       "valueSets": [],
+      "valuelessOn": [],
       "types": [
         "ReactNode"
       ],
@@ -352,6 +467,7 @@
       "kind": "node",
       "axis": null,
       "valueSets": [],
+      "valuelessOn": [],
       "types": [
         "ReactNode"
       ],
@@ -364,12 +480,18 @@
       "kind": "axis",
       "axis": "hierarchy",
       "valueSets": [
-        [
-          "primary",
-          "secondary",
-          "tertiary"
-        ]
+        {
+          "values": [
+            "primary",
+            "secondary",
+            "tertiary"
+          ],
+          "on": [
+            "Button"
+          ]
+        }
       ],
+      "valuelessOn": [],
       "types": [
         "'primary' | 'secondary' | 'tertiary'"
       ],
@@ -382,6 +504,7 @@
       "kind": "node",
       "axis": null,
       "valueSets": [],
+      "valuelessOn": [],
       "types": [
         "ReactNode"
       ],
@@ -394,6 +517,7 @@
       "kind": "node",
       "axis": null,
       "valueSets": [],
+      "valuelessOn": [],
       "types": [
         "ReactNode"
       ],
@@ -406,6 +530,16 @@
       "kind": "boolean",
       "axis": null,
       "valueSets": [],
+      "valuelessOn": [
+        {
+          "type": "boolean",
+          "on": [
+            "Checkbox",
+            "Field",
+            "TextField"
+          ]
+        }
+      ],
       "types": [
         "boolean"
       ],
@@ -420,6 +554,7 @@
       "kind": "node",
       "axis": null,
       "valueSets": [],
+      "valuelessOn": [],
       "types": [
         "ReactNode"
       ],
@@ -435,6 +570,14 @@
       "kind": "boolean",
       "axis": null,
       "valueSets": [],
+      "valuelessOn": [
+        {
+          "type": "boolean",
+          "on": [
+            "Button"
+          ]
+        }
+      ],
       "types": [
         "boolean"
       ],
@@ -447,6 +590,7 @@
       "kind": "local",
       "axis": null,
       "valueSets": [],
+      "valuelessOn": [],
       "types": [
         "(checked: 'unchecked' | 'checked' | 'mixed') => void",
         "(checked: boolean) => void"
@@ -461,6 +605,7 @@
       "kind": "local",
       "axis": null,
       "valueSets": [],
+      "valuelessOn": [],
       "types": [
         "(dirty: boolean) => void"
       ],
@@ -473,6 +618,7 @@
       "kind": "local",
       "axis": null,
       "valueSets": [],
+      "valuelessOn": [],
       "types": [
         "(invalid: boolean) => void"
       ],
@@ -485,6 +631,7 @@
       "kind": "local",
       "axis": null,
       "valueSets": [],
+      "valuelessOn": [],
       "types": [
         "(open: boolean) => void"
       ],
@@ -498,6 +645,7 @@
       "kind": "local",
       "axis": null,
       "valueSets": [],
+      "valuelessOn": [],
       "types": [
         "(touched: boolean) => void"
       ],
@@ -510,6 +658,7 @@
       "kind": "local",
       "axis": null,
       "valueSets": [],
+      "valuelessOn": [],
       "types": [
         "(value: number) => void",
         "(value: string) => void",
@@ -528,6 +677,15 @@
       "kind": "boolean",
       "axis": null,
       "valueSets": [],
+      "valuelessOn": [
+        {
+          "type": "boolean",
+          "on": [
+            "Dialog",
+            "Tooltip"
+          ]
+        }
+      ],
       "types": [
         "boolean"
       ],
@@ -541,10 +699,16 @@
       "kind": "axis",
       "axis": "orientation",
       "valueSets": [
-        [
-          "vertical"
-        ]
+        {
+          "values": [
+            "vertical"
+          ],
+          "on": [
+            "Accordion"
+          ]
+        }
       ],
+      "valuelessOn": [],
       "types": [
         "'vertical'"
       ],
@@ -557,6 +721,7 @@
       "kind": "node",
       "axis": null,
       "valueSets": [],
+      "valuelessOn": [],
       "types": [
         "ReactNode"
       ],
@@ -569,17 +734,23 @@
       "kind": "axis",
       "axis": "placement",
       "valueSets": [
-        [
-          "top",
-          "top-start",
-          "top-end",
-          "bottom",
-          "bottom-start",
-          "bottom-end",
-          "left",
-          "right"
-        ]
+        {
+          "values": [
+            "top",
+            "top-start",
+            "top-end",
+            "bottom",
+            "bottom-start",
+            "bottom-end",
+            "left",
+            "right"
+          ],
+          "on": [
+            "Tooltip"
+          ]
+        }
       ],
+      "valuelessOn": [],
       "types": [
         "'top' | 'top-start' | 'top-end' | 'bottom' | 'bottom-start' | 'bottom-end' | 'left' | 'right'"
       ],
@@ -592,6 +763,16 @@
       "kind": "boolean",
       "axis": null,
       "valueSets": [],
+      "valuelessOn": [
+        {
+          "type": "boolean",
+          "on": [
+            "RadioGroup",
+            "Switch",
+            "TextField"
+          ]
+        }
+      ],
       "types": [
         "boolean"
       ],
@@ -606,12 +787,20 @@
       "kind": "axis",
       "axis": "size",
       "valueSets": [
-        [
-          "s",
-          "m",
-          "l"
-        ]
+        {
+          "values": [
+            "s",
+            "m",
+            "l"
+          ],
+          "on": [
+            "Button",
+            "Dialog",
+            "TextField"
+          ]
+        }
       ],
+      "valuelessOn": [],
       "types": [
         "'s' | 'm' | 'l'"
       ],
@@ -626,6 +815,7 @@
       "kind": "node",
       "axis": null,
       "valueSets": [],
+      "valuelessOn": [],
       "types": [
         "ReactNode"
       ],
@@ -638,6 +828,14 @@
       "kind": "boolean",
       "axis": null,
       "valueSets": [],
+      "valuelessOn": [
+        {
+          "type": "boolean",
+          "on": [
+            "Field"
+          ]
+        }
+      ],
       "types": [
         "boolean"
       ],
@@ -650,6 +848,7 @@
       "kind": "node",
       "axis": null,
       "valueSets": [],
+      "valuelessOn": [],
       "types": [
         "ReactNode"
       ],
@@ -662,6 +861,28 @@
       "kind": "local",
       "axis": null,
       "valueSets": [],
+      "valuelessOn": [
+        {
+          "type": "number",
+          "on": [
+            "Slider"
+          ]
+        },
+        {
+          "type": "string",
+          "on": [
+            "RadioGroup",
+            "Tabs",
+            "TextField"
+          ]
+        },
+        {
+          "type": "string[]",
+          "on": [
+            "Accordion"
+          ]
+        }
+      ],
       "types": [
         "number",
         "string",
@@ -684,12 +905,18 @@
       "kind": "axis",
       "axis": "variant",
       "valueSets": [
-        [
-          "neutral",
-          "brand",
-          "danger"
-        ]
+        {
+          "values": [
+            "neutral",
+            "brand",
+            "danger"
+          ],
+          "on": [
+            "Button"
+          ]
+        }
       ],
+      "valuelessOn": [],
       "types": [
         "'neutral' | 'brand' | 'danger'"
       ],
@@ -699,8 +926,27 @@
       "usedCount": 1
     }
   },
-  "flags": [],
-  "flagCount": 0,
+  "flags": [
+    {
+      "kind": "partial-value-sets",
+      "prop": "checked",
+      "components": [
+        "Checkbox",
+        "Switch"
+      ],
+      "detail": "`checked` is an enumeration on one component and takes no value set on Switch. The index attributes each set to the components that declare it; nothing here resolves which is right."
+    },
+    {
+      "kind": "partial-value-sets",
+      "prop": "defaultChecked",
+      "components": [
+        "Checkbox",
+        "Switch"
+      ],
+      "detail": "`defaultChecked` is an enumeration on one component and takes no value set on Switch. The index attributes each set to the components that declare it; nothing here resolves which is right."
+    }
+  ],
+  "flagCount": 2,
   "extraction": {
     "componentsScanned": 15,
     "propsResolved": 39,

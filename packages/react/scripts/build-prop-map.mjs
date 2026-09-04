@@ -69,17 +69,38 @@ function measure() {
       // the same value set, so the glossary recorded `onCheckedChange` as `kind: "enum"` carrying
       // `unchecked | checked | mixed` — and that fed the canon flags, where a callback would have
       // been compared against every axis for a possible synonym.
-      const CARRIES_VALUES = ['axis', 'controlled', 'uncontrolled', 'input'];
       const values = !CARRIES_VALUES.includes(entry.role)
         ? null
         : entry.role === 'axis'
           ? (contract.axes?.[entry.from]?.values ?? null)
           : (contract.states?.[entry.from]?.values ?? null);
 
-      const bucket = (props[entry.name] ??= { values: {}, usedOn: [], types: new Set() });
+      const bucket = (props[entry.name] ??= {
+        values: {},
+        valueless: {},
+        usedOn: [],
+        types: new Set(),
+      });
       if (!bucket.usedOn.includes(name)) bucket.usedOn.push(name);
       bucket.types.add(entry.type);
-      if (values) bucket.values[values.join('|')] = values;
+
+      // WHICH COMPONENT CONTRIBUTED WHICH SET, because recording only the sets attributes every
+      // one of them to every component sharing the prop name. `checked` is the case: Checkbox's is
+      // `unchecked | checked | mixed` and Switch's is a plain boolean, and the index read
+      // "checked · enum · unchecked · checked · mixed · Checkbox, Switch" — which tells a reader
+      // to write `checked="mixed"` on a Switch, where it does not typecheck.
+      //
+      // A component exposing the prop from a value-carrying ROLE while declaring no set is the
+      // other half of that fact, so it is recorded too rather than left as an absence.
+      if (CARRIES_VALUES.includes(entry.role)) {
+        if (values) {
+          const set = (bucket.values[values.join('|')] ??= { values, on: [] });
+          if (!set.on.includes(name)) set.on.push(name);
+        } else {
+          const on = (bucket.valueless[entry.type] ??= []);
+          if (!on.includes(name)) on.push(name);
+        }
+      }
     }
   }
 
@@ -94,6 +115,13 @@ function measure() {
     degraded: false,
   };
 }
+
+/**
+ * The roles whose prop takes its state's or axis's value set. `surfaceFrom` emits several props
+ * from one state and they do not all take its values: `checked` and `defaultChecked` are the
+ * enumeration, `onCheckedChange` is a FUNCTION.
+ */
+const CARRIES_VALUES = ['axis', 'controlled', 'uncontrolled', 'input'];
 
 /** Classify a measured prop against the canon. */
 function classify(prop, entry, canon) {
@@ -112,7 +140,7 @@ function findFlags(props, canon) {
   for (const prop of Object.keys(props).sort(byCodePoint)) {
     const entry = props[prop];
     const axis = canon.axes[prop];
-    const sets = Object.values(entry.values);
+    const sets = Object.values(entry.values).map((v) => v.values);
 
     if (axis && !axis.profiles) {
       for (const set of sets) {
@@ -155,6 +183,22 @@ function findFlags(props, canon) {
         detail: `\`${prop}\` is exposed with ${sets.length} different value sets across components.`,
       });
     }
+
+    // The case `divergent-value-sets` cannot see: one component enumerates the prop and another
+    // exposes the same name as a boolean, contributing no set to diverge FROM. Exactly what
+    // `checked` does across Checkbox and Switch.
+    const valueless = Object.values(entry.valueless ?? {}).flat();
+    if (sets.length && valueless.length) {
+      flags.push({
+        kind: 'partial-value-sets',
+        prop,
+        components: entry.usedOn,
+        detail:
+          `\`${prop}\` is an enumeration on ${sets.length === 1 ? 'one component' : `${sets.length} components`} ` +
+          `and takes no value set on ${valueless.sort(byCodePoint).join(', ')}. ` +
+          `The index attributes each set to the components that declare it; nothing here resolves which is right.`,
+      });
+    }
   }
 
   return flags.sort((a, b) =>
@@ -191,7 +235,12 @@ function buildJson(canon, m, flags) {
     props[name] = {
       kind: classify(name, e, canon),
       axis: canon.axes[name] ? name : null,
-      valueSets: Object.values(e.values).sort((a, b) => byCodePoint(a.join('|'), b.join('|'))),
+      valueSets: Object.values(e.values)
+        .sort((a, b) => byCodePoint(a.values.join('|'), b.values.join('|')))
+        .map((v) => ({ values: v.values, on: v.on.slice().sort(byCodePoint) })),
+      valuelessOn: Object.entries(e.valueless ?? {})
+        .sort(([a], [b]) => byCodePoint(a, b))
+        .map(([type, on]) => ({ type, on: on.slice().sort(byCodePoint) })),
       types: [...e.types].sort(byCodePoint),
       usedOn: e.usedOn.slice().sort(byCodePoint),
       usedCount: e.usedOn.length,
@@ -331,9 +380,20 @@ function buildMd(json, canon) {
     L.push('| Prop | Kind | Values / type | Used on |');
     L.push('| --- | --- | --- | --- |');
     for (const [name, p] of Object.entries(json.props)) {
-      const vals = p.valueSets.length
-        ? p.valueSets.map((s) => s.join(' · ')).join('<br>')
-        : p.types.join(', ');
+      // A `|` inside a cell ends the cell. Union types reach here from `surfaceFrom` —
+      // `(checked: 'unchecked' | 'checked' | 'mixed') => void` was rendering as five extra columns.
+      const esc = (t) => t.replace(/\|/g, '\\|');
+      const vals = !p.valueSets.length
+        ? esc(p.types.join(', '))
+        : p.valueSets.length === 1 && !p.valuelessOn.length
+          ? esc(p.valueSets[0].values.join(' · '))
+          : // Attributed, because the components do not agree. See `partial-value-sets` in §4.
+            [
+              ...p.valueSets.map((s) => `${s.on.join(', ')}: ${s.values.join(' · ')}`),
+              ...p.valuelessOn.map((v) => `${v.on.join(', ')}: ${v.type}`),
+            ]
+              .map(esc)
+              .join('<br>');
       L.push(`| \`${name}\` | ${p.kind} | ${vals} | ${p.usedOn.join(', ')} |`);
     }
   }
