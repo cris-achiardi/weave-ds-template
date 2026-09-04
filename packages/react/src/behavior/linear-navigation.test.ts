@@ -52,6 +52,11 @@ const SUITE = JSON.parse(
  * Cases whose assertion is about rendered output rather than about the decision logic. Each names
  * WHY, so this list cannot quietly become a dumping ground for anything inconvenient.
  */
+// KNOWN GAP, and it is a finding rather than an oversight: unlike `dismissal.test.ts`, nothing
+// asserts that a case listed here is ALSO flagged in the conformance data as needing a DOM —
+// because `linear-navigation.json` carries no such flag on any case. So an id added below silences
+// that case with no second opinion. Closing it means flagging these five in the contracts package,
+// which is a framework-neutral artifact every backend reads, and belongs in its own change.
 const NEEDS_A_BROWSER: Record<string, string> = {
   'entry-lands-on-the-selected-member': 'Tab into the collection — real focus order',
   'entry-with-nothing-selected-lands-on-first': 'Tab into the collection — real focus order',
