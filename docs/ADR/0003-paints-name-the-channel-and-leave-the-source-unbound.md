@@ -4,6 +4,9 @@
 - **Date:** 2026-09-01
 - **Revised:** 2026-09-02 — returned to Draft; decision 5 corrected against what the emitter
   actually produces, and decisions 6 and 7 added.
+- **Revised:** 2026-09-03 — decision 9 added, recording that channels are CSS property names and
+  that a platform profile maps them. This closes an inconsistency in the record itself: decision 5
+  was scoped to the web backend while the channel names were scoped to nothing.
 - **Deciders:** cris
 - **Tags:** components, tokens, packaging
 - **Related:** [ADR 0002 — Agnostic contracts live in their own package, not at the repo root](./0002-agnostic-contracts-live-in-their-own-package.md)
@@ -77,16 +80,65 @@ reverse-engineer a stylesheet to find out — which is the failure this library 
    attribute, or be the target of an event. Modelling it as a part would promise three things the
    platform cannot give.
 
+9. **A paint channel is a CSS property name, and a non-web platform profile maps it. The contract
+   does not rename it.**
+
+   Measured across the fifteen contracts: **24 distinct channels, every one of them a CSS property**
+   — `box-shadow`, `outline-offset`, `padding-inline`, `border-block-end`, `transition-duration`.
+   That sits awkwardly beside `@ds/contracts`' own admission test, _if it would still be true in
+   React Native, it belongs here_, because `outline-offset` would not be.
+
+   It is recorded as a decision anyway, for three reasons.
+
+   **It is cheap to reverse.** The mapping lives in a platform profile either way —
+   `@ds/platform-web` established that shape — so keeping CSS names forecloses nothing. A neutral
+   vocabulary can be introduced later without any contract changing meaning.
+
+   **CSS logical properties are ALREADY the more agnostic vocabulary, and this is the strongest
+   argument.** Eight of the 24 channels are flow-relative: `padding-inline`, `border-block-end`,
+   `max-inline-size` and their siblings. Those are writing-mode agnostic — the same declaration is
+   correct in Arabic and in Japanese. React Native's equivalents are largely physical
+   (`borderBottomWidth`), and Flutter needs `BorderDirectional` to reach the same place. **So for a
+   third of the channels the translation runs general → specific**, and renaming them to something
+   "neutral" would DISCARD an abstraction rather than add one.
+
+   **The vocabulary we would otherwise invent has no normative source.** The prop canon could lean
+   on rough industry agreement; the behaviour primitives were _transcribed_ from the W3C ARIA APG,
+   which is why the conformance files are citations rather than opinions. There is no specification
+   anywhere for the agnostic name of a shadow. This would be the first vocabulary invented with
+   nothing to check it against — a reason to defer it until a real second target forces the shape,
+   not a reason to avoid it.
+
+   **What a non-web profile will have to answer for.** Four shapes, and only the first is a lookup:
+
+   | Shape                                            | Example                                                                                 | Answered by                                                                              |
+   | ------------------------------------------------ | --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+   | **Rename** — one to one, per platform            | `background` → RN `backgroundColor` → Flutter `BoxDecoration.color`                     | a table entry                                                                            |
+   | **Decomposition** — one to many, on ONE platform | `box-shadow` → four or five RN properties, differing between iOS and Android            | a function in that backend; no table can parse a compound value and distribute its parts |
+   | **Absent** — one to none                         | `outline` and `outline-offset` exist on neither RN nor Flutter                          | a table entry that SAYS so, which makes the gap a finding rather than a silence          |
+   | **Wrong category**                               | `transition-duration` is not a style property on mobile at all — it is an animation API | leaving `paints`                                                                         |
+
+   **Those four shapes are REASONED, NOT MEASURED.** They come from knowledge of the target
+   platforms rather than from reading their APIs, and a research note verifying each of the 24
+   channels against actual React Native and Flutter surfaces is owed before any non-web profile is
+   built. Recorded here as a prediction so its absence reads as a decision.
+
+   **`transition-duration` is the one channel expected to leave `paints` regardless of platform.**
+   It is declared by exactly two contracts, `Switch` and `AccordionItem` — the cheapest this will
+   ever be to move. Moving it is a contract change with its own diff and is deliberately not part of
+   this record.
+
 ## Contract
 
-| Concern                                 | Where                                                                                                     |
-| --------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| The permitted shapes of a paint policy  | `packages/contracts/schema/component.schema.json` → `$defs.tokenPolicy`                                   |
-| What `null` means, and how to write one | `packages/contracts/components/README.md` §3                                                              |
-| The two-stylesheet split and its rules  | `packages/react/src/emit/README.md`                                                                       |
-| The reference implementation            | `packages/tokens/README.md`                                                                               |
-| Evidence                                | `docs/research/0001-contract-schema-smoke-test.md`                                                        |
-| Enforcement                             | `packages/react/scripts/verify-contract.mjs` (`pnpm verify:contract`, gated in CI) — schema legality only |
+| Concern                                  | Where                                                                                                     |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| The permitted shapes of a paint policy   | `packages/contracts/schema/component.schema.json` → `$defs.tokenPolicy`                                   |
+| What `null` means, and how to write one  | `packages/contracts/components/README.md` §3                                                              |
+| The two-stylesheet split and its rules   | `packages/react/src/emit/README.md`                                                                       |
+| The reference implementation             | `packages/tokens/README.md`                                                                               |
+| Evidence                                 | `docs/research/0001-contract-schema-smoke-test.md`                                                        |
+| Enforcement                              | `packages/react/scripts/verify-contract.mjs` (`pnpm verify:contract`, gated in CI) — schema legality only |
+| Where a platform's channel mapping lives | `packages/platform-web/README.md` — and the sibling a non-web target would need                           |
 
 ## Consequences
 
@@ -128,6 +180,13 @@ reverse-engineer a stylesheet to find out — which is the failure this library 
   value). The third now has an answer: the component publishes a number as a custom property and the
   theme turns it into a percentage. The other two do not, and designing a `layout` block before they
   do would mean designing it wrong.
+- **How it will fail quietly — the channel surface is unbounded and grows silently.** The schema
+  constrains channel NAMES only by a `^[a-z-]+$` pattern and a denylist of 41 structural properties.
+  Any other CSS property is accepted, so **the surface grows with every contract anyone writes** and
+  nothing counts it. Twenty-four channels came from fifteen contracts; thirty contracts plausibly
+  doubles it, and each one added is one more thing a future non-web profile must answer for. The
+  cost of leaving this unrecorded was never code — it was that contracts were being authored against
+  an assumption nobody had written down.
 - **How it will fail quietly:** the `null`-versus-omitted distinction is the load-bearing part of
   decision 2 and **nothing checks it**. A channel dropped by accident and a channel deliberately left
   for the consumer are indistinguishable to every tool in this repo; the difference lives only in
