@@ -3,10 +3,17 @@
 //
 // Shows a short label for a control whose own presentation cannot carry it — an icon button, a truncated name — on hover and on focus, without taking focus itself.
 
-import { forwardRef, useId, useState } from 'react';
+import { forwardRef, useId, useState, useCallback } from 'react';
 import type { HTMLAttributes, ReactNode } from 'react';
+import { useDismissal, type DismissalOptions } from '@ds/react/behavior';
 import './Tooltip.structure.css';
 import './Tooltip.theme.css';
+
+// Transcribed from Tooltip.contract.json > dismisses. The cases this commits us to
+// are in @ds/contracts/conformance/dismissal.json.
+const DISMISSAL: DismissalOptions = {
+  on: ['escape'],
+};
 
 export interface TooltipProps extends Omit<
   HTMLAttributes<HTMLDivElement>,
@@ -49,9 +56,13 @@ export const Tooltip = forwardRef<HTMLDivElement, TooltipProps>(function Tooltip
   const openControlled = open !== undefined;
   const [openInternal, setOpenInternal] = useState(defaultOpen);
   const openValue = openControlled ? open : openInternal;
-  // Nothing in the contract says what CHANGES `open`: no part declares
-  // `activates`. It works when controlled from outside; uncontrolled it cannot move.
-  void setOpenInternal;
+
+  const dismissOpen = useCallback(() => {
+    if (!openControlled) setOpenInternal(false);
+    onOpenChange?.(false);
+  }, [openControlled, onOpenChange]);
+
+  const dismissal = useDismissal(DISMISSAL, openValue, dismissOpen);
 
   return (
     <div
@@ -61,6 +72,7 @@ export const Tooltip = forwardRef<HTMLDivElement, TooltipProps>(function Tooltip
       data-ds-state-open={openValue || undefined}
       aria-disabled={disabled || undefined}
       data-ds-placement={placement}
+      onKeyDown={dismissal.onKeyDown}
       data-ds-component="Tooltip"
       data-ds-part="root"
       className={className}

@@ -66,8 +66,9 @@ negative requirement in either pattern is expressed: a horizontal tab list must 
 | ------------------------ | ------------------------------------------------ | -------------------- |
 | `linear-navigation.json` | moving focus between the members of a collection | radio group, tabs    |
 | `range-stepping.json`    | moving a number within a bounded, stepped range  | slider               |
+| `dismissal.json`         | closing a region with a key or a press           | dialog, tooltip      |
 
-Both are consumed by adapters in `packages/react/src/behavior/`. 24 of the navigation cases execute
+All three are consumed by adapters in `packages/react/src/behavior/`. 24 of the navigation cases execute
 there and 5 are deferred to a browser, each naming why; all 29 range cases execute, because range
 stepping is arithmetic and a case needing a rendered DOM would mean the arithmetic had leaked.
 

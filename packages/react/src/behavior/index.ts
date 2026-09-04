@@ -16,6 +16,10 @@
 //
 // Keep this list alphabetical by primitive.
 
+// --- dismissal: closing a region with a key or a press that is not activation
+export { dismissesOnKey, dismissesOnPress, useDismissal } from './useDismissal.js';
+export type { Dismissal, DismissalCause, DismissalOptions, PressTarget } from './useDismissal.js';
+
 // --- linear navigation: moving between the members of a collection
 export {
   intentFor as navigationIntentFor,

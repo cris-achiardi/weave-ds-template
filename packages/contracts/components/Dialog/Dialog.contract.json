@@ -40,6 +40,10 @@
   "semantics": {
     "focusable": false
   },
+  "dismisses": {
+    "state": "open",
+    "on": ["escape", "outside-press"]
+  },
   "a11y": {
     "focusVisible": false,
     "contrast": "AA",
@@ -49,7 +53,7 @@
       "The containment is not a trap, and that is deliberate on the W3C's part rather than a shortfall. Tab cannot reach the page behind, but it can reach the browser's own chrome before cycling back. The APG's wording — that Tab does not move focus outside the dialog — describes a hand-rolled implementation; the platform's behaviour is what the W3C's own accessibility group settled on.",
       "The dialog is named by its title. A dialog with no title is announced as an unnamed dialog, and NOTHING DETECTS THAT — not even axe, whose rule for it matches `[role=\"dialog\"]` literally and so skips a native `<dialog>` entirely. The title slot is `required` here, which is the only thing standing between a consumer and a silently unnamed dialog.",
       "There is no Escape key on a phone. A modal with no visible close control is unclosable on iOS, where the platform supplies no backstop, so an `actions` slot that always contains a way out is a consumer obligation this contract cannot check.",
-      "Backdrop-press dismissal is NOT supplied. The backdrop is a pseudo-element and never an event target: a press on it reports the dialog itself as the target. This is the one behaviour of the four that still needs the dismissal vocabulary."
+      "Pressing the backdrop closes it, declared by `dismisses`. The mechanism is worth knowing because it is not what it looks like: the backdrop is a pseudo-element and is never an event target, so a press on it reports THE DIALOG ITSELF as the target. `outside-press` therefore means a press on the region rather than on any descendant, and a press inside the panel correctly does nothing."
     ]
   },
   "composition": {

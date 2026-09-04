@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://example.invalid/schemas/component-contract-11.json",
+  "$id": "https://example.invalid/schemas/component-contract-12.json",
   "title": "Component contract (framework-agnostic)",
   "description": "Describes ONE component completely enough to build it, in any framework. The reasoning is in contracts/README.md.\n\nThis file lives at contracts/ rather than inside a package on purpose: it belongs to no framework. It says what the component IS — its purpose, its behaviour, the states it must be able to show, the axes it exposes, its anatomy, and which family of token paints each part. It does NOT say how any of that is expressed in React, or in React Native, or in a web component. That is a binding, and bindings live beside the implementation.\n\nBuildable means: someone handed this file, the prop map for their framework, and the code standards should be able to produce the component without asking what it is for.",
   "type": "object",
@@ -359,6 +359,27 @@
         "drag": {
           "type": "boolean",
           "description": "Whether a pointer press and drag along the track sets the value. The APG specifies no pointer behaviour for a slider at all, so this is not a conformance requirement — it is this system stating an affordance the specification declines to describe."
+        }
+      }
+    },
+    "dismisses": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "on"],
+      "description": "What CLOSES this component, by a key or a press that is NOT activation. EXPERIMENTAL.\n\nThe sibling of `range` and `collection.navigation`: a named primitive with named parameters, never a key map. The cases a backend must satisfy are in packages/contracts/conformance/dismissal.json.\n\nIT RESTS ON WEAKER GROUND THAN THE OTHER TWO, and that is worth knowing before relying on it. The APG's tooltip pattern is explicitly a work in progress without task force consensus — it states that Escape dismisses and never states what shows a tooltip — and the APG says nothing at all about pressing a backdrop. So one cause is a citation from an unsettled page and the other is entirely ours. Both are marked as such in the conformance file.\n\nDismissal is deliberately separate from `activates`. Activation is a thing a person does TO a control and it belongs to the control; dismissal is a thing that happens to a REGION and it belongs to the region. Folding Escape into `activates` would make every activatable part a candidate for closing its own ancestor.",
+      "properties": {
+        "state": {
+          "type": "string",
+          "description": "The state that becomes false. It must be declared in `states` with `control: \"shared\"` — a dismissal writes it, so something outside has to be able to hear that."
+        },
+        "on": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": ["escape", "outside-press"]
+          },
+          "description": "The causes, as a SET rather than a choice — declaring both does not make either conditional on the other.\n\n`escape` — the Escape key, from anywhere inside the region.\n\n`outside-press` — a press that lands on the REGION ITSELF rather than on any descendant. That phrasing is precise and measured rather than loose: a native `<dialog>`'s backdrop is a pseudo-element and is never an event target, so a press on it reports the dialog as the target. The same test — target is the region, not something inside it — also describes a hand-rolled scrim wrapping a panel.\n\nIT DOES NOT MEAN a press elsewhere on the page. That needs a document-level listener and a portalled component to be worth having, and nothing in this system is portalled. A backend MAY implement it that way; the cases assert the outcome, not the mechanism.\n\nA cause left out is a real answer: a component that declares only `escape` must not acquire a press it never asked for."
         }
       }
     },

@@ -119,12 +119,10 @@ export const STATUS: ComponentStatus[] = [
   },
   {
     component: 'Dialog',
-    verdict: 'partial',
+    verdict: 'works',
     supplies:
-      'A native <dialog>: focus containment, an inert page behind, focus restoration and Escape, all from the platform.',
-    remaining: [
-      'Pressing the backdrop does not close it. Its contract does not promise this — but every dialog a person has used does, so it is counted as owed rather than excused.',
-    ],
+      'A native <dialog>: focus containment, an inert page behind, focus restoration and Escape, all from the platform — plus backdrop-press, declared by `dismisses` and generated.',
+    remaining: [],
     alsoKnown: [
       'CONSUMER: there is no Escape key on a phone, and the platform supplies no backstop on iOS. An `actions` slot must always contain a way out.',
       'CONSUMER: the theme file opens with a reset cancelling the browser’s own border, padding and colours. A native <dialog> is not unstyled until that runs.',
@@ -150,12 +148,11 @@ export const STATUS: ComponentStatus[] = [
   },
   {
     component: 'Tooltip',
-    verdict: 'shell',
+    verdict: 'partial',
     supplies:
-      'Correct structure: role=tooltip, the trigger described by the popup only while open.',
+      'Correct structure: role=tooltip, the trigger described by the popup only while open. Escape dismisses it, declared by `dismisses`.',
     remaining: [
-      'Nothing opens it. The contract says hover-after-a-delay and focus, in prose; `activates` covers clicks only.',
-      'Escape does not dismiss it.',
+      'Nothing opens it. The contract says hover-after-a-delay and focus, in prose; `activates` covers clicks only, and a delay has nowhere to live — the schema has no concept of time.',
       'No positioning: no anchor, no side, no collision handling. The `placement` axis it declares is read by nothing.',
     ],
   },
