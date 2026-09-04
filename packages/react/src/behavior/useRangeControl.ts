@@ -74,10 +74,6 @@ export function useRangeControl(
   const onPointerDown = useCallback(
     (event: PointerEvent) => {
       if (disabled || event.button !== 0) return;
-      // Someone else already claimed it. Needed because a root may carry handlers from more than
-      // one primitive, and the emitter now composes them into one chain — without this guard the
-      // chain is not self-terminating for pointer events the way it is for keys.
-      if (event.defaultPrevented) return;
       if (!track.current) return;
       // Capture on the element the listener is attached to, so a pointer that leaves the track —
       // or the window — keeps reporting here until it is released. Without this a drag dies the

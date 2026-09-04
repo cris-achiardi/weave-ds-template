@@ -1194,9 +1194,11 @@ function emitTsx(name, contract, binding, prefix) {
   //                     `preventDefault()` on a click is what cancels a native checkbox's toggle.
   //                     So `dismissal`, `nav`, `range.onKeyDown` and `activate` all guard.
   //
-  //   pointermove/up  — NO handler guards. There `preventDefault()` is the ordinary way to suppress
-  //                     selection and scrolling, not a claim, and a drag already owns the pointer.
-  //                     Guarding froze a slider mid-drag for a consumer doing something reasonable.
+  //   pointerdown,    — NO handler guards. There `preventDefault()` is the ordinary way to suppress
+  //   pointermove/up    selection, scrolling and the focus change, not a claim, and by move/up a
+  //                     drag already owns the pointer. Guarding froze a slider mid-drag, and on
+  //                     pointerdown stopped the drag from starting — both for a consumer doing
+  //                     something entirely reasonable.
   //
   //   change          — no handler guards, and none can meaningfully: `preventDefault()` on a
   //                     change event cancels nothing natively, so there is no established meaning

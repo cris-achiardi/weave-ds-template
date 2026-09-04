@@ -88,9 +88,17 @@ export function useDismissal(
   // handler exists purely to remember.
   const pressBeganOnBackdrop = useRef(false);
 
+  // NO `defaultPrevented` CHECK, for the reason `useRangeControl` gives at length: on a pointerdown
+  // that call is how you suppress text selection and focus, not how you claim an event. Reading it
+  // here meant a consumer doing that to their own dialog lost backdrop dismissal with it.
+  //
+  // The composition it was guarding against does not exist: `range` is the only primitive that
+  // preventDefaults a pointerdown, and no contract declares both `range.drag` and a dismissal. If
+  // one ever does, the ordering question is real and belongs in the emitter's chain, not in a test
+  // here that also catches every consumer who was only suppressing a selection.
   const onPointerDown = useCallback(
     (event: PointerEvent) => {
-      pressBeganOnBackdrop.current = !event.defaultPrevented && isBackdrop(event);
+      pressBeganOnBackdrop.current = isBackdrop(event);
     },
     [isBackdrop],
   );
