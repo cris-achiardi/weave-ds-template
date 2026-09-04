@@ -102,7 +102,10 @@ export const RadioGroup = forwardRef<HTMLDivElement, RadioGroupProps>(function R
       id={baseId}
       aria-disabled={disabled || undefined}
       aria-readonly={readOnly || undefined}
-      onKeyDown={nav.onKeyDown}
+      onKeyDown={(event) => {
+        rest.onKeyDown?.(event);
+        nav.onKeyDown(event);
+      }}
       data-ds-component="RadioGroup"
       data-ds-part="root"
       className={className}

@@ -67,8 +67,11 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
       aria-invalid={invalid || undefined}
       data-ds-size={size}
       value={valueValue}
-      onChange={handleChange}
       readOnly={readOnly}
+      onChange={(event) => {
+        rest.onChange?.(event);
+        handleChange(event);
+      }}
       data-ds-component="TextField"
       data-ds-part="root"
       className={className}

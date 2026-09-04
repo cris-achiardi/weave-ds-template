@@ -68,7 +68,10 @@ export const Checkbox = forwardRef<HTMLButtonElement, CheckboxProps>(function Ch
       }
       disabled={disabled}
       aria-invalid={invalid || undefined}
-      onClick={activate}
+      onClick={(event) => {
+        rest.onClick?.(event);
+        activate();
+      }}
       data-ds-component="Checkbox"
       data-ds-part="root"
       className={className}

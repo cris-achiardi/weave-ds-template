@@ -6,123 +6,291 @@
   ],
   "_doc": "Closing something with a key or a press that is NOT activation. Framework-neutral cases: a backend passes this file or it has not implemented the primitive. `apg` records how the specification treats each case — `unmarked` is stated plainly, `optional` is offered as a choice, `conditional` is guarded by an If clause, and `not-addressed` is OURS and says so.\n\nTWO WARNINGS ABOUT THE SOURCES, because this primitive rests on weaker ground than the other two.\n\nFirst: the APG's TOOLTIP pattern is explicitly a work in progress without task force consensus, and the Tooltip contract's own status note records that. It states that Escape dismisses a tooltip and does not state what SHOWS one. So Escape-dismisses is citable, but from a page that says of itself it is not settled.\n\nSecond: the APG says NOTHING about pressing a backdrop. Every press case below is `not-addressed` — our decision, recorded as ours.",
   "_scope": "Dismissal only: what CLOSES a thing. What OPENS it is a different primitive and is not built. That is why Tooltip appears here for Escape and not for pointer-leave or blur — those are the mirror of its opening triggers, and generating a close for something that never opens would be machinery with no purpose.\n\nAlso out of scope: a press that lands outside the component's own subtree entirely. Every component in this corpus renders its own wrapper, so `outside-press` here means a press on the REGION ITSELF rather than on any descendant. A portalled popup would need a document-level listener and a different case set; nothing in this corpus is portalled.",
-  "_shape": "`expect.dismissed` says whether the state was closed. `expect.handled` says whether the event was consumed, and `handled: false` is how a case asserts the primitive must LEAVE AN EVENT ALONE — the same negative assertion `linear-navigation.json` uses to keep a horizontal tab list from swallowing ArrowDown.",
-
+  "_shape": "`expect.dismissed` says whether the state was closed. `expect.handled` says whether the event was consumed, and `handled: false` is how a case asserts the primitive must LEAVE AN EVENT ALONE — the same negative assertion `linear-navigation.json` uses to keep a horizontal tab list from swallowing ArrowDown.\n\nSOME CASES ASSERT THE MAPPING RATHER THAN THE DECISION, and they carry `\"needsARenderedDOM\": true`. Whether a point is inside an element's box is not answerable from plain values, so a backend defers those to a browser and says which. That distinction was learned expensively: the case below about padding describes a bug that SHIPPED while every executable case passed, because the pure core is correct and the hook's mapping from a real event to the word `region` was not.",
   "cases": [
     {
       "id": "escape-dismisses-an-open-tooltip",
       "patterns": ["tooltip"],
-      "given": { "state": "open", "on": ["escape"], "isOpen": true },
+      "given": {
+        "state": "open",
+        "on": ["escape"],
+        "isOpen": true
+      },
       "press": "Escape",
-      "expect": { "dismissed": true, "handled": true },
+      "expect": {
+        "dismissed": true,
+        "handled": true
+      },
       "apg": "unmarked",
       "_note": "Stated by the APG's tooltip pattern, which is the one dismissal behaviour it does specify. Cited without a `quote` because the pattern page describes itself as a work in progress and its wording is subject to change; the behaviour is not in doubt, the exact sentence is."
     },
     {
       "id": "escape-on-a-closed-thing-changes-nothing",
       "patterns": ["tooltip", "dialog"],
-      "given": { "state": "open", "on": ["escape"], "isOpen": false },
+      "given": {
+        "state": "open",
+        "on": ["escape"],
+        "isOpen": false
+      },
       "press": "Escape",
-      "expect": { "dismissed": false, "handled": false },
+      "expect": {
+        "dismissed": false,
+        "handled": false
+      },
       "apg": "not-addressed",
       "_note": "OURS. Nothing to dismiss, so nothing is consumed either — a closed component must not swallow Escape from whatever else on the page might want it. This is the case that stops a dismissible component becoming a keyboard black hole while invisible."
     },
     {
       "id": "a-key-that-is-not-escape-is-left-alone",
       "patterns": ["tooltip", "dialog"],
-      "given": { "state": "open", "on": ["escape"], "isOpen": true },
+      "given": {
+        "state": "open",
+        "on": ["escape"],
+        "isOpen": true
+      },
       "press": "Enter",
-      "expect": { "dismissed": false, "handled": false },
+      "expect": {
+        "dismissed": false,
+        "handled": false
+      },
       "apg": "not-addressed",
       "_note": "OURS, and the same rule both other primitives follow: consuming a key the pattern does not define breaks whatever else would have used it. Enter in particular is activation, which belongs to `activates` and never to dismissal."
     },
     {
       "id": "escape-is-not-claimed-when-it-was-not-declared",
       "patterns": [],
-      "given": { "state": "open", "on": ["outside-press"], "isOpen": true },
+      "given": {
+        "state": "open",
+        "on": ["outside-press"],
+        "isOpen": true
+      },
       "press": "Escape",
-      "expect": { "dismissed": false, "handled": false },
+      "expect": {
+        "dismissed": false,
+        "handled": false
+      },
       "apg": "not-addressed",
       "_note": "OURS. `on` is a list, and a component that asked only for outside-press must not acquire a key it never declared. The mirror of `pageStep` in range-stepping: omitting a cause is a real answer."
     },
     {
       "id": "a-press-on-the-region-itself-dismisses",
       "patterns": ["dialog"],
-      "given": { "state": "open", "on": ["outside-press"], "isOpen": true },
+      "given": {
+        "state": "open",
+        "on": ["outside-press"],
+        "isOpen": true
+      },
       "press": null,
-      "pointer": { "target": "region", "button": "primary" },
-      "expect": { "dismissed": true, "handled": true },
+      "pointer": {
+        "target": "region",
+        "button": "primary"
+      },
+      "expect": {
+        "dismissed": true,
+        "handled": true
+      },
       "apg": "not-addressed",
       "_note": "OURS — the APG says nothing about pressing a backdrop. The mechanism is measured rather than assumed: a native <dialog>'s backdrop is a pseudo-element and is never an event target, so a press on it reports THE DIALOG ITSELF as the target. `target: region` is therefore what a backdrop press looks like from inside the component, and the same test holds for a hand-rolled scrim wrapping a panel."
     },
     {
       "id": "a-press-on-a-descendant-does-not-dismiss",
       "patterns": ["dialog"],
-      "given": { "state": "open", "on": ["outside-press"], "isOpen": true },
+      "given": {
+        "state": "open",
+        "on": ["outside-press"],
+        "isOpen": true
+      },
       "press": null,
-      "pointer": { "target": "descendant", "button": "primary" },
-      "expect": { "dismissed": false, "handled": false },
+      "pointer": {
+        "target": "descendant",
+        "button": "primary"
+      },
+      "expect": {
+        "dismissed": false,
+        "handled": false
+      },
       "apg": "not-addressed",
       "_note": "OURS, and THE case that makes `outside-press` mean anything. Pressing a button, selecting text, or clicking a label inside the panel must not close it. A backend that tests only `target === region` in one direction and forgets this one produces a dialog that closes on every click inside itself."
     },
     {
       "id": "a-press-on-a-deeply-nested-descendant-does-not-dismiss",
       "patterns": ["dialog"],
-      "given": { "state": "open", "on": ["outside-press"], "isOpen": true },
+      "given": {
+        "state": "open",
+        "on": ["outside-press"],
+        "isOpen": true
+      },
       "press": null,
-      "pointer": { "target": "nested-descendant", "button": "primary" },
-      "expect": { "dismissed": false, "handled": false },
+      "pointer": {
+        "target": "nested-descendant",
+        "button": "primary"
+      },
+      "expect": {
+        "dismissed": false,
+        "handled": false
+      },
       "apg": "not-addressed",
       "_note": "OURS. The test is containment, not immediate parentage: the text inside a button inside the actions row is still inside the dialog. A backend comparing against the direct children only passes the previous case and fails this one."
     },
     {
       "id": "a-non-primary-button-press-does-not-dismiss",
       "patterns": ["dialog"],
-      "given": { "state": "open", "on": ["outside-press"], "isOpen": true },
+      "given": {
+        "state": "open",
+        "on": ["outside-press"],
+        "isOpen": true
+      },
       "press": null,
-      "pointer": { "target": "region", "button": "secondary" },
-      "expect": { "dismissed": false, "handled": false },
+      "pointer": {
+        "target": "region",
+        "button": "secondary"
+      },
+      "expect": {
+        "dismissed": false,
+        "handled": false
+      },
       "apg": "not-addressed",
       "_note": "OURS. A right-click opens a context menu; closing the thing underneath it at the same time loses whatever the person was aiming at. Matches the guard the range primitive already applies to its drag."
     },
     {
       "id": "a-press-is-not-claimed-when-it-was-not-declared",
       "patterns": ["tooltip"],
-      "given": { "state": "open", "on": ["escape"], "isOpen": true },
+      "given": {
+        "state": "open",
+        "on": ["escape"],
+        "isOpen": true
+      },
       "press": null,
-      "pointer": { "target": "region", "button": "primary" },
-      "expect": { "dismissed": false, "handled": false },
+      "pointer": {
+        "target": "region",
+        "button": "primary"
+      },
+      "expect": {
+        "dismissed": false,
+        "handled": false
+      },
       "apg": "not-addressed",
       "_note": "OURS. The mirror of `escape-is-not-claimed-when-it-was-not-declared`, and the reason a tooltip does not vanish when someone presses the wrapper it shares with its trigger."
     },
     {
       "id": "a-press-on-a-closed-thing-changes-nothing",
       "patterns": ["dialog"],
-      "given": { "state": "open", "on": ["outside-press"], "isOpen": false },
+      "given": {
+        "state": "open",
+        "on": ["outside-press"],
+        "isOpen": false
+      },
       "press": null,
-      "pointer": { "target": "region", "button": "primary" },
-      "expect": { "dismissed": false, "handled": false },
+      "pointer": {
+        "target": "region",
+        "button": "primary"
+      },
+      "expect": {
+        "dismissed": false,
+        "handled": false
+      },
       "apg": "not-addressed",
       "_note": "OURS. Consistent with the Escape equivalent: a closed component consumes nothing."
     },
     {
       "id": "both-causes-may-be-declared-together",
       "patterns": ["dialog"],
-      "given": { "state": "open", "on": ["escape", "outside-press"], "isOpen": true },
+      "given": {
+        "state": "open",
+        "on": ["escape", "outside-press"],
+        "isOpen": true
+      },
       "press": "Escape",
-      "expect": { "dismissed": true, "handled": true },
+      "expect": {
+        "dismissed": true,
+        "handled": true
+      },
       "apg": "not-addressed",
       "_note": "OURS. `on` is a set rather than a choice. Dialog declares both — although on the web the platform already supplies Escape for a native <dialog>, so a backend may find one cause already answered and generate only the other. That is a backend's business; the contract declares the intent either way."
     },
     {
       "id": "a-declared-cause-still-applies-when-another-is-present",
       "patterns": ["dialog"],
-      "given": { "state": "open", "on": ["escape", "outside-press"], "isOpen": true },
+      "given": {
+        "state": "open",
+        "on": ["escape", "outside-press"],
+        "isOpen": true
+      },
       "press": null,
-      "pointer": { "target": "region", "button": "primary" },
-      "expect": { "dismissed": true, "handled": true },
+      "pointer": {
+        "target": "region",
+        "button": "primary"
+      },
+      "expect": {
+        "dismissed": true,
+        "handled": true
+      },
       "apg": "not-addressed",
       "_note": "OURS, and the pair to the case above: declaring two causes must not make either of them conditional on the other."
+    },
+    {
+      "id": "a-press-on-the-regions-own-padding-does-not-dismiss",
+      "patterns": ["dialog"],
+      "given": {
+        "state": "open",
+        "on": ["outside-press"],
+        "isOpen": true
+      },
+      "press": null,
+      "pointer": {
+        "target": "region-padding",
+        "button": "primary"
+      },
+      "expect": {
+        "dismissed": false,
+        "handled": false
+      },
+      "apg": "not-addressed",
+      "needsARenderedDOM": true,
+      "_bug": "THIS SHIPPED. A region with padding has a band inside its own box that no child occupies, so a press there hits the element itself and reports `target === currentTarget` — identical to a backdrop press. Measured on the sandbox Dialog, which has 20px of padding: pressing 20px inside its own corner closed it. Geometry is the ONLY thing that separates the two, which is why this case cannot execute against the pure core."
+    },
+    {
+      "id": "a-press-on-a-child-outside-the-regions-box-does-not-dismiss",
+      "patterns": [],
+      "given": {
+        "state": "open",
+        "on": ["outside-press"],
+        "isOpen": true
+      },
+      "press": null,
+      "pointer": {
+        "target": "descendant-outside-box",
+        "button": "primary"
+      },
+      "expect": {
+        "dismissed": false,
+        "handled": false
+      },
+      "apg": "not-addressed",
+      "needsARenderedDOM": true,
+      "_note": "OURS, and the reason geometry alone is not the fix either. A child positioned outside its parent's box — a popover, an overflowing menu — is still a descendant and must not dismiss. The correct test is BOTH conditions: the press is on the region itself, AND the point is outside the region's box."
+    },
+    {
+      "id": "a-press-beginning-on-the-backdrop-and-released-inside-does-not-dismiss",
+      "patterns": ["dialog"],
+      "given": {
+        "state": "open",
+        "on": ["outside-press"],
+        "isOpen": true
+      },
+      "press": null,
+      "pointer": {
+        "target": "region",
+        "button": "primary",
+        "releasedOn": "descendant"
+      },
+      "expect": {
+        "dismissed": false,
+        "handled": false
+      },
+      "apg": "not-addressed",
+      "needsARenderedDOM": true,
+      "_note": "OURS, and the reason this is a CLICK rather than a pointerdown. A click requires press and release on the same target, so a drag that starts on the backdrop and ends inside the panel is not a dismissal — nor is the reverse, selecting text inside and releasing past the edge. Dismissing on pointerdown alone gets both wrong."
     }
   ]
 }

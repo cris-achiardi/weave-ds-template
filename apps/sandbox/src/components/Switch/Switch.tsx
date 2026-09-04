@@ -48,7 +48,10 @@ export const Switch = forwardRef<HTMLButtonElement, SwitchProps>(function Switch
       aria-checked={checkedValue}
       disabled={disabled}
       aria-readonly={readOnly || undefined}
-      onClick={activate}
+      onClick={(event) => {
+        rest.onClick?.(event);
+        activate();
+      }}
       data-ds-component="Switch"
       data-ds-part="root"
       className={className}

@@ -62,12 +62,27 @@ export const Slider = forwardRef<HTMLDivElement, SliderProps>(function Slider(
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={snap(valueValue, RANGE)}
-      onKeyDown={range.onKeyDown}
-      onPointerDown={range.onPointerDown}
-      onPointerMove={range.onPointerMove}
-      onPointerUp={range.onPointerUp}
-      onPointerCancel={range.onPointerUp}
       style={{ ...rest.style, ['--ds-fraction' as string]: range.fraction }}
+      onKeyDown={(event) => {
+        rest.onKeyDown?.(event);
+        range.onKeyDown(event);
+      }}
+      onPointerDown={(event) => {
+        rest.onPointerDown?.(event);
+        range.onPointerDown(event);
+      }}
+      onPointerMove={(event) => {
+        rest.onPointerMove?.(event);
+        range.onPointerMove(event);
+      }}
+      onPointerUp={(event) => {
+        rest.onPointerUp?.(event);
+        range.onPointerUp(event);
+      }}
+      onPointerCancel={(event) => {
+        rest.onPointerCancel?.(event);
+        range.onPointerUp(event);
+      }}
       data-ds-component="Slider"
       data-ds-part="root"
       className={className}

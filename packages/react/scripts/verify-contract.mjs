@@ -232,6 +232,29 @@ function check(name, validateContract, validateBinding) {
     }
   }
 
+  // --- a dismissal must write a state something outside can hear -----------------------------
+  //
+  // The schema documents this and only the EMITTER enforced it, as a throw. Nothing in `pnpm verify`
+  // or in CI runs the emitter over the contracts, so a contract naming an internal state passed
+  // every gate and was simply unemittable.
+  if (contract.dismisses) {
+    const st = contract.states?.[contract.dismisses.state];
+    if (!st) {
+      fail(
+        name,
+        'invented',
+        `dismisses.state names "${contract.dismisses.state}", which is not a declared state.`,
+      );
+    } else if (st.control !== 'shared') {
+      fail(
+        name,
+        'invented',
+        `dismisses.state names "${contract.dismisses.state}", which is \`control: ${st.control}\`. ` +
+          `A dismissal writes it, so something outside has to be able to hear that.`,
+      );
+    }
+  }
+
   if (contract.status?.level === 'deprecated') {
     const target = contract.status.replacedBy;
     if (target && !existsSync(contractPaths(target).contract)) {

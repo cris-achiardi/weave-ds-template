@@ -115,7 +115,11 @@ export const Dialog = forwardRef<HTMLDialogElement, DialogProps>(function Dialog
     return () => observer.disconnect();
   }, [handleClose]);
 
-  const dismissal = useDismissal(DISMISSAL, openValue, handleClose);
+  const dismissOpen = useCallback(() => {
+    dialogRef.current?.close();
+  }, []);
+
+  const dismissal = useDismissal(DISMISSAL, openValue, dismissOpen);
 
   return (
     <dialog
@@ -125,7 +129,14 @@ export const Dialog = forwardRef<HTMLDialogElement, DialogProps>(function Dialog
       data-ds-state-open={openValue || undefined}
       data-ds-size={size}
       aria-labelledby={`${baseId}-title`}
-      onPointerDown={dismissal.onPointerDown}
+      onPointerDown={(event) => {
+        rest.onPointerDown?.(event);
+        dismissal.onPointerDown(event);
+      }}
+      onClick={(event) => {
+        rest.onClick?.(event);
+        dismissal.onClick(event);
+      }}
       data-ds-component="Dialog"
       data-ds-part="root"
       className={className}

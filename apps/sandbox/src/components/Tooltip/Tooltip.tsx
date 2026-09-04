@@ -72,7 +72,10 @@ export const Tooltip = forwardRef<HTMLDivElement, TooltipProps>(function Tooltip
       data-ds-state-open={openValue || undefined}
       aria-disabled={disabled || undefined}
       data-ds-placement={placement}
-      onKeyDown={dismissal.onKeyDown}
+      onKeyDown={(event) => {
+        rest.onKeyDown?.(event);
+        dismissal.onKeyDown(event);
+      }}
       data-ds-component="Tooltip"
       data-ds-part="root"
       className={className}
