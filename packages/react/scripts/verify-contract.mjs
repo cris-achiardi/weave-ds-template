@@ -252,6 +252,19 @@ function check(name, validateContract, validateBinding) {
         `dismisses.state names "${contract.dismisses.state}", which is \`control: ${st.control}\`. ` +
           `A dismissal writes it, so something outside has to be able to hear that.`,
       );
+    } else if (st.values || st.valueType) {
+      // AND IT HAS TO BE A BOOLEAN. Checking `control` alone left this hole one field over: the
+      // emitter writes the dismissal as `false` literally, so a state carrying `values` — a
+      // checkbox's unchecked/checked/mixed — or a `valueType` emits code that does not compile,
+      // in the CONSUMER's repository, after passing every gate here.
+      const shape = st.values ? `values: [${st.values.join(', ')}]` : `valueType: ${st.valueType}`;
+      fail(
+        name,
+        'invented',
+        `dismisses.state names "${contract.dismisses.state}", which declares \`${shape}\`. ` +
+          `A dismissal closes something, so the state it writes has to be a boolean — ` +
+          `omit \`values\` and \`valueType\` on it, or dismiss a different state.`,
+      );
     }
   }
 
