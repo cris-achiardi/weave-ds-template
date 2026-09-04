@@ -17,7 +17,6 @@ step**. That constraint is why the template is useful on a fresh clone with zero
 | [`build-prop-map.mjs`](./build-prop-map.mjs)   | `pnpm prop-map` / `pnpm prop-map:check` | generator  | The prop glossary in `.ai/maps/`, measured against the canon                    |
 | [`report-paints.mjs`](./report-paints.mjs)     | `pnpm report:paints`                    | **report** | Declared token policy vs what the stylesheet actually does. Never fails         |
 | [`lib.mjs`](./lib.mjs)                         | —                                       | shared     | Sorting, path helpers, and the merge behind `contract.mjs`                      |
-| [`extract/`](./extract/README.md)              | —                                       | readers    | The three source readers everything above is built on                           |
 
 ## Gate, generator, report — the distinction matters
 

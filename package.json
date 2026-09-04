@@ -37,7 +37,6 @@
     "ajv": "^8.17.1",
     "eslint": "^10.9.1",
     "prettier": "^3.4.2",
-    "react-docgen-typescript": "^2.4.0",
     "typescript": "~5.9.3",
     "vitest": "^3.0.0"
   },
@@ -46,5 +45,6 @@
     "onlyBuiltDependencies": [
       "esbuild"
     ]
-  }
+  },
+  "//typescript": "Tilde-pinned, and THE REASON IT WAS PINNED IS GONE. It protected react-docgen-typescript, which silently stopped classifying VariantProps-derived props as enums under typescript@6 — value arrays came back empty and every contract answer thinned out with nothing warning you. That library and the extraction readers that used it were deleted on 2026-09-03, because components are generated from contracts and there is no hand-written source left to read. So this pin now defends nothing measurable. It is left in place because widening a toolchain range is a deliberate act with its own blast radius, not a side effect of deleting dead code — but whoever wants typescript 6 should now simply take it."
 }
