@@ -908,10 +908,18 @@ function emitTsx(name, contract, binding, prefix) {
   if (activator || rootToggles) {
     const what = activator?.node.activates.toggles ?? rootToggles;
     s.push(`  const activate = useCallback((event?: { defaultPrevented: boolean }) => {`);
-    s.push(`    // Guards, because this runs on a CLICK and the platform guards there too: calling`);
-    s.push(`    // preventDefault() in a click handler is what cancels a native checkbox's toggle.`);
-    s.push(`    // Honouring it here makes a generated control agree with the element it replaces.`);
-    s.push(`    // Without it a consumer's own onClick calling preventDefault() was ignored, and a`);
+    s.push(
+      `    // Guards, because this runs on a CLICK and the platform guards there too: calling`,
+    );
+    s.push(
+      `    // preventDefault() in a click handler is what cancels a native checkbox's toggle.`,
+    );
+    s.push(
+      `    // Honouring it here makes a generated control agree with the element it replaces.`,
+    );
+    s.push(
+      `    // Without it a consumer's own onClick calling preventDefault() was ignored, and a`,
+    );
     s.push(`    // root that both toggles and dismisses did both on one press.`);
     s.push(`    if (event?.defaultPrevented) return;`);
     const guards = [];
