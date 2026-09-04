@@ -153,12 +153,13 @@ Two failures made this a rule rather than a preference, and neither produced an 
 everything after it. That is correct for some events and wrong for others, and guessing per handler
 produced a bug in each direction inside one review cycle:
 
-| Event            | Guards? | Why                                                                                                                                                       |
-| ---------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `keydown`        | yes     | `preventDefault()` means "I claimed this key" and nothing else.                                                                                           |
-| `click`          | yes     | Same, and the platform agrees: `preventDefault()` on a click is what cancels a native checkbox's toggle, so guarding makes the output match it.           |
-| `pointermove/up` | **no**  | There it is the ordinary way to suppress selection and scrolling, not a claim — and a drag already owns the pointer. Guarding froze a slider mid-gesture. |
-| `change`         | **no**  | `preventDefault()` cancels nothing natively on a change event, so there is no established meaning to honour.                                              |
+| Event            | Guards? | Why                                                                                                                                                            |
+| ---------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `keydown`        | yes     | `preventDefault()` means "I claimed this key" and nothing else.                                                                                                |
+| `click`          | yes     | Same, and the platform agrees: `preventDefault()` on a click is what cancels a native checkbox's toggle, so guarding makes the output match it.                |
+| `pointerdown`    | **no**  | Same idiom, one event earlier: `preventDefault()` there suppresses text selection and the focus change. Guarding stopped a slider from starting a drag at all. |
+| `pointermove/up` | **no**  | There it is the ordinary way to suppress selection and scrolling, not a claim — and a drag already owns the pointer. Guarding froze a slider mid-gesture.      |
+| `change`         | **no**  | `preventDefault()` cancels nothing natively on a change event, so there is no established meaning to honour.                                                   |
 
 So the chain is self-terminating for the first group only. For the rest, order is load-bearing:
 every handler runs.
