@@ -44,12 +44,19 @@ export const Checkbox = forwardRef<HTMLButtonElement, CheckboxProps>(function Ch
   const [checkedInternal, setCheckedInternal] = useState(defaultChecked);
   const checkedValue = checkedControlled ? checked : checkedInternal;
 
-  const activate = useCallback(() => {
-    if (disabled) return;
-    const next = checkedValue === 'checked' ? 'unchecked' : 'checked';
-    if (!checkedControlled) setCheckedInternal(next);
-    onCheckedChange?.(next);
-  }, [checkedControlled, checkedValue, onCheckedChange, disabled]);
+  const activate = useCallback(
+    (event?: { defaultPrevented: boolean }) => {
+      // Guards like every other handler, so a composed chain terminates here too. Without
+      // it a consumer's own onClick calling preventDefault() was ignored, and a root that
+      // both toggles and dismisses would do both on one press.
+      if (event?.defaultPrevented) return;
+      if (disabled) return;
+      const next = checkedValue === 'checked' ? 'unchecked' : 'checked';
+      if (!checkedControlled) setCheckedInternal(next);
+      onCheckedChange?.(next);
+    },
+    [checkedControlled, checkedValue, onCheckedChange, disabled],
+  );
 
   return (
     <button
@@ -70,7 +77,7 @@ export const Checkbox = forwardRef<HTMLButtonElement, CheckboxProps>(function Ch
       aria-invalid={invalid || undefined}
       onClick={(event) => {
         rest.onClick?.(event);
-        activate();
+        activate(event);
       }}
       data-ds-component="Checkbox"
       data-ds-part="root"

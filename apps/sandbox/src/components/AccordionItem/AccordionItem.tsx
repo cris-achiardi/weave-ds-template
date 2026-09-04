@@ -36,10 +36,17 @@ export const AccordionItem = forwardRef<HTMLDivElement, AccordionItemProps>(func
   const selected = ctx.selection.includes(value);
   const baseId = `${ctx.baseId}-AccordionItem-${value}`;
 
-  const activate = useCallback(() => {
-    if (disabled || ctx.disabled) return;
-    ctx.toggle(value);
-  }, [ctx, value, disabled]);
+  const activate = useCallback(
+    (event?: { defaultPrevented: boolean }) => {
+      // Guards like every other handler, so a composed chain terminates here too. Without
+      // it a consumer's own onClick calling preventDefault() was ignored, and a root that
+      // both toggles and dismisses would do both on one press.
+      if (event?.defaultPrevented) return;
+      if (disabled || ctx.disabled) return;
+      ctx.toggle(value);
+    },
+    [ctx, value, disabled],
+  );
 
   return (
     <div

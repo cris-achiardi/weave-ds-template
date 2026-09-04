@@ -90,7 +90,7 @@
         "handled": true
       },
       "apg": "not-addressed",
-      "_note": "OURS — the APG says nothing about pressing a backdrop. The mechanism is measured rather than assumed: a native <dialog>'s backdrop is a pseudo-element and is never an event target, so a press on it reports THE DIALOG ITSELF as the target. `target: region` is therefore what a backdrop press looks like from inside the component, and the same test holds for a hand-rolled scrim wrapping a panel."
+      "_note": "OURS — the APG says nothing about pressing a backdrop. The mechanism is measured rather than assumed: a native <dialog>'s backdrop is a pseudo-element and is never an event target, so a press on it reports THE DIALOG ITSELF as the target. `target: region` is what a backdrop press looks like from inside the component.\n\nIT IS NOT THE WHOLE TEST, and an earlier version of this note said it was. The element's own padding reports the same target while being visibly inside the panel, so a backend must also check the point falls outside the region's box — see the deferred geometry cases. That scopes the primitive to regions whose backdrop is outside their own box, which a native <dialog> is and a viewport-covering scrim is not."
     },
     {
       "id": "a-press-on-a-descendant-does-not-dismiss",

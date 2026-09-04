@@ -920,7 +920,15 @@ function emitTsx(name, contract, binding, prefix) {
   // ---- activation
   if (activator || rootToggles) {
     const what = activator?.node.activates.toggles ?? rootToggles;
-    s.push(`  const activate = useCallback(() => {`);
+    s.push(`  const activate = useCallback((event?: { defaultPrevented: boolean }) => {`);
+    s.push(
+      `    // Guards like every other handler, so a composed chain terminates here too. Without`,
+    );
+    s.push(
+      `    // it a consumer's own onClick calling preventDefault() was ignored, and a root that`,
+    );
+    s.push(`    // both toggles and dismisses would do both on one press.`);
+    s.push(`    if (event?.defaultPrevented) return;`);
     const guards = [];
     if (consumerProps.some((p) => p.name === 'disabled')) guards.push(disabledExpr);
     if (consumerProps.some((p) => p.name === 'readOnly')) guards.push('readOnly');
@@ -1173,14 +1181,20 @@ function emitTsx(name, contract, binding, prefix) {
   // past the edge — is not a dismissal.
   if (dismissCauses.includes('outside-press')) {
     onEvent('onPointerDown', 'dismissal.onPointerDown');
+    onEvent('onPointerCancel', 'dismissal.onPointerCancel', false);
     onEvent('onClick', 'dismissal.onClick');
   }
   if (navigation) onEvent('onKeyDown', 'nav.onKeyDown');
-  if (rootToggles) onEvent('onClick', 'activate', false);
+  if (rootToggles) onEvent('onClick', 'activate');
 
-  // Consumer first, so they can `preventDefault()` and win. Each primitive then guards on
-  // `defaultPrevented` before acting, which makes the chain self-terminating rather than merely
-  // ordered — the order below is a tiebreak, not a correctness requirement.
+  // Consumer first, so they can `preventDefault()` and win. Every handler in the chain then guards
+  // on `defaultPrevented` before acting, which makes it self-terminating rather than merely ordered
+  // — the order is a tiebreak, not a correctness requirement.
+  //
+  // `activate` did NOT guard, and this comment claimed the property anyway. A consumer passing
+  // `onClick={(e) => e.preventDefault()}` still toggled, and a contract declaring both
+  // `activates.toggles` and `outside-press` would have dismissed AND toggled on one press. It takes
+  // the event and guards now; if a future handler cannot, it does not belong in a chain.
   for (const [event, exprs] of Object.entries(handlers)) {
     if (exprs.length === 1 && !CONSUMER_MAY_ALSO_PASS.includes(event)) {
       rootAttrs.push(`${event}={${exprs[0].expr}}`);
