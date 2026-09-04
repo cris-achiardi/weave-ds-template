@@ -32,12 +32,19 @@ export const Switch = forwardRef<HTMLButtonElement, SwitchProps>(function Switch
   const [checkedInternal, setCheckedInternal] = useState(defaultChecked);
   const checkedValue = checkedControlled ? checked : checkedInternal;
 
-  const activate = useCallback(() => {
-    if (disabled || readOnly) return;
-    const next = !checkedValue;
-    if (!checkedControlled) setCheckedInternal(next);
-    onCheckedChange?.(next);
-  }, [checkedControlled, checkedValue, onCheckedChange, disabled, readOnly]);
+  const activate = useCallback(
+    (event?: { defaultPrevented: boolean }) => {
+      // Guards like every other handler, so a composed chain terminates here too. Without
+      // it a consumer's own onClick calling preventDefault() was ignored, and a root that
+      // both toggles and dismisses would do both on one press.
+      if (event?.defaultPrevented) return;
+      if (disabled || readOnly) return;
+      const next = !checkedValue;
+      if (!checkedControlled) setCheckedInternal(next);
+      onCheckedChange?.(next);
+    },
+    [checkedControlled, checkedValue, onCheckedChange, disabled, readOnly],
+  );
 
   return (
     <button
@@ -50,7 +57,7 @@ export const Switch = forwardRef<HTMLButtonElement, SwitchProps>(function Switch
       aria-readonly={readOnly || undefined}
       onClick={(event) => {
         rest.onClick?.(event);
-        activate();
+        activate(event);
       }}
       data-ds-component="Switch"
       data-ds-part="root"

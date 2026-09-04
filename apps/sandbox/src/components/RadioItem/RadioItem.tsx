@@ -49,10 +49,17 @@ export const RadioItem = forwardRef<HTMLDivElement, RadioItemProps>(function Rad
     [register, unregister, value, disabled, ctx.disabled, ref],
   );
 
-  const activate = useCallback(() => {
-    if (disabled || ctx.disabled) return;
-    ctx.toggle(value);
-  }, [ctx, value, disabled]);
+  const activate = useCallback(
+    (event?: { defaultPrevented: boolean }) => {
+      // Guards like every other handler, so a composed chain terminates here too. Without
+      // it a consumer's own onClick calling preventDefault() was ignored, and a root that
+      // both toggles and dismisses would do both on one press.
+      if (event?.defaultPrevented) return;
+      if (disabled || ctx.disabled) return;
+      ctx.toggle(value);
+    },
+    [ctx, value, disabled],
+  );
 
   return (
     <div
@@ -64,7 +71,7 @@ export const RadioItem = forwardRef<HTMLDivElement, RadioItemProps>(function Rad
       tabIndex={ctx.isTabStop(value) ? 0 : -1}
       onClick={(event) => {
         rest.onClick?.(event);
-        activate();
+        activate(event);
       }}
       data-ds-component="RadioItem"
       data-ds-part="root"

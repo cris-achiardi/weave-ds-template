@@ -10,6 +10,8 @@ export interface Dismissal {
   onKeyDown: (event: KeyboardEvent) => void;
   /** Goes on the region's root. Remembers where a press began; see the note on drags. */
   onPointerDown: (event: PointerEvent) => void;
+  /** Goes on the region's root. Forgets a press the platform abandoned. */
+  onPointerCancel: () => void;
   /** Goes on the region's root. Dismisses only when press AND release were both on the backdrop. */
   onClick: (event: MouseEvent) => void;
 }
@@ -93,6 +95,18 @@ export function useDismissal(
     [isBackdrop],
   );
 
+  // A press the platform took away — the pointer left the window, a gesture was recognised, a
+  // context menu opened — produces no click, so nothing would otherwise clear the flag and it would
+  // sit `true` across a close and reopen. Not exploitable today, because a later dismissal still
+  // needs a click that independently passes `isBackdrop`; cleared anyway rather than left resting
+  // on a second test to cover for it.
+  const onPointerCancel = useCallback(() => {
+    pressBeganOnBackdrop.current = false;
+  }, []);
+
+  // Closing by any other route also ends the press this flag was remembering.
+  if (!isOpen && pressBeganOnBackdrop.current) pressBeganOnBackdrop.current = false;
+
   const onClick = useCallback(
     (event: MouseEvent) => {
       const began = pressBeganOnBackdrop.current;
@@ -108,8 +122,8 @@ export function useDismissal(
   );
 
   return useMemo(
-    () => ({ onKeyDown, onPointerDown, onClick }),
-    [onKeyDown, onPointerDown, onClick],
+    () => ({ onKeyDown, onPointerDown, onPointerCancel, onClick }),
+    [onKeyDown, onPointerDown, onPointerCancel, onClick],
   );
 }
 

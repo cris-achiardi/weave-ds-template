@@ -133,6 +133,10 @@ export const Dialog = forwardRef<HTMLDialogElement, DialogProps>(function Dialog
         rest.onPointerDown?.(event);
         dismissal.onPointerDown(event);
       }}
+      onPointerCancel={(event) => {
+        rest.onPointerCancel?.(event);
+        dismissal.onPointerCancel();
+      }}
       onClick={(event) => {
         rest.onClick?.(event);
         dismissal.onClick(event);
