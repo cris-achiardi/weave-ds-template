@@ -69,7 +69,7 @@ One spelling, one meaning. A new value is added here in the same change that int
 | `defaultInvalid` | boolean | boolean | Field |
 | `defaultOpen` | boolean | boolean | Dialog, Tooltip |
 | `defaultTouched` | boolean | boolean | Field |
-| `defaultValue` | local | number, string, string[] | Accordion, RadioGroup, Slider, Tabs, TextField |
+| `defaultValue` | local | Slider: number<br>RadioGroup, Tabs, TextField: string<br>Accordion: string[] | Accordion, RadioGroup, Slider, Tabs, TextField |
 | `description` | node | ReactNode | Field |
 | `dirty` | boolean | boolean | Field |
 | `disabled` | boolean | boolean | Accordion, AccordionItem, Button, Checkbox, Field, RadioGroup, RadioItem, Slider, Switch, TabItem, Tabs, TextField, Tooltip |
@@ -81,12 +81,12 @@ One spelling, one meaning. A new value is added here in the same change that int
 | `invalid` | boolean | boolean | Checkbox, Field, TextField |
 | `label` | node | ReactNode | Checkbox, Field, RadioItem, TabItem |
 | `loading` | boolean | boolean | Button |
-| `onCheckedChange` | local | (checked: 'unchecked' \| 'checked' \| 'mixed') => void, (checked: boolean) => void | Checkbox, Switch |
+| `onCheckedChange` | local | Checkbox: (checked: 'unchecked' \| 'checked' \| 'mixed') => void<br>Switch: (checked: boolean) => void | Checkbox, Switch |
 | `onDirtyChange` | local | (dirty: boolean) => void | Field |
 | `onInvalidChange` | local | (invalid: boolean) => void | Field |
 | `onOpenChange` | local | (open: boolean) => void | Dialog, Tooltip |
 | `onTouchedChange` | local | (touched: boolean) => void | Field |
-| `onValueChange` | local | (value: number) => void, (value: string) => void, (value: string[]) => void | Accordion, RadioGroup, Slider, Tabs, TextField |
+| `onValueChange` | local | Slider: (value: number) => void<br>RadioGroup, Tabs, TextField: (value: string) => void<br>Accordion: (value: string[]) => void | Accordion, RadioGroup, Slider, Tabs, TextField |
 | `open` | boolean | boolean | Dialog, Tooltip |
 | `orientation` | axis | vertical | Accordion |
 | `panel` | node | ReactNode | AccordionItem |
@@ -96,10 +96,10 @@ One spelling, one meaning. A new value is added here in the same change that int
 | `title` | node | ReactNode | Dialog |
 | `touched` | boolean | boolean | Field |
 | `trigger` | node | ReactNode | Tooltip |
-| `value` | local | number, string, string[] | Accordion, AccordionItem, RadioGroup, RadioItem, Slider, TabItem, TabPanel, Tabs, TextField |
+| `value` | local | Slider: number<br>AccordionItem, RadioGroup, RadioItem, TabItem, TabPanel, Tabs, TextField: string<br>Accordion: string[] | Accordion, AccordionItem, RadioGroup, RadioItem, Slider, TabItem, TabPanel, Tabs, TextField |
 | `variant` | axis | neutral · brand · danger | Button |
 
 ## 4. Drift report
 
-- `checked` (Checkbox, Switch) — `checked` is an enumeration on one component and takes no value set on Switch. The index attributes each set to the components that declare it; nothing here resolves which is right. · **unreviewed**
-- `defaultChecked` (Checkbox, Switch) — `defaultChecked` is an enumeration on one component and takes no value set on Switch. The index attributes each set to the components that declare it; nothing here resolves which is right. · **unreviewed**
+- `checked` (Checkbox, Switch) — `checked` is an enumeration on Checkbox and takes no value set on Switch. The index attributes each set to the components that declare it; nothing here resolves which is right. · **unreviewed**
+- `defaultChecked` (Checkbox, Switch) — `defaultChecked` is an enumeration on Checkbox and takes no value set on Switch. The index attributes each set to the components that declare it; nothing here resolves which is right. · **unreviewed**

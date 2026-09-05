@@ -69,20 +69,34 @@ function measure() {
       // the same value set, so the glossary recorded `onCheckedChange` as `kind: "enum"` carrying
       // `unchecked | checked | mixed` — and that fed the canon flags, where a callback would have
       // been compared against every axis for a possible synonym.
+      // KEYED ON `origin`, NOT ON `from`. A collection's value props carry `from: 'selection'`,
+      // which is a sentinel and not a state name — looking it up in `contract.states` finds nothing
+      // today and finds the WRONG THING the day a contract declares a state called `selection`.
       const values = !CARRIES_VALUES.includes(entry.role)
         ? null
-        : entry.role === 'axis'
+        : entry.origin === 'axis'
           ? (contract.axes?.[entry.from]?.values ?? null)
-          : (contract.states?.[entry.from]?.values ?? null);
+          : entry.origin === 'state'
+            ? (contract.states?.[entry.from]?.values ?? null)
+            : null;
 
       const bucket = (props[entry.name] ??= {
         values: {},
         valueless: {},
+        typeOn: {},
         usedOn: [],
         types: new Set(),
       });
       if (!bucket.usedOn.includes(name)) bucket.usedOn.push(name);
       bucket.types.add(entry.type);
+
+      // WHO HAS WHICH TYPE, for the same reason the value sets are attributed — and this half was
+      // missed when that one was fixed, leaving the identical defect for props that diverge by
+      // TYPE rather than by enumeration. The index read
+      //   `value` | local | number, string, string[] | Accordion, RadioGroup, ... TextField
+      // across nine components, which tells a reader `value={0}` is valid on a RadioGroup.
+      const typeOn = (bucket.typeOn[entry.type] ??= []);
+      if (!typeOn.includes(name)) typeOn.push(name);
 
       // WHICH COMPONENT CONTRIBUTED WHICH SET, because recording only the sets attributes every
       // one of them to every component sharing the prop name. `checked` is the case: Checkbox's is
@@ -188,13 +202,18 @@ function findFlags(props, canon) {
     // exposes the same name as a boolean, contributing no set to diverge FROM. Exactly what
     // `checked` does across Checkbox and Switch.
     const valueless = Object.values(entry.valueless ?? {}).flat();
+    // `sets` counts distinct VALUE SETS; the sentence below is about COMPONENTS. They agree only
+    // while one component is the sole enumerator, which is true today by accident.
+    const enumeratedOn = [...new Set(Object.values(entry.values ?? {}).flatMap((v) => v.on))].sort(
+      byCodePoint,
+    );
     if (sets.length && valueless.length) {
       flags.push({
         kind: 'partial-value-sets',
         prop,
         components: entry.usedOn,
         detail:
-          `\`${prop}\` is an enumeration on ${sets.length === 1 ? 'one component' : `${sets.length} components`} ` +
+          `\`${prop}\` is an enumeration on ${enumeratedOn.length === 1 ? `${enumeratedOn[0]}` : `${enumeratedOn.length} components`} ` +
           `and takes no value set on ${valueless.sort(byCodePoint).join(', ')}. ` +
           `The index attributes each set to the components that declare it; nothing here resolves which is right.`,
       });
@@ -238,6 +257,9 @@ function buildJson(canon, m, flags) {
       valueSets: Object.values(e.values)
         .sort((a, b) => byCodePoint(a.values.join('|'), b.values.join('|')))
         .map((v) => ({ values: v.values, on: v.on.slice().sort(byCodePoint) })),
+      typesOn: Object.entries(e.typeOn ?? {})
+        .sort(([a], [b]) => byCodePoint(a, b))
+        .map(([type, on]) => ({ type, on: on.slice().sort(byCodePoint) })),
       valuelessOn: Object.entries(e.valueless ?? {})
         .sort(([a], [b]) => byCodePoint(a, b))
         .map(([type, on]) => ({ type, on: on.slice().sort(byCodePoint) })),
@@ -383,15 +405,23 @@ function buildMd(json, canon) {
       // A `|` inside a cell ends the cell. Union types reach here from `surfaceFrom` —
       // `(checked: 'unchecked' | 'checked' | 'mixed') => void` was rendering as five extra columns.
       const esc = (t) => t.replace(/\|/g, '\\|');
-      const vals = !p.valueSets.length
-        ? esc(p.types.join(', '))
-        : p.valueSets.length === 1 && !p.valuelessOn.length
+      // ATTRIBUTED WHENEVER THE COMPONENTS DISAGREE, whether they disagree about an enumeration
+      // or about a type. An unattributed list beside a component list is a cross-product, and a
+      // reader takes every entry to apply to every component — which is how the index came to say
+      // a RadioGroup accepts a number.
+      const vals = p.valueSets.length
+        ? p.valueSets.length === 1 && !p.valuelessOn.length
           ? esc(p.valueSets[0].values.join(' · '))
-          : // Attributed, because the components do not agree. See `partial-value-sets` in §4.
-            [
+          : [
               ...p.valueSets.map((s) => `${s.on.join(', ')}: ${s.values.join(' · ')}`),
               ...p.valuelessOn.map((v) => `${v.on.join(', ')}: ${v.type}`),
             ]
+              .map(esc)
+              .join('<br>')
+        : p.typesOn.length === 1
+          ? esc(p.typesOn[0].type)
+          : p.typesOn
+              .map((t) => `${t.on.join(', ')}: ${t.type}`)
               .map(esc)
               .join('<br>');
       L.push(`| \`${name}\` | ${p.kind} | ${vals} | ${p.usedOn.join(', ')} |`);
