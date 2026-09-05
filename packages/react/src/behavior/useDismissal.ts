@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import type { KeyboardEvent, MouseEvent, PointerEvent } from 'react';
 import { dismissesOnKey, dismissesOnPress } from './dismissal.js';
 import type { DismissalOptions } from './dismissal.js';
@@ -113,7 +113,16 @@ export function useDismissal(
   }, []);
 
   // Closing by any other route also ends the press this flag was remembering.
-  if (!isOpen && pressBeganOnBackdrop.current) pressBeganOnBackdrop.current = false;
+  //
+  // IN AN EFFECT, not in the render body where this started. Writing a ref during render is
+  // against React's rules for a concrete reason: refs are not rolled back when a concurrent render
+  // is discarded, so the write escapes a render that never happened. Nothing user-visible followed
+  // from it here — the value only ever moves to `false`, and `onClick` re-runs the geometry test
+  // before dismissing regardless — but "no failure I could construct" is a weaker guarantee than
+  // "not reachable", and this is the only place in the three primitives that broke the rule.
+  useEffect(() => {
+    if (!isOpen) pressBeganOnBackdrop.current = false;
+  }, [isOpen]);
 
   const onClick = useCallback(
     (event: MouseEvent) => {

@@ -405,7 +405,12 @@ function emitTsx(name, contract, binding, prefix) {
     !nativelyEdited &&
     !range &&
     !platformModal &&
-    !dismisses
+    // `!dismissCauses.length`, not `!dismisses`: a contract whose declared causes are ALL supplied
+    // by the platform generates no handler, so the shared state really is storage only and the
+    // report should say so. Guarding on the DECLARATION suppressed it for a declaration that
+    // produced nothing. Unreachable today — `platformModal` catches Dialog first — but this is the
+    // reporting the "a gap is a finding" rule exists to keep.
+    !dismissCauses.length
   ) {
     assume(
       'what changes a shared state',
@@ -993,9 +998,14 @@ function emitTsx(name, contract, binding, prefix) {
   //
   // `emit/README.md` §4 authorises spreading before the attributes that constitute IDENTITY — role,
   // id, tabIndex. It says nothing about handlers, so clobbering them was never sanctioned.
-  // `takesEvent` is not a detail. `activate` is generated as `() => {...}` and takes no argument,
-  // so composing it as `activate(event)` is a type error — caught by `pnpm typecheck`, which is
-  // exactly the gate that covers emitted output.
+  // `takesEvent` marks a handler that takes NO argument, so the chain calls it as `f()` rather
+  // than `f(event)`. `dismissal.onPointerCancel` is the only one: it exists purely to forget a
+  // press the platform took away and has no use for the event.
+  //
+  // `activate` was the original reason for the flag and is no longer an example — it was
+  // `() => {...}` until it needed to guard on `defaultPrevented`, and now takes the event like
+  // everything else. `pnpm typecheck` covers emitted output, so getting this wrong in either
+  // direction fails the build rather than shipping.
   const handlers = {};
   const onEvent = (name, expr, takesEvent = true) =>
     (handlers[name] ??= []).push({ expr, takesEvent });
