@@ -44,11 +44,12 @@ export function surfaceFrom(contract) {
     }
     if (def.control === 'shared') {
       props.push(
-        { name: n, type: t, from: state, role: 'controlled' },
+        { name: n, type: t, from: state, origin: 'state', role: 'controlled' },
         {
           name: `default${pascal(state)}`,
           type: t,
           from: state,
+          origin: 'state',
           role: 'uncontrolled',
           default: dflt,
         },
@@ -56,11 +57,12 @@ export function surfaceFrom(contract) {
           name: `on${pascal(state)}Change`,
           type: `(${n}: ${t}) => void`,
           from: state,
+          origin: 'state',
           role: 'callback',
         },
       );
     } else if (def.control === 'consumer') {
-      props.push({ name: n, type: t, from: state, role: 'input', default: dflt });
+      props.push({ name: n, type: t, from: state, origin: 'state', role: 'input', default: dflt });
     }
     // `internal` emits nothing. That is the whole point of the value.
   }
@@ -72,6 +74,7 @@ export function surfaceFrom(contract) {
       name: axis,
       type: def.values.map((v) => `'${v}'`).join(' | '),
       from: axis,
+      origin: 'axis',
       role: 'axis',
       default: def.default,
       description: def.description,
@@ -85,9 +88,24 @@ export function surfaceFrom(contract) {
     const many = sel.cardinality === 'many';
     const t = many ? 'string[]' : 'string';
     props.push(
-      { name: 'value', type: t, from: 'selection', role: 'controlled' },
-      { name: 'defaultValue', type: t, from: 'selection', role: 'uncontrolled' },
-      { name: 'onValueChange', type: `(value: ${t}) => void`, from: 'selection', role: 'callback' },
+      // `from: 'selection'` is a SENTINEL, not a state name — see `origin`. A reader that looked
+      // the string up in `contract.states` would find nothing today and the wrong thing the day a
+      // contract declares a state actually called `selection`.
+      { name: 'value', type: t, from: 'selection', origin: 'selection', role: 'controlled' },
+      {
+        name: 'defaultValue',
+        type: t,
+        from: 'selection',
+        origin: 'selection',
+        role: 'uncontrolled',
+      },
+      {
+        name: 'onValueChange',
+        type: `(value: ${t}) => void`,
+        from: 'selection',
+        origin: 'selection',
+        role: 'callback',
+      },
     );
   }
 
@@ -98,6 +116,7 @@ export function surfaceFrom(contract) {
       name: contract.member.identity,
       type: 'string',
       from: 'member',
+      origin: 'member',
       role: 'identity',
       required: true,
       description: `Distinguishes this ${contract.component} from its siblings. The ancestor ${contract.member.of} compares against it to decide whether this one is in the selection.`,
@@ -111,6 +130,7 @@ export function surfaceFrom(contract) {
       name: camel(slot),
       type: 'ReactNode',
       from: slot,
+      origin: 'slot',
       role: 'slot',
       part: def.part,
       required: def.required === true,
