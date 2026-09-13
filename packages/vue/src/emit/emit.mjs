@@ -8,19 +8,14 @@
 //
 //   node packages/vue/src/emit/emit.mjs <Name> --out <dir>
 //
-// WHAT IS DELIBERATELY DUPLICATED, and why it is not a mistake:
-//
-//   `emitStructure` and `emitTheme` below are ports of the React emitter's functions with the
-//   framework taken out — and there was nothing to take out. Both emit CSS, and CSS does not know
-//   what a framework is. They are duplicated rather than shared because the whole experiment is to
-//   MEASURE what a second backend costs, and sharing a file before measuring it is a guess. The
-//   measurement is reported in docs/research/0004; the fix, if these belong somewhere shared, is a
-//   separate commit with its own diff.
+// WHAT THIS FILE IS NOT. Reading a contract and emitting the two stylesheets used to be in here,
+// identical in all three emitters. They moved to `@ds/emit-web` once what a second and third
+// backend cost had been measured — see docs/research/0005 and packages/emit-web/README.md. What is
+// left is this framework and nothing else.
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import Ajv from 'ajv/dist/2020.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(HERE, '../../../..');
@@ -42,7 +37,6 @@ import {
   isNativelyFocusable,
   isVoid,
   loadProfile,
-  pseudoClassFor,
   relationAttribute,
   rendersFalse,
   submitsByDefault,
@@ -51,64 +45,31 @@ import {
 
 const WEB = loadProfile();
 
+// What every backend that emits into an HTML document shares. It was three identical copies until
+// docs/research/0005 said the measurement they existed to protect was complete — reading a
+// contract, and the two light-DOM stylesheets. See packages/emit-web/README.md, which is also
+// explicit that the CSS half stops at the shadow boundary.
+import {
+  emitStructure,
+  emitTheme,
+  kebab,
+  loadPair,
+  memberFacts,
+  partsOf,
+  readJson,
+  referencedByASibling,
+} from '@ds/emit-web';
+
 import { camel, pascal, slotsFrom, surfaceFrom } from './surface.mjs';
 
 const EMITTER_ASSUMPTIONS = [];
 const assume = (topic, decision, why) => EMITTER_ASSUMPTIONS.push({ topic, decision, why });
-
-const readJson = (p) => JSON.parse(readFileSync(p, 'utf8'));
-const admittedBy = (ancestor) => {
-  const declared = readJson(join(CONTRACTS, 'components', ancestor, `${ancestor}.contract.json`))
-    .collection?.items;
-  return Array.isArray(declared) ? declared : declared ? [declared] : [];
-};
-const kebab = (s) => s.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
 
 // Vue's key for a DOM event inside `$attrs`. NOT React's spelling, and the difference is a real
 // source of silent bugs: Vue capitalises only the first letter after `on`, so `@keydown` arrives as
 // `onKeydown` and NOT `onKeyDown`. Reading the React spelling here would find nothing, the
 // consumer's handler would never be called, and no error would be produced anywhere.
 const attrKeyFor = (event) => `on${event.charAt(0).toUpperCase()}${event.slice(1)}`;
-
-// ---------------------------------------------------------------------------------------
-// load + validate
-// ---------------------------------------------------------------------------------------
-function load(name) {
-  const contractPath = join(CONTRACTS, 'components', name, `${name}.contract.json`);
-  const bindingPath = join(BINDINGS, `${name}.vue.json`);
-  if (!existsSync(contractPath)) throw new Error(`no contract at ${contractPath}`);
-  if (!existsSync(bindingPath)) throw new Error(`no binding at ${bindingPath}`);
-
-  const contract = readJson(contractPath);
-  const binding = readJson(bindingPath);
-  const ajv = new Ajv({ allErrors: true, strict: false });
-
-  const okContract = ajv.compile(readJson(join(CONTRACTS, 'schema/component.schema.json')));
-  if (!okContract(contract)) {
-    throw new Error(
-      `contract is invalid:\n` +
-        okContract.errors.map((e) => `  ${e.instancePath || '(root)'} ${e.message}`).join('\n'),
-    );
-  }
-  const okBinding = ajv.compile(readJson(join(BINDINGS, 'binding.schema.json')));
-  if (!okBinding(binding)) {
-    throw new Error(
-      `binding is invalid:\n` +
-        okBinding.errors.map((e) => `  ${e.instancePath || '(root)'} ${e.message}`).join('\n'),
-    );
-  }
-  const target = resolve(BINDINGS, binding.contract);
-  if (resolve(contractPath) !== target) {
-    throw new Error(`binding.contract points at ${target}, not ${contractPath}`);
-  }
-  return { contract, binding };
-}
-
-function partsOf(node, out = [], key = 'root') {
-  out.push({ key, part: node.part, node });
-  for (const [k, child] of Object.entries(node.parts ?? {})) partsOf(child, out, k);
-  return out;
-}
 
 // How a state name evaluates INSIDE A TEMPLATE.
 //
@@ -232,22 +193,9 @@ function emitSfc(name, contract, binding, prefix) {
   let memberMany = false;
   let memberNav = null;
   if (member) {
-    const ancestorPath = join(CONTRACTS, 'components', member.of, `${member.of}.contract.json`);
-    if (!existsSync(ancestorPath)) {
-      throw new Error(
-        `${name} declares member.of "${member.of}" but no contract exists at ${ancestorPath}`,
-      );
-    }
-    const ancestor = readJson(ancestorPath);
-    const admitted = admittedBy(member.of);
-    if (!admitted.includes(name)) {
-      throw new Error(
-        `${name} says it is a member of ${member.of}, but ${member.of}.collection.items admits ` +
-          `${admitted.length ? admitted.join(', ') : '(nothing)'} — the two contracts disagree.`,
-      );
-    }
-    memberMany = ancestor.collection.selection.cardinality === 'many';
-    memberNav = ancestor.collection.navigation ?? null;
+    const facts = memberFacts(name, member, CONTRACTS);
+    memberMany = facts.many;
+    memberNav = facts.navigation;
     assume(
       'a member contract is not self-contained',
       `read ${member.of}.contract.json to learn the selection is ${memberMany ? 'a set' : 'a single value'}`,
@@ -402,17 +350,8 @@ function emitSfc(name, contract, binding, prefix) {
   const referenced = new Set(
     allParts.flatMap((p) => refsOf(p.node)).filter((r) => typeof r === 'string'),
   );
-  const referencedByASibling = Boolean(
-    member &&
-    admittedBy(member.of)
-      .filter((sib) => sib !== name)
-      .some((sib) => {
-        const f = join(CONTRACTS, 'components', sib, `${sib}.contract.json`);
-        if (!existsSync(f)) return false;
-        return JSON.stringify(readJson(f)).includes(`"member": "${name}"`);
-      }),
-  );
-  const needsIds = Boolean(collection) || referencesParts || referencedByASibling;
+  const referencedBySibling = referencedByASibling(name, member, CONTRACTS);
+  const needsIds = Boolean(collection) || referencesParts || referencedBySibling;
 
   const ctx = {
     prefix,
@@ -1126,147 +1065,6 @@ function emitSfc(name, contract, binding, prefix) {
 }
 
 // ---------------------------------------------------------------------------------------
-// structure.css — a PORT of the React emitter's function, and nothing was removed
-// ---------------------------------------------------------------------------------------
-function emitStructure(name, contract, binding, prefix) {
-  const root = contract.anatomy.root;
-  const kids = Object.values(root.parts ?? {});
-  const hides = JSON.stringify(contract.anatomy).includes('"visibleWhen"');
-  const visibility = visibilityOf(binding.element, WEB);
-  const platformHidden =
-    visibility.mode === 'imperative' && root.visibleWhen ? visibility.hiddenSelector : null;
-
-  assume(
-    'structural CSS',
-    'NONE EMITTED — the emitter refuses to guess',
-    "THE BIG ONE, and it is the React emitter's word for word. The contract has no `layout` block, so there is nothing to derive from and a guess that renders is more dangerous than one that does not. Every component's real layout has to live in the CONSUMER's theme file, which is the wrong place, and is exactly the gap — now confirmed to be a gap in the CONTRACT rather than in one backend, because a second backend hit it identically.",
-  );
-
-  const L = [];
-  L.push(`/* GENERATED from ${name}.contract.json. Do not edit by hand — regenerate instead. */`);
-  L.push(`/*`);
-  L.push(` * STRUCTURE ONLY — and there is almost none, on purpose.`);
-  L.push(` *`);
-  L.push(` * This file should hold the layout ${name}'s contract depends on: the positioning,`);
-  L.push(
-    ` * stacking and flow that make its stated behaviour true, with no colour or spacing in it.`,
-  );
-  L.push(` * It cannot, because the contract has no \`layout\` block and nothing in it describes`);
-  L.push(` * where a part sits. The emitter will not guess: an inferred layout that renders is`);
-  L.push(` * harder to catch than one that does not.`);
-  L.push(` *`);
-  L.push(` * So ${name}'s real layout currently lives in ${name}.theme.css — the CONSUMER's file,`);
-  L.push(` * which is the wrong place for it. See docs/research/0002 and docs/research/0004.`);
-  L.push(` */`);
-  L.push(``);
-  L.push(`[data-${prefix}-component='${name}'] {`);
-  L.push(`  /* the scoping handle. Everything else is yours, for now. */`);
-  L.push(`}`);
-  L.push(``);
-  if (hides) {
-    L.push(`/* Hiding is a contract claim, not a style. See the note in the emitter. */`);
-    if (platformHidden) L.push(`[data-${prefix}-component='${name}']${platformHidden},`);
-    L.push(`[data-${prefix}-component='${name}'][hidden],`);
-    L.push(`[data-${prefix}-component='${name}'] [hidden] {`);
-    L.push(`  display: none !important;`);
-    L.push(`}`);
-    L.push(``);
-    if (platformHidden) {
-      L.push(`/*`);
-      L.push(` * The first selector above is the SAME trap as [hidden], under a different name.`);
-      L.push(` * \`dialog:not([open]) { display: none }\` is a browser-stylesheet rule, so any`);
-      L.push(` * \`display\` a theme puts on this element outranks it and the closed dialog stays`);
-      L.push(` * on screen with showModal() never having been called. Give the display to a part`);
-      L.push(` * inside instead, or scope it to [open].`);
-      L.push(` */`);
-      L.push(``);
-    }
-  }
-  for (const node of kids) {
-    L.push(`[data-${prefix}-component='${name}'] [data-${prefix}-part='${node.part}'] {`);
-    L.push(`  /* no declared layout for this part */`);
-    L.push(`}`);
-    L.push(``);
-  }
-  return L.join('\n');
-}
-
-// ---------------------------------------------------------------------------------------
-// theme.css — one commented socket per unbound channel. Also a straight port.
-// ---------------------------------------------------------------------------------------
-function stateSelector(base, spec, prefix) {
-  const [state, value] = spec.includes('=') ? spec.split('=') : [spec, null];
-  const isChild = base.includes('] [');
-  const rootSel = isChild ? base.split('] [')[0] + ']' : base;
-  const childSel = isChild ? '[' + base.split('] [')[1] : '';
-  if (value !== null) {
-    const on = `[data-${prefix}-state-${state}='${value}']`;
-    return isChild ? `${rootSel}${on} ${childSel}` : `${base}${on}`;
-  }
-  let on;
-  if (pseudoClassFor(state, WEB)) on = pseudoClassFor(state, WEB);
-  else if (ariaAttributeFor(state, WEB)) on = `[${ariaAttributeFor(state, WEB)}='true']`;
-  else on = `[data-${prefix}-state-${state}]`;
-  return isChild ? `${rootSel}${on} ${childSel}` : `${base}${on}`;
-}
-
-function emitTheme(name, contract, prefix) {
-  const parts = partsOf(contract.anatomy.root);
-  const L = [];
-  L.push(`/*`);
-  L.push(` * ${name} — YOUR FILE. Emitted once, never regenerated. Wire your tokens here.`);
-  L.push(` *`);
-  L.push(
-    ` * Every channel below is declared in the contract with no source: the library says this`,
-  );
-  L.push(
-    ` * part paints a background, and deliberately does not say from where. Uncomment and fill.`,
-  );
-  L.push(` *`);
-  L.push(` * NOTE: this file is FRAMEWORK-FREE. It selects on data attributes the contract`);
-  L.push(` * produced, so the identical file styles the React build of ${name}. That is not a`);
-  L.push(` * coincidence to rely on silently — see docs/research/0004.`);
-  L.push(` */`);
-  L.push(``);
-  for (const p of parts) {
-    const sel =
-      p.key === 'root'
-        ? `[data-${prefix}-component='${name}']`
-        : `[data-${prefix}-component='${name}'] [data-${prefix}-part='${p.node.part}']`;
-    const channels = Object.keys(p.node.paints ?? {});
-    if (channels.length) {
-      L.push(`${sel} {`);
-      for (const c of channels) L.push(`  /* ${c}: ; */`);
-      L.push(`}`);
-      L.push(``);
-    }
-    for (const [state, paints] of Object.entries(p.node.states ?? {})) {
-      const def = contract.states?.[state];
-      L.push(`/* state: ${state} — ${def?.visual ?? 'no visual recorded'} */`);
-      L.push(`${stateSelector(sel, state, prefix)} {`);
-      for (const c of Object.keys(paints)) L.push(`  /* ${c}: ; */`);
-      L.push(`}`);
-      L.push(``);
-    }
-    for (const [key, paints] of Object.entries(p.node.whenAxis ?? {})) {
-      const [axis, value] = key.includes('=') ? key.split('=') : [key, null];
-      const attr = `[data-${prefix}-${kebab(axis)}='${value ?? 'true'}']`;
-      const rootSel = `[data-${prefix}-component='${name}']`;
-      const selector =
-        sel === rootSel
-          ? `${rootSel}${attr}`
-          : `${rootSel}${attr} ${sel.slice(rootSel.length + 1)}`;
-      L.push(`/* ${axis} = ${value ?? 'true'} */`);
-      L.push(`${selector} {`);
-      for (const c of Object.keys(paints)) L.push(`  /* ${c}: ; */`);
-      L.push(`}`);
-      L.push(``);
-    }
-  }
-  return L.join('\n');
-}
-
-// ---------------------------------------------------------------------------------------
 // main
 // ---------------------------------------------------------------------------------------
 const name = process.argv[2];
@@ -1277,14 +1075,19 @@ if (!name || outIdx === -1) {
 }
 const outDir = resolve(process.cwd(), process.argv[outIdx + 1], name);
 
-const { contract, binding } = load(name);
+const { contract, binding } = loadPair({
+  name,
+  contractsDir: CONTRACTS,
+  bindingsDir: BINDINGS,
+  suffix: '.vue.json',
+});
 const prefix = readJson(join(REPO_ROOT, 'ds.config.json')).dataPrefix;
 
 mkdirSync(outDir, { recursive: true });
 writeFileSync(join(outDir, `${name}.vue`), emitSfc(name, contract, binding, prefix), 'utf8');
 writeFileSync(
   join(outDir, `${name}.structure.css`),
-  emitStructure(name, contract, binding, prefix),
+  emitStructure(name, contract, binding.element, prefix, WEB, assume),
   'utf8',
 );
 
@@ -1292,7 +1095,7 @@ const themePath = join(outDir, `${name}.theme.css`);
 if (existsSync(themePath)) {
   console.log(`  kept   ${name}.theme.css (yours — never regenerated)`);
 } else {
-  writeFileSync(themePath, emitTheme(name, contract, prefix), 'utf8');
+  writeFileSync(themePath, emitTheme(name, contract, prefix, WEB), 'utf8');
 }
 
 const declared = surfaceFrom(contract).filter((p) => p.role !== 'model' || p.from === 'selection');

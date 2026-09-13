@@ -1,0 +1,8 @@
+{
+  "//": "No `types` entry, unlike every other package here. This one has no bundler and no DOM: the three modules are pure functions and the suites import from `vitest` by name. Pulling in `vite/client` would mean depending on Vite to typecheck code that does not know what a browser is.",
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": ["src"]
+}

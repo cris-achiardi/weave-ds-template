@@ -1,7 +1,7 @@
-// Drives the conformance cases in @ds/contracts against this backend's implementation.
+// Drives the conformance cases in @ds/contracts against the one shared implementation.
 //
 // Same arrangement as the other two primitives: the cases are DATA owned by the contracts package,
-// and this file is the React adapter for them.
+// and this file is the adapter that executes them.
 //
 // THREE CASES ARE DEFERRED TO A BROWSER, and an earlier version of this file claimed none were.
 // That claim was wrong in a way that cost a shipped bug: whether a point falls inside an element's
@@ -12,7 +12,7 @@
 // READ "DEFERRED TO A BROWSER" LITERALLY: there is no browser lane in this repo. No jsdom, no
 // happy-dom, no Playwright — `vitest` runs in node and these three cases run NOWHERE automated.
 // They were verified by HAND, once, on the sandbox Dialog, and that is the same standard
-// `apps/vue-sandbox/src/status.ts` holds every verdict to. So a regression in exactly the code that
+// `apps/react-sandbox/src/status.ts` holds every verdict to. So a regression in exactly the code that
 // fixed the padding bug would not redden anything; it would need someone to press the panel again.
 //
 // That is a real gap and it is recorded rather than papered over — `CROSS_CUTTING` in status.ts
@@ -25,8 +25,13 @@
 // somewhere" stays visible instead of looking like completeness.
 
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
 import { describe, expect, it } from 'vitest';
+
+// A RESOLVED DEPENDENCY, not a relative path. The suites used to reach across the tree with
+// `../../../contracts/...`, which silently meant a different directory the moment this file moved —
+// and it did move, out of packages/react. ADR 0002 asks for the dependency form for exactly this.
+const require = createRequire(import.meta.url);
 import { dismissesOnKey, dismissesOnPress } from './dismissal.js';
 import type { DismissalCause, DismissalOptions } from './dismissal.js';
 
@@ -55,10 +60,7 @@ const NEEDS_A_BROWSER: Record<string, string> = {
 };
 
 const SUITE = JSON.parse(
-  readFileSync(
-    fileURLToPath(new URL('../../../contracts/conformance/dismissal.json', import.meta.url)),
-    'utf8',
-  ),
+  readFileSync(require.resolve('@ds/contracts/conformance/dismissal.json'), 'utf8'),
 ) as { primitive: string; cases: Case[] };
 
 describe(`conformance: ${SUITE.primitive}`, () => {

@@ -1,31 +1,32 @@
 #!/usr/bin/env node
 /**
- * `pnpm verify:parity` — the two-backend gate.
+ * `pnpm verify:parity` — the many-backends gate.
  *
- * A second backend created two new ways for this repo to be quietly wrong, and neither produces a
- * build error, a type error or a failing test. That is the category `CLAUDE.md` says must be gated
- * in CI rather than trusted to a reviewer.
+ * More than one backend created ways for this repo to be quietly wrong that produce no build error,
+ * no type error and no failing test. That is the category `CLAUDE.md` says must be gated in CI
+ * rather than trusted to a reviewer.
  *
  * FAILS
- *   drift     a behaviour core duplicated between packages/react and packages/vue is no longer
- *             identical. Those files are framework-free decision logic — the same code, copied
- *             deliberately so a second backend's cost could be measured before it was optimised
- *             away (see the banner at the top of each copy, and docs/research/0004). A copy that
- *             drifts means two backends silently disagree about what Escape does, and the
- *             conformance suites would both still pass, because each runs against its own copy.
- *   element   `X.react.json` and `X.vue.json` disagree about the root ELEMENT. Which element
- *             carries a role is web-platform knowledge, not framework knowledge, and it is
- *             duplicated across the two bindings on purpose. Two bindings disagreeing means one
- *             backend is rendering a different component from the same contract — a <div> where
- *             the other renders a <button>, with every ARIA consequence that follows.
+ *   copies    a framework package contains a copy of a shared behaviour core. These lived in three
+ *             places while a second and third backend were measured against them, and moved into
+ *             `@ds/behavior` once that measurement was complete (docs/research/0005). A reappearing
+ *             copy is a silent fork of the decision logic: that backend's components would answer a
+ *             key differently from every other backend's, and every package would still compile.
+ *   surface   two backends' `behavior` barrels export a different set of names. Each backend wraps
+ *             the SAME primitives in its own binding and re-exports them; a barrel that drifts means
+ *             an emitted component compiles against one backend and not another.
+ *   element   two bindings disagree about a contract's root ELEMENT. Which element carries a role is
+ *             web-platform knowledge, so the two cannot both be right — one backend would render a
+ *             <div> where another renders a <button>, with every ARIA consequence that follows.
  *
  * REPORTS, and does not fail
- *   coverage  a contract with a binding in one framework and not the other. This is a REPORT
- *             because a backend is allowed to lag: the Vue emitter began at zero of fifteen and a
- *             gate would have failed on all of them on day one, which is how a gate gets switched
- *             off. Promoting it is deliberate work, done against a clean baseline.
+ *   coverage  a contract with a binding in one framework and not another. A backend is allowed to
+ *             lag: each one began at zero of fifteen, and a gate would have failed on all of them on
+ *             day one, which is how a gate gets switched off.
  *
- * Both failing checks have a clean baseline today, which is the only reason they are gates.
+ * WHAT THIS GATE NO LONGER DOES, and it is progress rather than a hole: it used to compare three
+ * byte-identical copies of the behaviour cores for drift. There is one copy now, so there is nothing
+ * to compare — `copies` replaces that check by asserting the copies stay gone.
  */
 
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
@@ -36,8 +37,8 @@ const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const readJson = (p) => JSON.parse(readFileSync(p, 'utf8'));
 
 /**
- * Every framework package that holds bindings and an emitter. Adding a third backend means adding
- * one line here, and nothing else in this file.
+ * Every framework package that holds bindings and an emitter. Adding a backend means adding one
+ * line here and nothing else in this file.
  */
 const BACKENDS = [
   { framework: 'react', dir: 'packages/react', suffix: '.react.json' },
@@ -45,52 +46,68 @@ const BACKENDS = [
   { framework: 'angular', dir: 'packages/angular', suffix: '.angular.json' },
 ];
 
-/** The framework-free decision logic that is duplicated rather than shared. */
-const DUPLICATED_CORES = ['dismissal.ts', 'linear-navigation.ts', 'range-stepping.ts'];
+/** The framework-free decision logic. It lives in ONE place and must stay there. */
+const SHARED_CORES = ['dismissal.ts', 'linear-navigation.ts', 'range-stepping.ts'];
 
 const failures = [];
 const reports = [];
 
 // ---------------------------------------------------------------------------------------
-// drift — the duplicated cores must stay identical BELOW their banners
+// copies — a shared core must not reappear inside a framework package
+// ---------------------------------------------------------------------------------------
+for (const backend of BACKENDS) {
+  for (const file of SHARED_CORES) {
+    if (existsSync(join(REPO_ROOT, backend.dir, 'src/behavior', file))) {
+      failures.push(
+        `copies    ${backend.dir}/src/behavior/${file} exists again.\n` +
+          `          Framework-free decision logic lives in packages/behavior. A copy here is a\n` +
+          `          silent fork — every package would still compile, and two backends would\n` +
+          `          disagree about what a key means.`,
+      );
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------------------
+// surface — every backend's behavior barrel must export the same names
 // ---------------------------------------------------------------------------------------
 //
-// Compared below the banner, not whole-file: each copy carries a header saying which file it was
-// copied from and why it has not been moved, so the headers are legitimately different. The banner
-// ends at the first blank line that is not itself a comment — in practice, the line before the
-// first `//` block that the original also has.
-const stripBanner = (src) => {
-  const lines = src.split('\n');
-  // A DUPLICATED copy opens with a banner that ends in a blank line. The original opens with its
-  // own comment immediately. Dropping everything up to and including the first blank line removes
-  // the banner from the copy and the first comment paragraph from the original, which would make
-  // the comparison meaningless — so the banner is recognised by its first line instead.
-  if (!lines[0].startsWith('// DUPLICATED')) return src;
-  const end = lines.findIndex((l, i) => i > 0 && l.trim() === '');
-  return lines.slice(end + 1).join('\n');
+// Parsed with a regex rather than by importing, because these are TypeScript and this script is
+// plain Node. It is looking for export statements, not evaluating them.
+const exportedNames = (file) => {
+  const src = readFileSync(file, 'utf8');
+  const names = new Set();
+  for (const m of src.matchAll(/export\s+(?:type\s+)?\{([^}]*)\}/g)) {
+    for (const raw of m[1].split(',')) {
+      const part = raw.trim();
+      if (!part) continue;
+      // `intentFor as navigationIntentFor` — the exported name is what a consumer sees.
+      const as = part.split(/\s+as\s+/);
+      names.add((as[1] ?? as[0]).trim());
+    }
+  }
+  return names;
 };
 
-const reactBehavior = join(REPO_ROOT, 'packages/react/src/behavior');
-for (const backend of BACKENDS.filter((b) => b.framework !== 'react')) {
-  const dir = join(REPO_ROOT, backend.dir, 'src/behavior');
-  if (!existsSync(dir)) continue;
-  for (const file of DUPLICATED_CORES) {
-    const mine = join(dir, file);
-    const theirs = join(reactBehavior, file);
-    if (!existsSync(mine)) {
-      reports.push(`coverage  ${backend.dir}/src/behavior/${file} does not exist`);
-      continue;
-    }
-    const a = stripBanner(readFileSync(mine, 'utf8')).replace(/\r\n/g, '\n');
-    const b = readFileSync(theirs, 'utf8').replace(/\r\n/g, '\n');
-    if (a !== b) {
+const barrels = BACKENDS.map((b) => ({
+  ...b,
+  file: join(REPO_ROOT, b.dir, 'src/behavior/index.ts'),
+})).filter((b) => existsSync(b.file));
+
+if (barrels.length > 1) {
+  const [first, ...rest] = barrels;
+  const firstNames = exportedNames(first.file);
+  for (const other of rest) {
+    const otherNames = exportedNames(other.file);
+    const missing = [...firstNames].filter((n) => !otherNames.has(n)).sort();
+    const extra = [...otherNames].filter((n) => !firstNames.has(n)).sort();
+    if (missing.length || extra.length) {
       failures.push(
-        `drift     ${backend.dir}/src/behavior/${file} has diverged from ` +
-          `packages/react/src/behavior/${file}.\n` +
-          `          These are ONE piece of framework-free logic held in two places on purpose. ` +
-          `Either\n          re-sync the copy, or move the shared core out of both packages — but not ` +
-          `by\n          letting them drift, because each backend's conformance suite runs against its own\n` +
-          `          copy and both would stay green while the two disagreed.`,
+        `surface   ${other.dir}/src/behavior/index.ts does not export what ${first.dir}'s does.\n` +
+          (missing.length ? `          missing: ${missing.join(', ')}\n` : '') +
+          (extra.length ? `          extra:   ${extra.join(', ')}\n` : '') +
+          `          Every backend wraps the same primitives. A barrel that drifts means an\n` +
+          `          emitted component compiles against one backend and not another.`,
       );
     }
   }
@@ -99,6 +116,12 @@ for (const backend of BACKENDS.filter((b) => b.framework !== 'react')) {
 // ---------------------------------------------------------------------------------------
 // element — the bindings must agree about what is rendered
 // ---------------------------------------------------------------------------------------
+//
+// STILL DUPLICATED, DELIBERATELY, where the behaviour cores no longer are. `element` is
+// web-platform knowledge sitting in a framework artifact, fifteen times per backend, and by
+// @ds/platform-web's own rule it belongs there. It did not move with the rest because a shadow-DOM
+// backend introduces a HOST TAG alongside the internal element, and a shared map designed before
+// anyone has seen that shape is a guess. Gated meanwhile.
 const bindingsFor = (backend) => {
   const dir = join(REPO_ROOT, backend.dir, 'bindings');
   if (!existsSync(dir)) return new Map();
@@ -127,12 +150,11 @@ for (const component of everyComponent) {
   const elements = new Map(
     present.map((b) => [b.framework, byBackend.get(b.framework).get(component).element]),
   );
-  const distinct = new Set(elements.values());
-  if (distinct.size > 1) {
+  if (new Set(elements.values()).size > 1) {
     failures.push(
       `element   ${component} renders a different root element per backend: ` +
         [...elements].map(([f, e]) => `${f}=<${e}>`).join(', ') +
-        `.\n          Which element carries a role is a fact about the WEB PLATFORM, so the two ` +
+        `.\n          Which element carries a role is a fact about the WEB PLATFORM, so the ` +
         `bindings\n          cannot both be right. See packages/platform-web/README.md.`,
     );
   }
@@ -153,5 +175,5 @@ if (failures.length) {
 }
 console.log(
   `\nverify:parity ok — ${backendList}: ${everyComponent.length} contracts bound, ` +
-    `${DUPLICATED_CORES.length} duplicated cores identical.`,
+    `${barrels.length} behaviour barrels agree, ${SHARED_CORES.length} shared cores in one place.`,
 );

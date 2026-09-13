@@ -26,6 +26,8 @@
     "dev": "vite build --watch"
   },
   "dependencies": {
+    "@ds/behavior": "workspace:*",
+    "@ds/emit-web": "workspace:*",
     "@ds/platform-web": "workspace:*"
   },
   "peerDependencies": {

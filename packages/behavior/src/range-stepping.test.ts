@@ -1,4 +1,4 @@
-// Drives the conformance cases in @ds/contracts against this backend's implementation.
+// Drives the conformance cases in @ds/contracts against the one shared implementation.
 //
 // Same shape as linear-navigation.test.ts: the cases are DATA owned by the contracts package, and
 // this file is the React backend's adapter for them. Unlike that suite, nothing here is deferred to
@@ -6,8 +6,13 @@
 // arithmetic had leaked into the hook.
 
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
 import { describe, expect, it } from 'vitest';
+
+// A RESOLVED DEPENDENCY, not a relative path. The suites used to reach across the tree with
+// `../../../contracts/...`, which silently meant a different directory the moment this file moved —
+// and it did move, out of packages/react. ADR 0002 asks for the dependency form for exactly this.
+const require = createRequire(import.meta.url);
 import { apply, fractionOf, intentFor, snap, valueAt } from './range-stepping.js';
 import type { RangeOptions, RangeOrientation } from './range-stepping.js';
 
@@ -28,10 +33,7 @@ interface Case {
 }
 
 const SUITE = JSON.parse(
-  readFileSync(
-    fileURLToPath(new URL('../../../contracts/conformance/range-stepping.json', import.meta.url)),
-    'utf8',
-  ),
+  readFileSync(require.resolve('@ds/contracts/conformance/range-stepping.json'), 'utf8'),
 ) as { primitive: string; cases: Case[] };
 
 function optionsFor(c: Case): RangeOptions {

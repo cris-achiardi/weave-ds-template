@@ -5,42 +5,26 @@ The interaction primitives emitted components **import**. The Vue twin of
 for why this exception to "you own your generated component" exists at all — read that first. In
 short: what you can see, you own; what must be correct, you depend on.
 
-## Two kinds of file, and the difference is the whole point of this directory
+## What is here, and what moved out
 
 ```
-dismissal.ts            \
-linear-navigation.ts     >  PURE CORES — DUPLICATED, byte for byte, from packages/react
-range-stepping.ts       /
-*.test.ts                   the conformance suites, run against those cores
-
-useDismissal.ts         \
-useLinearNavigation.ts   >  the Vue BINDINGS. Genuinely Vue, genuinely different.
+useDismissal.ts         useLinearNavigation.ts   >  the Vue BINDINGS. This is the whole directory now.
 useRangeControl.ts      /
 index.ts                    the public barrel
 ```
 
-### The pure cores are copied, not shared, and that is deliberate
+The decision logic these wrap — `dismissal.ts`, `linear-navigation.ts`, `range-stepping.ts` and
+their conformance suites — **used to sit beside them, copied byte for byte from the React package.**
+It now lives once, in [`@ds/behavior`](../../../behavior/README.md), which explains at length why it
+was duplicated in the first place and what had to be true before it could move.
 
-Each of the three carries a banner saying so. Nothing in them is Vue and nothing in the originals
-was React: each is a function from (event facts, declared options, current state) to a decision, and
-the conformance cases in `@ds/contracts/conformance/` execute against them directly.
+What is left here is genuinely Vue and nothing else: reading an event, and calling a state writer.
 
-By the rule [`@ds/platform-web`](../../../platform-web/README.md) states — _if it would still be
-true in a Vue, Svelte or Lit backend rendering the same DOM, it belongs here_ — these belong in the
-platform package and not in either framework package.
+`pnpm verify:parity` asserts two things about this directory — that no copy of a shared core
+reappears in it, and that its barrel exports the same names as every other backend's. The second is
+what stops an emitted component compiling against one backend and not another.
 
-**They are copied rather than moved because the experiment was to measure what a second backend
-costs.** Moving shared code into the platform layer while building the thing that proves it is
-shared destroys the measurement. The duplication is the finding;
-[`docs/research/0004`](../../../../docs/research/0004-a-second-backend-reading-the-same-contracts.md)
-reports it, and moving it is a separate commit with its own diff.
-
-Until then the copies **must not drift**, and that is gated rather than trusted: `pnpm verify:parity`
-compares each copy against its original below the banner and fails on any difference. The gate is
-not decoration — each backend's conformance suite runs against **its own copy**, so two backends
-could silently disagree about what Escape does while both suites stayed green.
-
-### The bindings differ in exactly one way, consistently
+## The bindings differ in exactly one way, consistently
 
 **Every reactive input is a getter.**
 

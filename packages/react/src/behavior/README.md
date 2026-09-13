@@ -6,6 +6,22 @@ contract layer's behaviour vocabulary.
 **Nothing here is built.** The vocabulary it implements does not exist yet either — see
 `packages/contracts/README.md` "Not built yet".
 
+## What is here, and what moved out
+
+```
+useDismissal.ts         useLinearNavigation.ts   >  the React BINDINGS. This is the whole directory now.
+useRangeControl.ts      /
+index.ts                    the public barrel
+```
+
+The decision logic these wrap was written here and then **copied** into the Vue and Angular packages
+as those backends were built — deliberately, so that what a second and third backend cost could be
+measured before it was optimised away. It now lives once, in
+[`@ds/behavior`](../../../behavior/README.md).
+
+What is left here is React and nothing else: `useCallback`, `useRef`, `useMemo`, and reading an
+event.
+
 ## The deliberate exception
 
 Everywhere else, this project's rule is that a generated component is yours: your file, your repo,

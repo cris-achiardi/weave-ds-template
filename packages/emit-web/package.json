@@ -1,0 +1,20 @@
+{
+  "name": "@ds/emit-web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "What every backend that emits components into an HTML document shares, and nothing that assumes a framework: reading a contract, and the two light-DOM stylesheets.",
+  "exports": {
+    ".": "./index.mjs",
+    "./contract": "./contract.mjs",
+    "./css": "./css.mjs"
+  },
+  "files": [
+    "index.mjs",
+    "contract.mjs",
+    "css.mjs"
+  ],
+  "dependencies": {
+    "@ds/platform-web": "workspace:*"
+  }
+}

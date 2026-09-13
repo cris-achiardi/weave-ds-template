@@ -1,0 +1,19 @@
+{
+  "name": "@ds/behavior",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The decision logic behind the interaction primitives, with no framework and no DOM. One copy, executed against the agnostic conformance cases in @ds/contracts.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./dismissal": "./src/dismissal.ts",
+    "./linear-navigation": "./src/linear-navigation.ts",
+    "./range-stepping": "./src/range-stepping.ts"
+  },
+  "files": [
+    "src"
+  ],
+  "devDependencies": {
+    "@ds/contracts": "workspace:*"
+  }
+}

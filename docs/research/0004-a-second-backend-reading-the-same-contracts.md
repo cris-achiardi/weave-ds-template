@@ -211,11 +211,14 @@ Two more limits worth naming:
 
 ## Open questions
 
-1. **Do the three pure cores, `emitStructure`/`emitTheme`, and the bindings' `element` move into
-   `@ds/platform-web`?** Every one passes that package's stated test. Against: `emitStructure` emits
-   CSS, and a platform package that emits CSS has quietly decided that a backend targets a
-   document — which forecloses exactly the row of the table this report could not test. There may be
-   a fourth layer here (a _web-document_ backend kit) rather than a home in an existing one.
+1. ~~**Do the three pure cores, `emitStructure`/`emitTheme`, and the bindings' `element` move into
+   `@ds/platform-web`?**~~ **ANSWERED, and the answer was "no, and not to one place either."** The
+   suspicion in the second half of this question decided it: `emitStructure` emits CSS, so a platform
+   package holding it would have quietly decided that every backend targets a document. Three homes
+   rather than one — `@ds/behavior` for the pure cores (more agnostic than the web profile, not
+   less), `@ds/emit-web` for the CSS and the contract reading (the fourth layer this question guessed
+   at), and the bindings' `element` left where it is, gated. See open question 2 in
+   [0005](./0005-a-third-backend-and-what-only-it-could-find.md).
 2. **Where does "as the user types" versus "when they are done" get said?** §6. It is a product
    decision the contract currently cannot express, and each emitter answers it by accident.
 3. **Does `data-<prefix>-<axis>` become a specified part of the contract system?** Two backends now

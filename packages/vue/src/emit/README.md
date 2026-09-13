@@ -106,19 +106,19 @@ handler is simply never called, the composed chain still runs, and no error is p
 The reasoning, and the bug each direction produced, is in the React emitter's README. The behaviour
 comes from the same shared primitives, so it cannot diverge silently.
 
-## What the two emitters do NOT share, and why that is not tidied up
+## What the emitters share now
 
-`emitStructure` and `emitTheme` in [`emit.mjs`](./emit.mjs) are ports of the React emitter's
-functions with the framework taken out — and there was nothing to take out. Both emit CSS. The
-generated `structure.css` files in the two sandboxes are byte-identical apart from one comment.
+`emitStructure`, `emitTheme`, `stateSelector`, `partsOf` and the contract loader are **not in this
+file**. They were identical in all three emitters — one half reads JSON, the other emits CSS, and
+neither knows what a framework is — and they now live in
+[`@ds/emit-web`](../../../emit-web/README.md).
 
-They are duplicated rather than shared because **the experiment was to measure what a second backend
-costs**, and sharing a file before measuring it is a guess. The same applies to the three
-framework-free behaviour cores in [`../behavior/`](../behavior/README.md).
+They were duplicated on purpose while a second and third backend were built, so that what a backend
+costs could be measured before it was optimised away. The proof the move was faithful: all three
+backends now emit **byte-identical** `structure.css` for all fifteen contracts.
 
-`pnpm verify:parity` gates the duplication so it cannot drift while nobody is looking.
-[`docs/research/0004`](../../../../docs/research/0004-a-second-backend-reading-the-same-contracts.md)
-reports the measurement, and deduplicating is separate work with its own diff.
+That package is also explicit about where it stops. Every selector it writes is a light-DOM
+descendant selector, and a descendant selector cannot cross a shadow boundary.
 
 ## The assumptions it prints
 

@@ -1,24 +1,6 @@
-// DUPLICATED, BYTE FOR BYTE BELOW THIS BANNER, from packages/react/src/behavior/range-stepping.ts.
+// The pure core of range stepping: no framework, no DOM, no side effects.
 //
-// Nothing in this file is Angular and nothing in the original was React: it is a function from
-// (event facts, declared options, current state) to a decision, and the conformance cases in
-// @ds/contracts/conformance/ execute against it directly. By the rule @ds/platform-web states —
-// "if it would still be true in a Vue, Svelte or Lit backend rendering the same DOM, it belongs
-// here" — this belongs in @ds/platform-web and not in any framework package.
-//
-// THIS IS NOW THE THIRD COPY, and at three copies the argument for leaving it alone is weaker than
-// it was at two. It was copied rather than moved so that a second backend's cost could be MEASURED
-// before it was optimised away; that measurement is taken (docs/research/0004) and a third backend
-// has confirmed it (docs/research/0005). Moving it is the obvious next commit, and it is a separate
-// one with its own diff.
-//
-// Until then the three files must not drift. `pnpm verify:parity` compares them below the banner
-// and fails on any difference — which matters because each backend's conformance suite runs against
-// its OWN copy, so all three could stay green while the components disagreed.
-
-// The pure core of range stepping: no React, no DOM, no side effects.
-//
-// Split from the hook for the same reason `linear-navigation.ts` is: everything below is a
+// Split from the framework bindings for the same reason `linear-navigation.ts` is: everything below is a
 // function from (key or pointer fraction, parameters, current value) to a number, so the
 // conformance cases in packages/contracts/conformance/range-stepping.json can be executed against
 // it directly rather than asserted by reading the code.

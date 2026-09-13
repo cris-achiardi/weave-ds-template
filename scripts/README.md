@@ -12,13 +12,13 @@ earns a place in `pnpm verify`.
 
 ## What is here
 
-| Script                                     | Command                                   | Kind      | What it is for                                                                                            |
-| ------------------------------------------ | ----------------------------------------- | --------- | --------------------------------------------------------------------------------------------------------- |
-| [`init-ds.mjs`](./init-ds.mjs)             | `pnpm init-ds <name> [--dry]`             | codemod   | Brand the template **once**: package scope, token prefix and data-attribute prefix together               |
-| [`verify-docs.mjs`](./verify-docs.mjs)     | `pnpm verify:docs`                        | **gate**  | Every link, path and `pnpm` command named in the docs resolves                                            |
-| [`adr-index.mjs`](./adr-index.mjs)         | `pnpm adr-index` / `pnpm adr-index:check` | generator | The ADR index, derived from the records themselves                                                        |
-| [`verify-figma.mjs`](./verify-figma.mjs)   | `pnpm verify:figma`                       | **gate**  | `.figma/maps/*.json` validate against their schemas, and claim no code path they lack                     |
-| [`verify-parity.mjs`](./verify-parity.mjs) | `pnpm verify:parity`                      | **gate**  | Three backends have not drifted: duplicated behaviour cores identical, bindings agree on the root element |
+| Script                                     | Command                                   | Kind      | What it is for                                                                                                    |
+| ------------------------------------------ | ----------------------------------------- | --------- | ----------------------------------------------------------------------------------------------------------------- |
+| [`init-ds.mjs`](./init-ds.mjs)             | `pnpm init-ds <name> [--dry]`             | codemod   | Brand the template **once**: package scope, token prefix and data-attribute prefix together                       |
+| [`verify-docs.mjs`](./verify-docs.mjs)     | `pnpm verify:docs`                        | **gate**  | Every link, path and `pnpm` command named in the docs resolves                                                    |
+| [`adr-index.mjs`](./adr-index.mjs)         | `pnpm adr-index` / `pnpm adr-index:check` | generator | The ADR index, derived from the records themselves                                                                |
+| [`verify-figma.mjs`](./verify-figma.mjs)   | `pnpm verify:figma`                       | **gate**  | `.figma/maps/*.json` validate against their schemas, and claim no code path they lack                             |
+| [`verify-parity.mjs`](./verify-parity.mjs) | `pnpm verify:parity`                      | **gate**  | Backends have not drifted: no shared core copied back into one, barrels agree, bindings agree on the root element |
 
 ## The rule these follow
 

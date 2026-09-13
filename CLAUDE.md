@@ -34,7 +34,9 @@ a record. The build step is mid-migration: the library is moving to contract-dri
 ```
 packages/contracts/ @ds/contracts — THE PRODUCT. Agnostic component contracts + their schema
 packages/tokens/   @ds/tokens — DTCG JSON -> CSS custom properties + TS constants
+packages/behavior/  @ds/behavior — what Escape means, where an arrow goes. No framework, no DOM
 packages/platform-web/ @ds/platform-web — the web platform as data. Every WEB backend reads it
+packages/emit-web/ @ds/emit-web — what every DOM-emitting backend shares: contract reading + CSS
 packages/react/    @ds/react  — a backend: React bindings, emitter, behaviour primitives
 packages/vue/      @ds/vue    — a second backend, same shape. It exists to TEST the contract
 packages/angular/  @ds/angular — a third. Attaches to elements rather than rendering them

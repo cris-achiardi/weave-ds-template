@@ -120,16 +120,19 @@ A constructor is one; an `afterNextRender` callback is not. Calling `inject(Dest
 callback throws NG0203 at the first render and takes the page down. The emitter captures it in the
 constructor and closes over it.
 
-## What the three emitters do NOT share, and why that is not tidied up
+## What the emitters share now
 
-`emitStructure` and `emitTheme` are now in their **third** copy, and there was never anything
-framework-specific to remove — both emit CSS. So are the three pure behaviour cores in
-[`../behavior/`](../behavior/README.md).
+`emitStructure`, `emitTheme`, `stateSelector`, `partsOf` and the contract loader are **not in this
+file**. They were identical in all three emitters — one half reads JSON, the other emits CSS, and
+neither knows what a framework is — and they now live in
+[`@ds/emit-web`](../../../emit-web/README.md).
 
-They were duplicated so that a second backend's cost could be measured before it was optimised away.
-That measurement is taken and a third backend has confirmed it, so the argument for leaving them
-alone is weaker than it was — deduplicating is the obvious next commit, and it is a separate one
-with its own diff. `pnpm verify:parity` gates the duplication so it cannot drift meanwhile.
+They were duplicated on purpose while a second and third backend were built, so that what a backend
+costs could be measured before it was optimised away. The proof the move was faithful: all three
+backends now emit **byte-identical** `structure.css` for all fifteen contracts.
+
+That package is also explicit about where it stops. Every selector it writes is a light-DOM
+descendant selector, and a descendant selector cannot cross a shadow boundary.
 
 ## The assumptions it prints
 

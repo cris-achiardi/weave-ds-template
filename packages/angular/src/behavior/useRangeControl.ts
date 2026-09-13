@@ -1,9 +1,9 @@
 import { computed, signal } from '@angular/core';
 import type { Signal } from '@angular/core';
-import { apply, fractionOf, intentFor, snap, valueAt } from './range-stepping.js';
-import type { RangeOptions } from './range-stepping.js';
+import { apply, fractionOf, intentFor, snap, valueAt } from '@ds/behavior/range-stepping';
+import type { RangeOptions } from '@ds/behavior/range-stepping';
 
-export type { RangeIntent, RangeOptions, RangeOrientation } from './range-stepping.js';
+export type { RangeIntent, RangeOptions, RangeOrientation } from '@ds/behavior/range-stepping';
 
 export interface RangeControl {
   /** Goes on the component's host, alongside the pointer handlers. */
@@ -20,7 +20,7 @@ export interface RangeControl {
 /**
  * A number in a range, operated by keyboard and pointer.
  *
- * The arithmetic lives in ./range-stepping.ts as pure functions, so it can be executed against the
+ * The arithmetic lives in @ds/behavior as pure functions, so it can be executed against the
  * conformance cases in `@ds/contracts/conformance/range-stepping.json`. This is the Angular binding
  * around it: the track's box, pointer capture, and the drag.
  *

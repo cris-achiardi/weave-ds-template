@@ -1,6 +1,6 @@
 import { computed, shallowRef, triggerRef } from 'vue';
-import { intentFor, navigable, resolve, tabStop } from './linear-navigation.js';
-import type { Member, NavigationOptions } from './linear-navigation.js';
+import { intentFor, navigable, resolve, tabStop } from '@ds/behavior/linear-navigation';
+import type { Member, NavigationOptions } from '@ds/behavior/linear-navigation';
 
 export type {
   DisabledItems,
@@ -8,7 +8,7 @@ export type {
   Member,
   NavigationOptions,
   Orientation,
-} from './linear-navigation.js';
+} from '@ds/behavior/linear-navigation';
 
 /** What a member hands the collection when it mounts. */
 export interface MemberRegistration {
@@ -30,7 +30,7 @@ export interface LinearNavigation {
  * Moving between the members of a collection with the arrow keys, and keeping exactly one of them
  * in the page's tab sequence.
  *
- * The decision logic is in ./linear-navigation.ts as pure functions, so the cases in
+ * The decision logic is in @ds/behavior as pure functions, so the cases in
  * `@ds/contracts/conformance/linear-navigation.json` execute against it. This composable is the Vue
  * binding: the registry, document order, and moving focus.
  *

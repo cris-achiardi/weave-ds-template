@@ -204,12 +204,26 @@ README were exercised in Chrome and passed; that is less than the React page's b
    was. The blast radius turned out to be eight lines of generated output across React and Vue and
    none in Angular, and `packages/platform-web/conformance/aria-mapping.json` now pins it as
    `native-disabled-must-not-render-false`.
-2. **Move the duplicated cores, the CSS emitters and the bindings' `element` out of the framework
-   packages.** The measurement they existed to protect is complete. The open part is _where_:
-   `emitStructure` emits CSS, and a platform package that emits CSS has quietly decided every
-   backend targets a document — which forecloses the row of the table above that nothing has tested.
-   There may be a fourth layer here (a _web-document backend kit_) rather than a home in an existing
-   one.
+2. ~~**Move the duplicated cores, the CSS emitters and the bindings' `element` out of the framework
+   packages.**~~ **CLOSED**, in its own commit. The answer was three homes rather than one, and the
+   suspicion in this question is what decided the split:
+
+   - **`@ds/behavior`** — the three pure cores and their conformance suites, in one copy. NOT in
+     `@ds/platform-web`: none of them needs a DOM and all would be true in React Native, so they are
+     _more_ agnostic than the web profile and a home inside it would have been a demotion.
+   - **`@ds/emit-web`** — contract reading and the two stylesheets. This is the fourth layer this
+     question guessed at. Its README is explicit that every selector it writes is a light-DOM
+     descendant selector, and that it stops at a shadow boundary.
+   - **The bindings' `element` stays duplicated and gated**, because a shadow-DOM backend introduces
+     a host tag alongside the internal element, and a shared map designed before anyone has seen that
+     shape is a guess.
+
+   Proof the move was faithful: all three backends now emit **byte-identical** `structure.css` for
+   all fifteen contracts, and the only change to committed output across 38 files was one comment
+   line. `verify:parity` lost its drift check — with one copy there is nothing to drift — and gained
+   two: no core may reappear in a framework package, and the three behaviour barrels must export the
+   same names.
+
 3. **Specify `data-<prefix>-<axis>`.** Three backends depend on it and nothing defines it.
 4. **Where does "as the user types" versus "when they are done" get said?** Carried over from 0004,
    now with a 2–1 split behind it.

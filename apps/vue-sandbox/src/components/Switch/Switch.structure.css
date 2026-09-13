@@ -9,7 +9,7 @@
  * harder to catch than one that does not.
  *
  * So Switch's real layout currently lives in Switch.theme.css — the CONSUMER's file,
- * which is the wrong place for it. See docs/research/0002 and docs/research/0004.
+ * which is the wrong place for it. See docs/research/0002.
  */
 
 [data-ds-component='Switch'] {

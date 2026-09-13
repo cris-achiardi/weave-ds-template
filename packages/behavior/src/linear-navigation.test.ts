@@ -1,4 +1,4 @@
-// Drives the conformance cases in @ds/contracts against this backend's implementation.
+// Drives the conformance cases in @ds/contracts against the one shared implementation.
 //
 // The cases are DATA, transcribed from the W3C ARIA APG and owned by the contracts package. This
 // file is the React adapter for them: it reads the same JSON a Vue backend would read and asserts
@@ -10,8 +10,13 @@
 // the gap between "tested here" and "verified somewhere" stays visible.
 
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
 import { describe, expect, it } from 'vitest';
+
+// A RESOLVED DEPENDENCY, not a relative path. The suites used to reach across the tree with
+// `../../../contracts/...`, which silently meant a different directory the moment this file moved —
+// and it did move, out of packages/react. ADR 0002 asks for the dependency form for exactly this.
+const require = createRequire(import.meta.url);
 import { intentFor, navigable, resolve, tabStop } from './linear-navigation.js';
 import type { DisabledItems, Member, NavigationOptions, Orientation } from './linear-navigation.js';
 
@@ -40,12 +45,7 @@ interface Case {
 }
 
 const SUITE = JSON.parse(
-  readFileSync(
-    fileURLToPath(
-      new URL('../../../contracts/conformance/linear-navigation.json', import.meta.url),
-    ),
-    'utf8',
-  ),
+  readFileSync(require.resolve('@ds/contracts/conformance/linear-navigation.json'), 'utf8'),
 ) as { primitive: string; cases: Case[] };
 
 /**

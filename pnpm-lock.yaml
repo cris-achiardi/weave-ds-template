@@ -119,6 +119,12 @@ importers:
 
   packages/angular:
     dependencies:
+      '@ds/behavior':
+        specifier: workspace:*
+        version: link:../behavior
+      '@ds/emit-web':
+        specifier: workspace:*
+        version: link:../emit-web
       '@ds/platform-web':
         specifier: workspace:*
         version: link:../platform-web
@@ -139,12 +145,30 @@ importers:
         specifier: ^4.5.0
         version: 4.5.4(@types/node@24.13.3)(rollup@4.62.4)(typescript@5.9.3)(vite@7.3.6(@types/node@24.13.3)(lightningcss@1.33.0)(sass@1.101.0)(yaml@2.9.0))
 
+  packages/behavior:
+    devDependencies:
+      '@ds/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+
   packages/contracts: {}
+
+  packages/emit-web:
+    dependencies:
+      '@ds/platform-web':
+        specifier: workspace:*
+        version: link:../platform-web
 
   packages/platform-web: {}
 
   packages/react:
     dependencies:
+      '@ds/behavior':
+        specifier: workspace:*
+        version: link:../behavior
+      '@ds/emit-web':
+        specifier: workspace:*
+        version: link:../emit-web
       '@ds/platform-web':
         specifier: workspace:*
         version: link:../platform-web
@@ -188,6 +212,12 @@ importers:
 
   packages/vue:
     dependencies:
+      '@ds/behavior':
+        specifier: workspace:*
+        version: link:../behavior
+      '@ds/emit-web':
+        specifier: workspace:*
+        version: link:../emit-web
       '@ds/platform-web':
         specifier: workspace:*
         version: link:../platform-web

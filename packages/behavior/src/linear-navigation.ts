@@ -1,23 +1,6 @@
-// DUPLICATED, BYTE FOR BYTE BELOW THIS BANNER, from packages/react/src/behavior/linear-navigation.ts.
+// The pure core of linear navigation: no framework, no DOM, no side effects.
 //
-// Nothing in this file is Vue and nothing in the original was React: it is a function from (event
-// facts, declared options, current state) to a decision, and the conformance cases in
-// @ds/contracts/conformance/ execute against it directly. By the rule @ds/platform-web states —
-// "if it would still be true in a Vue, Svelte or Lit backend rendering the same DOM, it belongs
-// here" — this belongs in @ds/platform-web and not in either framework package.
-//
-// IT IS COPIED RATHER THAN MOVED ON PURPOSE. The experiment this backend exists to run is "what
-// does a second backend cost, and what did we have to change to get it", and moving shared code
-// into the platform layer while building the thing that proves it is shared destroys the
-// measurement. The duplication is the finding; docs/research/0004 reports it, and moving it is a
-// separate commit with its own diff.
-//
-// Until then these two files must not drift. They are identical, and the test suites beside them
-// execute the same conformance cases against both.
-
-// The pure core of linear navigation: no React, no DOM, no side effects.
-//
-// It is separated from the hook on purpose. Everything below is a function from (key, parameters,
+// It is separated from the framework bindings on purpose. Everything below is a function from (key, parameters,
 // member list) to a decision, which means the conformance cases in
 // packages/contracts/conformance/linear-navigation.json can be executed against it directly
 // instead of being asserted by reading the code.

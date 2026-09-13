@@ -9,7 +9,7 @@
  * harder to catch than one that does not.
  *
  * So Accordion's real layout currently lives in Accordion.theme.css — the CONSUMER's file,
- * which is the wrong place for it. See docs/research/0002 and docs/research/0005.
+ * which is the wrong place for it. See docs/research/0002.
  */
 
 [data-ds-component='Accordion'] {

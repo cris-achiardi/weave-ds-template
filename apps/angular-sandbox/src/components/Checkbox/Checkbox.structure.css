@@ -9,14 +9,14 @@
  * harder to catch than one that does not.
  *
  * So Checkbox's real layout currently lives in Checkbox.theme.css — the CONSUMER's file,
- * which is the wrong place for it. See docs/research/0002 and docs/research/0005.
+ * which is the wrong place for it. See docs/research/0002.
  */
 
 [data-ds-component='Checkbox'] {
   /* the scoping handle. Everything else is yours, for now. */
 }
 
-/* Hiding is a contract claim, not a style. See the note in the emitter. */
+/* Hiding is a contract claim, not a style. See the note in @ds/emit-web. */
 [data-ds-component='Checkbox'][hidden],
 [data-ds-component='Checkbox'] [hidden] {
   display: none !important;

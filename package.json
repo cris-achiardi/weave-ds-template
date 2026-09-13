@@ -30,7 +30,7 @@
     "verify:parity": "node scripts/verify-parity.mjs",
     "verify:figma": "node scripts/verify-figma.mjs",
     "verify:docs": "node scripts/verify-docs.mjs",
-    "typecheck": "tsc --noEmit -p packages/react/tsconfig.json && tsc --noEmit -p apps/react-sandbox/tsconfig.json && tsc --noEmit -p packages/vue/tsconfig.json && pnpm --filter vue-sandbox typecheck && tsc --noEmit -p packages/angular/tsconfig.json && pnpm --filter angular-sandbox typecheck",
+    "typecheck": "tsc --noEmit -p packages/behavior/tsconfig.json && tsc --noEmit -p packages/react/tsconfig.json && tsc --noEmit -p apps/react-sandbox/tsconfig.json && tsc --noEmit -p packages/vue/tsconfig.json && pnpm --filter vue-sandbox typecheck && tsc --noEmit -p packages/angular/tsconfig.json && pnpm --filter angular-sandbox typecheck",
     "test": "vitest run --passWithNoTests",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

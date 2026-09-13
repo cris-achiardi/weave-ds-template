@@ -5,42 +5,26 @@ The interaction primitives emitted components **import**. The Angular twin of
 for why this exception to "you own your generated component" exists at all — read that first. In
 short: what you can see, you own; what must be correct, you depend on.
 
-## Two kinds of file
+## What is here, and what moved out
 
 ```
-dismissal.ts            \
-linear-navigation.ts     >  PURE CORES — DUPLICATED, byte for byte, from packages/react
-range-stepping.ts       /
-*.test.ts                   the conformance suites, run against those cores
-
-useDismissal.ts         \
-useLinearNavigation.ts   >  the Angular BINDINGS.
+useDismissal.ts         useLinearNavigation.ts   >  the Angular BINDINGS. This is the whole directory now.
 useRangeControl.ts      /
 index.ts                    the public barrel
 ```
 
-### The pure cores are in their THIRD copy, and that is now the finding
+The decision logic these wrap — `dismissal.ts`, `linear-navigation.ts`, `range-stepping.ts` and
+their conformance suites — **used to sit beside them, copied byte for byte from the React package.**
+It now lives once, in [`@ds/behavior`](../../../behavior/README.md), which explains at length why it
+was duplicated in the first place and what had to be true before it could move.
 
-Each carries a banner saying so. Nothing in them is Angular and nothing in the originals was React:
-each is a function from (event facts, declared options, current state) to a decision, and the
-conformance cases in `@ds/contracts/conformance/` execute against them directly.
+What is left here is genuinely Angular and nothing else: reading an event, and calling a state writer.
 
-By the rule [`@ds/platform-web`](../../../platform-web/README.md) states — _if it would still be
-true in a Vue, Svelte or Lit backend rendering the same DOM, it belongs here_ — these belong in the
-platform package and not in any framework package.
+`pnpm verify:parity` asserts two things about this directory — that no copy of a shared core
+reappears in it, and that its barrel exports the same names as every other backend's. The second is
+what stops an emitted component compiling against one backend and not another.
 
-They were copied rather than moved so a second backend's cost could be **measured** before it was
-optimised away. That measurement is taken ([`docs/research/0004`](../../../../docs/research/0004-a-second-backend-reading-the-same-contracts.md))
-and a third backend has confirmed it ([`0005`](../../../../docs/research/0005-a-third-backend-and-what-only-it-could-find.md)).
-**At three copies the argument for leaving them alone is weaker than it was at two**, and moving
-them is the obvious next commit — a separate one, with its own diff.
-
-Until then the three must not drift, and that is gated rather than trusted: `pnpm verify:parity`
-compares every copy against the original below its banner and fails on any difference. The gate is
-not decoration — each backend's conformance suite runs against **its own copy**, so all three could
-stay green while the three components disagreed about what Escape does.
-
-### The bindings: everything reactive is a getter, plus one Angular-only addition
+## The bindings: everything reactive is a getter, plus one Angular-only addition
 
 ```ts
 useDismissal(
