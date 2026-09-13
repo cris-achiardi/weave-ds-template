@@ -1,0 +1,63 @@
+{
+  "_doc": "How this framework spells the agnostic vocabulary. The canon — which axes exist, their canonical values, the anti-synonym glossary — lives in @ds/contracts/prop-canon.json and is framework-free. This file holds ONLY the places Angular's idiom differs from it.",
+  "_why": "A contract says a component has a selection that can be controlled. It does not say whether that is `value` + `onValueChange`, `modelValue` + `update:modelValue`, or `[(value)]`, because that is a framework's business and not the specification's. Three backends now spell it three ways and the contract was not edited for any of them.",
+  "_regenerate": "Hand-maintained. Nothing generates this file.",
+  "conventions": {
+    "propCase": "camelCase. Angular does not normalise case in templates the way Vue does, so a `readOnly` input is written `[readOnly]` and NOT `read-only`. This is the one place a consumer moving between the Vue and Angular builds must change what they type.",
+    "valueCase": "kebab-case — identical to the canon",
+    "eventPrefix": "none on the declaring side. A `model()` produces an output named `<X>Change`, which is what makes `[(X)]` work; `output()` would be used for anything else.",
+    "booleanNaming": "bare adjective, as the canon requires. Angular needs no deviation."
+  },
+  "_selectorDoc": "THE FIELD WITH NO COUNTERPART IN THE OTHER TWO BACKENDS. An Angular component does not render its own root element; it ATTACHES to one chosen by its selector. So a binding's `element` compiles here into an attribute selector rather than into markup, and a consumer writes the element themselves.",
+  "selectorRule": {
+    "pattern": "<element>[ds<Name>]",
+    "examples": {
+      "Button": "button[dsButton] — consumer writes <button dsButton hierarchy=\"primary\">",
+      "Accordion": "div[dsAccordion] — consumer writes <div dsAccordion>",
+      "TextField": "input[dsTextField] — consumer writes <input dsTextField>"
+    },
+    "note": "The alternative — an element selector like `ds-button` — was rejected and the reason is not taste. It would make the host a custom element, and a <ds-button> is not a button: no native focus, no native `disabled`, no implicit role, no form participation. @ds/platform-web records all four as facts about `button`, and a backend that quietly discarded them would be compiling a different component from the same contract. It would also break the shared stylesheet, because the theme file dresses the element the contract named.",
+    "cost": "A consumer types more than in React or Vue, and for a `div`-rooted component (`<div dsAccordion>`) it reads oddly. That is a real cost of keeping the DOM honest, and it is Angular's, not the contract's."
+  },
+  "_controlRulesDoc": "How Angular spells each `control` value from a contract's `states`. THESE ARE RULES, NOT A TABLE: one entry per control value covers every state in the library. `X` is the state name in camelCase.",
+  "controlRules": {
+    "consumer": {
+      "emits": ["readonly X = input<boolean>(<contract default>)"],
+      "note": "One signal input. Identical in shape to React and Vue, because there is nothing two-way about a value the user cannot change."
+    },
+    "shared": {
+      "emits": ["readonly X = model<boolean>(<contract default>)"],
+      "note": "ONE declaration, where React needs three props. `model()` creates the `X` input and the `XChange` output together and returns a writable signal, so a consumer writes `[(X)]` to control it, `[X]` alone to seed it, or nothing and lets the component own it. THIS IS THE SAME COLLAPSE VUE MAKES, REACHED INDEPENDENTLY — two of three backends spend one declaration on `control: shared` and the odd one out is React, whose trio is a workaround for having no two-way binding. That is the strongest evidence in the repo that ADR 0004 described the state rather than React's spelling of it."
+    },
+    "internal": {
+      "emits": [],
+      "note": "NO public input. The state still reaches CSS — as a native pseudo-class where the platform owns one, otherwise as a data attribute — but nothing outside can set it. Identical across all three backends."
+    }
+  },
+  "_slotsDoc": "A contract's `composition.slots` becomes CONTENT PROJECTION: `<ng-content select=\"[slot=x]\">`, filled by a consumer writing `<span slot=\"label\">`. Closer to Vue's named slots than to React's ReactNode props, but not the same thing — projection selects on the DOM, so the consumer supplies a real element to carry the marker, where a Vue `<template #label>` supplies none.",
+  "slotRules": {
+    "named": {
+      "emits": ["<ng-content select=\"[slot=x]\" /> at the part the contract names"],
+      "note": "The `slot` attribute is borrowed from the web-components idiom deliberately: it is already a standard attribute name for exactly this, so it needs no prefix and collides with nothing."
+    },
+    "children": {
+      "emits": ["<ng-content />"],
+      "note": "The contract's `composition.children`. Angular's default projection."
+    }
+  },
+  "_axisOverridesDoc": "Axis name -> the Angular input that carries it, for the rare case where the canonical name collides with a reserved or conventional Angular input. Empty means every axis is spelled exactly as the canon spells it, which is the desired state. Every entry needs a reason: a rename with no reason is drift with paperwork.",
+  "axisOverrides": {},
+  "_behaviorBindingDoc": "Behaviour vocabulary primitive -> the Angular implementation that satisfies it.",
+  "behaviorBindings": {
+    "dismissal": "useDismissal from @ds/angular/behavior",
+    "linear-navigation": "useLinearNavigation from @ds/angular/behavior",
+    "range-stepping": "useRangeControl from @ds/angular/behavior"
+  },
+  "_whatAngularSuppliesThatTheOthersDoNot": "Recorded because each is emitter work the other two backends need and this one does not.",
+  "suppliedByTheFramework": {
+    "event handler composition": "FREE, and it is the only backend where it is. Angular attaches host listeners with addEventListener rather than assigning a prop, so a consumer's own `(click)` and the component's host `(click)` BOTH fire, in DOM order, with no emitter involvement. React has to compose the chain by hand and Vue has to compose it by hand after turning attribute fallthrough off.",
+    "class passthrough": "The consumer writes the host element, so their `class` is simply on it. There is no passthrough to decide.",
+    "reaching the host element": "`inject(ElementRef)`. No template ref, no forwarded ref, no `$el`.",
+    "identity attributes": "A consumer cannot overwrite a host binding by writing a static attribute, because the binding is applied by the component after the template's own attributes. React had to spread props BEFORE identity attributes to get this; Vue had to disable attribute fallthrough entirely."
+  }
+}

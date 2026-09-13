@@ -104,10 +104,26 @@ if (from !== 'ds') {
 
 // Order matters: `data-ds-` must be rewritten before the bare `--ds-`/`@ds/` rules, or a partial
 // match leaves a half-renamed attribute.
+//
+// THE FOURTH RULE IS THE ANGULAR SELECTOR, and it is a fourth syntax of the same one decision.
+// An Angular component attaches to an element through an attribute selector built from the prefix
+// and the component name — `button[dsButton]`, written by a consumer as `<button dsButton>`. The
+// emitter derives it from `ds.config.json` like everything else, so a rename that skipped it would
+// leave already-generated components answering to `dsButton` while the emitter produced
+// `weaveButton`: a repo that builds green, passes every gate, and breaks the next time anyone
+// regenerates. That is precisely the half-rename this codemod exists to prevent.
+//
+// The word-boundary rule is tight enough to be safe because identifiers of the shape `ds<Capital>` are
+// RESERVED for this family — two unrelated locals called `dsConfig` were renamed when this rule
+// landed, rather than widening the regex to dodge them.
 const RULES = [
   [new RegExp(`data-${from}-`, 'g'), `data-${name}-`],
   [new RegExp(`@${from}/`, 'g'), `@${name}/`],
   [new RegExp(`--${from}-`, 'g'), `--${name}-`],
+  // `String.raw`, because in an ordinary template literal \b is the BACKSPACE
+  // character rather than a word boundary. The rule then matches nothing at all, silently,
+  // which is the only way a codemod can be wrong and still look finished.
+  [new RegExp(String.raw`\b${from}(?=[A-Z])`, 'g'), name],
 ];
 
 function* walk(dir) {

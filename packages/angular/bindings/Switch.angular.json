@@ -1,0 +1,10 @@
+{
+  "$schema": "./binding.schema.json",
+  "component": "Switch",
+  "contract": "../../contracts/components/Switch/Switch.contract.json",
+  "framework": "angular",
+  "element": "button",
+  "notes": [
+    "`checked` is `control: shared`, and Angular spells that as one `model()` — the same collapse Vue's `defineModel` makes, reached independently. Three props in React, one declaration in both others."
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "$schema": "./binding.schema.json",
+  "component": "Dialog",
+  "contract": "../../contracts/components/Dialog/Dialog.contract.json",
+  "framework": "angular",
+  "element": "dialog",
+  "notes": [
+    "Attaches to a native <dialog>. The open/close call has to happen after the DOM exists, which in Angular is an `effect()` rather than React's useEffect or Vue's post-flush watcher. See @ds/platform-web > visibility."
+  ]
+}

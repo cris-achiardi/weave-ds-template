@@ -1,0 +1,144 @@
+/*
+ * Button — THE CONSUMER'S FILE. Emitted once, empty, never regenerated.
+ *
+ * Note what the emitter produced here that it could not produce before: a socket per AXIS VALUE.
+ * `whenAxis` had sat in the schema unread since before this branch; this is the first component to
+ * use it, and the selectors below were generated from it rather than written by hand.
+ */
+
+/* --- structure, in the wrong file: the contract has no `layout` block -------------------- */
+[data-ds-component='Button'] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+}
+[data-ds-component='Button']:disabled {
+  cursor: not-allowed;
+}
+[data-ds-component='Button'] [data-ds-part='label'] {
+  white-space: nowrap;
+}
+[data-ds-component='Button'] [data-ds-part='icon-start']:empty,
+[data-ds-component='Button'] [data-ds-part='icon-end']:empty {
+  display: none;
+}
+/* --- end of misplaced structure ---------------------------------------------------------- */
+
+[data-ds-component='Button'] {
+  border-radius: 0.4rem;
+  font-weight: 500;
+  gap: 0.45rem;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease;
+}
+
+/* hierarchy = primary */
+[data-ds-component='Button'][data-ds-hierarchy='primary'] {
+  background: #5146e6;
+  color: #ffffff;
+  border-color: #5146e6;
+}
+
+/* hierarchy = secondary */
+[data-ds-component='Button'][data-ds-hierarchy='secondary'] {
+  background: #26262b;
+  color: #e8e8ea;
+  border-color: #3f3f47;
+}
+
+/* hierarchy = tertiary */
+[data-ds-component='Button'][data-ds-hierarchy='tertiary'] {
+  background: transparent;
+  color: #b9b9c2;
+  border-color: transparent;
+}
+
+/* variant = danger, crossed with hierarchy — the pair the two axes exist to express */
+[data-ds-component='Button'][data-ds-variant='danger'][data-ds-hierarchy='primary'] {
+  background: #c4342b;
+  border-color: #c4342b;
+}
+[data-ds-component='Button'][data-ds-variant='danger'][data-ds-hierarchy='secondary'] {
+  color: #f0736a;
+  border-color: #5e2c28;
+}
+[data-ds-component='Button'][data-ds-variant='danger'][data-ds-hierarchy='tertiary'] {
+  color: #f0736a;
+}
+[data-ds-component='Button'][data-ds-variant='brand'][data-ds-hierarchy='secondary'] {
+  color: #a99fff;
+  border-color: #3b3480;
+}
+
+/* size = s */
+[data-ds-component='Button'][data-ds-size='s'] {
+  padding-inline: 0.6rem;
+  min-block-size: 28px;
+  font-size: 0.8rem;
+}
+
+/* size = m */
+[data-ds-component='Button'][data-ds-size='m'] {
+  padding-inline: 0.85rem;
+  min-block-size: 34px;
+  font-size: 0.875rem;
+}
+
+/* size = l */
+[data-ds-component='Button'][data-ds-size='l'] {
+  padding-inline: 1.15rem;
+  min-block-size: 42px;
+  font-size: 0.95rem;
+}
+
+/* state: hover */
+[data-ds-component='Button']:hover:not(:disabled) {
+  filter: brightness(1.14);
+}
+
+/* state: active */
+[data-ds-component='Button']:active:not(:disabled) {
+  filter: brightness(0.92);
+}
+
+/* state: disabled */
+[data-ds-component='Button']:disabled {
+  opacity: 0.45;
+}
+
+/* state: focus-visible */
+[data-ds-component='Button']:focus-visible {
+  outline: 2px solid #8b83f0;
+  outline-offset: 2px;
+}
+
+/* state: loading — the contract says the label must not move, so the spinner takes the icon slot */
+[data-ds-component='Button'][data-ds-state-loading] {
+  cursor: progress;
+}
+[data-ds-component='Button'][data-ds-state-loading] [data-ds-part='icon-start'] {
+  display: inline-flex;
+  inline-size: 0.85em;
+  block-size: 0.85em;
+  border: 2px solid currentColor;
+  border-block-start-color: transparent;
+  border-radius: 999px;
+  animation: ds-button-spin 620ms linear infinite;
+}
+
+@keyframes ds-button-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+[data-ds-component='Button'] [data-ds-part='icon-start'],
+[data-ds-component='Button'] [data-ds-part='icon-end'] {
+  inline-size: 1em;
+  block-size: 1em;
+}

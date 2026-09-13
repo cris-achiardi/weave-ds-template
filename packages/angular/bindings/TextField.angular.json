@@ -1,0 +1,11 @@
+{
+  "$schema": "./binding.schema.json",
+  "component": "TextField",
+  "contract": "../../contracts/components/TextField/TextField.contract.json",
+  "framework": "angular",
+  "element": "input",
+  "notes": [
+    "Attaches to a native <input>, which edits its own value.",
+    "Angular binds the DOM's OWN `input` event, as Vue does. React's `onChange` is React's synthetic per-keystroke event and has no counterpart here — two of the three backends reach the same answer and the odd one out is the framework with its own event system."
+  ]
+}

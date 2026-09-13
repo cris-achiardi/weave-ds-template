@@ -42,6 +42,7 @@ const readJson = (p) => JSON.parse(readFileSync(p, 'utf8'));
 const BACKENDS = [
   { framework: 'react', dir: 'packages/react', suffix: '.react.json' },
   { framework: 'vue', dir: 'packages/vue', suffix: '.vue.json' },
+  { framework: 'angular', dir: 'packages/angular', suffix: '.angular.json' },
 ];
 
 /** The framework-free decision logic that is duplicated rather than shared. */

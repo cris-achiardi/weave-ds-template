@@ -1,0 +1,8 @@
+{
+  "$schema": "./binding.schema.json",
+  "component": "RadioGroup",
+  "contract": "../../contracts/components/RadioGroup/RadioGroup.contract.json",
+  "framework": "angular",
+  "element": "div",
+  "notes": ["A collection. Same injector protocol as Tabs."]
+}

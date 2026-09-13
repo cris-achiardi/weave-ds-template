@@ -1,0 +1,10 @@
+{
+  "//": "THE BUILD config, and it exists only because of one flag. `tsconfig.json` beside it sets `noEmit: true`, which is correct for `pnpm typecheck` and fatal here: @analogjs/vite-plugin-angular uses this file to drive a real TypeScript emit, so `noEmit` makes it emit an EMPTY MODULE for every file — no error, no warning, a served file containing nothing but a sourcemap comment, and a page that renders blank. Real Angular projects carry this same pair of files for the same reason.",
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "declaration": false,
+    "sourceMap": true
+  },
+  "include": ["src/**/*.ts"]
+}

@@ -1,0 +1,41 @@
+{
+  "name": "@ds/angular",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Angular component library. The third backend: Angular bindings, emitter, behaviour primitives.",
+  "main": "./dist/index.cjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./behavior": {
+      "types": "./dist/behavior/index.d.ts",
+      "import": "./dist/behavior.js",
+      "require": "./dist/behavior.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch"
+  },
+  "dependencies": {
+    "@ds/platform-web": "workspace:*"
+  },
+  "peerDependencies": {
+    "@angular/core": "^21.0.0"
+  },
+  "devDependencies": {
+    "@angular/core": "^21.0.0",
+    "@ds/tokens": "workspace:*",
+    "rxjs": "^7.8.0",
+    "vite": "^7.0.0",
+    "vite-plugin-dts": "^4.5.0"
+  }
+}

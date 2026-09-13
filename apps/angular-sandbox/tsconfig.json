@@ -1,0 +1,16 @@
+{
+  "//": "The sandbox is typechecked because it is where GENERATED components land. Angular needs `experimentalDecorators: false` and `useDefineForClassFields: false`: Angular 21 uses standard TC39 decorators, and class fields must be assigned rather than defined or a signal input's initializer is clobbered.",
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["vite/client"],
+    "experimentalDecorators": false,
+    "useDefineForClassFields": false,
+    "baseUrl": ".",
+    "paths": {
+      "@ds/angular/behavior": ["../../packages/angular/src/behavior/index.ts"],
+      "@ds/angular": ["../../packages/angular/src/index.ts"]
+    }
+  },
+  "include": ["src/**/*.ts"]
+}
