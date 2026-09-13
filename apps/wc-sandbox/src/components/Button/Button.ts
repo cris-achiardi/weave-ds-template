@@ -135,6 +135,14 @@ export class DsButton extends HTMLElement {
 
   #write(): void {
     const root = this.#root;
+    // Write enumerated defaults into the DOM. A getter can fall back to the contract's
+    // default and every script sees the right value; CSS cannot, because
+    // `:host([hierarchy='secondary'])` matches an ATTRIBUTE. Idempotent, and the
+    // re-entrancy guard above absorbs the callback each write causes.
+    if (!this.hasAttribute('hierarchy')) this.setAttribute('hierarchy', 'secondary');
+    if (!this.hasAttribute('variant')) this.setAttribute('variant', 'neutral');
+    if (!this.hasAttribute('size')) this.setAttribute('size', 'm');
+
     root.toggleAttribute('disabled', this.disabled);
   }
 }

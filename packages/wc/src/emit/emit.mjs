@@ -755,6 +755,8 @@ function emitComponent(name, contract, binding, prefix) {
   // `#update()`. Most of those writes land on the inner element and are safe; a member also
   // re-registers with its collection from here, and one version of that recursed until the tab
   // stopped responding.
+  const reflected = props.filter((p) => p.kind === 'enum' && p.default);
+
   s.push(`  #updating = false;`);
   s.push(``);
   s.push(`  #update(): void {`);
@@ -774,6 +776,26 @@ function emitComponent(name, contract, binding, prefix) {
   s.push(``);
   s.push(`  #write(): void {`);
   s.push(`    const root = this.#root;`);
+  if (reflected.length) {
+    assume(
+      'an axis default has to be written into the DOM',
+      `reflected on connect: ${reflected.map((p) => `${p.attribute}="${p.default}"`).join(', ')}`,
+      'THE DEFAULT LIVED ONLY IN JAVASCRIPT AND CSS COULD NOT SEE IT. A property getter can fall back to the contract default — getAttribute(hierarchy) ?? secondary — and every script that reads it gets the right answer. A stylesheet cannot: :host([hierarchy=secondary]) matches an ATTRIBUTE, and an unset button had none, so it rendered with no variant styling at all. React, Vue and Angular never meet this, because a framework prop with a default flows into the rendered attribute on the way past. Here the component has to write it down itself.',
+    );
+    s.push(
+      `    // Write enumerated defaults into the DOM. A getter can fall back to the contract's`,
+    );
+    s.push(`    // default and every script sees the right value; CSS cannot, because`);
+    s.push(`    // \`:host([hierarchy='secondary'])\` matches an ATTRIBUTE. Idempotent, and the`);
+    s.push(`    // re-entrancy guard above absorbs the callback each write causes.`);
+    for (const p of reflected) {
+      s.push(
+        `    if (!this.hasAttribute('${p.attribute}')) this.setAttribute('${p.attribute}', '${p.default}');`,
+      );
+    }
+    s.push(``);
+  }
+
   for (const [st, def] of Object.entries(contract.states ?? {})) {
     const asModel = models.find((m) => m.from === st);
     const asInput = inputs.find((p) => p.from === st);

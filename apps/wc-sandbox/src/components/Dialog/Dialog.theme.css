@@ -45,13 +45,13 @@
   max-inline-size: none;
   max-block-size: none;
 }
-:host([open]) {
+:host([open]) [part='root'] {
   display: flex;
   flex-direction: column;
 }
 /* --- end of the reset -------------------------------------------------------------------- */
 
-:host {
+[part='root'] {
   background: #202024;
   border-radius: 0.6rem;
   padding: 1.25rem;
@@ -69,31 +69,31 @@
  * same target while being visibly inside the panel, so the press must ALSO fall outside the
  * dialog's box. Pressing here closes it; pressing the padding does not.
  */
-:host [part='root']::backdrop {
+[part='root']::backdrop {
   background: rgb(0 0 0 / 0.6);
 }
 
-:host([size='s']) {
+:host([size='s']) [part='root'] {
   inline-size: 22rem;
 }
-:host([size='m']) {
+:host([size='m']) [part='root'] {
   inline-size: 30rem;
 }
-:host([size='l']) {
+:host([size='l']) [part='root'] {
   inline-size: 40rem;
 }
-:host [part='title'] {
+[part='title'] {
   color: #f2f2f4;
   font-size: 1rem;
   font-weight: 600;
 }
-:host [part='body'] {
+[part='body'] {
   color: #a3a3ab;
   font-size: 0.875rem;
   line-height: 1.6;
   padding-block: 0.6rem 0.2rem;
 }
-:host [part='actions'] {
+[part='actions'] {
   display: flex;
   justify-content: flex-end;
   gap: 0.5rem;

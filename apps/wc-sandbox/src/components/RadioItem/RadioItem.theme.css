@@ -19,15 +19,15 @@
  */
 
 /* --- structure, in the wrong file: the contract has no `layout` block ------------------- */
-:host {
+[part='root'] {
   display: inline-flex;
   align-items: center;
   cursor: pointer;
 }
-:host([disabled]) {
+:host([disabled]) [part='root'] {
   cursor: not-allowed;
 }
-:host [part='control'] {
+[part='control'] {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -35,14 +35,14 @@
 }
 /* --- end of misplaced structure -------------------------------------------------------- */
 
-:host {
+[part='root'] {
   gap: 0.5rem;
   padding: 0.25rem 0;
 }
-:host([disabled]) {
+:host([disabled]) [part='root'] {
   color: #5a5a62;
 }
-:host [part='control'] {
+[part='control'] {
   inline-size: 16px;
   block-size: 16px;
   border: 1px solid #55555f;
@@ -56,13 +56,13 @@
   outline: 2px solid #8b83f0;
   outline-offset: 2px;
 }
-:host [part='mark'] {
+[part='mark'] {
   inline-size: 8px;
   block-size: 8px;
   background: #5146e6;
   border-radius: 999px;
 }
-:host [part='label'] {
+[part='label'] {
   color: inherit;
   font-size: 0.9rem;
 }

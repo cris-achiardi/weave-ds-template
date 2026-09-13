@@ -19,20 +19,20 @@
  */
 
 /* --- structure, in the wrong file -------------------------------------------------------- */
-:host {
+[part='root'] {
   display: flex;
   flex-direction: column;
   inline-size: 34rem;
 }
-:host [part='list'] {
+[part='list'] {
   display: flex;
 }
 /* --- end of misplaced structure ---------------------------------------------------------- */
 
-:host {
+[part='root'] {
   gap: 0;
 }
-:host [part='list'] {
+[part='list'] {
   gap: 0.25rem;
   border-block-end: 1px solid #3a3a3f;
 }

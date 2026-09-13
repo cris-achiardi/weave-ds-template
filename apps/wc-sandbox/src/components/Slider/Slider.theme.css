@@ -34,7 +34,7 @@
  * ==========================================================================================
  */
 
-:host {
+[part='root'] {
   position: relative;
   touch-action: none;
   display: flex;
@@ -44,18 +44,18 @@
   padding-block: 8px;
   cursor: pointer;
 }
-:host([disabled]) {
+:host([disabled]) [part='root'] {
   cursor: not-allowed;
   opacity: 0.5;
 }
-:host [part='track'] {
+[part='track'] {
   position: absolute;
   inset-inline: 0;
   block-size: 4px;
   background: #3a3a3f;
   border-radius: 999px;
 }
-:host [part='fill'] {
+[part='fill'] {
   position: absolute;
   inset-inline-start: 0;
   inline-size: calc(var(--ds-fraction, 0) * 100%);
@@ -63,7 +63,7 @@
   background: #5146e6;
   border-radius: 999px;
 }
-:host [part='thumb'] {
+[part='thumb'] {
   position: absolute;
   inline-size: 14px;
   block-size: 14px;

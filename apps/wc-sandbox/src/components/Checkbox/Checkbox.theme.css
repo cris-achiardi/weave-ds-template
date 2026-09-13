@@ -19,7 +19,7 @@
  */
 
 /* --- structure, in the wrong file: the contract has no `layout` block -------------------- */
-:host {
+[part='root'] {
   display: inline-flex;
   align-items: center;
   background: none;
@@ -28,10 +28,10 @@
   cursor: pointer;
   text-align: start;
 }
-:host([disabled]) {
+:host([disabled]) [part='root'] {
   cursor: not-allowed;
 }
-:host [part='box'] {
+[part='box'] {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -39,17 +39,17 @@
 }
 /* --- end of misplaced structure ---------------------------------------------------------- */
 
-:host {
+[part='root'] {
   gap: 0.5rem;
   padding: 0.25rem 0;
   color: #e8e8ea;
 }
-:host([disabled]) {
+:host([disabled]) [part='root'] {
   color: #5a5a62;
   opacity: 0.6;
 }
 
-:host [part='box'] {
+[part='box'] {
   inline-size: 16px;
   block-size: 16px;
   border: 1px solid #55555f;
@@ -78,21 +78,21 @@
  * The tick and the dash are different SHAPES, not one mark at two opacities. The contract's a11y
  * notes require that: anyone who cannot tell them apart is told "some" when the answer is "all".
  */
-:host [part='tick'] {
+[part='tick'] {
   inline-size: 9px;
   block-size: 5px;
   border-inline-start: 2px solid #ffffff;
   border-block-end: 2px solid #ffffff;
   transform: rotate(-45deg) translate(1px, -1px);
 }
-:host [part='dash'] {
+[part='dash'] {
   inline-size: 9px;
   block-size: 2px;
   background: #ffffff;
   border-radius: 1px;
 }
 
-:host [part='label'] {
+[part='label'] {
   color: inherit;
   font-size: 0.9rem;
 }

@@ -19,12 +19,12 @@
  */
 
 /* --- structure, in the wrong file ------------------------------------------------------ */
-:host {
+[part='root'] {
   display: flex;
   flex-direction: column;
 }
 /* --- end of misplaced structure -------------------------------------------------------- */
 
-:host {
+[part='root'] {
   gap: 0.15rem;
 }

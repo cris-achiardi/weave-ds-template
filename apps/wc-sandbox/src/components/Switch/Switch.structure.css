@@ -6,17 +6,18 @@
  * there is nothing to derive from. The emitter will not guess: an inferred layout that
  * renders is harder to catch than one that does not.
  *
- * ONE THING THIS FILE OWES YOU THAT THE OTHER BACKENDS DO NOT. A custom element is
- * `display: inline` until a stylesheet says otherwise. Switch almost certainly needs
- * something else, and only you know which — so `:host` below is left with the
- * declaration commented out rather than guessed.
+ * THE HOST GENERATES NO BOX. A custom element is `display: inline` until a stylesheet
+ * says otherwise, and `contents` is the one answer that is not a guess about layout:
+ * it removes the host from the box tree entirely, so `[part='root']` lays out exactly
+ * where the light-DOM backends' root element does. Your theme paints `[part='root']`,
+ * not `:host`.
  */
 
 :host {
-  /* display: ; <- REQUIRED, and yours. See above. */
+  display: contents;
 }
 
-/* A hidden host must stay hidden whatever display you chose. */
+/* A hidden host stays hidden, and outranks the rule above. */
 :host([hidden]) {
   display: none !important;
 }

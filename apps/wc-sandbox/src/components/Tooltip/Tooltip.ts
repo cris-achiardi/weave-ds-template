@@ -158,6 +158,12 @@ export class DsTooltip extends HTMLElement {
 
   #write(): void {
     const root = this.#root;
+    // Write enumerated defaults into the DOM. A getter can fall back to the contract's
+    // default and every script sees the right value; CSS cannot, because
+    // `:host([hierarchy='secondary'])` matches an ATTRIBUTE. Idempotent, and the
+    // re-entrancy guard above absorbs the callback each write causes.
+    if (!this.hasAttribute('placement')) this.setAttribute('placement', 'top');
+
     root.toggleAttribute('aria-disabled', Boolean(this.disabled));
     this.#part('trigger')?.setAttribute('id', this.#baseId + '-trigger');
     this.#part('popup')?.setAttribute('id', this.#baseId + '-popup');

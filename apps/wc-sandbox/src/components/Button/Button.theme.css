@@ -19,7 +19,7 @@
  */
 
 /* --- structure, in the wrong file: the contract has no `layout` block -------------------- */
-:host {
+[part='root'] {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -28,10 +28,10 @@
   font-family: inherit;
   white-space: nowrap;
 }
-:host([disabled]) {
+:host([disabled]) [part='root'] {
   cursor: not-allowed;
 }
-:host [part='label'] {
+[part='label'] {
   white-space: nowrap;
 }
 :host(:not([has-icon-start])) [part='icon-start'],
@@ -40,7 +40,7 @@
 }
 /* --- end of misplaced structure ---------------------------------------------------------- */
 
-:host {
+[part='root'] {
   border-radius: 0.4rem;
   font-weight: 500;
   gap: 0.45rem;
@@ -50,87 +50,87 @@
 }
 
 /* hierarchy = primary */
-:host([hierarchy='primary']) {
+:host([hierarchy='primary']) [part='root'] {
   background: #5146e6;
   color: #ffffff;
   border-color: #5146e6;
 }
 
 /* hierarchy = secondary */
-:host([hierarchy='secondary']) {
+:host([hierarchy='secondary']) [part='root'] {
   background: #26262b;
   color: #e8e8ea;
   border-color: #3f3f47;
 }
 
 /* hierarchy = tertiary */
-:host([hierarchy='tertiary']) {
+:host([hierarchy='tertiary']) [part='root'] {
   background: transparent;
   color: #b9b9c2;
   border-color: transparent;
 }
 
 /* variant = danger, crossed with hierarchy — the pair the two axes exist to express */
-:host([variant='danger'][hierarchy='primary']) {
+:host([variant='danger'][hierarchy='primary']) [part='root'] {
   background: #c4342b;
   border-color: #c4342b;
 }
-:host([variant='danger'][hierarchy='secondary']) {
+:host([variant='danger'][hierarchy='secondary']) [part='root'] {
   color: #f0736a;
   border-color: #5e2c28;
 }
-:host([variant='danger'][hierarchy='tertiary']) {
+:host([variant='danger'][hierarchy='tertiary']) [part='root'] {
   color: #f0736a;
 }
-:host([variant='brand'][hierarchy='secondary']) {
+:host([variant='brand'][hierarchy='secondary']) [part='root'] {
   color: #a99fff;
   border-color: #3b3480;
 }
 
 /* size = s */
-:host([size='s']) {
+:host([size='s']) [part='root'] {
   padding-inline: 0.6rem;
   min-block-size: 28px;
   font-size: 0.8rem;
 }
 
 /* size = m */
-:host([size='m']) {
+:host([size='m']) [part='root'] {
   padding-inline: 0.85rem;
   min-block-size: 34px;
   font-size: 0.875rem;
 }
 
 /* size = l */
-:host([size='l']) {
+:host([size='l']) [part='root'] {
   padding-inline: 1.15rem;
   min-block-size: 42px;
   font-size: 0.95rem;
 }
 
 /* state: hover */
-:host(:not([disabled]):hover) {
+:host(:not([disabled]):hover) [part='root'] {
   filter: brightness(1.14);
 }
 
 /* state: active */
-:host(:not([disabled]):active) {
+:host(:not([disabled]):active) [part='root'] {
   filter: brightness(0.92);
 }
 
 /* state: disabled */
-:host([disabled]) {
+:host([disabled]) [part='root'] {
   opacity: 0.45;
 }
 
 /* state: focus-visible */
-:host(:focus-visible) {
+:host(:focus-visible) [part='root'] {
   outline: 2px solid #8b83f0;
   outline-offset: 2px;
 }
 
 /* state: loading — the contract says the label must not move, so the spinner takes the icon slot */
-:host([loading]) {
+:host([loading]) [part='root'] {
   cursor: progress;
 }
 :host([loading]) [part='icon-start'] {
@@ -149,8 +149,8 @@
   }
 }
 
-:host [part='icon-start'],
-:host [part='icon-end'] {
+[part='icon-start'],
+[part='icon-end'] {
   inline-size: 1em;
   block-size: 1em;
 }

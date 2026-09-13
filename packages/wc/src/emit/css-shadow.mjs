@@ -51,18 +51,21 @@ export function stateSelectorShadow(base, spec, profile) {
       : pseudo
         ? `:host(${pseudo})`
         : `:host([${kebab(state)}])`;
-  // `base` is `:host` for the root part and `[part='x']` for anything inside it.
-  return base === ':host' ? on : `${on} ${base}`;
+  // `base` is always a part selector now: the host paints nothing, because it generates no
+  // box. See emitStructureShadow on why that is `display: contents`.
+  return `${on} ${base}`;
 }
 
 /**
  * `<Name>.structure.css` — REGENERATED on every run, and almost empty on purpose.
  *
- * It emits one thing the light-DOM pair does not have to: a note that the HOST HAS NO DISPLAY. A
- * custom element is `display: inline` until someone says otherwise, which is almost never what a
- * component wants — and the other three backends never met this problem, because a `<div>` is
- * already block and a `<button>` is already inline-block. The emitter will not guess which one this
- * component needs, for the same reason it guesses no other layout.
+ * It emits one rule the light-DOM pair does not have to: `:host { display: contents }`. A custom
+ * element is `display: inline` until someone says otherwise, and the other three backends never
+ * meet the problem because a `<div>` is already block and a `<button>` already inline-block.
+ *
+ * `contents` is not a guess about layout, which is what lets the emitter write it at all. It removes
+ * the host from the box tree, so `[part='root']` lays out exactly where the light-DOM backends' root
+ * element does — and the theme paints `[part='root']`, never `:host`.
  */
 export function emitStructureShadow(name, contract, prefix, assume) {
   const root = contract.anatomy.root;
@@ -75,9 +78,9 @@ export function emitStructureShadow(name, contract, prefix, assume) {
     'The same refusal the other three backends make, for the same reason: the contract has no `layout` block. Four independent emitters now report it.',
   );
   assume(
-    'the host has no display',
-    'NOT SET — the consumer must choose one',
-    'A custom element is `display: inline` until a stylesheet says otherwise, so a component whose parts are laid out in a row renders as run-in text until someone sets it. THIS OBLIGATION IS NEW: a <div> root is already block and a <button> root is already inline-block, so no other backend has ever had to hand it to a consumer. It is a consequence of the host being a tag the platform has never heard of, and it is the clearest single cost of a shadow root that the contract cannot express.',
+    'what the host box is',
+    '`display: contents` — the host generates no box, and the theme paints `[part=root]`',
+    "THIS WAS THE SECOND ANSWER AND THE FIRST ONE WAS WRONG. A custom element is `display: inline` until a stylesheet says otherwise, so the first version left `:host { /* display: ; */ }` as an obligation for the consumer — a genuinely new one, since a <div> root is already block and a <button> root already inline-block. But handing it over was solving the wrong problem. The contract's `anatomy.root` describes the component's outermost VISUAL box, and in a shadow build that is the element the binding names, not the host wrapping it; painting `:host` put the background on a wrapper and left the real control unstyled. `display: contents` is the one answer here that is not a guess about layout, and with root paints on `[part=root]` the translated stylesheet produces computed styles IDENTICAL to the light-DOM backends'.",
   );
   assume(
     'no scoping attribute, no part attribute, no axis attribute',
@@ -96,19 +99,24 @@ export function emitStructureShadow(name, contract, prefix, assume) {
   L.push(` * there is nothing to derive from. The emitter will not guess: an inferred layout that`);
   L.push(` * renders is harder to catch than one that does not.`);
   L.push(` *`);
-  L.push(` * ONE THING THIS FILE OWES YOU THAT THE OTHER BACKENDS DO NOT. A custom element is`);
   L.push(
-    ` * \`display: inline\` until a stylesheet says otherwise. ${name} almost certainly needs`,
+    ` * THE HOST GENERATES NO BOX. A custom element is \`display: inline\` until a stylesheet`,
   );
-  L.push(` * something else, and only you know which — so \`:host\` below is left with the`);
-  L.push(` * declaration commented out rather than guessed.`);
+  L.push(` * says otherwise, and \`contents\` is the one answer that is not a guess about layout:`);
+  L.push(
+    ` * it removes the host from the box tree entirely, so \`[part='root']\` lays out exactly`,
+  );
+  L.push(
+    ` * where the light-DOM backends' root element does. Your theme paints \`[part='root']\`,`,
+  );
+  L.push(` * not \`:host\`.`);
   L.push(` */`);
   L.push(``);
   L.push(`:host {`);
-  L.push(`  /* display: ; <- REQUIRED, and yours. See above. */`);
+  L.push(`  display: contents;`);
   L.push(`}`);
   L.push(``);
-  L.push(`/* A hidden host must stay hidden whatever display you chose. */`);
+  L.push(`/* A hidden host stays hidden, and outranks the rule above. */`);
   L.push(`:host([hidden]) {`);
   L.push(`  display: none !important;`);
   L.push(`}`);
@@ -171,7 +179,7 @@ export function emitThemeShadow(name, contract, profile) {
   L.push(` */`);
   L.push(``);
   for (const p of parts) {
-    const sel = p.key === 'root' ? ':host' : `[part='${p.node.part}']`;
+    const sel = `[part='${p.node.part}']`;
     const channels = Object.keys(p.node.paints ?? {});
     if (channels.length) {
       L.push(`${sel} {`);
@@ -190,7 +198,7 @@ export function emitThemeShadow(name, contract, profile) {
     for (const [key, paints] of Object.entries(p.node.whenAxis ?? {})) {
       const [axis, value] = key.includes('=') ? key.split('=') : [key, null];
       const on = `:host([${kebab(axis)}='${value ?? 'true'}'])`;
-      const selector = sel === ':host' ? on : `${on} ${sel}`;
+      const selector = `${on} ${sel}`;
       L.push(`/* ${axis} = ${value ?? 'true'} */`);
       L.push(`${selector} {`);
       for (const c of Object.keys(paints)) L.push(`  /* ${c}: ; */`);

@@ -18,15 +18,15 @@
  * Translated mechanically from apps/react-sandbox, then checked in a browser.
  */
 
-:host {
+[part='root'] {
   border-block-end: 1px solid #3a3a3f;
 }
 
-:host(:last-child) {
+:host(:last-child) [part='root'] {
   border-block-end: none;
 }
 
-:host [part='trigger'] {
+[part='trigger'] {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -42,21 +42,21 @@
   cursor: pointer;
 }
 
-:host [part='trigger']:hover:not(:disabled) {
+[part='trigger']:hover:not(:disabled) {
   background: #26262b;
 }
 
-:host [part='trigger']:disabled {
+[part='trigger']:disabled {
   color: #5a5a62;
   cursor: not-allowed;
 }
 
-:host [part='trigger']:focus-visible {
+[part='trigger']:focus-visible {
   outline: 2px solid #8b83f0;
   outline-offset: -2px;
 }
 
-:host [part='indicator'] {
+[part='indicator'] {
   inline-size: 0.55rem;
   block-size: 0.55rem;
   border-inline-end: 2px solid currentColor;
@@ -66,11 +66,11 @@
   flex-shrink: 0;
 }
 
-:host [part='trigger'][aria-expanded='true'] [part='indicator'] {
+[part='trigger'][aria-expanded='true'] [part='indicator'] {
   transform: rotate(-135deg);
 }
 
-:host [part='panel'] {
+[part='panel'] {
   padding: 0 0.9rem 0.8rem;
   color: #a3a3ab;
   font-size: 0.85rem;

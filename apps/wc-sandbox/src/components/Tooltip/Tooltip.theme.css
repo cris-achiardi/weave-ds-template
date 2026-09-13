@@ -31,11 +31,11 @@
  * with overflow: hidden, and it will not flip.
  * ==========================================================================================
  */
-:host {
+[part='root'] {
   position: relative;
   display: inline-block;
 }
-:host [part='popup'] {
+[part='popup'] {
   position: absolute;
   inset-block-end: calc(100% + 6px);
   inset-inline-start: 50%;
@@ -46,7 +46,7 @@
 }
 /* --- end of misplaced structure -------------------------------------------------------- */
 
-:host [part='popup'] {
+[part='popup'] {
   background: #2a2a30;
   color: #e8e8ea;
   border-radius: 0.35rem;

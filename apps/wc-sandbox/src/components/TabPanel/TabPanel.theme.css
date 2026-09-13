@@ -18,7 +18,7 @@
  * Translated mechanically from apps/react-sandbox, then checked in a browser.
  */
 
-:host {
+[part='root'] {
   padding-block-start: 0.9rem;
   color: #a3a3ab;
   font-size: 0.875rem;

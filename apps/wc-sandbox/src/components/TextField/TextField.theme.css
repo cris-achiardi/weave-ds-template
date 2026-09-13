@@ -19,13 +19,13 @@
  */
 
 /* --- structure, in the wrong file -------------------------------------------------------- */
-:host {
+[part='root'] {
   display: block;
   box-sizing: border-box;
 }
 /* --- end of misplaced structure ---------------------------------------------------------- */
 
-:host {
+[part='root'] {
   inline-size: 26ch;
   border: 1px solid #3a3a3f;
   border-radius: 0.35rem;
@@ -33,37 +33,37 @@
   color: #e8e8ea;
   font-family: inherit;
 }
-:host [part='root']::placeholder {
+[part='root']::placeholder {
   color: #6b6b74;
 }
-:host([size='s']) {
+:host([size='s']) [part='root'] {
   padding-inline: 0.5rem;
   min-block-size: 28px;
   font-size: 0.8rem;
 }
-:host([size='m']) {
+:host([size='m']) [part='root'] {
   padding-inline: 0.65rem;
   min-block-size: 34px;
   font-size: 0.875rem;
 }
-:host([size='l']) {
+:host([size='l']) [part='root'] {
   padding-inline: 0.85rem;
   min-block-size: 42px;
   font-size: 0.95rem;
 }
-:host(:not([disabled]):hover) {
+:host(:not([disabled]):hover) [part='root'] {
   border-color: #55555f;
 }
-:host([invalid]) {
+:host([invalid]) [part='root'] {
   border-color: #c4342b;
 }
-:host([disabled]) {
+:host([disabled]) [part='root'] {
   opacity: 0.5;
 }
-:host([read-only]) {
+:host([read-only]) [part='root'] {
   background: #202024;
 }
-:host(:focus-visible) {
+:host(:focus-visible) [part='root'] {
   outline: 2px solid #8b83f0;
   outline-offset: 1px;
 }

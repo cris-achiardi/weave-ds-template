@@ -61,7 +61,16 @@ Three more the platform supplies outright:
 
 ## What it cost
 
-### 1. The theme files could not be copied, and the diff is exactly the selectors
+### 1. The theme files could not be copied — but the RESULT is identical
+
+**The computed styles match.** A `TextField`'s width, height, background, border, border-radius,
+padding, colour and font-size are the same numbers in this build and the React one, from the same
+declarations. That is a stronger claim than "it looks close", and it is the one worth making: the
+shadow boundary costs the SELECTORS and nothing else.
+
+Getting there needed one decision the first draft got wrong — §3.
+
+### 1b. The translation, in full
 
 The headline cost, and the reason this backend was built. Translating
 `apps/react-sandbox`'s fifteen theme files into the shadow grammar was mechanical:
@@ -95,12 +104,32 @@ attributes for one fact can disagree"_ — and here it is forced rather than cho
 both from one decision, so they cannot disagree in generated output; a hand-written component would
 have no such protection.
 
-### 3. The host has no `display`
+### 3. The host box, and the first answer was wrong
 
-A custom element is `display: inline` until a stylesheet says otherwise. A `<div>` root is already
-block and a `<button>` root is already inline-block, so **no other backend has ever handed a consumer
-this obligation.** The emitter refuses to guess which one a component wants, for the same reason it
-guesses no other layout, and leaves a commented socket.
+A custom element is `display: inline` until a stylesheet says otherwise. The first version treated
+that as a new obligation to hand the consumer — a commented `/* display: ; */` socket, on the
+grounds that the emitter guesses no other layout.
+
+**That was solving the wrong problem.** The contract's `anatomy.root` describes the component's
+outermost VISUAL box, and in a shadow build that is the element the binding names, not the host
+wrapping it. Painting `:host` put the background on a wrapper and left the real control unstyled: a
+`TextField` rendered as a styled box containing a bare `<input>`.
+
+The answer is `display: contents` on the host, and root paints on `[part='root']`. The host then
+generates no box, `[part='root']` lays out exactly where the light-DOM backends' root element does,
+and the translated stylesheet becomes **the same rules under different selectors** rather than the
+same rules on a different element. That is what produces the identical computed styles in §1.
+
+### 3b. An axis default has to be written into the DOM
+
+A property getter can fall back to the contract's default —
+`getAttribute('hierarchy') ?? 'secondary'` — and every script that reads it gets the right answer.
+**A stylesheet cannot.** `:host([hierarchy='secondary'])` matches an ATTRIBUTE, and an unset button
+had none, so it rendered with no variant styling at all.
+
+React, Vue and Angular never meet this, because a framework prop with a default flows into the
+rendered attribute on the way past. Here the component writes it down itself, on every update,
+idempotently.
 
 ### 4. An IDREF cannot cross a shadow boundary
 
@@ -166,10 +195,19 @@ The contract said `control: shared` to all four, and none of them argued.
    closed by the platform, and a tooltip dismissed by Escape all changed value and told nobody. It
    typechecked; the symptom was a readout that stopped updating. Fixed by routing every internal
    write through the same emit.
-2. **`document.activeElement` does not cross a shadow boundary.** It reports the HOST, not the
-   focused node, so "which member holds focus" has to walk `shadowRoot.activeElement` down until it
-   stops moving. The shared conformance cases pass either way — this is a defect the binding can
-   have while the decision logic is right.
+2. **NEITHER `document.activeElement` NOR `contains()` crosses a shadow boundary**, and they had to
+   be fixed separately. The first reports the HOST rather than the focused node, so "which member
+   holds focus" walks `shadowRoot.activeElement` DOWN until it stops moving. The second is the
+   mirror image: a member registers its host, the focused node is inside that host's own shadow
+   root, and `element.contains(focused)` — which all three other bindings use — is false for every
+   member. Fixing only the first left the arrow keys doing nothing at all.
+
+   Climbing needs two different moves because they are two different edges: `parentNode` walks the
+   tree a node is in, and a ShadowRoot's `parentNode` is null — its `host` is how you leave it.
+
+   The shared conformance cases pass either way. This is the clearest example in the repo of a
+   defect a binding can have while the decision logic underneath is perfectly right.
+
 3. **`noEmit`, unused privates, and a `<slot>` typed as `Element`.** Caught by typechecking generated
    output, which is the fourth backend in a row where that has paid.
 
@@ -201,15 +239,13 @@ all — but only a step.
 
 Two more limits, stated because a fourth green result invites more over-reading than a third:
 
-- **The page has not been driven end to end.** It builds, it typechecks, and the components
-  register. The behaviour list every other sandbox README carries is **absent here on purpose**.
+- **The page is driven but not graded.** Every behaviour listed in `apps/wc-sandbox/README.md` was
+  exercised in Chrome and passed — the same bar the Vue and Angular sandboxes meet, and a lower one
+  than the React page, which carries `works` / `partial` / `shell` per specimen.
 
-  The browser automation used for the first three sandboxes stopped responding partway through this
-  one, and that turned out not to be a tooling failure: **the page was hanging the browser.** A
-  member re-registered with its collection from its own update, the collection announced, the
-  announcement made every member update, and every member re-registered. Fixed at the source,
-  guarded a second time, and pinned by a regression test that fails without the fix — but the page
-  itself still needs one careful open, and until then nothing here claims it behaves.
+  Getting there took three rounds. The browser automation used for the first three sandboxes
+  stopped responding partway through this one, and that was not a tooling failure: **the page was
+  hanging the browser.** Two further defects were only visible once it loaded — §3 and §4 below.
 
 - **`apps/wc-sandbox` is not graded**, like the Vue and Angular sandboxes.
 

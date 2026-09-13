@@ -18,12 +18,12 @@
  * Translated mechanically from apps/react-sandbox, then checked in a browser.
  */
 
-:host {
+[part='root'] {
   /* display: ; */
   /* gap: ; */
 }
 
-:host [part='label'] {
+[part='label'] {
   /* color: ; */
   /* font-size: ; */
   /* font-weight: ; */
@@ -43,7 +43,7 @@
   color: #c9c6f5;
 }
 
-:host [part='description'] {
+[part='description'] {
   /* color: ; */
   /* font-size: ; */
 }
@@ -53,7 +53,7 @@
   /* color: ; */
 }
 
-:host [part='error'] {
+[part='error'] {
   /* color: ; */
   /* font-size: ; */
 }

@@ -159,6 +159,12 @@ export class DsDialog extends HTMLElement {
 
   #write(): void {
     const root = this.#root;
+    // Write enumerated defaults into the DOM. A getter can fall back to the contract's
+    // default and every script sees the right value; CSS cannot, because
+    // `:host([hierarchy='secondary'])` matches an ATTRIBUTE. Idempotent, and the
+    // re-entrancy guard above absorbs the callback each write causes.
+    if (!this.hasAttribute('size')) this.setAttribute('size', 'm');
+
     root?.setAttribute('id', this.#baseId);
     this.#part('title')?.setAttribute('id', this.#baseId + '-title');
     root?.setAttribute('aria-labelledby', this.#baseId + '-title');

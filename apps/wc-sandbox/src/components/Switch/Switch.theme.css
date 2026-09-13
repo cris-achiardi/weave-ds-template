@@ -32,7 +32,7 @@
  * ============================================================================================
  */
 
-:host {
+[part='root'] {
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -40,11 +40,11 @@
   cursor: pointer;
 }
 
-:host([disabled]) {
+:host([disabled]) [part='root'] {
   cursor: not-allowed;
 }
 
-:host [part='thumb'] {
+[part='thumb'] {
   position: absolute;
   pointer-events: none;
   inset-inline-start: 2px;
@@ -52,7 +52,7 @@
 
 /* ==== end of misplaced structure. Everything below is genuinely paint. ==================== */
 
-:host {
+[part='root'] {
   inline-size: 44px;
   block-size: 24px;
   background: #3a3a3f;
@@ -62,32 +62,32 @@
 }
 
 /* state: checked — the track takes its filled treatment */
-:host([checked]) {
+:host([checked]) [part='root'] {
   background: #5146e6;
   border-color: #5146e6;
 }
 
 /* state: hover — the track shifts one step */
-:host(:not([disabled]):hover) {
+:host(:not([disabled]):hover) [part='root'] {
   background: #46464d;
 }
 
-:host([checked]:not([disabled]):hover) {
+:host([checked]:not([disabled]):hover) [part='root'] {
   background: #5f55ea;
 }
 
 /* state: disabled */
-:host([disabled]) {
+:host([disabled]) [part='root'] {
   opacity: 0.4;
 }
 
 /* state: focus-visible */
-:host(:focus-visible) {
+:host(:focus-visible) [part='root'] {
   outline: 2px solid #8b83f0;
   outline-offset: 2px;
 }
 
-:host [part='thumb'] {
+[part='thumb'] {
   inline-size: 18px;
   block-size: 18px;
   background: #ffffff;

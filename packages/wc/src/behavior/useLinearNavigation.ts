@@ -67,11 +67,34 @@ export function useLinearNavigation(
       })
       .map(([value, entry]) => ({ value, disabled: entry.disabled }));
 
-  /** The deepest focused node, following every shadow root on the way down. */
+  /** The deepest focused node, following every shadow root on the way DOWN. */
   const deepActiveElement = (): Element | null => {
     let node: Element | null = document.activeElement;
     while (node?.shadowRoot?.activeElement) node = node.shadowRoot.activeElement;
     return node;
+  };
+
+  /**
+   * Which registered member owns this node, following every shadow root on the way UP.
+   *
+   * `element.contains(focused)` is what the other three bindings use, and it is WRONG HERE for the
+   * same reason `document.activeElement` is: neither crosses a shadow boundary. A member registers
+   * its HOST, and the focused node is the button inside that host's own shadow root — so
+   * `contains()` answers false for every member and the arrow keys do nothing at all.
+   *
+   * Climbing needs both moves, because they are different edges: `parentNode` walks the tree a node
+   * is in, and a ShadowRoot's `parentNode` is null — its `host` is how you leave it.
+   */
+  const ownerOf = (node: Node | null): string | null => {
+    let current: Node | null = node;
+    while (current) {
+      for (const [value, entry] of registry) {
+        if (entry.element === current) return value;
+      }
+      current =
+        current.parentNode ?? (current instanceof ShadowRoot ? (current.host as Node) : null);
+    }
+    return null;
   };
 
   return {
@@ -98,15 +121,9 @@ export function useLinearNavigation(
       // Someone else already claimed it: a text field inside a member, say.
       if (event.defaultPrevented) return;
 
-      const focused = deepActiveElement();
-      let from: string | null = null;
-      for (const [value, entry] of registry) {
-        if (entry.element && focused && entry.element.contains(focused)) {
-          from = value;
-          break;
-        }
-      }
-      // Focus is not on a member at all — the event bubbled from something the collection wraps.
+      // Focus is not on a member at all — the event bubbled from something the collection wraps,
+      // like the content of a panel. Arrowing there must not move the strip.
+      const from = ownerOf(deepActiveElement());
       if (from === null) return;
 
       const target = resolve(intent, from, members(), options);
