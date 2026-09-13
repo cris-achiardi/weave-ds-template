@@ -85,7 +85,22 @@ export class DsTabPanel extends HTMLElement {
     return this.#collection?.value === this.value;
   }
 
+  #updating = false;
+
   #update(): void {
+    // Writing an attribute this element observes re-enters here. The collection no longer
+    // announces unless something moved, which is the real fix; this is the cheap
+    // guarantee that no future write can reintroduce the same shape.
+    if (this.#updating) return;
+    this.#updating = true;
+    try {
+      this.#write();
+    } finally {
+      this.#updating = false;
+    }
+  }
+
+  #write(): void {
     const root = this.#root;
     // The host carries it too, because CSS cannot select inside a shadow root from
     // outside and cannot append an attribute selector to ::part(). One fact, two

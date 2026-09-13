@@ -118,13 +118,14 @@ export class DsRadioGroup extends HTMLElement {
   }
 
   register(value: string, entry: { element: HTMLElement | null; disabled: boolean }) {
-    this.#nav.register(value, entry);
-    this.#announce();
+    // ANNOUNCES ONLY WHEN SOMETHING MOVED. A member re-registers from its own
+    // update, and an announcement is what makes every member update — so
+    // announcing unconditionally is an infinite loop. It froze the tab.
+    if (this.#nav.register(value, entry)) this.#announce();
   }
 
   unregister(value: string): void {
-    this.#nav.unregister(value);
-    this.#announce();
+    if (this.#nav.unregister(value)) this.#announce();
   }
 
   isTabStop(value: string): boolean {
@@ -147,7 +148,22 @@ export class DsRadioGroup extends HTMLElement {
     this.dispatchEvent(new CustomEvent('ds-' + type, { detail, bubbles: true, composed: true }));
   }
 
+  #updating = false;
+
   #update(): void {
+    // Writing an attribute this element observes re-enters here. The collection no longer
+    // announces unless something moved, which is the real fix; this is the cheap
+    // guarantee that no future write can reintroduce the same shape.
+    if (this.#updating) return;
+    this.#updating = true;
+    try {
+      this.#write();
+    } finally {
+      this.#updating = false;
+    }
+  }
+
+  #write(): void {
     const root = this.#root;
     root.toggleAttribute('aria-disabled', Boolean(this.disabled));
     root.toggleAttribute('aria-readonly', Boolean(this.readOnly));

@@ -56,10 +56,27 @@ That produced `Switch/`, and the same command produced `Field/`, `Accordion/`, `
 `Tabs/`, `TabItem/` and `TabPanel/` — each one a `.ts` custom element, its structural CSS, a theme
 file and a barrel. Nothing comes from `@ds/wc`, which exports no components.
 
-## Not graded
+## Not graded, and one thing worse than ungraded
 
 The React sandbox labels every specimen `works` / `partial` / `shell` because someone drove each one
 in a browser key by key. Nothing here has been through that, so nothing here claims it.
+
+**The first version of this page froze the tab it was opened in.** A member re-registered with its
+collection from its own update; the collection announced the change; the announcement made every
+member update; every member re-registered. The React, Vue and Angular bindings never had it, because
+each compares the incoming entry against the stored one to decide whether to bump its reactivity
+counter — this binding has no counter, so the comparison was dropped as unnecessary, and the
+comparison was the part that mattered.
+
+It is fixed at the source (a collection announces only when something moved), guarded a second time
+(`#update()` refuses to re-enter), and pinned by
+`packages/wc/src/behavior/useLinearNavigation.test.ts`, which fails without the fix.
+
+It is worth recording where it could and could not have been caught. The conformance cases execute
+against `@ds/behavior` and passed throughout — they test what an arrow key MEANS, and this was the
+binding around them. `pnpm verify` was green. `vue-tsc` and `tsc` were green. **The only thing that
+could have found it was opening the page**, which is the same lesson `docs/research/0002` drew about
+generated components and is apparently one this repo has to keep relearning.
 
 ## The bundle is a quarter the size of the smallest framework build
 

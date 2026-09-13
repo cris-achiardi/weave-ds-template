@@ -119,7 +119,22 @@ export class DsField extends HTMLElement {
     this.toggleAttribute('dirty', Boolean(value));
   }
 
+  #updating = false;
+
   #update(): void {
+    // Writing an attribute this element observes re-enters here. The collection no longer
+    // announces unless something moved, which is the real fix; this is the cheap
+    // guarantee that no future write can reintroduce the same shape.
+    if (this.#updating) return;
+    this.#updating = true;
+    try {
+      this.#write();
+    } finally {
+      this.#updating = false;
+    }
+  }
+
+  #write(): void {
     const root = this.#root;
     root.toggleAttribute('aria-disabled', Boolean(this.disabled));
     this.#part('label')?.setAttribute('id', this.#baseId + '-label');

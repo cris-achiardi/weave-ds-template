@@ -667,13 +667,14 @@ function emitComponent(name, contract, binding, prefix) {
       s.push(
         `  register(value: string, entry: { element: HTMLElement | null; disabled: boolean }) {`,
       );
-      s.push(`    this.#nav.register(value, entry);`);
-      s.push(`    this.#announce();`);
+      s.push(`    // ANNOUNCES ONLY WHEN SOMETHING MOVED. A member re-registers from its own`);
+      s.push(`    // update, and an announcement is what makes every member update — so`);
+      s.push(`    // announcing unconditionally is an infinite loop. It froze the tab.`);
+      s.push(`    if (this.#nav.register(value, entry)) this.#announce();`);
       s.push(`  }`);
       s.push(``);
       s.push(`  unregister(value: string): void {`);
-      s.push(`    this.#nav.unregister(value);`);
-      s.push(`    this.#announce();`);
+      s.push(`    if (this.#nav.unregister(value)) this.#announce();`);
       s.push(`  }`);
       s.push(``);
       s.push(`  isTabStop(value: string): boolean {`);
@@ -749,7 +750,29 @@ function emitComponent(name, contract, binding, prefix) {
   }
 
   // --- #update: everything derived, rewritten
+  // A RE-ENTRANCY GUARD, as a second line of defence behind the fix above. `#update()` writes
+  // attributes, and writing one this element observes calls `attributeChangedCallback`, which calls
+  // `#update()`. Most of those writes land on the inner element and are safe; a member also
+  // re-registers with its collection from here, and one version of that recursed until the tab
+  // stopped responding.
+  s.push(`  #updating = false;`);
+  s.push(``);
   s.push(`  #update(): void {`);
+  s.push(
+    `    // Writing an attribute this element observes re-enters here. The collection no longer`,
+  );
+  s.push(`    // announces unless something moved, which is the real fix; this is the cheap`);
+  s.push(`    // guarantee that no future write can reintroduce the same shape.`);
+  s.push(`    if (this.#updating) return;`);
+  s.push(`    this.#updating = true;`);
+  s.push(`    try {`);
+  s.push(`      this.#write();`);
+  s.push(`    } finally {`);
+  s.push(`      this.#updating = false;`);
+  s.push(`    }`);
+  s.push(`  }`);
+  s.push(``);
+  s.push(`  #write(): void {`);
   s.push(`    const root = this.#root;`);
   for (const [st, def] of Object.entries(contract.states ?? {})) {
     const asModel = models.find((m) => m.from === st);

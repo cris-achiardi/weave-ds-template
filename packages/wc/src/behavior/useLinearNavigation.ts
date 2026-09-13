@@ -15,8 +15,18 @@ export interface MemberRegistration {
 }
 
 export interface LinearNavigation {
-  register: (value: string, entry: MemberRegistration) => void;
-  unregister: (value: string) => void;
+  /**
+   * Record a member, and report whether anything a reader depends on actually MOVED.
+   *
+   * THE RETURN VALUE IS LOAD-BEARING AND WAS MISSING. The React, Vue and Angular bindings each make
+   * this comparison to decide whether to bump their reactivity counter; this one has no counter, so
+   * the comparison was dropped — and the collection announced on every call instead. A member
+   * re-registers from its own update, an announcement makes every member update, and every one of
+   * them re-registers: an infinite loop that froze the tab it was rendered in.
+   */
+  register: (value: string, entry: MemberRegistration) => boolean;
+  /** Returns whether the member was actually present. */
+  unregister: (value: string) => boolean;
   isTabStop: (value: string) => boolean;
   onKeyDown: (event: KeyboardEvent) => void;
 }
@@ -66,10 +76,17 @@ export function useLinearNavigation(
 
   return {
     register(value, entry) {
+      const previous = registry.get(value);
       registry.set(value, entry);
+      // Only report a change when something a reader depends on moved. Registration happens on
+      // every update, so answering `true` unconditionally is an announcement per update — and an
+      // announcement causes an update.
+      return (
+        !previous || previous.element !== entry.element || previous.disabled !== entry.disabled
+      );
     },
     unregister(value) {
-      registry.delete(value);
+      return registry.delete(value);
     },
     isTabStop(value) {
       return value === tabStop(selection(), members(), options);

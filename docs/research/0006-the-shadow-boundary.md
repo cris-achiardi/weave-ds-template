@@ -146,7 +146,20 @@ reaches the property, and the event is how the component says it changed.
 
 The contract said `control: shared` to all four, and none of them argued.
 
-## Three bugs this found
+## Four bugs this found, and one of them froze a browser tab
+
+0. **A collection must announce only when something moved.** A member re-registers with its
+   collection from its own `#update()`; the collection announced on every call; an announcement makes
+   every member update; every member re-registers. An infinite loop, and the symptom was not a wrong
+   pixel — it was Chrome becoming unresponsive.
+
+   **Where it could not have been caught, which is the useful part.** The conformance cases execute
+   against `@ds/behavior` and passed throughout: they test what an arrow key MEANS, and this was the
+   binding around them. `pnpm verify` was green, and so were `tsc` and `vue-tsc`. The other three
+   backends never had it, because each compares the incoming entry against the stored one to decide
+   whether to bump its reactivity counter — this binding has no counter, so the comparison was
+   dropped as unnecessary, and the comparison was the part that mattered. **A reactivity system had
+   been doing loop prevention as a side effect, and removing it removed that too.**
 
 1. **A component that changes its own state must announce it.** The emitter emitted the event from
    `#activate` and `#handleInput` and nowhere else — so a slider dragged with a pointer, a dialog
@@ -188,9 +201,16 @@ all — but only a step.
 
 Two more limits, stated because a fourth green result invites more over-reading than a third:
 
-- **The page has not been driven end to end.** It builds, it typechecks, and the components register.
+- **The page has not been driven end to end.** It builds, it typechecks, and the components
+  register. The behaviour list every other sandbox README carries is **absent here on purpose**.
+
   The browser automation used for the first three sandboxes stopped responding partway through this
-  one, so the behaviour list every other sandbox README carries is **absent here on purpose**.
+  one, and that turned out not to be a tooling failure: **the page was hanging the browser.** A
+  member re-registered with its collection from its own update, the collection announced, the
+  announcement made every member update, and every member re-registered. Fixed at the source,
+  guarded a second time, and pinned by a regression test that fails without the fix — but the page
+  itself still needs one careful open, and until then nothing here claims it behaves.
+
 - **`apps/wc-sandbox` is not graded**, like the Vue and Angular sandboxes.
 
 ## Open questions
