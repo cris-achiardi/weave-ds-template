@@ -80,9 +80,9 @@ jobs:
       # trusts it. An unmapped collection claiming a code path is the specific lie to catch.
       - run: pnpm verify:figma
 
-      # Three backends can disagree in two ways that break no build: a behaviour core duplicated
+      # Four backends can disagree in two ways that break no build: a behaviour core duplicated
       # between them drifts, or their bindings render a different element for one contract. Each
-      # backend's own conformance suite runs against its own copy, so all three stay green while
+      # backend's own conformance suite runs against its own copy, so all four stay green while
       # the components silently stop being the same component.
       - run: pnpm verify:parity
 
@@ -91,6 +91,8 @@ jobs:
       - run: pnpm build:vue
 
       - run: pnpm build:angular
+
+      - run: pnpm build:wc
 
       - run: pnpm test
 

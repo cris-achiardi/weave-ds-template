@@ -1,0 +1,1 @@
+export { DsAccordion } from './Accordion';

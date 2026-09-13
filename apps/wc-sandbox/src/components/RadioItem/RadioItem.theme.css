@@ -1,0 +1,68 @@
+/*
+ * RadioItem — YOUR FILE, and the one file that could NOT be copied.
+ *
+ * The React, Vue and Angular sandboxes share this file byte for byte, because all three render into
+ * the light DOM and a descendant selector over data attributes reaches all of them. A shadow root
+ * ends that. This is the same values in the shadow grammar:
+ *
+ *   [data-ds-component='RadioItem']                       ->  :host
+ *   [data-ds-component='RadioItem'] [data-ds-part='x']    ->  [part='x']
+ *   [data-ds-component='RadioItem'][data-ds-size='s']     ->  :host([size='s'])
+ *   [data-ds-component='RadioItem'][aria-checked='true']  ->  :host([checked])
+ *   [data-ds-component='RadioItem']:disabled              ->  :host([disabled])
+ *
+ * NOT ONE DECLARATION CHANGED. Every value, every colour and every length is the React sandbox's,
+ * unedited — which is the useful half of the result: what the shadow boundary costs is the
+ * SELECTORS, and nothing else.
+ *
+ * Translated mechanically from apps/react-sandbox, then checked in a browser.
+ */
+
+/* --- structure, in the wrong file: the contract has no `layout` block ------------------- */
+:host {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+:host([disabled]) {
+  cursor: not-allowed;
+}
+:host [part='control'] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+/* --- end of misplaced structure -------------------------------------------------------- */
+
+:host {
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+}
+:host([disabled]) {
+  color: #5a5a62;
+}
+:host [part='control'] {
+  inline-size: 16px;
+  block-size: 16px;
+  border: 1px solid #55555f;
+  border-radius: 999px;
+  background: #1a1a1d;
+}
+:host([disabled]:hover) [part='control'] {
+  border-color: #8b83f0;
+}
+:host(:focus-visible) [part='control'] {
+  outline: 2px solid #8b83f0;
+  outline-offset: 2px;
+}
+:host [part='mark'] {
+  inline-size: 8px;
+  block-size: 8px;
+  background: #5146e6;
+  border-radius: 999px;
+}
+:host [part='label'] {
+  color: inherit;
+  font-size: 0.9rem;
+}

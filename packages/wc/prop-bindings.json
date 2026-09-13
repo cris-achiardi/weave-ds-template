@@ -1,0 +1,68 @@
+{
+  "_doc": "How the PLATFORM spells the agnostic vocabulary. The canon — which axes exist, their canonical values, the anti-synonym glossary — lives in @ds/contracts/prop-canon.json and is framework-free. This file holds only the places a custom element's idiom differs from it.",
+  "_why": "The fourth of these files, and the first that is not about a framework's taste. There is no framework. What it records is what the PLATFORM offers a component author, which turns out to be three separate mechanisms where every framework offers one binding.",
+  "_regenerate": "Hand-maintained. Nothing generates this file.",
+  "conventions": {
+    "propCase": "camelCase as a property, kebab-case as an attribute, and the component keeps the two in step by hand. `readOnly` the property is `read-only` the attribute — the same split the DOM already has between `el.className` and `class=`.",
+    "valueCase": "kebab-case — identical to the canon",
+    "eventPrefix": "<prefix>-, e.g. `ds-checked-change`. Prefixed because an event name is global once it crosses the shadow boundary and `change` is already taken by the platform.",
+    "booleanNaming": "bare adjective, as the canon requires. Presence-only, as every HTML boolean attribute is."
+  },
+  "_tagRule": "A custom element's tag is `<prefix>-<kebab(Component)>`: `<ds-tab-item>`. Derived rather than stored in the binding, because a tag that could disagree with the component name would be a second name for one thing. The hyphen is not a style choice — a custom element name is REQUIRED to contain one, which is the platform reserving every single-word tag for itself.",
+  "_controlRulesDoc": "How a custom element spells each `control` value from a contract's `states`. THESE ARE RULES, NOT A TABLE: one entry per control value covers every state in the library.",
+  "controlRules": {
+    "consumer": {
+      "emits": ["an attribute", "a property that reads and writes it"],
+      "note": "Two mechanisms rather than one, and both are required: an attribute so markup and CSS can reach it, a property so script can set a non-string value. Keeping them in step is the component's job — there is nothing to do it for you."
+    },
+    "shared": {
+      "emits": ["an attribute", "a property", "a `<prefix>-<name>-change` CustomEvent"],
+      "note": "THREE MECHANISMS, which is the same count as React's three props and not the same thing. React's trio stands in for a missing language feature; each of these does a genuinely different job. The event is `composed: true` so it escapes the shadow root at all and `bubbles: true` so an ancestor hears it — both are opt-in, because an event that crossed the boundary by default would leak every internal click to the page."
+    },
+    "internal": {
+      "emits": [],
+      "note": "NO public surface. The state still reaches CSS, as a host attribute the component reflects. Identical in intent across all four backends."
+    }
+  },
+  "_valueCrossingDoc": "An attribute is always a string, so every non-string value needs a conversion in both directions and the emitter writes both. The other three backends pass values through a binding and never meet this.",
+  "valueRules": {
+    "boolean": "presence: `hasAttribute` / `toggleAttribute`. `checked=\"false\"` is TRUE, which is the same trap @ds/platform-web's `native.disabled.rendersFalse` records.",
+    "enum": "the word itself, with the contract's default when the attribute is absent",
+    "number": "`Number()` in, `String()` out",
+    "tokens": "space-separated, like `class`, `rel` and `aria-describedby`. A collection with `cardinality: many` holds a LIST of member identities, and this is the only backend that ever has to write one down as text."
+  },
+  "_slotsDoc": "A contract's `composition.slots` becomes a named `<slot>` in the shadow root, filled by a consumer writing `slot=\"label\"` on a child. Closest to Angular's content projection of the four.",
+  "slotRules": {
+    "named": {
+      "emits": [
+        "<slot name=\"x\"></slot> at the part the contract names",
+        "has-x reflected on the host"
+      ],
+      "note": "THE SECOND HALF IS NOT OPTIONAL, and no other backend needs it. React renders `{iconStart}` and an unfilled slot leaves an empty element, so `:empty { display: none }` hides it. A shadow root always contains the <slot> element whether or not anything is assigned, so `:empty` never matches and an unfilled icon box keeps its size. CSS cannot ask a slot whether it has assigned nodes, so the component answers it with a `slotchange` listener."
+    },
+    "children": {
+      "emits": ["<slot></slot>"],
+      "note": "The contract's `composition.children`. The default slot."
+    }
+  },
+  "_axisOverridesDoc": "Axis name -> the attribute that carries it, for the rare case where the canonical name collides with something the platform owns. Empty means every axis is spelled exactly as the canon spells it.",
+  "axisOverrides": {},
+  "_behaviorBindingDoc": "Behaviour vocabulary primitive -> the implementation that satisfies it.",
+  "behaviorBindings": {
+    "dismissal": "useDismissal from @ds/wc/behavior",
+    "linear-navigation": "useLinearNavigation from @ds/wc/behavior",
+    "range-stepping": "useRangeControl from @ds/wc/behavior"
+  },
+  "_whatThePlatformSuppliesThatNoFrameworkDoes": {
+    "scoping": "The shadow root IS the scope. `data-<prefix>-component`, `data-<prefix>-part` and `data-<prefix>-<axis>` — three attribute families the other backends invented and nothing in the contract system defines — are all unnecessary here.",
+    "part": "`part` is a real platform attribute with a real selector behind it, `::part()`. The other three spell it `data-<prefix>-part` and reach it with a descendant selector.",
+    "delegatesFocus": "A shadow root option. React's binding carries `refTarget` and says outright that it exists because React has no delegatesFocus.",
+    "handler composition": "`addEventListener` is additive by definition. React and Vue each write a chain by hand; Angular gets it free the same way this does."
+  },
+  "_whatItCosts": {
+    "one fact, two places": "A state has to reach ARIA on the INNER element, where assistive technology reads it, and be reflected onto the HOST, where CSS can select it. `::part()` cannot take an attribute selector, so there is no single place that serves both.",
+    "the host has no display": "A custom element is `display: inline` until a stylesheet says otherwise. A <div> root is already block and a <button> root is already inline-block, so no other backend hands this obligation to a consumer.",
+    "an IDREF cannot cross a shadow boundary": "`aria-controls`, `aria-labelledby` and `aria-describedby` take IDREFs, and an IDREF resolves within one tree. A tab and its panel are in different shadow roots. The platform answer is the ARIA reflection API (element references rather than ids), which is not in every browser yet.",
+    "no form participation": "A host is not a form control. ElementInternals and form association are their own piece of work and are not done here."
+  }
+}

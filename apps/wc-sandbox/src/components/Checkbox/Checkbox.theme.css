@@ -1,0 +1,98 @@
+/*
+ * Checkbox — YOUR FILE, and the one file that could NOT be copied.
+ *
+ * The React, Vue and Angular sandboxes share this file byte for byte, because all three render into
+ * the light DOM and a descendant selector over data attributes reaches all of them. A shadow root
+ * ends that. This is the same values in the shadow grammar:
+ *
+ *   [data-ds-component='Checkbox']                       ->  :host
+ *   [data-ds-component='Checkbox'] [data-ds-part='x']    ->  [part='x']
+ *   [data-ds-component='Checkbox'][data-ds-size='s']     ->  :host([size='s'])
+ *   [data-ds-component='Checkbox'][aria-checked='true']  ->  :host([checked])
+ *   [data-ds-component='Checkbox']:disabled              ->  :host([disabled])
+ *
+ * NOT ONE DECLARATION CHANGED. Every value, every colour and every length is the React sandbox's,
+ * unedited — which is the useful half of the result: what the shadow boundary costs is the
+ * SELECTORS, and nothing else.
+ *
+ * Translated mechanically from apps/react-sandbox, then checked in a browser.
+ */
+
+/* --- structure, in the wrong file: the contract has no `layout` block -------------------- */
+:host {
+  display: inline-flex;
+  align-items: center;
+  background: none;
+  border: none;
+  font: inherit;
+  cursor: pointer;
+  text-align: start;
+}
+:host([disabled]) {
+  cursor: not-allowed;
+}
+:host [part='box'] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+/* --- end of misplaced structure ---------------------------------------------------------- */
+
+:host {
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+  color: #e8e8ea;
+}
+:host([disabled]) {
+  color: #5a5a62;
+  opacity: 0.6;
+}
+
+:host [part='box'] {
+  inline-size: 16px;
+  block-size: 16px;
+  border: 1px solid #55555f;
+  border-radius: 0.25rem;
+  background: #1a1a1d;
+}
+:host(:not([disabled]):hover) [part='box'] {
+  border-color: #8b83f0;
+}
+:host([invalid]) [part='box'] {
+  border-color: #c4342b;
+}
+:host(:focus-visible) [part='box'] {
+  outline: 2px solid #8b83f0;
+  outline-offset: 2px;
+}
+
+/* checked and mixed fill the box; unchecked does not */
+:host([checked]) [part='box'],
+:host([checked='mixed']) [part='box'] {
+  background: #5146e6;
+  border-color: #5146e6;
+}
+
+/*
+ * The tick and the dash are different SHAPES, not one mark at two opacities. The contract's a11y
+ * notes require that: anyone who cannot tell them apart is told "some" when the answer is "all".
+ */
+:host [part='tick'] {
+  inline-size: 9px;
+  block-size: 5px;
+  border-inline-start: 2px solid #ffffff;
+  border-block-end: 2px solid #ffffff;
+  transform: rotate(-45deg) translate(1px, -1px);
+}
+:host [part='dash'] {
+  inline-size: 9px;
+  block-size: 2px;
+  background: #ffffff;
+  border-radius: 1px;
+}
+
+:host [part='label'] {
+  color: inherit;
+  font-size: 0.9rem;
+}

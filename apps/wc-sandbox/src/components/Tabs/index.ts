@@ -1,0 +1,1 @@
+export { DsTabs } from './Tabs';

@@ -1,0 +1,64 @@
+/*
+ * TabItem — YOUR FILE, and the one file that could NOT be copied.
+ *
+ * The React, Vue and Angular sandboxes share this file byte for byte, because all three render into
+ * the light DOM and a descendant selector over data attributes reaches all of them. A shadow root
+ * ends that. This is the same values in the shadow grammar:
+ *
+ *   [data-ds-component='TabItem']                       ->  :host
+ *   [data-ds-component='TabItem'] [data-ds-part='x']    ->  [part='x']
+ *   [data-ds-component='TabItem'][data-ds-size='s']     ->  :host([size='s'])
+ *   [data-ds-component='TabItem'][aria-checked='true']  ->  :host([checked])
+ *   [data-ds-component='TabItem']:disabled              ->  :host([disabled])
+ *
+ * NOT ONE DECLARATION CHANGED. Every value, every colour and every length is the React sandbox's,
+ * unedited — which is the useful half of the result: what the shadow boundary costs is the
+ * SELECTORS, and nothing else.
+ *
+ * Translated mechanically from apps/react-sandbox, then checked in a browser.
+ */
+
+/* --- structure, in the wrong file -------------------------------------------------------- */
+:host {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  background: none;
+  border: none;
+  font: inherit;
+  cursor: pointer;
+}
+:host([disabled]) {
+  cursor: not-allowed;
+}
+:host [part='indicator'] {
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: -1px;
+}
+/* --- end of misplaced structure ---------------------------------------------------------- */
+
+:host {
+  padding: 0.5rem 0.8rem;
+  min-block-size: 38px;
+  color: #8b8b93;
+  font-size: 0.875rem;
+}
+:host(:not([disabled]):hover) {
+  color: #d4d4d8;
+}
+:host([disabled]) {
+  color: #4a4a52;
+}
+:host([selected]) {
+  color: #f2f2f4;
+}
+:host(:focus-visible) {
+  outline: 2px solid #8b83f0;
+  outline-offset: -2px;
+  border-radius: 0.25rem;
+}
+:host [part='indicator'] {
+  block-size: 2px;
+  background: #5146e6;
+}

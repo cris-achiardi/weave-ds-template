@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Design system sandbox — web components</title>
+  </head>
+  <body>
+    <!--
+      THE PAGE IS THE PAGE. There is no App component, no root element to mount into and no
+      framework in this document at all — the markup below is what the browser parses, and
+      /src/main.ts only imports the component definitions and wires three readouts.
+
+      That is the strongest single result of the four sandboxes and the reason this one is plain
+      HTML: these components run with nothing installed.
+    -->
+    <main class="sandbox">
+      <header>
+        <h1>Design system sandbox — web components</h1>
+        <p>
+          The same fifteen contracts the React, Vue and Angular sandboxes render, compiled by
+          <code>packages/wc/src/emit/emit.mjs</code>. Open all four — <code>:4300</code>,
+          <code>:4301</code>, <code>:4302</code> and <code>:4303</code>. See
+          <code>docs/research/0006-the-shadow-boundary.md</code>.
+        </p>
+        <p>
+          <strong>View source on this page.</strong> It is hand-written HTML, and every other
+          sandbox in this repo is a component tree in a framework's own language.
+        </p>
+        <p>
+          <strong>Not graded.</strong> The React page labels every specimen with how far its
+          contract got, because someone drove each one in a browser. Nothing here claims that.
+        </p>
+      </header>
+
+      <section class="specimen" id="specimen-Button">
+        <h2>Button</h2>
+        <p class="specimen-note">
+          Three axes become three attributes on the host, and the theme selects them with
+          <code>:host([hierarchy='primary'])</code>. The other three backends invented a
+          <code>data-ds-&lt;axis&gt;</code> family to do this; a shadow root makes it unnecessary,
+          because the host's own attributes are already scoped by its tag.
+        </p>
+        <div class="specimen-row">
+          <ds-button hierarchy="primary">Save changes</ds-button>
+          <ds-button hierarchy="secondary">Cancel</ds-button>
+          <ds-button hierarchy="tertiary">Learn more</ds-button>
+          <ds-button hierarchy="primary" variant="danger">Delete project</ds-button>
+          <ds-button hierarchy="secondary" variant="danger">Delete</ds-button>
+          <ds-button hierarchy="secondary" variant="brand">Upgrade</ds-button>
+        </div>
+      </section>
+
+      <section class="specimen" id="specimen-Button-size">
+        <h2>Button — size and state</h2>
+        <p class="specimen-note">
+          The icon slot needed work no other backend did. React renders nothing into an empty
+          element and hides it with <code>:empty</code>; a shadow root always contains the
+          <code>&lt;slot&gt;</code>, so <code>:empty</code> never matches. The component reflects
+          <code>has-icon-start</code> on a <code>slotchange</code> instead.
+        </p>
+        <div class="specimen-row">
+          <ds-button size="s">Small</ds-button>
+          <ds-button size="m">Medium</ds-button>
+          <ds-button size="l">Large</ds-button>
+          <ds-button hierarchy="primary" loading>Saving</ds-button>
+          <ds-button disabled>Disabled</ds-button>
+          <ds-button hierarchy="primary"><span slot="icon-start">+</span>With icon</ds-button>
+        </div>
+      </section>
+
+      <section class="specimen" id="specimen-Checkbox">
+        <h2>Checkbox</h2>
+        <p class="specimen-note">
+          A state with three values rather than two. The host carries
+          <code>checked="mixed"</code> for CSS and the inner element carries
+          <code>aria-checked="mixed"</code> for assistive technology — one fact in two places, which
+          is what the shadow boundary costs.
+        </p>
+        <div class="specimen-row">
+          <ds-checkbox id="terms" checked="mixed"><span slot="label">Select all</span></ds-checkbox>
+          <ds-checkbox checked="checked"><span slot="label">Marketing email</span></ds-checkbox>
+          <ds-checkbox><span slot="label">Product updates</span></ds-checkbox>
+          <ds-checkbox checked="mixed"><span slot="label">Partly chosen</span></ds-checkbox>
+          <ds-checkbox invalid><span slot="label">Required, and unanswered</span></ds-checkbox>
+          <ds-checkbox disabled checked="checked"><span slot="label">Disabled</span></ds-checkbox>
+        </div>
+      </section>
+
+      <section class="specimen" id="specimen-TextField">
+        <h2>TextField</h2>
+        <p class="specimen-note">
+          The DOM's own <code>input</code> event, as in Vue and Angular. The host is <em>not</em> a
+          form control: it does not participate in a form and does not carry the value. That is a
+          real gap, recorded rather than solved.
+        </p>
+        <div class="specimen-row">
+          <ds-text-field placeholder="Uncontrolled"></ds-text-field>
+          <ds-text-field size="s" placeholder="Small"></ds-text-field>
+          <ds-text-field size="l" placeholder="Large"></ds-text-field>
+          <ds-text-field invalid value="not an email"></ds-text-field>
+          <ds-text-field read-only value="Read-only"></ds-text-field>
+          <ds-text-field disabled placeholder="Disabled"></ds-text-field>
+        </div>
+      </section>
+
+      <section class="specimen" id="specimen-Slider">
+        <h2>Slider</h2>
+        <p class="specimen-note">
+          Arrow keys, Page Up/Down, Home/End and pointer drag, from the same pure range-stepping
+          core every other backend runs — now literally the same file, in
+          <code>@ds/behavior</code>.
+        </p>
+        <div class="specimen-row">
+          <ds-slider id="volume" value="40" aria-label="Volume"></ds-slider>
+          <span class="readout" id="volume-readout">value: 40</span>
+          <button type="button" class="ghost" id="volume-down">−10</button>
+          <button type="button" class="ghost" id="volume-up">+10</button>
+        </div>
+      </section>
+
+      <section class="specimen" id="specimen-Tabs">
+        <h2>Tabs + TabItem + TabPanel</h2>
+        <p class="specimen-note">
+          A member finds its collection with <code>closest()</code> — the DOM answering a question
+          React, Vue and Angular each answered with a container of their own, and the only one of
+          the four that works across a framework boundary.
+        </p>
+        <div class="specimen-row">
+          <ds-tabs value="overview" aria-label="Project sections">
+            <ds-tab-item value="overview"><span slot="label">Overview</span></ds-tab-item>
+            <ds-tab-item value="activity"><span slot="label">Activity</span></ds-tab-item>
+            <ds-tab-item value="settings" disabled><span slot="label">Settings</span></ds-tab-item>
+            <ds-tab-panel value="overview">
+              A collection with two kinds of member. This panel and its tab compare against the same
+              value; neither holds it.
+            </ds-tab-panel>
+            <ds-tab-panel value="activity">
+              Selection follows focus in this pattern, which suits panels already in memory and is
+              the wrong default for one that fetches. The contract cannot say which was chosen.
+            </ds-tab-panel>
+            <ds-tab-panel value="settings">
+              A panel for the disabled tab, so the tab's aria-controls has something to name.
+            </ds-tab-panel>
+          </ds-tabs>
+        </div>
+      </section>
+
+      <section class="specimen" id="specimen-Dialog">
+        <h2>Dialog</h2>
+        <p class="specimen-note">
+          A native <code>&lt;dialog&gt;</code> inside the shadow root. The platform supplies focus
+          containment, inertness and Escape to an element it owns, wherever that element lives — no
+          effect, no watcher, no change detection, just a method call in <code>#update()</code>.
+        </p>
+        <div class="specimen-row">
+          <ds-button hierarchy="primary" id="open-dialog">Open the dialog</ds-button>
+          <ds-dialog id="dialog">
+            <span slot="title">Delete this project?</span>
+            <span slot="body">
+              Everything in it goes with it. Escape and the backdrop both close this, and neither is
+              code the emitter wrote by choice.
+            </span>
+            <span slot="actions">
+              <ds-button hierarchy="secondary" data-close>Cancel</ds-button>
+              <ds-button hierarchy="primary" variant="danger" data-close>Delete</ds-button>
+            </span>
+          </ds-dialog>
+        </div>
+      </section>
+
+      <section class="specimen" id="specimen-Switch">
+        <h2>Switch</h2>
+        <p class="specimen-note">
+          <code>control: shared</code> costs three React props, one Vue <code>defineModel</code>,
+          one Angular <code>model()</code> — and here three <em>mechanisms</em>: an attribute, a
+          property, and a <code>ds-checked-change</code> event. Closest in shape to React, and
+          unlike React each of the three does a genuinely different job.
+        </p>
+        <div class="specimen-row">
+          <span class="labelled">
+            <ds-switch id="s1" checked></ds-switch>
+            <label for="s1">Notifications</label>
+          </span>
+          <span class="labelled">
+            <ds-switch id="s2" checked></ds-switch>
+            <label for="s2">Wi-Fi</label>
+          </span>
+          <button type="button" class="ghost" id="toggle-wifi">Toggle from outside</button>
+          <span class="labelled">
+            <ds-switch id="s3" disabled checked></ds-switch>
+            <label for="s3">Disabled</label>
+          </span>
+          <span class="labelled">
+            <ds-switch id="s4" read-only checked></ds-switch>
+            <label for="s4">Read-only</label>
+          </span>
+        </div>
+      </section>
+
+      <section class="specimen" id="specimen-Accordion">
+        <h2>Accordion + AccordionItem</h2>
+        <p class="specimen-note">
+          <code>cardinality: many</code>, so the selection is a list. An attribute is a string, so
+          this is the one backend that had to choose a separator — space-separated, like every other
+          token list the platform already has.
+        </p>
+        <div class="specimen-row">
+          <ds-accordion value="what">
+            <ds-accordion-item value="what">
+              <span slot="heading">What is a contract?</span>
+              <span slot="panel">
+                The agnostic specification a component is generated from. It is the thing this
+                library ships; the component is output.
+              </span>
+            </ds-accordion-item>
+            <ds-accordion-item value="why">
+              <span slot="heading">Why does this one open?</span>
+              <span slot="panel">
+                Because the contract says what opening means: the accordion holds a selection, this
+                item is a member of it, and the trigger toggles that membership.
+              </span>
+            </ds-accordion-item>
+            <ds-accordion-item value="disabled" disabled>
+              <span slot="heading">This one is disabled</span>
+              <span slot="panel">You should not be able to read this.</span>
+            </ds-accordion-item>
+          </ds-accordion>
+        </div>
+      </section>
+
+      <section class="specimen" id="specimen-RadioGroup">
+        <h2>RadioGroup + RadioItem</h2>
+        <p class="specimen-note">
+          <code>cardinality: one</code>, and the sold-out option is skipped by the arrows rather
+          than kept focusable — the one place these contracts disagree with the tabs.
+        </p>
+        <div class="specimen-row">
+          <ds-radio-group id="plan" value="monthly" aria-label="Billing period" class="radio-row">
+            <ds-radio-item value="monthly"><span slot="label">Monthly</span></ds-radio-item>
+            <ds-radio-item value="yearly"
+              ><span slot="label">Yearly (2 months free)</span></ds-radio-item
+            >
+            <ds-radio-item value="lifetime" disabled
+              ><span slot="label">Lifetime (sold out)</span></ds-radio-item
+            >
+          </ds-radio-group>
+          <span class="readout" id="plan-readout">chosen: monthly</span>
+        </div>
+      </section>
+
+      <section class="specimen" id="specimen-Tooltip">
+        <h2>Tooltip</h2>
+        <p class="specimen-note">
+          Correct structure, and nothing opens it — as in all three other backends. A gap in the
+          CONTRACT reproducing identically in a fourth is as close to proof as this repo gets that
+          it is not an emitter's fault.
+        </p>
+        <div class="specimen-row">
+          <ds-tooltip id="tip">
+            <span slot="trigger">
+              <button type="button" class="ghost" id="toggle-tip">
+                Toggle the tooltip from outside
+              </button>
+            </span>
+            <span slot="content">
+              A contract can describe this bubble. It cannot yet say what opens it, or where it
+              goes.
+            </span>
+          </ds-tooltip>
+        </div>
+      </section>
+
+      <section class="specimen" id="specimen-Field">
+        <h2>Field</h2>
+        <p class="specimen-note">
+          <strong>THE ONE THING THIS BACKEND CANNOT DO.</strong> A Field's control is named by its
+          label and described by its description, and those relationships are IDREFs. An IDREF
+          resolves within one tree, and the control a consumer slots in lives in a different one —
+          so the reference points at nothing. See the research note; the platform answer is the ARIA
+          reflection API, which is not in every browser yet.
+        </p>
+        <div class="specimen-row">
+          <ds-field id="field">
+            <span slot="label">Email address</span>
+            <span slot="description">We only use this to send receipts.</span>
+            <span slot="error">That does not look like an email address.</span>
+            <ds-text-field slot="control" id="email" placeholder="you@example.com"></ds-text-field>
+          </ds-field>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

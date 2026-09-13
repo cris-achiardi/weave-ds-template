@@ -1,0 +1,19 @@
+{
+  "name": "wc-sandbox",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@ds/tokens": "workspace:*",
+    "@ds/wc": "workspace:*"
+  },
+  "devDependencies": {
+    "vite": "^7.0.0"
+  }
+}

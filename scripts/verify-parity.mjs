@@ -44,6 +44,7 @@ const BACKENDS = [
   { framework: 'react', dir: 'packages/react', suffix: '.react.json' },
   { framework: 'vue', dir: 'packages/vue', suffix: '.vue.json' },
   { framework: 'angular', dir: 'packages/angular', suffix: '.angular.json' },
+  { framework: 'wc', dir: 'packages/wc', suffix: '.wc.json' },
 ];
 
 /** The framework-free decision logic. It lives in ONE place and must stay there. */

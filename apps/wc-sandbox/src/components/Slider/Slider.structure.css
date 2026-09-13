@@ -1,0 +1,34 @@
+/* GENERATED from Slider.contract.json. Do not edit by hand — regenerate instead. */
+/*
+ * STRUCTURE ONLY, INSIDE THE SHADOW ROOT — and there is almost none, on purpose.
+ *
+ * The contract has no `layout` block and nothing in it describes where a part sits, so
+ * there is nothing to derive from. The emitter will not guess: an inferred layout that
+ * renders is harder to catch than one that does not.
+ *
+ * ONE THING THIS FILE OWES YOU THAT THE OTHER BACKENDS DO NOT. A custom element is
+ * `display: inline` until a stylesheet says otherwise. Slider almost certainly needs
+ * something else, and only you know which — so `:host` below is left with the
+ * declaration commented out rather than guessed.
+ */
+
+:host {
+  /* display: ; <- REQUIRED, and yours. See above. */
+}
+
+/* A hidden host must stay hidden whatever display you chose. */
+:host([hidden]) {
+  display: none !important;
+}
+
+[part='track'] {
+  /* no declared layout for this part */
+}
+
+[part='fill'] {
+  /* no declared layout for this part */
+}
+
+[part='thumb'] {
+  /* no declared layout for this part */
+}

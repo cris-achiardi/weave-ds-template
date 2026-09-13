@@ -1,0 +1,30 @@
+/*
+ * RadioGroup — YOUR FILE, and the one file that could NOT be copied.
+ *
+ * The React, Vue and Angular sandboxes share this file byte for byte, because all three render into
+ * the light DOM and a descendant selector over data attributes reaches all of them. A shadow root
+ * ends that. This is the same values in the shadow grammar:
+ *
+ *   [data-ds-component='RadioGroup']                       ->  :host
+ *   [data-ds-component='RadioGroup'] [data-ds-part='x']    ->  [part='x']
+ *   [data-ds-component='RadioGroup'][data-ds-size='s']     ->  :host([size='s'])
+ *   [data-ds-component='RadioGroup'][aria-checked='true']  ->  :host([checked])
+ *   [data-ds-component='RadioGroup']:disabled              ->  :host([disabled])
+ *
+ * NOT ONE DECLARATION CHANGED. Every value, every colour and every length is the React sandbox's,
+ * unedited — which is the useful half of the result: what the shadow boundary costs is the
+ * SELECTORS, and nothing else.
+ *
+ * Translated mechanically from apps/react-sandbox, then checked in a browser.
+ */
+
+/* --- structure, in the wrong file ------------------------------------------------------ */
+:host {
+  display: flex;
+  flex-direction: column;
+}
+/* --- end of misplaced structure -------------------------------------------------------- */
+
+:host {
+  gap: 0.15rem;
+}

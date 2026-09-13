@@ -1,0 +1,59 @@
+/*
+ * Field — YOUR FILE, and the one file that could NOT be copied.
+ *
+ * The React, Vue and Angular sandboxes share this file byte for byte, because all three render into
+ * the light DOM and a descendant selector over data attributes reaches all of them. A shadow root
+ * ends that. This is the same values in the shadow grammar:
+ *
+ *   [data-ds-component='Field']                       ->  :host
+ *   [data-ds-component='Field'] [data-ds-part='x']    ->  [part='x']
+ *   [data-ds-component='Field'][data-ds-size='s']     ->  :host([size='s'])
+ *   [data-ds-component='Field'][aria-checked='true']  ->  :host([checked])
+ *   [data-ds-component='Field']:disabled              ->  :host([disabled])
+ *
+ * NOT ONE DECLARATION CHANGED. Every value, every colour and every length is the React sandbox's,
+ * unedited — which is the useful half of the result: what the shadow boundary costs is the
+ * SELECTORS, and nothing else.
+ *
+ * Translated mechanically from apps/react-sandbox, then checked in a browser.
+ */
+
+:host {
+  /* display: ; */
+  /* gap: ; */
+}
+
+:host [part='label'] {
+  /* color: ; */
+  /* font-size: ; */
+  /* font-weight: ; */
+}
+
+/* state: disabled — Label, control and description all take the disabled treatment. */
+:host([disabled]) [part='label'] {
+  /* color: ; */
+}
+
+/* state: focus-within — The label takes its focused treatment. */
+/* Hand-patched: this file is emitted ONCE and never rewritten, so renaming the state in the
+   contract fixed the emitter's output and not this. The rule was dead twice over — the selector
+   syntax was wrong, and the state it named (`focused`) is not one any platform provides, so
+   nothing was ever going to set it. `:focus-within` needs no attribute at all. */
+[data-ds-component='Field']:focus-within [data-ds-part='label'] {
+  color: #c9c6f5;
+}
+
+:host [part='description'] {
+  /* color: ; */
+  /* font-size: ; */
+}
+
+/* state: disabled — Label, control and description all take the disabled treatment. */
+:host([disabled]) [part='description'] {
+  /* color: ; */
+}
+
+:host [part='error'] {
+  /* color: ; */
+  /* font-size: ; */
+}

@@ -1,0 +1,1 @@
+export { DsDialog } from './Dialog';

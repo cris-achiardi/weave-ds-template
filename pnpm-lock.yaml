@@ -117,6 +117,19 @@ importers:
         specifier: ^2.2.0
         version: 2.2.12(typescript@5.9.3)
 
+  apps/wc-sandbox:
+    dependencies:
+      '@ds/tokens':
+        specifier: workspace:*
+        version: link:../../packages/tokens
+      '@ds/wc':
+        specifier: workspace:*
+        version: link:../../packages/wc
+    devDependencies:
+      vite:
+        specifier: ^7.0.0
+        version: 7.3.6(@types/node@24.13.3)(lightningcss@1.33.0)(sass@1.101.0)(yaml@2.9.0)
+
   packages/angular:
     dependencies:
       '@ds/behavior':
@@ -237,6 +250,28 @@ importers:
       vue:
         specifier: ^3.5.13
         version: 3.5.42(typescript@5.9.3)
+
+  packages/wc:
+    dependencies:
+      '@ds/behavior':
+        specifier: workspace:*
+        version: link:../behavior
+      '@ds/emit-web':
+        specifier: workspace:*
+        version: link:../emit-web
+      '@ds/platform-web':
+        specifier: workspace:*
+        version: link:../platform-web
+    devDependencies:
+      '@ds/tokens':
+        specifier: workspace:*
+        version: link:../tokens
+      vite:
+        specifier: ^7.0.0
+        version: 7.3.6(@types/node@24.13.3)(lightningcss@1.33.0)(sass@1.101.0)(yaml@2.9.0)
+      vite-plugin-dts:
+        specifier: ^4.5.0
+        version: 4.5.4(@types/node@24.13.3)(rollup@4.62.4)(typescript@5.9.3)(vite@7.3.6(@types/node@24.13.3)(lightningcss@1.33.0)(sass@1.101.0)(yaml@2.9.0))
 
 packages:
 

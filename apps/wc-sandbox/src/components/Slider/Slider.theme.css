@@ -1,0 +1,90 @@
+/*
+ * Slider — YOUR FILE, and the one file that could NOT be copied.
+ *
+ * The React, Vue and Angular sandboxes share this file byte for byte, because all three render into
+ * the light DOM and a descendant selector over data attributes reaches all of them. A shadow root
+ * ends that. This is the same values in the shadow grammar:
+ *
+ *   [data-ds-component='Slider']                       ->  :host
+ *   [data-ds-component='Slider'] [data-ds-part='x']    ->  [part='x']
+ *   [data-ds-component='Slider'][data-ds-size='s']     ->  :host([size='s'])
+ *   [data-ds-component='Slider'][aria-checked='true']  ->  :host([checked])
+ *   [data-ds-component='Slider']:disabled              ->  :host([disabled])
+ *
+ * NOT ONE DECLARATION CHANGED. Every value, every colour and every length is the React sandbox's,
+ * unedited — which is the useful half of the result: what the shadow boundary costs is the
+ * SELECTORS, and nothing else.
+ *
+ * Translated mechanically from apps/react-sandbox, then checked in a browser.
+ */
+
+/*
+ * ==========================================================================================
+ * THE FILL AND THE THUMB GET THEIR POSITION FROM --ds-fraction.
+ *
+ * Their positions ARE the value, and that is arithmetic over a state rather than static CSS.
+ * The contract still cannot express it — but it does not have to. The component knows the
+ * number, so it publishes it as a custom property on its own root: `--ds-fraction`, a plain
+ * 0..1 along the track, already clamped and snapped.
+ *
+ * This used to be the page's job. The sandbox invented its own `--value` and handed the number
+ * back in through an inline style, which meant the one thing that makes a slider a slider was
+ * the consumer's to implement. Turning the fraction into a percentage is styling; computing it
+ * is not.
+ * ==========================================================================================
+ */
+
+:host {
+  position: relative;
+  touch-action: none;
+  display: flex;
+  align-items: center;
+  inline-size: 220px;
+  block-size: 20px;
+  padding-block: 8px;
+  cursor: pointer;
+}
+:host([disabled]) {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+:host [part='track'] {
+  position: absolute;
+  inset-inline: 0;
+  block-size: 4px;
+  background: #3a3a3f;
+  border-radius: 999px;
+}
+:host [part='fill'] {
+  position: absolute;
+  inset-inline-start: 0;
+  inline-size: calc(var(--ds-fraction, 0) * 100%);
+  block-size: 4px;
+  background: #5146e6;
+  border-radius: 999px;
+}
+:host [part='thumb'] {
+  position: absolute;
+  inline-size: 14px;
+  block-size: 14px;
+  background: #ffffff;
+  border-radius: 999px;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.5);
+  inset-inline-start: calc(var(--ds-fraction, 0) * 100%);
+  translate: -50% 0;
+}
+:host(:hover) [part='thumb'] {
+  inline-size: 16px;
+  block-size: 16px;
+}
+:host(:focus-visible) [part='thumb'] {
+  outline: 2px solid #8b83f0;
+  outline-offset: 2px;
+}
+
+/* `dragging` is control: internal — the component tracks it and no prop can set it. */
+:host([dragging]) [part='thumb'] {
+  inline-size: 16px;
+  block-size: 16px;
+  box-shadow: 0 2px 10px rgb(0 0 0 / 0.7);
+}

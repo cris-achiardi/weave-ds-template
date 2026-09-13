@@ -1,0 +1,1 @@
+export { DsTooltip } from './Tooltip';

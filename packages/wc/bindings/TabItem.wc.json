@@ -1,0 +1,8 @@
+{
+  "$schema": "./binding.schema.json",
+  "component": "TabItem",
+  "contract": "../../contracts/components/TabItem/TabItem.contract.json",
+  "framework": "wc",
+  "element": "button",
+  "notes": ["A member. Registers its own host element with the collection it finds above it."]
+}

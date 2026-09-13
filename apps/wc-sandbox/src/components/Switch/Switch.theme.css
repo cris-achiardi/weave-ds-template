@@ -1,0 +1,104 @@
+/*
+ * Switch — YOUR FILE, and the one file that could NOT be copied.
+ *
+ * The React, Vue and Angular sandboxes share this file byte for byte, because all three render into
+ * the light DOM and a descendant selector over data attributes reaches all of them. A shadow root
+ * ends that. This is the same values in the shadow grammar:
+ *
+ *   [data-ds-component='Switch']                       ->  :host
+ *   [data-ds-component='Switch'] [data-ds-part='x']    ->  [part='x']
+ *   [data-ds-component='Switch'][data-ds-size='s']     ->  :host([size='s'])
+ *   [data-ds-component='Switch'][aria-checked='true']  ->  :host([checked])
+ *   [data-ds-component='Switch']:disabled              ->  :host([disabled])
+ *
+ * NOT ONE DECLARATION CHANGED. Every value, every colour and every length is the React sandbox's,
+ * unedited — which is the useful half of the result: what the shadow boundary costs is the
+ * SELECTORS, and nothing else.
+ *
+ * Translated mechanically from apps/react-sandbox, then checked in a browser.
+ */
+
+/*
+ * ============================================================================================
+ * EVERYTHING IN THIS BLOCK IS STRUCTURE, AND IT IS IN THE WRONG FILE.
+ *
+ * Positioning, flow and stacking are not paint. They belong in Switch.structure.css, which the
+ * emitter owns and regenerates. They are here because the contract has no `layout` block, so the
+ * emitter has nothing to derive them from and refuses to guess.
+ *
+ * The cost is concrete: delete this file and you do not get an unstyled switch, you get a BROKEN
+ * one — the thumb collapses onto the track and the state stops being visible to anyone who cannot
+ * rely on colour, which is a promise the contract makes in writing.
+ * ============================================================================================
+ */
+
+:host {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+:host([disabled]) {
+  cursor: not-allowed;
+}
+
+:host [part='thumb'] {
+  position: absolute;
+  pointer-events: none;
+  inset-inline-start: 2px;
+}
+
+/* ==== end of misplaced structure. Everything below is genuinely paint. ==================== */
+
+:host {
+  inline-size: 44px;
+  block-size: 24px;
+  background: #3a3a3f;
+  border-radius: 999px;
+  border: 1px solid #4a4a52;
+  transition: background 150ms ease;
+}
+
+/* state: checked — the track takes its filled treatment */
+:host([checked]) {
+  background: #5146e6;
+  border-color: #5146e6;
+}
+
+/* state: hover — the track shifts one step */
+:host(:not([disabled]):hover) {
+  background: #46464d;
+}
+
+:host([checked]:not([disabled]):hover) {
+  background: #5f55ea;
+}
+
+/* state: disabled */
+:host([disabled]) {
+  opacity: 0.4;
+}
+
+/* state: focus-visible */
+:host(:focus-visible) {
+  outline: 2px solid #8b83f0;
+  outline-offset: 2px;
+}
+
+:host [part='thumb'] {
+  inline-size: 18px;
+  block-size: 18px;
+  background: #ffffff;
+  border-radius: 999px;
+  transform: translateX(0);
+  transition-duration: 150ms;
+  transition-property: transform;
+  transition-timing-function: ease;
+}
+
+/* state: checked — the thumb travels to the end of the track */
+:host([checked]) [part='thumb'] {
+  transform: translateX(20px);
+}

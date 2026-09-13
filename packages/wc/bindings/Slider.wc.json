@@ -1,0 +1,10 @@
+{
+  "$schema": "./binding.schema.json",
+  "component": "Slider",
+  "contract": "../../contracts/components/Slider/Slider.contract.json",
+  "framework": "wc",
+  "element": "div",
+  "notes": [
+    "The track part is queried out of the shadow root, which is the one place this backend has an easier time than the other three: the element is always there and always its own."
+  ]
+}

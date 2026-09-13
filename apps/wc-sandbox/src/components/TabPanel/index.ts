@@ -1,0 +1,1 @@
+export { DsTabPanel } from './TabPanel';

@@ -1,0 +1,26 @@
+/*
+ * TabPanel — YOUR FILE, and the one file that could NOT be copied.
+ *
+ * The React, Vue and Angular sandboxes share this file byte for byte, because all three render into
+ * the light DOM and a descendant selector over data attributes reaches all of them. A shadow root
+ * ends that. This is the same values in the shadow grammar:
+ *
+ *   [data-ds-component='TabPanel']                       ->  :host
+ *   [data-ds-component='TabPanel'] [data-ds-part='x']    ->  [part='x']
+ *   [data-ds-component='TabPanel'][data-ds-size='s']     ->  :host([size='s'])
+ *   [data-ds-component='TabPanel'][aria-checked='true']  ->  :host([checked])
+ *   [data-ds-component='TabPanel']:disabled              ->  :host([disabled])
+ *
+ * NOT ONE DECLARATION CHANGED. Every value, every colour and every length is the React sandbox's,
+ * unedited — which is the useful half of the result: what the shadow boundary costs is the
+ * SELECTORS, and nothing else.
+ *
+ * Translated mechanically from apps/react-sandbox, then checked in a browser.
+ */
+
+:host {
+  padding-block-start: 0.9rem;
+  color: #a3a3ab;
+  font-size: 0.875rem;
+  line-height: 1.6;
+}

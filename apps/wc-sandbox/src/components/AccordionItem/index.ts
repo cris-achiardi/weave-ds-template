@@ -1,0 +1,1 @@
+export { DsAccordionItem } from './AccordionItem';

@@ -1,0 +1,10 @@
+{
+  "$schema": "./binding.schema.json",
+  "component": "Tooltip",
+  "contract": "../../contracts/components/Tooltip/Tooltip.contract.json",
+  "framework": "wc",
+  "element": "div",
+  "notes": [
+    "A dismissible region with no platform support behind it, so every declared cause is generated."
+  ]
+}

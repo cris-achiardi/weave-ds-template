@@ -3,6 +3,7 @@ packages:
   - 'apps/react-sandbox'
   - 'apps/vue-sandbox'
   - 'apps/angular-sandbox'
+  - 'apps/wc-sandbox'
 
   # Storybook ships complete on disk but stays OUT of the install graph.
   # It is ~350 MB and a config stack to prove nothing the sandbox does not, and it is the

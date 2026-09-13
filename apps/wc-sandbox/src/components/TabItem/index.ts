@@ -1,0 +1,1 @@
+export { DsTabItem } from './TabItem';

@@ -40,9 +40,11 @@ packages/emit-web/ @ds/emit-web — what every DOM-emitting backend shares: cont
 packages/react/    @ds/react  — a backend: React bindings, emitter, behaviour primitives
 packages/vue/      @ds/vue    — a second backend, same shape. It exists to TEST the contract
 packages/angular/  @ds/angular — a third. Attaches to elements rather than rendering them
+packages/wc/       @ds/wc     — a fourth, with NO framework: custom elements + a shadow root
 apps/react-sandbox/  fast Vite harness at :4300, in the workspace
 apps/vue-sandbox/    the same fifteen contracts at :4301
-apps/angular-sandbox/ and again at :4302 — open all three at once
+apps/angular-sandbox/ and again at :4302
+apps/wc-sandbox/     plain HTML at :4303 — no framework in the page at all
 apps/storybook/    complete on disk, deliberately OUT of the install graph
 docs/research/     pre-decision: what is measurably true
 docs/ADR/          post-decision: what we decided and why
@@ -50,10 +52,11 @@ docs/ADR/          post-decision: what we decided and why
 .figma/            which design file we read, and what has been reconciled
 ```
 
-There are THREE backends on purpose. A contract that compiles to only one framework is not a
+There are FOUR backends on purpose. A contract that compiles to only one framework is not a
 specification, it is that framework with extra steps — see
 [`docs/research/0004`](./docs/research/0004-a-second-backend-reading-the-same-contracts.md) and
-[`0005`](./docs/research/0005-a-third-backend-and-what-only-it-could-find.md) for what they proved
+[`0005`](./docs/research/0005-a-third-backend-and-what-only-it-could-find.md) and
+[`0006`](./docs/research/0006-the-shadow-boundary.md) for what they proved
 and, more usefully, what they did not.
 
 **[`packages/react/CLAUDE.md`](./packages/react/CLAUDE.md) is the authority for library
@@ -79,7 +82,8 @@ is the single source of truth; never hard-code a prefix anywhere else.
 ```bash
 pnpm dev                 # React sandbox at :4300
 pnpm dev:vue             # Vue sandbox at :4301
-pnpm dev:angular         # Angular sandbox at :4302 — the comparison is the point
+pnpm dev:angular         # Angular sandbox at :4302
+pnpm dev:wc              # web components at :4303 — the comparison is the point
 pnpm build               # tokens, then the library
 pnpm verify              # the full local gate — run this before pushing
 
@@ -88,7 +92,7 @@ pnpm contract --coverage # who is contracted
 pnpm prop-map            # regenerate the prop glossary
 pnpm adr-index           # regenerate the ADR index from the records — never edit it by hand
 pnpm verify:docs         # every link, path and command in the docs resolves
-pnpm verify:parity       # the three backends have not drifted apart
+pnpm verify:parity       # the four backends have not drifted apart
 pnpm report:paints       # token policy vs stylesheet — a REPORT, never a gate
 ```
 

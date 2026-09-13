@@ -1,0 +1,149 @@
+# `emit/`
+
+The web-components backend: templates that turn a contract plus its binding into component source in
+a consumer's repo.
+
+Three files, and the middle one is the interesting one:
+
+| File                                 | Holds                                                        |
+| ------------------------------------ | ------------------------------------------------------------ |
+| [`emit.mjs`](./emit.mjs)             | the custom element                                           |
+| [`css-shadow.mjs`](./css-shadow.mjs) | the two stylesheets, in the shadow grammar                   |
+| [`surface.mjs`](./surface.mjs)       | what a contract implies as attributes, properties and events |
+
+## What it emits, per component
+
+```
+<Name>.ts               a custom element: shadow root, template, accessors, #update()
+<Name>.structure.css    layout only. ADOPTED into the shadow root. REGENERATED.
+<Name>.theme.css        emitted EMPTY, one commented socket per unbound channel. YOURS.
+index.ts                local barrel
+```
+
+The same four files every other backend produces. The stylesheets are **not** the same two —
+see below.
+
+## `css-shadow.mjs` is the decision `@ds/emit-web` deferred
+
+That package's README says, of its light-DOM stylesheet pair:
+
+> Whether that becomes a parameter on these functions or a second module beside them is NOT decided
+> here, because nothing has built it yet.
+
+**This is that decision, and the answer was a separate module — in a different package, not even
+beside it.** Parameterising would have meant one function branching on a flag at every selector it
+writes, and the two grammars do not line up selector for selector:
+
+```text
+light DOM                                           shadow DOM
+[data-ds-component='Button']                        :host
+[data-ds-component='Button'] [data-ds-part='x']     [part='x']
+[data-ds-component='Button'][data-ds-hierarchy=..]  :host([hierarchy='...'])
+[data-ds-component='Button'][data-ds-state-open]    :host([open])
+```
+
+Three of the four families on the left **vanish**. That is a different shape of output, not a
+different spelling of the same one.
+
+### Every state lives on the host
+
+A browser-owned state uses the host's pseudo-class (`:host(:hover)`); an authored one uses a host
+attribute the component reflects (`:host([checked])`).
+
+The alternative — selecting the inner element, `[part='root']:disabled` — was rejected because it
+splits the answer: half the states would be selected on the host and half on a part, and **a
+consumer reaching in from outside with `::part()` cannot append an attribute selector at all.** One
+place, always.
+
+## Rules the emitted element must honour
+
+The React emitter's README states these and earned every one expensively. Read that first. What
+follows is only where the platform differs.
+
+### 1. Parts carry `part`, not `data-<prefix>-part`
+
+`part` is a real platform attribute with a real selector behind it. The scoping attribute and the
+axis attribute family are gone too — the shadow root is the scope, and the host's own attributes are
+scoped by its tag.
+
+**That is the sharpest finding this backend produced.** Three attribute families that three emitters
+each invented, reproduced exactly, and documented nowhere are all unnecessary the moment the
+platform does the scoping.
+
+### 2. States use the platform's own mechanism where one exists
+
+Resolved by [`@ds/platform-web`](../../../platform-web/README.md), with no table of this backend's
+own — the fourth to add none.
+
+**And then written twice.** The ARIA attribute goes on the inner element, where assistive technology
+reads it; the same state is reflected onto the host, where CSS can select it. One fact, two places
+— which is exactly the duplication the React emitter's README §2 warns about, forced by the boundary
+rather than chosen.
+
+### 3. Variant axes are attributes on the host, with declared defaults
+
+The default lives in the accessor's fallback (`getAttribute('size') ?? 'm'`), because an absent
+attribute has to mean something and only the contract knows what.
+
+### 4. Props that make the component what it is cannot be overridden
+
+Free, and more thoroughly than anywhere else: the role, the type and the ARIA live **inside a shadow
+root a consumer cannot reach**. There is no ordering rule to get right because there is no way in.
+
+### 5. Event handlers are composed, never overridden
+
+Free. `addEventListener` is additive by definition, so a consumer's listener and the component's both
+run. React and Vue each write a chain by hand.
+
+### 6. A `shared` state needs three mechanisms
+
+An attribute, a property, and a `<prefix>-<name>-change` CustomEvent — `composed: true` so it escapes
+the shadow root at all, `bubbles: true` so an ancestor hears it. Both are opt-in, because an event
+that crossed the boundary by default would leak every internal click to the page.
+
+**Every write the component makes must announce it.** That includes the ones that do not look like
+writes: a dismissal setting `open = false`, a pointer drag setting `value`, and the `MutationObserver`
+that notices the platform closed a `<dialog>`. Getting that wrong is not theoretical — it shipped
+once, and the symptom was a slider that moved under the pointer and told nobody.
+
+### 7. A named slot's emptiness is not visible to CSS
+
+React renders nothing into an unfilled slot, so the element is genuinely `:empty`. A shadow root
+always contains the `<slot>`. The component reflects `has-<name>` on the host from a `slotchange`
+listener — which is what every shipping web-component library does, and a real obligation the
+contract creates and cannot express.
+
+### 8. The render model is: clone once, then mutate attributes
+
+One `<template>` at module scope, cloned per instance, and an `#update()` that rewrites every derived
+attribute on every change. No diffing, and none wanted — the work is a handful of `setAttribute`
+calls.
+
+That is enough **because a contract's anatomy is static**: every part always exists, and
+`visibleWhen` hides rather than removes. If a contract ever needed a part to appear and disappear,
+this backend would need a real render model and the other three would not notice.
+
+## The one thing it cannot do
+
+`aria-controls`, `aria-labelledby` and `aria-describedby` take IDREFs, and an IDREF resolves within
+one tree. A tab and its panel are in different shadow roots; a Field's control is slotted in from the
+page. The reference names an element that, from where it is written, does not exist.
+
+The emitter **writes it anyway and records the assumption**, rather than working around it: moving
+the reference to light DOM, duplicating the panel, or dropping the relationship all change what the
+contract says. The platform answer is the ARIA reflection API (`ariaControlsElements` — element
+references rather than ids), which ships in Chrome and Safari and not yet in Firefox.
+
+## The one bundler-specific token in the output
+
+`import structureCss from './X.structure.css?inline'`. It asks Vite for the stylesheet as a string so
+it can be adopted into the shadow root; a plain CSS import would inject it into the page, where these
+rules can never match. The standard replacement is a CSS module script
+(`import sheet from './x.css' with { type: 'css' }`) and it is not portable enough yet.
+
+## The assumptions it prints
+
+Four lists now. Where all four log the same thing, the gap is in the contract — no structural CSS, a
+member contract that is not self-contained, a valued state with no `between`. Where only this one
+logs it, the platform is the outlier: the host having no `display`, a slot's emptiness, an IDREF that
+cannot cross a boundary.
