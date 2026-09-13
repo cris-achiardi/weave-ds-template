@@ -496,23 +496,12 @@ function emitComponent(name, contract, binding, prefix) {
       host.push([`attr.${decision.attribute}`, `${map} : null`]);
       continue;
     }
-    if (decision.channel === 'native') {
-      // ALWAYS `|| null` ON THE NATIVE CHANNEL, and `decision.rendersFalse` is deliberately
-      // ignored here. `@ds/platform-web` returns `rendersFalse: true` for every native channel,
-      // hardcoded, with no data behind it — and as a statement about the WEB PLATFORM that is
-      // simply false: `disabled="false"` disables a button just as thoroughly as `disabled=""`.
-      //
-      // It went unnoticed through two backends because both happen to do the right thing for
-      // reasons of their own: React never renders a boolean DOM prop as an attribute, and Vue
-      // special-cases boolean attributes. Angular's `[attr.x]` does exactly what it is told, so it
-      // is the first backend to read the field literally enough for the lie to matter — and the
-      // symptom is a button that can never be enabled.
-      //
-      // NOT fixed in the profile from here. This repo's rule is that a correction smuggled in
-      // alongside a move destroys the proof that the move was faithful, so the defect is recorded
-      // (docs/research/0005, open question) and corrected in its own commit.
-      host.push([`attr.${decision.attribute}`, orNull(expr)]);
-    } else if (decision.channel === 'aria') {
+    if (decision.channel === 'native' || decision.channel === 'aria') {
+      // `rendersFalse` is read as written on BOTH channels now. It used to be ignored on the native
+      // channel because @ds/platform-web hardcoded it to `true`, which was false as a statement
+      // about the platform: an HTML boolean attribute is presence-only. The profile carries the
+      // answer in its own `native` table since that was fixed, so this backend no longer has to
+      // disagree with it.
       host.push([`attr.${decision.attribute}`, decision.rendersFalse ? expr : orNull(expr)]);
     } else if (decision.channel === 'none') {
       // Deliberately nothing. Free text is CONTENT, and mirroring it into an attribute leaks

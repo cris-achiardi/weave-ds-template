@@ -52,7 +52,7 @@ const fallthrough = computed(() => ({ ...attrs }));
   <button
     v-bind="fallthrough"
     type="button"
-    :disabled="disabled"
+    :disabled="disabled || undefined"
     :data-ds-state-loading="loading || undefined"
     :data-ds-hierarchy="hierarchy"
     :data-ds-variant="variant"

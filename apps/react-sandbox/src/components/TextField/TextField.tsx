@@ -62,7 +62,7 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
     <input
       {...rest}
       ref={ref}
-      disabled={disabled}
+      disabled={disabled || undefined}
       aria-readonly={readOnly || undefined}
       aria-invalid={invalid || undefined}
       data-ds-size={size}

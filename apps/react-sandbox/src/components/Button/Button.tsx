@@ -48,7 +48,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       {...rest}
       ref={ref}
       type="button"
-      disabled={disabled}
+      disabled={disabled || undefined}
       data-ds-state-loading={loading || undefined}
       data-ds-hierarchy={hierarchy}
       data-ds-variant={variant}

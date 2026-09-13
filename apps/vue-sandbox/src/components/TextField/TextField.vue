@@ -58,7 +58,7 @@ function onRootInput(event: Event) {
 <template>
   <input
     v-bind="fallthrough"
-    :disabled="disabled"
+    :disabled="disabled || undefined"
     :aria-readonly="readOnly || undefined"
     :aria-invalid="invalid || undefined"
     :data-ds-size="size"

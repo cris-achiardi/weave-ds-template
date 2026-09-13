@@ -74,7 +74,7 @@ function onRootClick(event: MouseEvent) {
             ? 'mixed'
             : undefined
     "
-    :disabled="disabled"
+    :disabled="disabled || undefined"
     :aria-invalid="invalid || undefined"
     data-ds-component="Checkbox"
     data-ds-part="root"

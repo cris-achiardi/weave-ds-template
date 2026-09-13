@@ -198,9 +198,12 @@ README were exercised in Chrome and passed; that is less than the React page's b
 
 ## Open questions
 
-1. **Fix `rendersFalse` on the native channel in `@ds/platform-web`.** Not really a question — it is
-   a defect with a known fix and a blast radius across three backends' generated output. The
-   question is only whether it moves alone or with the deduplication below.
+1. ~~**Fix `rendersFalse` on the native channel in `@ds/platform-web`.**~~ **CLOSED**, in its own
+   commit immediately after this report was written. The fix is a fourth attribute-keyed table in
+   `profile.json` rather than a corrected literal in `resolve.mjs` — a literal there is what the bug
+   was. The blast radius turned out to be eight lines of generated output across React and Vue and
+   none in Angular, and `packages/platform-web/conformance/aria-mapping.json` now pins it as
+   `native-disabled-must-not-render-false`.
 2. **Move the duplicated cores, the CSS emitters and the bindings' `element` out of the framework
    packages.** The measurement they existed to protect is complete. The open part is _where_:
    `emitStructure` emits CSS, and a platform package that emits CSS has quietly decided every

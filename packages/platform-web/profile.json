@@ -157,6 +157,14 @@
       "_note": "No `roles`, so treated as unrestricted. Ours, as above. RadioGroup emits aria-readonly on role=radiogroup on the strength of it."
     }
   },
+  "native": {
+    "_doc": "Keyed by a NATIVE HTML ATTRIBUTE, for the same reason the aria table above is keyed by an ARIA attribute: these are facts about the attribute, not about the contract word that reaches it. A fourth table rather than a flag on `states`, so that two contract words mapping to one attribute cannot hold two answers.",
+    "disabled": {
+      "boolean": true,
+      "rendersFalse": false,
+      "_note": "AN HTML BOOLEAN ATTRIBUTE IS PRESENCE-ONLY. `disabled=\"false\"` disables an element exactly as thoroughly as `disabled=\"\"`, so false is not representable and the attribute must be removed instead. This entry corrects a hardcoded `rendersFalse: true` that sat in resolve.mjs and was, as a statement about the platform, simply false. It survived two backends because both avoid the trap for reasons of their own — React never renders a boolean DOM prop as an attribute, Vue special-cases boolean attributes — and was found by the third, whose [attr.x] binding does what it is told. See docs/research/0005."
+    }
+  },
   "valueWords": {
     "_doc": "A contract's state VALUES are its own words; ARIA has its own. Global rather than nested under a state, because the mapping applies to any valued state. A word absent here passes through unchanged.",
     "unchecked": "false",

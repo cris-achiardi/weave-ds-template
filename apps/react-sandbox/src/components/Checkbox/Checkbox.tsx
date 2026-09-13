@@ -75,7 +75,7 @@ export const Checkbox = forwardRef<HTMLButtonElement, CheckboxProps>(function Ch
               ? 'mixed'
               : undefined
       }
-      disabled={disabled}
+      disabled={disabled || undefined}
       aria-invalid={invalid || undefined}
       onClick={(event) => {
         rest.onClick?.(event);

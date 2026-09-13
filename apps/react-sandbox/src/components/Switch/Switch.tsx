@@ -55,7 +55,7 @@ export const Switch = forwardRef<HTMLButtonElement, SwitchProps>(function Switch
       type="button"
       role="switch"
       aria-checked={checkedValue}
-      disabled={disabled}
+      disabled={disabled || undefined}
       aria-readonly={readOnly || undefined}
       onClick={(event) => {
         rest.onClick?.(event);

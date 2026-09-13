@@ -59,7 +59,7 @@ function onRootClick(event: MouseEvent) {
     type="button"
     role="switch"
     :aria-checked="checked"
-    :disabled="disabled"
+    :disabled="disabled || undefined"
     :aria-readonly="readOnly || undefined"
     data-ds-component="Switch"
     data-ds-part="root"
