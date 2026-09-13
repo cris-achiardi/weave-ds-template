@@ -44,6 +44,11 @@ const SKIP_DIRS = new Set([
  *                   `pnpm install` regenerates it correctly from the renamed manifests.
  */
 const SKIP_FILES = new Set(['scripts/init-ds.mjs', 'pnpm-lock.yaml']);
+//
+// A FILE TYPE MISSING FROM THIS LIST IS THE HALF-RENAME THIS TOOL EXISTS TO PREVENT. `.vue` was
+// added when the Vue backend landed: without it every generated single-file component kept
+// `data-ds-component` and `@ds/vue/behavior` after a rename, the repo still built, and the only
+// symptom was styling that silently stopped matching. Adding a backend means checking this list.
 const EXTENSIONS = new Set([
   '.ts',
   '.tsx',
@@ -55,6 +60,7 @@ const EXTENSIONS = new Set([
   '.css',
   '.md',
   '.html',
+  '.vue',
   '.yaml',
   '.yml',
 ]);

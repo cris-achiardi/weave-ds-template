@@ -1,0 +1,8 @@
+{
+  "$schema": "./binding.schema.json",
+  "component": "AccordionItem",
+  "contract": "../../contracts/components/AccordionItem/AccordionItem.contract.json",
+  "framework": "vue",
+  "element": "div",
+  "notes": ["A member."]
+}

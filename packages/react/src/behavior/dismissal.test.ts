@@ -12,7 +12,7 @@
 // READ "DEFERRED TO A BROWSER" LITERALLY: there is no browser lane in this repo. No jsdom, no
 // happy-dom, no Playwright — `vitest` runs in node and these three cases run NOWHERE automated.
 // They were verified by HAND, once, on the sandbox Dialog, and that is the same standard
-// `apps/sandbox/src/status.ts` holds every verdict to. So a regression in exactly the code that
+// `apps/react-sandbox/src/status.ts` holds every verdict to. So a regression in exactly the code that
 // fixed the padding bug would not redden anything; it would need someone to press the panel again.
 //
 // That is a real gap and it is recorded rather than papered over — `CROSS_CUTTING` in status.ts

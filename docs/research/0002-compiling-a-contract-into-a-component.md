@@ -4,7 +4,7 @@
 - **Source:** the four contracts in `packages/contracts/components/` — `Switch`, `Field`,
   `Accordion`, `AccordionItem` — with their bindings in `packages/react/bindings/`, compiled by
   `packages/react/src/emit/emit.mjs` (a throwaway probe, not the emitter). Output rendered in
-  `apps/sandbox` and driven in Chrome.
+  `apps/react-sandbox` and driven in Chrome.
 - **Method:** Wrote the smallest emitter that could produce a working React Switch, ran it, wired the
   result into the sandbox, and exercised it in a browser. Then pointed the same emitter at the other
   three contracts to find out what it had silently assumed. Accessibility was checked by reading the
@@ -24,7 +24,7 @@
 
 ### A contract compiled into a working component
 
-`node packages/react/src/emit/emit.mjs Switch --out apps/sandbox/src/components` produced four
+`node packages/react/src/emit/emit.mjs Switch --out apps/react-sandbox/src/components` produced four
 files. Three are regenerated on every run; `Switch.theme.css` is written once and then left alone.
 
 The sandbox renders it, and it behaves:

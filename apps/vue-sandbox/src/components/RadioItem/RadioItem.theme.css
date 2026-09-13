@@ -1,0 +1,50 @@
+/* RadioItem — THE CONSUMER'S FILE. Emitted once, empty, never regenerated. */
+
+/* --- structure, in the wrong file: the contract has no `layout` block ------------------- */
+[data-ds-component='RadioItem'] {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+[data-ds-component='RadioItem'][aria-disabled='true'] {
+  cursor: not-allowed;
+}
+[data-ds-component='RadioItem'] [data-ds-part='control'] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+/* --- end of misplaced structure -------------------------------------------------------- */
+
+[data-ds-component='RadioItem'] {
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+}
+[data-ds-component='RadioItem'][aria-disabled='true'] {
+  color: #5a5a62;
+}
+[data-ds-component='RadioItem'] [data-ds-part='control'] {
+  inline-size: 16px;
+  block-size: 16px;
+  border: 1px solid #55555f;
+  border-radius: 999px;
+  background: #1a1a1d;
+}
+[data-ds-component='RadioItem']:hover:not([aria-disabled='true']) [data-ds-part='control'] {
+  border-color: #8b83f0;
+}
+[data-ds-component='RadioItem']:focus-visible [data-ds-part='control'] {
+  outline: 2px solid #8b83f0;
+  outline-offset: 2px;
+}
+[data-ds-component='RadioItem'] [data-ds-part='mark'] {
+  inline-size: 8px;
+  block-size: 8px;
+  background: #5146e6;
+  border-radius: 999px;
+}
+[data-ds-component='RadioItem'] [data-ds-part='label'] {
+  color: inherit;
+  font-size: 0.9rem;
+}

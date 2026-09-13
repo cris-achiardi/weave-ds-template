@@ -44,10 +44,12 @@ jobs:
 
       - run: pnpm format:check
 
-      # Covers packages/react AND apps/sandbox. The sandbox matters because it is where GENERATED
-      # components land: three real defects in emitted code were found by running tsc against it by
-      # hand, and none would have failed here — the script reached only packages/react, and the app
-      # had no tsconfig at all.
+      # Covers both packages AND both sandboxes. A sandbox matters because it is where GENERATED
+      # components land: three real defects in emitted code were found by running tsc against the
+      # React one by hand, and none would have failed here — the script reached only
+      # packages/react, and the app had no tsconfig at all. The Vue sandbox needs `vue-tsc`
+      # rather than `tsc`, because a .vue file's types only exist once the SFC compiler has split
+      # it — plain `tsc` would report nothing and look like a pass.
       - run: pnpm typecheck
 
       # Style Dictionary skips a file with zero tokens rather than erroring, so a broken glob
@@ -78,7 +80,15 @@ jobs:
       # trusts it. An unmapped collection claiming a code path is the specific lie to catch.
       - run: pnpm verify:figma
 
+      # Two backends can disagree in two ways that break no build: a behaviour core duplicated
+      # between them drifts, or their bindings render a different element for one contract. Each
+      # backend's own conformance suite runs against its own copy, so both stay green while the
+      # two components silently stop being the same component.
+      - run: pnpm verify:parity
+
       - run: pnpm build:react
+
+      - run: pnpm build:vue
 
       - run: pnpm test
 

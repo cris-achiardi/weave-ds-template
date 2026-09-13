@@ -3,7 +3,7 @@
  *
  * SPIKE STATE. Everything under ./components was GENERATED from a contract:
  *
- *   node packages/react/src/emit/emit.mjs <Name> --out apps/sandbox/src/components
+ *   node packages/react/src/emit/emit.mjs <Name> --out apps/react-sandbox/src/components
  *
  * Nothing is imported from @ds/react, which exports no components and never will. The components
  * live here, in the consumer's own tree, which is the architecture in one import path.

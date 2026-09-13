@@ -1,0 +1,10 @@
+{
+  "$schema": "./binding.schema.json",
+  "component": "Checkbox",
+  "contract": "../../contracts/components/Checkbox/Checkbox.contract.json",
+  "framework": "vue",
+  "element": "button",
+  "notes": [
+    "The `checked` state is enumerated rather than boolean — unchecked/mixed/checked — so the model is typed to those three words and `v-model:checked` carries a string."
+  ]
+}

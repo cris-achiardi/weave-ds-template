@@ -1,0 +1,10 @@
+{
+  "$schema": "./binding.schema.json",
+  "component": "Dialog",
+  "contract": "../../contracts/components/Dialog/Dialog.contract.json",
+  "framework": "vue",
+  "element": "dialog",
+  "notes": [
+    "Renders a native <dialog>. Vue cannot open one by rendering an attribute any more than React can: showModal() has to be called after the DOM exists, so the emitter drives it from a post-flush watcher. See @ds/platform-web > visibility."
+  ]
+}

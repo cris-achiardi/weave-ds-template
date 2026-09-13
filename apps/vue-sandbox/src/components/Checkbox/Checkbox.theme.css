@@ -1,0 +1,80 @@
+/* Checkbox — THE CONSUMER'S FILE. Emitted once, empty, never regenerated. */
+
+/* --- structure, in the wrong file: the contract has no `layout` block -------------------- */
+[data-ds-component='Checkbox'] {
+  display: inline-flex;
+  align-items: center;
+  background: none;
+  border: none;
+  font: inherit;
+  cursor: pointer;
+  text-align: start;
+}
+[data-ds-component='Checkbox']:disabled {
+  cursor: not-allowed;
+}
+[data-ds-component='Checkbox'] [data-ds-part='box'] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+/* --- end of misplaced structure ---------------------------------------------------------- */
+
+[data-ds-component='Checkbox'] {
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+  color: #e8e8ea;
+}
+[data-ds-component='Checkbox']:disabled {
+  color: #5a5a62;
+  opacity: 0.6;
+}
+
+[data-ds-component='Checkbox'] [data-ds-part='box'] {
+  inline-size: 16px;
+  block-size: 16px;
+  border: 1px solid #55555f;
+  border-radius: 0.25rem;
+  background: #1a1a1d;
+}
+[data-ds-component='Checkbox']:hover:not(:disabled) [data-ds-part='box'] {
+  border-color: #8b83f0;
+}
+[data-ds-component='Checkbox'][aria-invalid='true'] [data-ds-part='box'] {
+  border-color: #c4342b;
+}
+[data-ds-component='Checkbox']:focus-visible [data-ds-part='box'] {
+  outline: 2px solid #8b83f0;
+  outline-offset: 2px;
+}
+
+/* checked and mixed fill the box; unchecked does not */
+[data-ds-component='Checkbox'][aria-checked='true'] [data-ds-part='box'],
+[data-ds-component='Checkbox'][aria-checked='mixed'] [data-ds-part='box'] {
+  background: #5146e6;
+  border-color: #5146e6;
+}
+
+/*
+ * The tick and the dash are different SHAPES, not one mark at two opacities. The contract's a11y
+ * notes require that: anyone who cannot tell them apart is told "some" when the answer is "all".
+ */
+[data-ds-component='Checkbox'] [data-ds-part='tick'] {
+  inline-size: 9px;
+  block-size: 5px;
+  border-inline-start: 2px solid #ffffff;
+  border-block-end: 2px solid #ffffff;
+  transform: rotate(-45deg) translate(1px, -1px);
+}
+[data-ds-component='Checkbox'] [data-ds-part='dash'] {
+  inline-size: 9px;
+  block-size: 2px;
+  background: #ffffff;
+  border-radius: 1px;
+}
+
+[data-ds-component='Checkbox'] [data-ds-part='label'] {
+  color: inherit;
+  font-size: 0.9rem;
+}

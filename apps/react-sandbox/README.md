@@ -24,7 +24,7 @@ Use the sandbox while building. Switch Storybook on when the library is worth br
 `src/components/` holds a **generated** component, and the sandbox is standing in for a consumer:
 
 ```bash
-node packages/react/src/emit/emit.mjs Switch --out apps/sandbox/src/components
+node packages/react/src/emit/emit.mjs Switch --out apps/react-sandbox/src/components
 ```
 
 That produced `Switch/`, and the same command produced `Field/`, `Accordion/`, `AccordionItem/`,

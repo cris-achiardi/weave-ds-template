@@ -34,14 +34,22 @@ a record. The build step is mid-migration: the library is moving to contract-dri
 ```
 packages/contracts/ @ds/contracts — THE PRODUCT. Agnostic component contracts + their schema
 packages/tokens/   @ds/tokens — DTCG JSON -> CSS custom properties + TS constants
-packages/react/    @ds/react  — one backend: React bindings, emitter, behaviour primitives
-apps/sandbox/      fast Vite harness, in the workspace
+packages/platform-web/ @ds/platform-web — the web platform as data. Every WEB backend reads it
+packages/react/    @ds/react  — a backend: React bindings, emitter, behaviour primitives
+packages/vue/      @ds/vue    — a second backend, same shape. It exists to TEST the contract
+apps/react-sandbox/  fast Vite harness at :4300, in the workspace
+apps/vue-sandbox/    the same fifteen contracts at :4301 — open both at once
 apps/storybook/    complete on disk, deliberately OUT of the install graph
 docs/research/     pre-decision: what is measurably true
 docs/ADR/          post-decision: what we decided and why
 .ai/maps/          the prop glossary — generated, descriptive, gated
 .figma/            which design file we read, and what has been reconciled
 ```
+
+There are TWO backends on purpose. A contract that compiles to only one framework is not a
+specification, it is that framework with extra steps — see
+[`docs/research/0004`](./docs/research/0004-a-second-backend-reading-the-same-contracts.md) for what
+the second one proved and, more usefully, what it did not.
 
 **[`packages/react/CLAUDE.md`](./packages/react/CLAUDE.md) is the authority for library
 internals** — component anatomy, the contract system, extraction, the gates. Read it before
@@ -64,7 +72,8 @@ is the single source of truth; never hard-code a prefix anywhere else.
 ## Commands
 
 ```bash
-pnpm dev                 # sandbox at :4300
+pnpm dev                 # React sandbox at :4300
+pnpm dev:vue             # Vue sandbox at :4301 — the comparison is the point
 pnpm build               # tokens, then the library
 pnpm verify              # the full local gate — run this before pushing
 
@@ -73,11 +82,12 @@ pnpm contract --coverage # who is contracted
 pnpm prop-map            # regenerate the prop glossary
 pnpm adr-index           # regenerate the ADR index from the records — never edit it by hand
 pnpm verify:docs         # every link, path and command in the docs resolves
+pnpm verify:parity       # the two backends have not drifted apart
 pnpm report:paints       # token policy vs stylesheet — a REPORT, never a gate
 ```
 
-`pnpm verify` chains: `format:check → typecheck → verify:contract → prop-map:check →
-adr-index:check → verify:docs → verify:figma → build → test`. All of it is green on a fresh clone
+`pnpm verify` chains: `format:check → lint → typecheck → verify:contract → prop-map:check →
+adr-index:check → verify:docs → verify:figma → verify:parity → build → test`. All of it is green on a fresh clone
 with zero components — that is the template's acceptance test.
 
 ## Governance lives in the ADRs — consult the one your task touches
@@ -104,6 +114,7 @@ Working against an accepted ADR without updating it is a defect, not a shortcut.
 | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
 | Explaining any of this to a designer            | `docs/documentation/` — plain language + diagrams. Explanation, not spec: where it disagrees with a spec, the spec wins. |
 | Authoring or changing a component               | `packages/contracts/components/README.md` — **the** authoring contract                                                   |
+| Adding or changing a framework backend          | `packages/vue/README.md` — the worked example of what a second backend costs                                             |
 | Deciding what is agnostic vs framework-specific | `packages/contracts/schema/README.md` — the two schemas and where the line falls                                         |
 | Naming a prop or a value                        | `.ai/maps/prop-map.md` §1–2                                                                                              |
 | Writing a token                                 | `packages/tokens/tokens/README.md`                                                                                       |

@@ -1,0 +1,15 @@
+{
+  "//": "The sandbox is typechecked because it is where GENERATED components land. The React sandbox earned this the hard way: three real defects in emitted code were found by running tsc against that directory by hand, and none would have failed pnpm verify. Vue needs `vue-tsc` rather than `tsc`, because a .vue file's types only exist once the SFC compiler has split it.",
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "jsx": "preserve",
+    "types": ["vite/client"],
+    "baseUrl": ".",
+    "paths": {
+      "@ds/vue/behavior": ["../../packages/vue/src/behavior/index.ts"],
+      "@ds/vue": ["../../packages/vue/src/index.ts"]
+    }
+  },
+  "include": ["src", "../../packages/vue/src/behavior"]
+}
