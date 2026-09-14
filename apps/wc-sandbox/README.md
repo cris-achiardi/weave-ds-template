@@ -121,11 +121,25 @@ Not a fair comparison in every direction — these are dev-shaped builds of a de
 framework numbers include a runtime that does far more. It is worth writing down anyway, because the
 thing it measures is real: this build ships no runtime at all.
 
-## Two obligations this sandbox has and the others do not
+## A custom element cannot be redefined, so HOT RELOAD CANNOT WORK HERE
+
+`customElements.define` throws if the tag is already registered, so every emitted module guards with
+`if (!customElements.get(tag))`. That guard is correct, and it makes hot reload a lie: regenerate a
+component while the page is open, Vite swaps the module, the guard declines to re-register, and the
+page keeps running elements backed by the previous class. **The symptom is not an error — it is a
+page that stops responding to things that work fine after a refresh.**
+
+Reload the page after regenerating; restart the server if it persists.
+
+No other sandbox here has this constraint. All three frameworks can swap a component's
+implementation because the component is theirs; this one's belongs to the browser's registry.
+
+## Two more obligations this sandbox has and the others do not
 
 - **`display` on every host.** A custom element is `display: inline` until a stylesheet says
-  otherwise. The translated themes set it because the React themes already carried layout in the
-  wrong file; a theme written from scratch would have to remember.
+  otherwise. The emitter answers it with `display: contents`, which is the one answer that is not a
+  guess about layout — it removes the host from the box tree so `[part='root']` lays out exactly
+  where the light-DOM backends' root element does.
 - **`?inline` on the stylesheet imports.** Vite-specific, and the one bundler token in the emitted
   output. It asks for the stylesheet as a string so it can be adopted into the shadow root — a plain
   CSS import would inject it into the page, where these rules can never match. The standard
