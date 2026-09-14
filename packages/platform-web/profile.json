@@ -115,7 +115,7 @@
     }
   },
   "aria": {
-    "_doc": "Keyed by ATTRIBUTE, because that is how WAI-ARIA defines these facts, and because two contract words may map to one attribute. An entry with no `roles` places no role restriction — which is this profile's position rather than the specification's, and is marked as such on each one.",
+    "_doc": "Keyed by ATTRIBUTE, because that is how WAI-ARIA defines these facts, and because two contract words may map to one attribute. An entry with no `roles` places no role restriction — which is this profile's position rather than the specification's, and is marked as such on each one. `rendersFalse` SAYS WHETHER THE FALSE VALUE IS WORTH WRITING, AND NOTHING ELSE. It does not make the attribute a presence-only boolean: an ARIA state is a string, its true value is \"true\", and an empty attribute is invalid — WAI-ARIA then applies the attribute default, so `aria-invalid=\"\"' announces as VALID. A backend that writes these by hand has to say \"true\" explicitly; the three that go through a framework stringify it on the way out and never meet the question. See the native table for the case where presence-only IS correct.",
     "aria-checked": {
       "rendersFalse": true,
       "roles": [

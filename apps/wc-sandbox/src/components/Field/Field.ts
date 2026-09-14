@@ -136,7 +136,8 @@ export class Field extends HTMLElement {
 
   #write(): void {
     const root = this.#root;
-    root.toggleAttribute('aria-disabled', Boolean(this.disabled));
+    if (this.disabled) root.setAttribute('aria-disabled', 'true');
+    else root.removeAttribute('aria-disabled');
     this.#part('label')?.setAttribute('id', this.#baseId + '-label');
     this.#part('control')?.setAttribute('id', this.#baseId + '-control');
     this.#part('description')?.setAttribute('id', this.#baseId + '-description');

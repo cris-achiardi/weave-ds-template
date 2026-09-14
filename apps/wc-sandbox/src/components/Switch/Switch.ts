@@ -115,7 +115,8 @@ export class Switch extends HTMLElement {
     const root = this.#root;
     root.setAttribute('aria-checked', String(this.checked));
     root.toggleAttribute('disabled', this.disabled);
-    root.toggleAttribute('aria-readonly', Boolean(this.readOnly));
+    if (this.readOnly) root.setAttribute('aria-readonly', 'true');
+    else root.removeAttribute('aria-readonly');
   }
 }
 

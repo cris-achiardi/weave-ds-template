@@ -103,6 +103,25 @@ been working around it. `conformance/aria-mapping.json` now pins it as
 [`docs/research/0005`](../../docs/research/0005-a-third-backend-and-what-only-it-could-find.md), and
 it is the strongest argument in the repo for building a backend you do not need.
 
+### The second one was not a correction: the field was right and was read wrong
+
+`rendersFalse` appears in both the `aria` and the `native` tables, and it does not mean the same
+thing to a reader in each — which is a property of the reader, not of the field. It says **whether
+the false value is worth writing down**, and nothing else. On a native boolean attribute the false
+value has no spelling at all, so `rendersFalse: false` and "presence-only" happen to coincide. On an
+ARIA state they do not: `aria-invalid` omits the false case, and its true case is still the string
+`"true"`.
+
+The web-components emitter read the second as the first and wrote `aria-invalid=""` with
+`toggleAttribute`. An empty string is not a valid `true/false` token, so WAI-ARIA falls back to the
+default and the field announced as valid while the contract said invalid. **The other three backends
+cannot reach this mistake**, because each stringifies a boolean on the way into the DOM — so no gate
+in this repo could have caught it, and a review did.
+
+`aria._doc` now says the distinction where the field is defined, and
+`aria-invalid-omits-false-but-is-not-presence-only` pins it beside the case that pins the native
+half.
+
 ## Known divergences, recorded rather than smoothed
 
 - **`implicitRole` and `bearsRole` disagree on `textarea` and `dialog`.** They look like one fact and

@@ -165,8 +165,10 @@ export class RadioGroup extends HTMLElement {
 
   #write(): void {
     const root = this.#root;
-    root.toggleAttribute('aria-disabled', Boolean(this.disabled));
-    root.toggleAttribute('aria-readonly', Boolean(this.readOnly));
+    if (this.disabled) root.setAttribute('aria-disabled', 'true');
+    else root.removeAttribute('aria-disabled');
+    if (this.readOnly) root.setAttribute('aria-readonly', 'true');
+    else root.removeAttribute('aria-readonly');
   }
 }
 

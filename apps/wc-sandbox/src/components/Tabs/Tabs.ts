@@ -159,7 +159,8 @@ export class Tabs extends HTMLElement {
 
   #write(): void {
     const root = this.#root;
-    root.toggleAttribute('aria-disabled', Boolean(this.disabled));
+    if (this.disabled) root.setAttribute('aria-disabled', 'true');
+    else root.removeAttribute('aria-disabled');
     this.#part('list')?.setAttribute('id', this.#baseId + '-list');
   }
 

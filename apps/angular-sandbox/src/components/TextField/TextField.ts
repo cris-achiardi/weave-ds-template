@@ -23,7 +23,7 @@ import { Component, ViewEncapsulation, input, model } from '@angular/core';
     '[attr.aria-readonly]': 'readOnly() || null',
     '[attr.aria-invalid]': 'invalid() || null',
     '[attr.data-ds-size]': 'size()',
-    '[attr.value]': 'value()',
+    '[value]': 'value()',
     '[attr.readonly]': 'readOnly() || null',
     'data-ds-component': 'TextField',
     'data-ds-part': 'root',

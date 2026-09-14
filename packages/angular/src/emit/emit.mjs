@@ -508,7 +508,16 @@ function emitComponent(name, contract, binding, prefix) {
   }
 
   if (nativelyEdited) {
-    host.push([`attr.value`, `${camel(valueState.from)}()`]);
+    // A PROPERTY BINDING, NOT `[attr.value]`. HTML copies the value ATTRIBUTE into the live value
+    // only while the input's dirty-value flag is false — that is, until the user types. After that
+    // the attribute and the value are decoupled, so `[attr.value]` updates a default nobody sees:
+    // type into the field, then reset the model to '', and the box keeps the typed text.
+    //
+    // The other three backends all set the property. React's `value={…}` is one by definition,
+    // Vue's runtime sets `value` on an <input> as a property, and the web-components backend
+    // assigns `HTMLInputElement.value` directly. Angular is the only one where `[attr.]` and `[]`
+    // are a visible choice, and the first draft chose the wrong one.
+    host.push([`value`, `${camel(valueState.from)}()`]);
     if (hasReadOnly) host.push([`attr.readonly`, orNull('readOnly()')]);
     onEvent('input', 'handleInput($event)');
   }

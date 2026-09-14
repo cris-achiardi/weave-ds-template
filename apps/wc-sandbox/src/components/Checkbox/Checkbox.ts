@@ -144,18 +144,21 @@ export class Checkbox extends HTMLElement {
     // re-entrancy guard above absorbs the callback each write causes.
     if (!this.hasAttribute('checked')) this.setAttribute('checked', 'unchecked');
 
-    root.setAttribute(
-      'aria-checked',
-      this.checked === 'unchecked'
-        ? 'false'
-        : this.checked === 'checked'
-          ? 'true'
-          : this.checked === 'mixed'
-            ? 'mixed'
-            : '',
-    );
+    {
+      const next =
+        this.checked === 'unchecked'
+          ? 'false'
+          : this.checked === 'checked'
+            ? 'true'
+            : this.checked === 'mixed'
+              ? 'mixed'
+              : null;
+      if (next === null) root.removeAttribute('aria-checked');
+      else root.setAttribute('aria-checked', next);
+    }
     root.toggleAttribute('disabled', this.disabled);
-    root.toggleAttribute('aria-invalid', Boolean(this.invalid));
+    if (this.invalid) root.setAttribute('aria-invalid', 'true');
+    else root.removeAttribute('aria-invalid');
     this.#part('tick')?.toggleAttribute('hidden', !(this.checked === 'checked'));
     this.#part('dash')?.toggleAttribute('hidden', !(this.checked === 'mixed'));
   }

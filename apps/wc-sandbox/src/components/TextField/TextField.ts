@@ -131,8 +131,10 @@ export class TextField extends HTMLElement {
     if (!this.hasAttribute('size')) this.setAttribute('size', 'm');
 
     root.toggleAttribute('disabled', this.disabled);
-    root.toggleAttribute('aria-readonly', Boolean(this.readOnly));
-    root.toggleAttribute('aria-invalid', Boolean(this.invalid));
+    if (this.readOnly) root.setAttribute('aria-readonly', 'true');
+    else root.removeAttribute('aria-readonly');
+    if (this.invalid) root.setAttribute('aria-invalid', 'true');
+    else root.removeAttribute('aria-invalid');
     (root as HTMLInputElement).value = this.value;
     root.toggleAttribute('readonly', this.readOnly);
   }

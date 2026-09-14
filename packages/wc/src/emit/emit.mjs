@@ -826,16 +826,33 @@ function emitComponent(name, contract, binding, prefix) {
       const map = def.values
         .map((v) => `${expr} === '${v}' ? '${ariaValueFor(v, WEB)}'`)
         .join(' : ');
-      s.push(`    root.setAttribute('${decision.attribute}', ${map} : '');`);
+      // `: ''` would have written an empty attribute for a value outside the declared set, which
+      // is the same defect as above wearing a ternary.
+      s.push(`    {`);
+      s.push(`      const next = ${map} : null;`);
+      s.push(`      if (next === null) root.removeAttribute('${decision.attribute}');`);
+      s.push(`      else root.setAttribute('${decision.attribute}', next);`);
+      s.push(`    }`);
       continue;
     }
     if (decision.channel === 'native') {
+      // `toggleAttribute` is RIGHT here and only here: a native boolean attribute is presence-only,
+      // which is what @ds/platform-web's `native` table records.
       s.push(`    root.toggleAttribute('${decision.attribute}', ${expr});`);
     } else if (decision.channel === 'aria') {
+      // AN ARIA STATE IS NOT A PRESENCE-ONLY BOOLEAN, and `rendersFalse: false` does not make it
+      // one. It says only that the FALSE value is not worth writing. The true value is still the
+      // string "true", and `toggleAttribute` wrote `aria-invalid=""` — which WAI-ARIA treats as
+      // invalid, so the attribute's default applies and an invalid field announced as valid.
+      //
+      // The other three backends never had it: React's `aria-invalid={x || undefined}`, Vue's
+      // `:aria-invalid="x || undefined"` and Angular's `[attr.aria-invalid]="x() || null"` all
+      // stringify a `true` on the way out. This backend writes the DOM by hand, so it had to say so.
       if (decision.rendersFalse) {
         s.push(`    root.setAttribute('${decision.attribute}', String(${expr}));`);
       } else {
-        s.push(`    root.toggleAttribute('${decision.attribute}', Boolean(${expr}));`);
+        s.push(`    if (${expr}) root.setAttribute('${decision.attribute}', 'true');`);
+        s.push(`    else root.removeAttribute('${decision.attribute}');`);
       }
     }
     // The `data` and `none` channels write nothing to the inner element: the host already carries
@@ -845,10 +862,12 @@ function emitComponent(name, contract, binding, prefix) {
     const declared = ariaAttributeFor(member.reflects, WEB);
     const attr = declared && ariaFitsRole(declared, rootRole ?? null, WEB) ? declared : null;
     if (attr) {
+      // Same rule as above: the true value is the string "true", never an empty attribute.
       if (rendersFalse(attr, WEB)) {
         s.push(`    root.setAttribute('${attr}', String(this.#selected));`);
       } else {
-        s.push(`    root.toggleAttribute('${attr}', this.#selected);`);
+        s.push(`    if (this.#selected) root.setAttribute('${attr}', 'true');`);
+        s.push(`    else root.removeAttribute('${attr}');`);
       }
     }
     s.push(`    // The host carries it too, because CSS cannot select inside a shadow root from`);

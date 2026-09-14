@@ -150,7 +150,8 @@ export class TabItem extends HTMLElement {
 
   #write(): void {
     const root = this.#root;
-    root.toggleAttribute('aria-disabled', Boolean(this.disabled));
+    if (this.disabled) root.setAttribute('aria-disabled', 'true');
+    else root.removeAttribute('aria-disabled');
     root.setAttribute('aria-selected', String(this.#selected));
     // The host carries it too, because CSS cannot select inside a shadow root from
     // outside and cannot append an attribute selector to ::part(). One fact, two

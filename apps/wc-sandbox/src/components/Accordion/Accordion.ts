@@ -141,7 +141,8 @@ export class Accordion extends HTMLElement {
     // re-entrancy guard above absorbs the callback each write causes.
     if (!this.hasAttribute('orientation')) this.setAttribute('orientation', 'vertical');
 
-    root.toggleAttribute('aria-disabled', Boolean(this.disabled));
+    if (this.disabled) root.setAttribute('aria-disabled', 'true');
+    else root.removeAttribute('aria-disabled');
   }
 }
 

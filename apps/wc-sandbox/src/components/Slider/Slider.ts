@@ -141,7 +141,8 @@ export class Slider extends HTMLElement {
 
   #write(): void {
     const root = this.#root;
-    root.toggleAttribute('aria-disabled', Boolean(this.disabled));
+    if (this.disabled) root.setAttribute('aria-disabled', 'true');
+    else root.removeAttribute('aria-disabled');
     root.setAttribute('aria-valuemin', '0');
     root.setAttribute('aria-valuemax', '100');
     root.setAttribute('aria-valuenow', String(snap(this.value, RANGE)));

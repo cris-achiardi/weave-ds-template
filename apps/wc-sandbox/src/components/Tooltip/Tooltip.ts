@@ -164,7 +164,8 @@ export class Tooltip extends HTMLElement {
     // re-entrancy guard above absorbs the callback each write causes.
     if (!this.hasAttribute('placement')) this.setAttribute('placement', 'top');
 
-    root.toggleAttribute('aria-disabled', Boolean(this.disabled));
+    if (this.disabled) root.setAttribute('aria-disabled', 'true');
+    else root.removeAttribute('aria-disabled');
     this.#part('trigger')?.setAttribute('id', this.#baseId + '-trigger');
     this.#part('popup')?.setAttribute('id', this.#baseId + '-popup');
     this.#part('trigger')?.setAttribute(
