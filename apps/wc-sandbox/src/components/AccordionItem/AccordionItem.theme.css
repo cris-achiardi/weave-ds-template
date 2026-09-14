@@ -1,0 +1,78 @@
+/*
+ * AccordionItem — YOUR FILE, and the one file that could NOT be copied.
+ *
+ * The React, Vue and Angular sandboxes share this file byte for byte, because all three render into
+ * the light DOM and a descendant selector over data attributes reaches all of them. A shadow root
+ * ends that. This is the same values in the shadow grammar:
+ *
+ *   [data-ds-component='AccordionItem']                       ->  :host
+ *   [data-ds-component='AccordionItem'] [data-ds-part='x']    ->  [part='x']
+ *   [data-ds-component='AccordionItem'][data-ds-size='s']     ->  :host([size='s'])
+ *   [data-ds-component='AccordionItem'][aria-checked='true']  ->  :host([checked])
+ *   [data-ds-component='AccordionItem']:disabled              ->  :host([disabled])
+ *
+ * NOT ONE DECLARATION CHANGED. Every value, every colour and every length is the React sandbox's,
+ * unedited — which is the useful half of the result: what the shadow boundary costs is the
+ * SELECTORS, and nothing else.
+ *
+ * Translated mechanically from apps/react-sandbox, then checked in a browser.
+ */
+
+[part='root'] {
+  border-block-end: 1px solid #3a3a3f;
+}
+
+:host(:last-child) [part='root'] {
+  border-block-end: none;
+}
+
+[part='trigger'] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  inline-size: 100%;
+  padding: 0.7rem 0.9rem;
+  background: transparent;
+  border: none;
+  color: #e8e8ea;
+  font: inherit;
+  font-size: 0.9rem;
+  text-align: start;
+  cursor: pointer;
+}
+
+[part='trigger']:hover:not(:disabled) {
+  background: #26262b;
+}
+
+[part='trigger']:disabled {
+  color: #5a5a62;
+  cursor: not-allowed;
+}
+
+[part='trigger']:focus-visible {
+  outline: 2px solid #8b83f0;
+  outline-offset: -2px;
+}
+
+[part='indicator'] {
+  inline-size: 0.55rem;
+  block-size: 0.55rem;
+  border-inline-end: 2px solid currentColor;
+  border-block-end: 2px solid currentColor;
+  transform: rotate(45deg);
+  transition: transform 150ms ease;
+  flex-shrink: 0;
+}
+
+[part='trigger'][aria-expanded='true'] [part='indicator'] {
+  transform: rotate(-135deg);
+}
+
+[part='panel'] {
+  padding: 0 0.9rem 0.8rem;
+  color: #a3a3ab;
+  font-size: 0.85rem;
+  line-height: 1.6;
+}

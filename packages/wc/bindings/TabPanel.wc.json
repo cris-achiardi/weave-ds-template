@@ -1,0 +1,8 @@
+{
+  "$schema": "./binding.schema.json",
+  "component": "TabPanel",
+  "contract": "../../contracts/components/TabPanel/TabPanel.contract.json",
+  "framework": "wc",
+  "element": "div",
+  "notes": ["A member that is NOT in the arrow path: its root declares no `activates`."]
+}

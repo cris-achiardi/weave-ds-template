@@ -30,7 +30,7 @@ export function readJson(path) {
 }
 
 /** /ds.config.json — the single source of truth for prefixes. Never hard-code them. */
-export function dsConfig() {
+export function brandConfig() {
   return readJson(join(REPO_ROOT, 'ds.config.json'));
 }
 

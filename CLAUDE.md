@@ -34,14 +34,30 @@ a record. The build step is mid-migration: the library is moving to contract-dri
 ```
 packages/contracts/ @ds/contracts — THE PRODUCT. Agnostic component contracts + their schema
 packages/tokens/   @ds/tokens — DTCG JSON -> CSS custom properties + TS constants
-packages/react/    @ds/react  — one backend: React bindings, emitter, behaviour primitives
-apps/sandbox/      fast Vite harness, in the workspace
+packages/behavior/  @ds/behavior — what Escape means, where an arrow goes. No framework, no DOM
+packages/platform-web/ @ds/platform-web — the web platform as data. Every WEB backend reads it
+packages/emit-web/ @ds/emit-web — what every DOM-emitting backend shares: contract reading + CSS
+packages/react/    @ds/react  — a backend: React bindings, emitter, behaviour primitives
+packages/vue/      @ds/vue    — a second backend, same shape. It exists to TEST the contract
+packages/angular/  @ds/angular — a third. Attaches to elements rather than rendering them
+packages/wc/       @ds/wc     — a fourth, with NO framework: custom elements + a shadow root
+apps/react-sandbox/  fast Vite harness at :4300, in the workspace
+apps/vue-sandbox/    the same fifteen contracts at :4301
+apps/angular-sandbox/ and again at :4302
+apps/wc-sandbox/     plain HTML at :4303 — no framework in the page at all
 apps/storybook/    complete on disk, deliberately OUT of the install graph
 docs/research/     pre-decision: what is measurably true
 docs/ADR/          post-decision: what we decided and why
 .ai/maps/          the prop glossary — generated, descriptive, gated
 .figma/            which design file we read, and what has been reconciled
 ```
+
+There are FOUR backends on purpose. A contract that compiles to only one framework is not a
+specification, it is that framework with extra steps — see
+[`docs/research/0004`](./docs/research/0004-a-second-backend-reading-the-same-contracts.md) and
+[`0005`](./docs/research/0005-a-third-backend-and-what-only-it-could-find.md) and
+[`0006`](./docs/research/0006-the-shadow-boundary.md) for what they proved
+and, more usefully, what they did not.
 
 **[`packages/react/CLAUDE.md`](./packages/react/CLAUDE.md) is the authority for library
 internals** — component anatomy, the contract system, extraction, the gates. Read it before
@@ -64,7 +80,10 @@ is the single source of truth; never hard-code a prefix anywhere else.
 ## Commands
 
 ```bash
-pnpm dev                 # sandbox at :4300
+pnpm dev                 # React sandbox at :4300
+pnpm dev:vue             # Vue sandbox at :4301
+pnpm dev:angular         # Angular sandbox at :4302
+pnpm dev:wc              # web components at :4303 — the comparison is the point
 pnpm build               # tokens, then the library
 pnpm verify              # the full local gate — run this before pushing
 
@@ -73,11 +92,12 @@ pnpm contract --coverage # who is contracted
 pnpm prop-map            # regenerate the prop glossary
 pnpm adr-index           # regenerate the ADR index from the records — never edit it by hand
 pnpm verify:docs         # every link, path and command in the docs resolves
+pnpm verify:parity       # the four backends have not drifted apart
 pnpm report:paints       # token policy vs stylesheet — a REPORT, never a gate
 ```
 
-`pnpm verify` chains: `format:check → typecheck → verify:contract → prop-map:check →
-adr-index:check → verify:docs → verify:figma → build → test`. All of it is green on a fresh clone
+`pnpm verify` chains: `format:check → lint → typecheck → verify:contract → prop-map:check →
+adr-index:check → verify:docs → verify:figma → verify:parity → build → test`. All of it is green on a fresh clone
 with zero components — that is the template's acceptance test.
 
 ## Governance lives in the ADRs — consult the one your task touches
@@ -104,6 +124,7 @@ Working against an accepted ADR without updating it is a defect, not a shortcut.
 | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
 | Explaining any of this to a designer            | `docs/documentation/` — plain language + diagrams. Explanation, not spec: where it disagrees with a spec, the spec wins. |
 | Authoring or changing a component               | `packages/contracts/components/README.md` — **the** authoring contract                                                   |
+| Adding or changing a framework backend          | `packages/vue/README.md` — the worked example of what a second backend costs                                             |
 | Deciding what is agnostic vs framework-specific | `packages/contracts/schema/README.md` — the two schemas and where the line falls                                         |
 | Naming a prop or a value                        | `.ai/maps/prop-map.md` §1–2                                                                                              |
 | Writing a token                                 | `packages/tokens/tokens/README.md`                                                                                       |

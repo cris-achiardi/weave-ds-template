@@ -1,0 +1,10 @@
+{
+  "$schema": "./binding.schema.json",
+  "component": "Tabs",
+  "contract": "../../contracts/components/Tabs/Tabs.contract.json",
+  "framework": "vue",
+  "element": "div",
+  "notes": [
+    "A collection. Vue publishes its context with provide/inject rather than React context; the injection key is exported from the SFC's non-setup <script> block."
+  ]
+}

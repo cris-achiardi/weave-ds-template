@@ -1,0 +1,38 @@
+{
+  "name": "@ds/wc",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Web components. The fourth backend, and the first with no framework at all: vanilla custom elements with a shadow root.",
+  "main": "./dist/index.cjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./behavior": {
+      "types": "./dist/behavior/index.d.ts",
+      "import": "./dist/behavior.js",
+      "require": "./dist/behavior.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch"
+  },
+  "dependencies": {
+    "@ds/behavior": "workspace:*",
+    "@ds/emit-web": "workspace:*",
+    "@ds/platform-web": "workspace:*"
+  },
+  "devDependencies": {
+    "@ds/tokens": "workspace:*",
+    "vite": "^7.0.0",
+    "vite-plugin-dts": "^4.5.0"
+  }
+}

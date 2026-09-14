@@ -102,6 +102,16 @@ export function ariaFitsRole(attribute, role, profile) {
  */
 export const rendersFalse = (attribute, profile) => profile.aria[attribute]?.rendersFalse === true;
 
+/**
+ * Whether writing a NATIVE attribute with the value `false` says anything.
+ *
+ * The twin of `rendersFalse` above, and deliberately a separate function rather than a widened one:
+ * `aria` and `native` are different tables because they are different specifications, and a single
+ * lookup across both would hide which one answered.
+ */
+export const nativeRendersFalse = (attribute, profile) =>
+  profile.native?.[attribute]?.rendersFalse === true;
+
 // ---------------------------------------------------------------------------------------
 // the one decision
 // ---------------------------------------------------------------------------------------
@@ -149,7 +159,24 @@ export function channelFor(situation, profile) {
   }
 
   const native = nativeAttributeFor(state, element, profile);
-  if (native) return { channel: 'native', attribute: native, rendersFalse: true };
+  // READ FROM THE PROFILE, not asserted here. This line said `rendersFalse: true` for two years of
+  // this repository's short life, hardcoded, with no data behind it — and as a statement about the
+  // web platform it was false: an HTML boolean attribute is presence-only, so `disabled="false"`
+  // disables an element exactly as thoroughly as `disabled=""`.
+  //
+  // It survived two backends because each avoids the trap for a reason of its own, and neither
+  // reason is in this package: React never renders a boolean DOM prop as an attribute, and Vue
+  // special-cases boolean attributes. Angular's `[attr.x]` does what it is told, and produced a
+  // button that could never be enabled. See docs/research/0005.
+  //
+  // The fix is the table, not a better literal. A literal here is what the bug WAS.
+  if (native) {
+    return {
+      channel: 'native',
+      attribute: native,
+      rendersFalse: nativeRendersFalse(native, profile),
+    };
+  }
 
   if (ariaOk)
     return { channel: 'aria', attribute: aria, rendersFalse: rendersFalse(aria, profile) };

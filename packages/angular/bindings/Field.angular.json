@@ -1,0 +1,10 @@
+{
+  "$schema": "./binding.schema.json",
+  "component": "Field",
+  "contract": "../../contracts/components/Field/Field.contract.json",
+  "framework": "angular",
+  "element": "div",
+  "notes": [
+    "A pure composition wrapper: no state of its own, three referenced parts and the accessibility relationships between them."
+  ]
+}

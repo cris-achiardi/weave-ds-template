@@ -34,17 +34,17 @@ pnpm dev                   # sandbox at localhost:4300
 
 ## What is in the box
 
-|                   |                                                                                |
-| ----------------- | ------------------------------------------------------------------------------ |
-| `packages/tokens` | DTCG JSON → CSS custom properties + typed constants, via Style Dictionary      |
-| `packages/react`  | The library. React 19, CSS Modules, CVA. Empty.                                |
-| `apps/sandbox`    | A one-page Vite harness pointed at component source. Boots in ~1s.             |
-| `apps/storybook`  | Complete on disk, deliberately **not installed** — one line to switch on       |
-| `docs/ADR`        | Decision records. One — how the repo is organised. The rest are yours          |
-| `docs/research`   | Pre-decision space: what is measurably true, ending in open questions          |
-| `.ai/maps`        | The prop glossary. Generated, descriptive, CI-gated. Useful while still empty. |
-| `.figma`          | Which design file we read, how names map, what has been reconciled             |
-| `.claude/skills`  | `ds-decide`, `ds-component`, and three that write to Figma. Exploring is yours |
+|                      |                                                                                |
+| -------------------- | ------------------------------------------------------------------------------ |
+| `packages/tokens`    | DTCG JSON → CSS custom properties + typed constants, via Style Dictionary      |
+| `packages/react`     | The library. React 19, CSS Modules, CVA. Empty.                                |
+| `apps/react-sandbox` | A one-page Vite harness pointed at component source. Boots in ~1s.             |
+| `apps/storybook`     | Complete on disk, deliberately **not installed** — one line to switch on       |
+| `docs/ADR`           | Decision records. One — how the repo is organised. The rest are yours          |
+| `docs/research`      | Pre-decision space: what is measurably true, ending in open questions          |
+| `.ai/maps`           | The prop glossary. Generated, descriptive, CI-gated. Useful while still empty. |
+| `.figma`             | Which design file we read, how names map, what has been reconciled             |
+| `.claude/skills`     | `ds-decide`, `ds-component`, and three that write to Figma. Exploring is yours |
 
 ## The idea worth stealing
 

@@ -1,0 +1,10 @@
+{
+  "$schema": "./binding.schema.json",
+  "component": "TextField",
+  "contract": "../../contracts/components/TextField/TextField.contract.json",
+  "framework": "wc",
+  "element": "input",
+  "notes": [
+    "A native <input part=\"root\"> inside the shadow root. The host is not a form control: it does not participate in a form and does not carry the value. That is a real gap and is recorded rather than solved — ElementInternals and form association are their own piece of work."
+  ]
+}

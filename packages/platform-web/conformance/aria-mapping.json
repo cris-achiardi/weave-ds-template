@@ -6,10 +6,10 @@
     "https://www.w3.org/TR/wai-aria-1.2/#aria-selected",
     "https://www.w3.org/TR/wai-aria-1.2/#aria-expanded",
     "https://www.w3.org/TR/wai-aria-1.2/#tabpanel",
-    "https://www.w3.org/WAI/ARIA/apg/patterns/tabs/"
+    "https://www.w3.org/WAI/ARIA/apg/patterns/tabs/",
+    "https://html.spec.whatwg.org/multipage/common-microsyntaxes.html#boolean-attributes"
   ],
   "_scope": "The ROOT-element decision only. The member-reflection path in the React emitter deliberately does not apply the role-bearing gate these cases assume; that divergence is documented in ../README.md and is not asserted here, because asserting it would freeze an inconsistency as a requirement.",
-
   "cases": [
     {
       "id": "radio-must-carry-aria-checked",
@@ -164,12 +164,7 @@
     {
       "id": "free-text-reaches-no-attribute-at-all",
       "patterns": ["text-field"],
-      "given": {
-        "state": "value",
-        "element": "input",
-        "role": "textbox",
-        "hasValueType": true
-      },
+      "given": { "state": "value", "element": "input", "role": "textbox", "hasValueType": true },
       "expect": { "channel": "none", "attribute": null },
       "aria": "not-aria",
       "_note": "A boolean or enumerated state is a styling hook; free text is CONTENT, and mirroring it into an attribute leaks whatever the person typed into the DOM."
@@ -177,15 +172,28 @@
     {
       "id": "a-numeric-state-reaches-no-state-attribute-either",
       "patterns": ["slider"],
-      "given": {
-        "state": "value",
-        "element": "div",
-        "role": "slider",
-        "hasValueType": true
-      },
+      "given": { "state": "value", "element": "div", "role": "slider", "hasValueType": true },
       "expect": { "channel": "none", "attribute": null },
       "aria": "not-aria",
       "_note": "Same branch as free text, and easy to get wrong on a port: a number is announced by aria-valuenow, which is a separate mapping keyed by the state's min/max/current facets rather than by its name."
+    },
+    {
+      "id": "native-disabled-must-not-render-false",
+      "patterns": ["switch", "checkbox", "button", "tabs"],
+      "given": { "state": "disabled", "element": "button", "role": null },
+      "expect": { "channel": "native", "attribute": "disabled", "rendersFalse": false },
+      "aria": "not-applicable",
+      "quote": "The presence of a boolean attribute on an element represents the true value, and the absence of the attribute represents the false value.",
+      "_bug": "THIS SHIPPED, and it shipped inside the package whose entire job is holding platform truth. channelFor() returned a hardcoded rendersFalse: true for every native channel. An HTML boolean attribute is presence-only, so disabled=\"false\" disables the element — the exact opposite of what the state said. Two backends could not see it: React never renders a boolean DOM prop as an attribute, and Vue special-cases boolean attributes, so both removed it for reasons of their own that are nowhere in this package. Angular binds [attr.disabled] literally and produced a button that could never be enabled. Found by driving it in a browser, not by reading the code."
+    },
+    {
+      "id": "aria-invalid-omits-false-but-is-not-presence-only",
+      "patterns": ["field", "textfield"],
+      "given": { "state": "invalid", "element": "input", "role": null },
+      "expect": { "channel": "aria", "attribute": "aria-invalid", "rendersFalse": false },
+      "aria": "supported",
+      "quote": "true/false: The value is a true or false string. The default value is false.",
+      "_bug": "THIS SHIPPED IN ONE BACKEND. `rendersFalse: false` was read as \"this attribute is a presence-only boolean\", and the web-components emitter wrote it with toggleAttribute — producing aria-invalid=\"\" on an invalid field and aria-disabled=\"\" on a disabled tab. An empty value is not a valid true/false string, so WAI-ARIA applies the DEFAULT and both announced as the opposite of what the contract said. The field means only that the FALSE value is not worth writing; the true value is still the string \"true\". React, Vue and Angular never meet it, because each stringifies a boolean on the way into the DOM. Found in code review on PR #9, confirmed in a browser."
     }
   ]
 }

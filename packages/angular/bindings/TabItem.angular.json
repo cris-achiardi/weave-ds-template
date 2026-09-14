@@ -1,0 +1,10 @@
+{
+  "$schema": "./binding.schema.json",
+  "component": "TabItem",
+  "contract": "../../contracts/components/TabItem/TabItem.contract.json",
+  "framework": "angular",
+  "element": "button",
+  "notes": [
+    "A member. Injects its collection and registers its own host element for the arrow-key navigation the collection declares. The host element is reached with `inject(ElementRef)`, which needs no template ref at all."
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "$schema": "./binding.schema.json",
+  "component": "Checkbox",
+  "contract": "../../contracts/components/Checkbox/Checkbox.contract.json",
+  "framework": "angular",
+  "element": "button",
+  "notes": [
+    "The `checked` state is enumerated rather than boolean, so the model is typed to those three words and `[(checked)]` carries a string."
+  ]
+}

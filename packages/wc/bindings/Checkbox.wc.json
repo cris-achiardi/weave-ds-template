@@ -1,0 +1,10 @@
+{
+  "$schema": "./binding.schema.json",
+  "component": "Checkbox",
+  "contract": "../../contracts/components/Checkbox/Checkbox.contract.json",
+  "framework": "wc",
+  "element": "button",
+  "notes": [
+    "The `checked` state is enumerated, so the host attribute carries the word and the inner element carries aria-checked."
+  ]
+}

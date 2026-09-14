@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/vue-binding-1.json",
+  "title": "Vue binding",
+  "description": "How one agnostic component contract is realised in Vue. The reasoning is in packages/contracts/README.md.\n\nEverything here is a fact that stops being true the moment you build the same contract on a different framework. It is deliberately SMALLER than the React binding, and the two fields it does not have are the finding: Vue merges a consumer's `class` onto the root element by itself, and exposes that element as `$el`, so `classNamePassthrough` and `refTarget` have nothing to record. React needs both stated because React supplies neither.\n\nKeep it SMALL. If a field here would be equally true in React, it belongs in `@ds/platform-web` or in the contract instead.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["component", "contract", "framework", "element"],
+
+  "properties": {
+    "$schema": { "type": "string" },
+
+    "component": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Za-z0-9]*$",
+      "description": "Must match the contract's `component`, the directory name, and the name of the emitted <Name>.vue single-file component."
+    },
+
+    "contract": {
+      "type": "string",
+      "description": "Relative path to the agnostic contract this realises."
+    },
+
+    "framework": {
+      "const": "vue",
+      "description": "Named explicitly so a directory can hold more than one binding without ambiguity."
+    },
+
+    "element": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9-]*$",
+      "description": "The element rendered at the root — what the contract's `semantics.role` becomes in the DOM.\n\nIDENTICAL to the React binding's `element` in all fifteen components, and that is a measurement rather than a coincidence: which element carries a role is web-platform knowledge, not framework knowledge. It is duplicated here deliberately and the duplication is reported in docs/research/0004 rather than removed, because removing it before it was measured would have been a guess."
+    },
+
+    "elementByProp": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["prop", "map"],
+      "description": "For polymorphic components. Vue's own idiom is `<component :is>`; this records the same fact the React binding records, and the emitter spells it Vue's way.",
+      "properties": {
+        "prop": { "type": "string" },
+        "map": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": { "type": "string" },
+          "description": "Prop value, or `present`/`absent` for a boolean, -> rendered element."
+        }
+      }
+    },
+
+    "exposes": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]*$" },
+      "description": "Anatomy nodes published through `defineExpose` beyond the root.\n\nThe ROOT is never listed: Vue exposes a single-root component's element as `$el` with no help from the emitter, which is why this field has no `refTarget` equivalent. It exists for the case a consumer must reach a node further in — and nothing needs it yet, so every binding omits it. An empty field that is honest about being unexercised beats a field invented to mirror React's."
+    },
+
+    "propOverrides": {
+      "type": "object",
+      "description": "Where a contract axis is exposed under a different prop name in Vue, because the framework already owns the canonical one. Keyed by axis name.",
+      "propertyNames": { "pattern": "^[a-z][a-zA-Z0-9]*$" },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["prop", "reason"],
+        "properties": {
+          "prop": { "type": "string" },
+          "reason": {
+            "type": "string",
+            "description": "Required. A rename with no reason is drift with paperwork."
+          }
+        }
+      }
+    },
+
+    "notes": { "type": "array", "items": { "type": "string" } }
+  }
+}

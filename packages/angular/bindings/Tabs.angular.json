@@ -1,0 +1,10 @@
+{
+  "$schema": "./binding.schema.json",
+  "component": "Tabs",
+  "contract": "../../contracts/components/Tabs/Tabs.contract.json",
+  "framework": "angular",
+  "element": "div",
+  "notes": [
+    "A collection. Angular publishes its context through the hierarchical injector — an InjectionToken the component provides with `useExisting` — rather than React context or Vue provide/inject. Three backends, three protocols, one contract sentence."
+  ]
+}

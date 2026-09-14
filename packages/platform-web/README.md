@@ -51,9 +51,10 @@ platform, never a component.
 same `profile.json`, writes its own resolver, and runs the same conformance cases. That is the whole
 arrangement, and it is the same one `@ds/contracts/conformance` uses for keyboard behaviour.
 
-## Three tables, not one
+## Four tables, not one
 
-`profile.json` keeps `states`, `aria` and `elements` separate, and the separation is deliberate:
+`profile.json` keeps `states`, `aria`, `native` and `elements` separate, and the separation is
+deliberate:
 
 - **`states` is keyed by a CONTRACT word** — `checked`, `read-only`, `hover`. It says which channels
   the platform offers for carrying that word.
@@ -62,6 +63,10 @@ arrangement, and it is the same one `@ds/contracts/conformance` uses for keyboar
   `aria-expanded`'s ten-role list the moment a contract spells the state `expanded` as well as
   `open`, and the two copies could then drift with nothing to catch it. Kept attribute-keyed, the
   role lists are one block a reader can diff against the specification.
+- **`native` is keyed by a NATIVE HTML ATTRIBUTE**, for exactly the reason `aria` is keyed by an
+  ARIA one: these are facts about the attribute, not about the contract word that reaches it. It was
+  added when the first correction below landed, and it is a table rather than a flag on `states` so
+  that two contract words mapping to one attribute cannot hold two answers.
 - **`elements` is keyed by an ELEMENT NAME** and carries capabilities.
 
 The collapse that _was_ worth doing: `disabled` used to live in three separate tables and is now one
@@ -78,6 +83,44 @@ That is not laziness. The extraction was proved correct by regenerating all fift
 requiring a byte-identical diff, and a correction smuggled in alongside a move destroys that proof —
 you can no longer tell which change caused a difference. **Corrections are separate commits with
 their own diffs.**
+
+### The first correction, and what it took to see it
+
+`channelFor` returned a hardcoded `rendersFalse: true` for every native channel. As a statement
+about the web platform that was false: an HTML boolean attribute is presence-only, so
+`disabled="false"` disables an element exactly as thoroughly as `disabled=""`.
+
+**It was invisible to two of the three backends, and for reasons that are nowhere in this package.**
+React never renders a boolean DOM prop as an attribute; Vue special-cases boolean attributes. Both
+removed the attribute anyway and neither could have reported the error. Angular's `[attr.x]` does
+what it is told, and produced a button that could never be enabled — found by pressing it, not by
+reading the code.
+
+The fix is the `native` table, not a corrected literal: **a literal here is what the bug was.** Its
+diff is exactly eight lines of generated output across React and Vue, and none in Angular, which had
+been working around it. `conformance/aria-mapping.json` now pins it as
+`native-disabled-must-not-render-false`. The whole episode is written up in
+[`docs/research/0005`](../../docs/research/0005-a-third-backend-and-what-only-it-could-find.md), and
+it is the strongest argument in the repo for building a backend you do not need.
+
+### The second one was not a correction: the field was right and was read wrong
+
+`rendersFalse` appears in both the `aria` and the `native` tables, and it does not mean the same
+thing to a reader in each — which is a property of the reader, not of the field. It says **whether
+the false value is worth writing down**, and nothing else. On a native boolean attribute the false
+value has no spelling at all, so `rendersFalse: false` and "presence-only" happen to coincide. On an
+ARIA state they do not: `aria-invalid` omits the false case, and its true case is still the string
+`"true"`.
+
+The web-components emitter read the second as the first and wrote `aria-invalid=""` with
+`toggleAttribute`. An empty string is not a valid `true/false` token, so WAI-ARIA falls back to the
+default and the field announced as valid while the contract said invalid. **The other three backends
+cannot reach this mistake**, because each stringifies a boolean on the way into the DOM — so no gate
+in this repo could have caught it, and a review did.
+
+`aria._doc` now says the distinction where the field is defined, and
+`aria-invalid-omits-false-but-is-not-presence-only` pins it beside the case that pins the native
+half.
 
 ## Known divergences, recorded rather than smoothed
 

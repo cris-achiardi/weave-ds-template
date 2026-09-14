@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import type { KeyboardEvent, MouseEvent, PointerEvent } from 'react';
-import { dismissesOnKey, dismissesOnPress } from './dismissal.js';
-import type { DismissalOptions } from './dismissal.js';
+import { dismissesOnKey, dismissesOnPress } from '@ds/behavior/dismissal';
+import type { DismissalOptions } from '@ds/behavior/dismissal';
 
-export type { DismissalCause, DismissalOptions, PressTarget } from './dismissal.js';
+export type { DismissalCause, DismissalOptions, PressTarget } from '@ds/behavior/dismissal';
 
 export interface Dismissal {
   /** Goes on the region's root. Catches Escape from anywhere inside it — see the note above. */
@@ -19,7 +19,7 @@ export interface Dismissal {
 /**
  * Closing a region with a key or a press that is not activation.
  *
- * The decision logic is in ./dismissal.ts as pure functions, so the cases in
+ * The decision logic is in @ds/behavior as pure functions, so the cases in
  * `@ds/contracts/conformance/dismissal.json` execute against it. This hook is the React binding:
  * reading the event, and calling the state writer.
  *

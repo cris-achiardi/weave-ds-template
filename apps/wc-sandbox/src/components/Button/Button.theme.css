@@ -1,0 +1,156 @@
+/*
+ * Button — YOUR FILE, and the one file that could NOT be copied.
+ *
+ * The React, Vue and Angular sandboxes share this file byte for byte, because all three render into
+ * the light DOM and a descendant selector over data attributes reaches all of them. A shadow root
+ * ends that. This is the same values in the shadow grammar:
+ *
+ *   [data-ds-component='Button']                       ->  :host
+ *   [data-ds-component='Button'] [data-ds-part='x']    ->  [part='x']
+ *   [data-ds-component='Button'][data-ds-size='s']     ->  :host([size='s'])
+ *   [data-ds-component='Button'][aria-checked='true']  ->  :host([checked])
+ *   [data-ds-component='Button']:disabled              ->  :host([disabled])
+ *
+ * NOT ONE DECLARATION CHANGED. Every value, every colour and every length is the React sandbox's,
+ * unedited — which is the useful half of the result: what the shadow boundary costs is the
+ * SELECTORS, and nothing else.
+ *
+ * Translated mechanically from apps/react-sandbox, then checked in a browser.
+ */
+
+/* --- structure, in the wrong file: the contract has no `layout` block -------------------- */
+[part='root'] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+}
+:host([disabled]) [part='root'] {
+  cursor: not-allowed;
+}
+[part='label'] {
+  white-space: nowrap;
+}
+:host(:not([has-icon-start])) [part='icon-start'],
+:host(:not([has-icon-end])) [part='icon-end'] {
+  display: none;
+}
+/* --- end of misplaced structure ---------------------------------------------------------- */
+
+[part='root'] {
+  border-radius: 0.4rem;
+  font-weight: 500;
+  gap: 0.45rem;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease;
+}
+
+/* hierarchy = primary */
+:host([hierarchy='primary']) [part='root'] {
+  background: #5146e6;
+  color: #ffffff;
+  border-color: #5146e6;
+}
+
+/* hierarchy = secondary */
+:host([hierarchy='secondary']) [part='root'] {
+  background: #26262b;
+  color: #e8e8ea;
+  border-color: #3f3f47;
+}
+
+/* hierarchy = tertiary */
+:host([hierarchy='tertiary']) [part='root'] {
+  background: transparent;
+  color: #b9b9c2;
+  border-color: transparent;
+}
+
+/* variant = danger, crossed with hierarchy — the pair the two axes exist to express */
+:host([variant='danger'][hierarchy='primary']) [part='root'] {
+  background: #c4342b;
+  border-color: #c4342b;
+}
+:host([variant='danger'][hierarchy='secondary']) [part='root'] {
+  color: #f0736a;
+  border-color: #5e2c28;
+}
+:host([variant='danger'][hierarchy='tertiary']) [part='root'] {
+  color: #f0736a;
+}
+:host([variant='brand'][hierarchy='secondary']) [part='root'] {
+  color: #a99fff;
+  border-color: #3b3480;
+}
+
+/* size = s */
+:host([size='s']) [part='root'] {
+  padding-inline: 0.6rem;
+  min-block-size: 28px;
+  font-size: 0.8rem;
+}
+
+/* size = m */
+:host([size='m']) [part='root'] {
+  padding-inline: 0.85rem;
+  min-block-size: 34px;
+  font-size: 0.875rem;
+}
+
+/* size = l */
+:host([size='l']) [part='root'] {
+  padding-inline: 1.15rem;
+  min-block-size: 42px;
+  font-size: 0.95rem;
+}
+
+/* state: hover */
+:host(:not([disabled]):hover) [part='root'] {
+  filter: brightness(1.14);
+}
+
+/* state: active */
+:host(:not([disabled]):active) [part='root'] {
+  filter: brightness(0.92);
+}
+
+/* state: disabled */
+:host([disabled]) [part='root'] {
+  opacity: 0.45;
+}
+
+/* state: focus-visible */
+:host(:focus-visible) [part='root'] {
+  outline: 2px solid #8b83f0;
+  outline-offset: 2px;
+}
+
+/* state: loading — the contract says the label must not move, so the spinner takes the icon slot */
+:host([loading]) [part='root'] {
+  cursor: progress;
+}
+:host([loading]) [part='icon-start'] {
+  display: inline-flex;
+  inline-size: 0.85em;
+  block-size: 0.85em;
+  border: 2px solid currentColor;
+  border-block-start-color: transparent;
+  border-radius: 999px;
+  animation: ds-button-spin 620ms linear infinite;
+}
+
+@keyframes ds-button-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+[part='icon-start'],
+[part='icon-end'] {
+  inline-size: 1em;
+  block-size: 1em;
+}

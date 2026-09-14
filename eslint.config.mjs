@@ -25,8 +25,10 @@
 
 export default [
   {
-    // Everything the repo's own gates cannot see. TypeScript under `packages/react/src` and
-    // `apps/sandbox/src` is already covered by `pnpm typecheck` with `--noUnusedLocals`.
+    // Everything the repo's own gates cannot see. TypeScript under `packages/react/src`,
+    // `packages/vue/src` and both sandboxes is already covered by `pnpm typecheck` with
+    // `--noUnusedLocals` — `vue-tsc` for the .vue files, which is what makes a generated SFC's
+    // template an expression the typechecker reads rather than a string.
     files: ['**/*.mjs', '**/*.js'],
     ignores: [
       '**/node_modules/**',

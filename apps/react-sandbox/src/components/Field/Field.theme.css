@@ -1,0 +1,46 @@
+/*
+ * Field — YOUR FILE. Emitted once, never regenerated. Wire your tokens here.
+ *
+ * Every channel below is declared in the contract with no source: the library says this
+ * part paints a background, and deliberately does not say from where. Uncomment and fill.
+ */
+
+[data-ds-component='Field'] {
+  /* display: ; */
+  /* gap: ; */
+}
+
+[data-ds-component='Field'] [data-ds-part='label'] {
+  /* color: ; */
+  /* font-size: ; */
+  /* font-weight: ; */
+}
+
+/* state: disabled — Label, control and description all take the disabled treatment. */
+[data-ds-component='Field']:disabled [data-ds-part='label'] {
+  /* color: ; */
+}
+
+/* state: focus-within — The label takes its focused treatment. */
+/* Hand-patched: this file is emitted ONCE and never rewritten, so renaming the state in the
+   contract fixed the emitter's output and not this. The rule was dead twice over — the selector
+   syntax was wrong, and the state it named (`focused`) is not one any platform provides, so
+   nothing was ever going to set it. `:focus-within` needs no attribute at all. */
+[data-ds-component='Field']:focus-within [data-ds-part='label'] {
+  color: #c9c6f5;
+}
+
+[data-ds-component='Field'] [data-ds-part='description'] {
+  /* color: ; */
+  /* font-size: ; */
+}
+
+/* state: disabled — Label, control and description all take the disabled treatment. */
+[data-ds-component='Field']:disabled [data-ds-part='description'] {
+  /* color: ; */
+}
+
+[data-ds-component='Field'] [data-ds-part='error'] {
+  /* color: ; */
+  /* font-size: ; */
+}

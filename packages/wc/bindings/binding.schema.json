@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/wc-binding-1.json",
+  "title": "Web component binding",
+  "description": "How one agnostic component contract is realised as a custom element with a shadow root. The reasoning is in packages/contracts/README.md.\n\nThis binding has no framework to describe, which is the point of the backend. What it still has to say is which element the contract's `semantics.role` becomes INSIDE the shadow root — a fact about the web platform that every web backend needs and that no contract states.\n\nKeep it SMALL. If a field here would be equally true in React, it belongs in `@ds/platform-web` or in the contract instead.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["component", "contract", "framework", "element"],
+
+  "properties": {
+    "$schema": { "type": "string" },
+
+    "component": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Za-z0-9]*$",
+      "description": "Must match the contract's `component` and the file name. The custom element's TAG is derived from it — `TabItem` becomes `<ds-tab-item>` — rather than stored, because a tag that disagreed with the component name would be a second name for one thing."
+    },
+
+    "contract": {
+      "type": "string",
+      "description": "Relative path to the agnostic contract this realises."
+    },
+
+    "framework": {
+      "const": "wc",
+      "description": "Named explicitly so a directory can hold more than one binding without ambiguity. `wc` rather than `web-components`, to match the package name."
+    },
+
+    "element": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9-]*$",
+      "description": "The element rendered as `part=\"root\"` INSIDE the shadow root.\n\nIt is not the host. The host is the custom element, and it is always `<ds-name>` — so unlike the other three backends, `element` here answers a question about the shadow tree rather than about what a consumer writes. That is the split a shadow root forces and it is the reason this backend keeps the field at all: the contract's `semantics.role` has to land on something real, and a custom element carries no implicit role, no native focus and no native `disabled`.\n\nIDENTICAL to the React, Vue and Angular bindings' `element` in all fifteen components. `pnpm verify:parity` fails when they disagree."
+    },
+
+    "delegatesFocus": {
+      "type": "boolean",
+      "description": "Whether the shadow root is attached with `delegatesFocus: true`, so focus landing on the host is forwarded to the first focusable node inside it.\n\nTHE FIRST BINDING FIELD IN THIS REPO THAT IS A PLATFORM FEATURE RATHER THAN A WORKAROUND FOR ONE. React's binding carries `refTarget` and says outright that it exists because React has no `delegatesFocus`; Angular reaches the host with `inject(ElementRef)`. Here the platform supplies it directly.\n\nOmitted means: derived from the contract's `semantics.focusable`. Present means the contract's answer was overridden, and `notes` must say why."
+    },
+
+    "propOverrides": {
+      "type": "object",
+      "description": "Where a contract axis is exposed under a different attribute name, because the platform already owns the canonical one. Keyed by axis name.",
+      "propertyNames": { "pattern": "^[a-z][a-zA-Z0-9]*$" },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["prop", "reason"],
+        "properties": {
+          "prop": { "type": "string" },
+          "reason": {
+            "type": "string",
+            "description": "Required. A rename with no reason is drift with paperwork."
+          }
+        }
+      }
+    },
+
+    "notes": { "type": "array", "items": { "type": "string" } }
+  }
+}

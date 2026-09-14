@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/angular-binding-1.json",
+  "title": "Angular binding",
+  "description": "How one agnostic component contract is realised in Angular. The reasoning is in packages/contracts/README.md.\n\nThis is the SMALLEST of the three binding schemas, and the reason is structural rather than incidental: in Angular a component does not render its own root element, it ATTACHES to one. `element` therefore compiles into the component's SELECTOR — `button[dsSwitch]` — and everything React records about what happens to that root (where a ref lands, where a className merges) is either automatic or does not apply.\n\nKeep it SMALL. If a field here would be equally true in React or Vue, it belongs in `@ds/platform-web` or in the contract instead.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["component", "contract", "framework", "element"],
+
+  "properties": {
+    "$schema": { "type": "string" },
+
+    "component": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Za-z0-9]*$",
+      "description": "Must match the contract's `component`, the directory name, and the exported class."
+    },
+
+    "contract": {
+      "type": "string",
+      "description": "Relative path to the agnostic contract this realises."
+    },
+
+    "framework": {
+      "const": "angular",
+      "description": "Named explicitly so a directory can hold more than one binding without ambiguity."
+    },
+
+    "element": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9-]*$",
+      "description": "The element the component attaches to — what the contract's `semantics.role` becomes in the DOM.\n\nIT BECOMES THE SELECTOR, not markup: `element: \"button\"` for `Switch` compiles to `selector: 'button[dsSwitch]'`, and a consumer writes `<button dsSwitch>`. This is the one structural fact that differs in KIND from the React and Vue backends rather than in spelling, and it is why this schema has no `elementByProp`: an Angular selector is static, so a root element that changes with a prop cannot be expressed at all. The emitter refuses such a contract rather than rendering a wrapper element and pretending.\n\nIDENTICAL to the React and Vue bindings' `element` in all fifteen components, because which element carries a role is web-platform knowledge. `pnpm verify:parity` fails when the three disagree."
+    },
+
+    "propOverrides": {
+      "type": "object",
+      "description": "Where a contract axis is exposed under a different input name in Angular, because the framework already owns the canonical one. Keyed by axis name.",
+      "propertyNames": { "pattern": "^[a-z][a-zA-Z0-9]*$" },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["prop", "reason"],
+        "properties": {
+          "prop": { "type": "string" },
+          "reason": {
+            "type": "string",
+            "description": "Required. A rename with no reason is drift with paperwork."
+          }
+        }
+      }
+    },
+
+    "notes": { "type": "array", "items": { "type": "string" } }
+  }
+}

@@ -18,7 +18,7 @@
  * Run it ONCE, before writing any components. It is not a migration tool.
  */
 
-import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve, join, relative } from 'node:path';
@@ -44,6 +44,11 @@ const SKIP_DIRS = new Set([
  *                   `pnpm install` regenerates it correctly from the renamed manifests.
  */
 const SKIP_FILES = new Set(['scripts/init-ds.mjs', 'pnpm-lock.yaml']);
+//
+// A FILE TYPE MISSING FROM THIS LIST IS THE HALF-RENAME THIS TOOL EXISTS TO PREVENT. `.vue` was
+// added when the Vue backend landed: without it every generated single-file component kept
+// `data-ds-component` and `@ds/vue/behavior` after a rename, the repo still built, and the only
+// symptom was styling that silently stopped matching. Adding a backend means checking this list.
 const EXTENSIONS = new Set([
   '.ts',
   '.tsx',
@@ -55,6 +60,7 @@ const EXTENSIONS = new Set([
   '.css',
   '.md',
   '.html',
+  '.vue',
   '.yaml',
   '.yml',
 ]);
@@ -98,10 +104,47 @@ if (from !== 'ds') {
 
 // Order matters: `data-ds-` must be rewritten before the bare `--ds-`/`@ds/` rules, or a partial
 // match leaves a half-renamed attribute.
+//
+// THE FOURTH RULE IS THE ANGULAR SELECTOR, and it is a fourth syntax of the same one decision.
+// An Angular component attaches to an element through an attribute selector built from the prefix
+// and the component name — `button[dsButton]`, written by a consumer as `<button dsButton>`. The
+// emitter derives it from `ds.config.json` like everything else, so a rename that skipped it would
+// leave already-generated components answering to `dsButton` while the emitter produced
+// `weaveButton`: a repo that builds green, passes every gate, and breaks the next time anyone
+// regenerates. That is precisely the half-rename this codemod exists to prevent.
+//
+// The word-boundary rule is tight enough to be safe because identifiers of the shape `ds<Capital>` are
+// RESERVED for this family — two unrelated locals called `dsConfig` were renamed when this rule
+// landed, rather than widening the regex to dodge them.
+// THE FIFTH RULE IS THE CUSTOM ELEMENT TAG, and it is built from the component list rather than
+// guessed. A web component's tag is `ds-button`, `ds-tab-item` — a fifth syntax of the same one
+// decision, and one a blanket `ds-` rule cannot safely match: `.claude/skills/` holds
+// `ds-decide`, `ds-figma-component` and others that are agent tooling rather than the brand, and
+// renaming those would break the names they are invoked by.
+//
+// So the tags come from `packages/contracts/components/`, which is the authoritative list of what
+// exists. Precise by construction, and it stays correct as components are added.
+const COMPONENT_DIR = join(REPO_ROOT, 'packages/contracts/components');
+const TAGS = existsSync(COMPONENT_DIR)
+  ? readdirSync(COMPONENT_DIR, { withFileTypes: true })
+      .filter((e) => e.isDirectory())
+      .map((e) => e.name.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase())
+      .sort()
+  : [];
+
 const RULES = [
   [new RegExp(`data-${from}-`, 'g'), `data-${name}-`],
   [new RegExp(`@${from}/`, 'g'), `@${name}/`],
   [new RegExp(`--${from}-`, 'g'), `--${name}-`],
+  // `String.raw`, because in an ordinary template literal \b is the BACKSPACE
+  // character rather than a word boundary. The rule then matches nothing at all, silently,
+  // which is the only way a codemod can be wrong and still look finished.
+  [new RegExp(String.raw`\b${from}(?=[A-Z])`, 'g'), name],
+  // The tag rule, built from the component list above. Absent entirely when no component exists
+  // yet, which is this template's own shipping state.
+  ...(TAGS.length
+    ? [[new RegExp(String.raw`\b${from}-(?=(?:${TAGS.join('|')})\b)`, 'g'), `${name}-`]]
+    : []),
 ];
 
 function* walk(dir) {

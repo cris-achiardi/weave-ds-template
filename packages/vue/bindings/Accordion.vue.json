@@ -1,0 +1,8 @@
+{
+  "$schema": "./binding.schema.json",
+  "component": "Accordion",
+  "contract": "../../contracts/components/Accordion/Accordion.contract.json",
+  "framework": "vue",
+  "element": "div",
+  "notes": ["A collection. Same provide/inject protocol as Tabs."]
+}

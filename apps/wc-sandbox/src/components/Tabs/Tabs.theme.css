@@ -1,0 +1,38 @@
+/*
+ * Tabs — YOUR FILE, and the one file that could NOT be copied.
+ *
+ * The React, Vue and Angular sandboxes share this file byte for byte, because all three render into
+ * the light DOM and a descendant selector over data attributes reaches all of them. A shadow root
+ * ends that. This is the same values in the shadow grammar:
+ *
+ *   [data-ds-component='Tabs']                       ->  :host
+ *   [data-ds-component='Tabs'] [data-ds-part='x']    ->  [part='x']
+ *   [data-ds-component='Tabs'][data-ds-size='s']     ->  :host([size='s'])
+ *   [data-ds-component='Tabs'][aria-checked='true']  ->  :host([checked])
+ *   [data-ds-component='Tabs']:disabled              ->  :host([disabled])
+ *
+ * NOT ONE DECLARATION CHANGED. Every value, every colour and every length is the React sandbox's,
+ * unedited — which is the useful half of the result: what the shadow boundary costs is the
+ * SELECTORS, and nothing else.
+ *
+ * Translated mechanically from apps/react-sandbox, then checked in a browser.
+ */
+
+/* --- structure, in the wrong file -------------------------------------------------------- */
+[part='root'] {
+  display: flex;
+  flex-direction: column;
+  inline-size: 34rem;
+}
+[part='list'] {
+  display: flex;
+}
+/* --- end of misplaced structure ---------------------------------------------------------- */
+
+[part='root'] {
+  gap: 0;
+}
+[part='list'] {
+  gap: 0.25rem;
+  border-block-end: 1px solid #3a3a3f;
+}

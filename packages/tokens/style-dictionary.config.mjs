@@ -21,8 +21,8 @@ import StyleDictionary from 'style-dictionary';
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, '../..');
 
-const dsConfig = JSON.parse(readFileSync(join(repoRoot, 'ds.config.json'), 'utf8'));
-const PREFIX = dsConfig.tokenPrefix;
+const brand = JSON.parse(readFileSync(join(repoRoot, 'ds.config.json'), 'utf8'));
+const PREFIX = brand.tokenPrefix;
 
 /**
  * Style Dictionary globs with forward slashes only. On Windows `path.join` yields backslashes,
