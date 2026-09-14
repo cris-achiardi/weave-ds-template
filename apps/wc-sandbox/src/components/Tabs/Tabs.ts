@@ -44,7 +44,7 @@ const NAVIGATION: NavigationOptions = {
 /** Fired on the collection whenever the selection or the roster changes. */
 export const TABS_CHANGE = 'ds-tabs-internal-change';
 
-export class DsTabs extends HTMLElement {
+export class Tabs extends HTMLElement {
   static readonly tagName = 'ds-tabs';
   static readonly observedAttributes = ['disabled', 'value'];
 
@@ -168,12 +168,12 @@ export class DsTabs extends HTMLElement {
   }
 }
 
-if (!customElements.get(DsTabs.tagName)) {
-  customElements.define(DsTabs.tagName, DsTabs);
+if (!customElements.get(Tabs.tagName)) {
+  customElements.define(Tabs.tagName, Tabs);
 }
 
 declare global {
   interface HTMLElementTagNameMap {
-    'ds-tabs': DsTabs;
+    'ds-tabs': Tabs;
   }
 }

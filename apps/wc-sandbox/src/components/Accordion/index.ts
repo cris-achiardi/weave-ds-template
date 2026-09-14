@@ -1,1 +1,1 @@
-export { DsAccordion } from './Accordion';
+export { Accordion } from './Accordion';

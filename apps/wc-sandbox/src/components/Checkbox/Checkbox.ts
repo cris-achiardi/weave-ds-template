@@ -31,7 +31,7 @@ TEMPLATE.innerHTML = `
     </button>
 `;
 
-export class DsCheckbox extends HTMLElement {
+export class Checkbox extends HTMLElement {
   static readonly tagName = 'ds-checkbox';
   static readonly observedAttributes = ['disabled', 'invalid', 'checked'];
 
@@ -165,12 +165,12 @@ export class DsCheckbox extends HTMLElement {
   }
 }
 
-if (!customElements.get(DsCheckbox.tagName)) {
-  customElements.define(DsCheckbox.tagName, DsCheckbox);
+if (!customElements.get(Checkbox.tagName)) {
+  customElements.define(Checkbox.tagName, Checkbox);
 }
 
 declare global {
   interface HTMLElementTagNameMap {
-    'ds-checkbox': DsCheckbox;
+    'ds-checkbox': Checkbox;
   }
 }

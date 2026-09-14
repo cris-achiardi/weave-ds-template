@@ -1,1 +1,1 @@
-export { DsAccordionItem } from './AccordionItem';
+export { AccordionItem } from './AccordionItem';

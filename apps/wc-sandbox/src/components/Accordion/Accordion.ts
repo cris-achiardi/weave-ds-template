@@ -31,7 +31,7 @@ let nextId = 0;
 /** Fired on the collection whenever the selection or the roster changes. */
 export const ACCORDION_CHANGE = 'ds-accordion-internal-change';
 
-export class DsAccordion extends HTMLElement {
+export class Accordion extends HTMLElement {
   static readonly tagName = 'ds-accordion';
   static readonly observedAttributes = ['disabled', 'orientation', 'value'];
 
@@ -145,12 +145,12 @@ export class DsAccordion extends HTMLElement {
   }
 }
 
-if (!customElements.get(DsAccordion.tagName)) {
-  customElements.define(DsAccordion.tagName, DsAccordion);
+if (!customElements.get(Accordion.tagName)) {
+  customElements.define(Accordion.tagName, Accordion);
 }
 
 declare global {
   interface HTMLElementTagNameMap {
-    'ds-accordion': DsAccordion;
+    'ds-accordion': Accordion;
   }
 }

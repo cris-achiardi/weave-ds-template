@@ -1,1 +1,1 @@
-export { DsSlider } from './Slider';
+export { Slider } from './Slider';

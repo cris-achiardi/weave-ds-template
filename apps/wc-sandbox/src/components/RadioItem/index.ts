@@ -1,1 +1,1 @@
-export { DsRadioItem } from './RadioItem';
+export { RadioItem } from './RadioItem';

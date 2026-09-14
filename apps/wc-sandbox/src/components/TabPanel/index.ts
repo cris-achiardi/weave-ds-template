@@ -1,1 +1,1 @@
-export { DsTabPanel } from './TabPanel';
+export { TabPanel } from './TabPanel';

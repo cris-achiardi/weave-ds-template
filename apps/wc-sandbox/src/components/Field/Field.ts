@@ -40,7 +40,7 @@ TEMPLATE.innerHTML = `
 // every id below is scoped to this element's own shadow root.
 let nextId = 0;
 
-export class DsField extends HTMLElement {
+export class Field extends HTMLElement {
   static readonly tagName = 'ds-field';
   static readonly observedAttributes = ['disabled', 'invalid', 'touched', 'dirty'];
 
@@ -156,12 +156,12 @@ export class DsField extends HTMLElement {
   }
 }
 
-if (!customElements.get(DsField.tagName)) {
-  customElements.define(DsField.tagName, DsField);
+if (!customElements.get(Field.tagName)) {
+  customElements.define(Field.tagName, Field);
 }
 
 declare global {
   interface HTMLElementTagNameMap {
-    'ds-field': DsField;
+    'ds-field': Field;
   }
 }

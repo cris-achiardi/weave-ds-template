@@ -1,1 +1,1 @@
-export { DsDialog } from './Dialog';
+export { Dialog } from './Dialog';

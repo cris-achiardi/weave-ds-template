@@ -22,7 +22,7 @@ TEMPLATE.innerHTML = `
     <input part="root" />
 `;
 
-export class DsTextField extends HTMLElement {
+export class TextField extends HTMLElement {
   static readonly tagName = 'ds-text-field';
   static readonly observedAttributes = ['disabled', 'read-only', 'invalid', 'size', 'value'];
 
@@ -138,12 +138,12 @@ export class DsTextField extends HTMLElement {
   }
 }
 
-if (!customElements.get(DsTextField.tagName)) {
-  customElements.define(DsTextField.tagName, DsTextField);
+if (!customElements.get(TextField.tagName)) {
+  customElements.define(TextField.tagName, TextField);
 }
 
 declare global {
   interface HTMLElementTagNameMap {
-    'ds-text-field': DsTextField;
+    'ds-text-field': TextField;
   }
 }

@@ -41,7 +41,7 @@ let nextId = 0;
 // @ds/contracts/conformance/dismissal.json.
 const DISMISSAL: DismissalOptions = { on: ['escape'] };
 
-export class DsTooltip extends HTMLElement {
+export class Tooltip extends HTMLElement {
   static readonly tagName = 'ds-tooltip';
   static readonly observedAttributes = ['disabled', 'placement', 'open'];
 
@@ -179,12 +179,12 @@ export class DsTooltip extends HTMLElement {
   }
 }
 
-if (!customElements.get(DsTooltip.tagName)) {
-  customElements.define(DsTooltip.tagName, DsTooltip);
+if (!customElements.get(Tooltip.tagName)) {
+  customElements.define(Tooltip.tagName, Tooltip);
 }
 
 declare global {
   interface HTMLElementTagNameMap {
-    'ds-tooltip': DsTooltip;
+    'ds-tooltip': Tooltip;
   }
 }

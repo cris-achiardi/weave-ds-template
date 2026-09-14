@@ -24,7 +24,7 @@ TEMPLATE.innerHTML = `
     </button>
 `;
 
-export class DsSwitch extends HTMLElement {
+export class Switch extends HTMLElement {
   static readonly tagName = 'ds-switch';
   static readonly observedAttributes = ['disabled', 'read-only', 'checked'];
 
@@ -119,12 +119,12 @@ export class DsSwitch extends HTMLElement {
   }
 }
 
-if (!customElements.get(DsSwitch.tagName)) {
-  customElements.define(DsSwitch.tagName, DsSwitch);
+if (!customElements.get(Switch.tagName)) {
+  customElements.define(Switch.tagName, Switch);
 }
 
 declare global {
   interface HTMLElementTagNameMap {
-    'ds-switch': DsSwitch;
+    'ds-switch': Switch;
   }
 }

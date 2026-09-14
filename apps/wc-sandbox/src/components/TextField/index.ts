@@ -1,1 +1,1 @@
-export { DsTextField } from './TextField';
+export { TextField } from './TextField';

@@ -3,7 +3,7 @@
 //
 // One section of an accordion: a heading that reveals a panel when chosen. It carries its own identity and its own disabled state, and nothing else — whether it is open is a comparison against the surrounding Accordion, not a property it holds.
 
-import { ACCORDION_CHANGE, type DsAccordion } from '../Accordion/Accordion';
+import { ACCORDION_CHANGE, type Accordion } from '../Accordion/Accordion';
 
 // THE ONE BUNDLER-SPECIFIC TOKEN IN THIS FILE. `?inline` asks Vite for the stylesheet as
 // a string so it can be adopted into the shadow root rather than injected into the page —
@@ -39,13 +39,13 @@ TEMPLATE.innerHTML = `
 // every id below is scoped to this element's own shadow root.
 let nextId = 0;
 
-export class DsAccordionItem extends HTMLElement {
+export class AccordionItem extends HTMLElement {
   static readonly tagName = 'ds-accordion-item';
   static readonly observedAttributes = ['disabled', 'value'];
 
   readonly #root: HTMLElement;
   readonly #baseId = 'ds-accordion-item-' + nextId++;
-  #collection: DsAccordion | null = null;
+  #collection: Accordion | null = null;
 
   constructor() {
     super();
@@ -81,7 +81,7 @@ export class DsAccordionItem extends HTMLElement {
   }
 
   connectedCallback(): void {
-    this.#collection = this.closest<DsAccordion>('ds-accordion');
+    this.#collection = this.closest<Accordion>('ds-accordion');
     if (!this.#collection) {
       throw new Error(
         '<ds-accordion-item> must be inside a <ds-accordion>. There is no selection to compare against, and looking unselected would hide the mistake.',
@@ -170,12 +170,12 @@ export class DsAccordionItem extends HTMLElement {
   }
 }
 
-if (!customElements.get(DsAccordionItem.tagName)) {
-  customElements.define(DsAccordionItem.tagName, DsAccordionItem);
+if (!customElements.get(AccordionItem.tagName)) {
+  customElements.define(AccordionItem.tagName, AccordionItem);
 }
 
 declare global {
   interface HTMLElementTagNameMap {
-    'ds-accordion-item': DsAccordionItem;
+    'ds-accordion-item': AccordionItem;
   }
 }

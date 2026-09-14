@@ -1,1 +1,1 @@
-export { DsButton } from './Button';
+export { Button } from './Button';

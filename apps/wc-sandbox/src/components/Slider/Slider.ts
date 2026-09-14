@@ -38,7 +38,7 @@ const RANGE: RangeOptions = {
   pageStep: 10,
 };
 
-export class DsSlider extends HTMLElement {
+export class Slider extends HTMLElement {
   static readonly tagName = 'ds-slider';
   static readonly observedAttributes = ['disabled', 'value'];
 
@@ -151,12 +151,12 @@ export class DsSlider extends HTMLElement {
   }
 }
 
-if (!customElements.get(DsSlider.tagName)) {
-  customElements.define(DsSlider.tagName, DsSlider);
+if (!customElements.get(Slider.tagName)) {
+  customElements.define(Slider.tagName, Slider);
 }
 
 declare global {
   interface HTMLElementTagNameMap {
-    'ds-slider': DsSlider;
+    'ds-slider': Slider;
   }
 }

@@ -1,1 +1,1 @@
-export { DsTabs } from './Tabs';
+export { Tabs } from './Tabs';

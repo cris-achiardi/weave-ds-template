@@ -29,18 +29,18 @@ import './components/RadioItem';
 import './components/Tooltip';
 import './components/Field';
 
-import type { DsSlider } from './components/Slider/Slider';
-import type { DsRadioGroup } from './components/RadioGroup/RadioGroup';
-import type { DsSwitch } from './components/Switch/Switch';
-import type { DsDialog } from './components/Dialog/Dialog';
-import type { DsTooltip } from './components/Tooltip/Tooltip';
-import type { DsTextField } from './components/TextField/TextField';
-import type { DsField } from './components/Field/Field';
+import type { Slider } from './components/Slider/Slider';
+import type { RadioGroup } from './components/RadioGroup/RadioGroup';
+import type { Switch } from './components/Switch/Switch';
+import type { Dialog } from './components/Dialog/Dialog';
+import type { Tooltip } from './components/Tooltip/Tooltip';
+import type { TextField } from './components/TextField/TextField';
+import type { Field } from './components/Field/Field';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
 // --- Slider ------------------------------------------------------------------------------
-const volume = $<DsSlider>('volume');
+const volume = $<Slider>('volume');
 const volumeReadout = $('volume-readout');
 const showVolume = () => (volumeReadout.textContent = `value: ${volume.value}`);
 volume.addEventListener('ds-value-change', showVolume);
@@ -54,20 +54,20 @@ $('volume-up').addEventListener('click', () => {
 });
 
 // --- RadioGroup --------------------------------------------------------------------------
-const plan = $<DsRadioGroup>('plan');
+const plan = $<RadioGroup>('plan');
 const planReadout = $('plan-readout');
 plan.addEventListener('ds-value-change', () => {
   planReadout.textContent = `chosen: ${plan.value}`;
 });
 
 // --- Switch ------------------------------------------------------------------------------
-const wifi = $<DsSwitch>('s2');
+const wifi = $<Switch>('s2');
 $('toggle-wifi').addEventListener('click', () => {
   wifi.checked = !wifi.checked;
 });
 
 // --- Dialog ------------------------------------------------------------------------------
-const dialog = $<DsDialog>('dialog');
+const dialog = $<Dialog>('dialog');
 $('open-dialog').addEventListener('click', () => {
   dialog.open = true;
 });
@@ -80,14 +80,14 @@ for (const button of document.querySelectorAll('[data-close]')) {
 }
 
 // --- Tooltip -----------------------------------------------------------------------------
-const tip = $<DsTooltip>('tip');
+const tip = $<Tooltip>('tip');
 $('toggle-tip').addEventListener('click', () => {
   tip.open = !tip.open;
 });
 
 // --- Field -------------------------------------------------------------------------------
-const email = $<DsTextField>('email');
-const field = $<DsField>('field');
+const email = $<TextField>('email');
+const field = $<Field>('field');
 email.addEventListener('ds-value-change', () => {
   field.invalid = email.value.length > 0 && !email.value.includes('@');
 });

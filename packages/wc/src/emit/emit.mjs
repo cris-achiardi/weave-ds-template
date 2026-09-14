@@ -96,7 +96,17 @@ function emitComponent(name, contract, binding, prefix) {
   const el = binding.element;
   const rootRole = root.role ?? contract.semantics?.role;
   const tag = tagFor(name, prefix);
-  const className = `${pascal(prefix)}${name}`;
+  // THE CLASS IS NOT PREFIXED, and only the TAG is. A custom element name is required to contain a
+  // hyphen, which is the platform reserving every single-word tag for itself — so `<ds-button>` has
+  // to carry the prefix. A class has no such constraint, it is module-scoped, and React and Angular
+  // both emit a bare `Button`.
+  //
+  // It was `DsButton` for one commit, and that was a latent half-rename: `pnpm init-ds` rewrites
+  // `dsButton` (the Angular selector) but not `DsButton`, so a renamed repo kept 117 references to
+  // a class the emitter would next produce as `WeaveButton`. It built green, and CI's straggler
+  // grep does not look for it. Dropping the prefix removes the thing to rename rather than adding a
+  // sixth rule to rename it.
+  const className = name;
 
   const models = props.filter((p) => p.role === 'model');
   const stateModels = models.filter((p) => p.from !== 'selection');
@@ -291,7 +301,7 @@ function emitComponent(name, contract, binding, prefix) {
     // The collection's change-event name is imported rather than re-derived, so a rename cannot
     // leave a member listening for something nothing fires.
     s.push(
-      `import { ${member.of.toUpperCase()}_CHANGE, type ${pascal(prefix)}${member.of} } from '../${member.of}/${member.of}';`,
+      `import { ${member.of.toUpperCase()}_CHANGE, type ${member.of} } from '../${member.of}/${member.of}';`,
     );
   }
   s.push(``);
@@ -379,7 +389,7 @@ function emitComponent(name, contract, binding, prefix) {
   s.push(`  readonly #root: HTMLElement;`);
   if (range) s.push(`  readonly #track: HTMLElement;`);
   if (needsIds) s.push(`  readonly #baseId = '${prefix}-${kebab(name)}-' + nextId++;`);
-  if (member) s.push(`  #collection: ${pascal(prefix)}${member.of} | null = null;`);
+  if (member) s.push(`  #collection: ${member.of} | null = null;`);
   if (dismissCauses.length) s.push(`  readonly #dismissal;`);
   if (range) s.push(`  readonly #range;`);
   if (navigation) s.push(`  readonly #nav;`);
@@ -526,7 +536,7 @@ function emitComponent(name, contract, binding, prefix) {
 
   s.push(`  connectedCallback(): void {`);
   if (member) {
-    s.push(`    this.#collection = this.closest<${pascal(prefix)}${member.of}>(`);
+    s.push(`    this.#collection = this.closest<${member.of}>(`);
     s.push(`      '${tagFor(member.of, prefix)}',`);
     s.push(`    );`);
     s.push(`    if (!this.#collection) {`);
@@ -1011,11 +1021,7 @@ if (existsSync(themePath)) {
   writeFileSync(themePath, emitThemeShadow(name, contract, WEB), 'utf8');
 }
 
-writeFileSync(
-  join(outDir, 'index.ts'),
-  `export { ${pascal(prefix)}${name} } from './${name}';\n`,
-  'utf8',
-);
+writeFileSync(join(outDir, 'index.ts'), `export { ${name} } from './${name}';\n`, 'utf8');
 
 const surface = surfaceFrom(contract);
 console.log(`\nemitted ${name} -> ${outDir}`);

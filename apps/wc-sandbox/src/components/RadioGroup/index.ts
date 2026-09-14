@@ -1,1 +1,1 @@
-export { DsRadioGroup } from './RadioGroup';
+export { RadioGroup } from './RadioGroup';

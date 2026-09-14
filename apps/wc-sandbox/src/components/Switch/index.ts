@@ -1,1 +1,1 @@
-export { DsSwitch } from './Switch';
+export { Switch } from './Switch';

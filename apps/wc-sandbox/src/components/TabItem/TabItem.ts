@@ -3,7 +3,7 @@
 //
 // One tab: a label that reveals its panel when chosen. It carries its own identity and its own disabled state, and nothing else.
 
-import { TABS_CHANGE, type DsTabs } from '../Tabs/Tabs';
+import { TABS_CHANGE, type Tabs } from '../Tabs/Tabs';
 
 // THE ONE BUNDLER-SPECIFIC TOKEN IN THIS FILE. `?inline` asks Vite for the stylesheet as
 // a string so it can be adopted into the shadow root rather than injected into the page —
@@ -34,13 +34,13 @@ TEMPLATE.innerHTML = `
 // every id below is scoped to this element's own shadow root.
 let nextId = 0;
 
-export class DsTabItem extends HTMLElement {
+export class TabItem extends HTMLElement {
   static readonly tagName = 'ds-tab-item';
   static readonly observedAttributes = ['disabled', 'value'];
 
   readonly #root: HTMLElement;
   readonly #baseId = 'ds-tab-item-' + nextId++;
-  #collection: DsTabs | null = null;
+  #collection: Tabs | null = null;
 
   constructor() {
     super();
@@ -74,7 +74,7 @@ export class DsTabItem extends HTMLElement {
   }
 
   connectedCallback(): void {
-    this.#collection = this.closest<DsTabs>('ds-tabs');
+    this.#collection = this.closest<Tabs>('ds-tabs');
     if (!this.#collection) {
       throw new Error(
         '<ds-tab-item> must be inside a <ds-tabs>. There is no selection to compare against, and looking unselected would hide the mistake.',
@@ -170,12 +170,12 @@ export class DsTabItem extends HTMLElement {
   }
 }
 
-if (!customElements.get(DsTabItem.tagName)) {
-  customElements.define(DsTabItem.tagName, DsTabItem);
+if (!customElements.get(TabItem.tagName)) {
+  customElements.define(TabItem.tagName, TabItem);
 }
 
 declare global {
   interface HTMLElementTagNameMap {
-    'ds-tab-item': DsTabItem;
+    'ds-tab-item': TabItem;
   }
 }

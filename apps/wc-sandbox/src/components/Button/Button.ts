@@ -32,7 +32,7 @@ TEMPLATE.innerHTML = `
     </button>
 `;
 
-export class DsButton extends HTMLElement {
+export class Button extends HTMLElement {
   static readonly tagName = 'ds-button';
   static readonly observedAttributes = ['disabled', 'loading', 'hierarchy', 'variant', 'size'];
 
@@ -147,12 +147,12 @@ export class DsButton extends HTMLElement {
   }
 }
 
-if (!customElements.get(DsButton.tagName)) {
-  customElements.define(DsButton.tagName, DsButton);
+if (!customElements.get(Button.tagName)) {
+  customElements.define(Button.tagName, Button);
 }
 
 declare global {
   interface HTMLElementTagNameMap {
-    'ds-button': DsButton;
+    'ds-button': Button;
   }
 }

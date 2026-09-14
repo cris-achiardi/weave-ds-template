@@ -1,1 +1,1 @@
-export { DsCheckbox } from './Checkbox';
+export { Checkbox } from './Checkbox';

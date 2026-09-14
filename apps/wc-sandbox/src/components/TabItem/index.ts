@@ -1,1 +1,1 @@
-export { DsTabItem } from './TabItem';
+export { TabItem } from './TabItem';

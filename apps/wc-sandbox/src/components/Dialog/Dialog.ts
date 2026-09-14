@@ -45,7 +45,7 @@ let nextId = 0;
 // The contract also declares escape, supplied by the platform.
 const DISMISSAL: DismissalOptions = { on: ['outside-press'] };
 
-export class DsDialog extends HTMLElement {
+export class Dialog extends HTMLElement {
   static readonly tagName = 'ds-dialog';
   static readonly observedAttributes = ['size', 'open'];
 
@@ -179,12 +179,12 @@ export class DsDialog extends HTMLElement {
   }
 }
 
-if (!customElements.get(DsDialog.tagName)) {
-  customElements.define(DsDialog.tagName, DsDialog);
+if (!customElements.get(Dialog.tagName)) {
+  customElements.define(Dialog.tagName, Dialog);
 }
 
 declare global {
   interface HTMLElementTagNameMap {
-    'ds-dialog': DsDialog;
+    'ds-dialog': Dialog;
   }
 }

@@ -42,7 +42,7 @@ const NAVIGATION: NavigationOptions = {
 /** Fired on the collection whenever the selection or the roster changes. */
 export const RADIOGROUP_CHANGE = 'ds-radio-group-internal-change';
 
-export class DsRadioGroup extends HTMLElement {
+export class RadioGroup extends HTMLElement {
   static readonly tagName = 'ds-radio-group';
   static readonly observedAttributes = ['disabled', 'read-only', 'value'];
 
@@ -170,12 +170,12 @@ export class DsRadioGroup extends HTMLElement {
   }
 }
 
-if (!customElements.get(DsRadioGroup.tagName)) {
-  customElements.define(DsRadioGroup.tagName, DsRadioGroup);
+if (!customElements.get(RadioGroup.tagName)) {
+  customElements.define(RadioGroup.tagName, RadioGroup);
 }
 
 declare global {
   interface HTMLElementTagNameMap {
-    'ds-radio-group': DsRadioGroup;
+    'ds-radio-group': RadioGroup;
   }
 }

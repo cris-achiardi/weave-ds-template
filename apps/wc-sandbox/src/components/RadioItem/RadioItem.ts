@@ -3,7 +3,7 @@
 //
 // One option in a radio group: a label that becomes the group's answer when chosen. It carries its own identity and its own disabled state, and nothing else — whether it is chosen is a comparison, not a property it holds.
 
-import { RADIOGROUP_CHANGE, type DsRadioGroup } from '../RadioGroup/RadioGroup';
+import { RADIOGROUP_CHANGE, type RadioGroup } from '../RadioGroup/RadioGroup';
 
 // THE ONE BUNDLER-SPECIFIC TOKEN IN THIS FILE. `?inline` asks Vite for the stylesheet as
 // a string so it can be adopted into the shadow root rather than injected into the page —
@@ -32,12 +32,12 @@ TEMPLATE.innerHTML = `
     </div>
 `;
 
-export class DsRadioItem extends HTMLElement {
+export class RadioItem extends HTMLElement {
   static readonly tagName = 'ds-radio-item';
   static readonly observedAttributes = ['disabled', 'value'];
 
   readonly #root: HTMLElement;
-  #collection: DsRadioGroup | null = null;
+  #collection: RadioGroup | null = null;
 
   constructor() {
     super();
@@ -71,7 +71,7 @@ export class DsRadioItem extends HTMLElement {
   }
 
   connectedCallback(): void {
-    this.#collection = this.closest<DsRadioGroup>('ds-radio-group');
+    this.#collection = this.closest<RadioGroup>('ds-radio-group');
     if (!this.#collection) {
       throw new Error(
         '<ds-radio-item> must be inside a <ds-radio-group>. There is no selection to compare against, and looking unselected would hide the mistake.',
@@ -166,12 +166,12 @@ export class DsRadioItem extends HTMLElement {
   }
 }
 
-if (!customElements.get(DsRadioItem.tagName)) {
-  customElements.define(DsRadioItem.tagName, DsRadioItem);
+if (!customElements.get(RadioItem.tagName)) {
+  customElements.define(RadioItem.tagName, RadioItem);
 }
 
 declare global {
   interface HTMLElementTagNameMap {
-    'ds-radio-item': DsRadioItem;
+    'ds-radio-item': RadioItem;
   }
 }
