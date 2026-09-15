@@ -128,6 +128,18 @@ reverse-engineer a stylesheet to find out — which is the failure this library 
    ever be to move. Moving it is a contract change with its own diff and is deliberately not part of
    this record.
 
+## Figma derivation
+
+A Figma component set reads contract axes and anatomy directly. Null paint channels stay unbound
+and are enumerated in the generation report. A consumer may supply an explicit part/channel to
+variable or text-style mapping; the reference token package is never selected implicitly.
+Neutral preview geometry is presentation scaffolding and must be identified separately from
+contract values. Unsupported layout or behavior is reported. This preserves the same ownership
+boundary as the consumer theme in generated web code.
+
+The deterministic plan is implemented by the `ds-figma-component` skill's
+`.claude/skills/ds-figma-component/scripts/contract-plan.mjs`; publishing and visual validation require a live Figma write bridge.
+
 ## Contract
 
 | Concern                                  | Where                                                                                                     |

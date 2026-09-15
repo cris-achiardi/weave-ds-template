@@ -43,7 +43,7 @@ governing decision.
 | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
 | [`ds-decide`](./ds-decide/)                   | Turns a research report's open questions into Architecture Decision Records. Writes records, never code.                                                | `docs/ADR/`                          |
 | [`ds-component`](./ds-component/)             | **SUPERSEDED — do not use.** Describes the retired hand-authoring flow. No replacement exists yet; the library is moving to contract-driven generation. | —                                    |
-| [`ds-figma-component`](./ds-figma-component/) | Generates a Figma **component set** from a component's source, bound to the file's variables and text styles.                                           | Figma, `.figma/maps/components.json` |
+| [`ds-figma-component`](./ds-figma-component/) | Generates contract anatomy and axes as a Figma set; paint stays unbound unless a consumer mapping is supplied.                                          | Figma, `.figma/maps/components.json` |
 | [`ds-figma-document`](./ds-figma-document/)   | Lays out the **page around** a component set — title, description, labelled cell grid, extension tables. Works on sets this repo never generated.       | Figma, `.figma/maps/components.json` |
 | [`ds-figma-explain`](./ds-figma-explain/)     | Builds **explanatory** boards — node graphs, spec tables, annotated anatomy, flows. For things meant to be read, not instantiated.                      | Figma                                |
 
@@ -60,66 +60,11 @@ governing decision.
 If the output is meant to be _used_ as a component, it is `ds-figma-component`. If it is meant to be
 _read_, it is `ds-figma-explain`.
 
-## Readiness — one is blocked, one is partial
+## Readiness
 
-`ds-figma-component`, `ds-figma-document` and `ds-figma-explain` were ported on **2026-08-28** from a
-mature design system into a repo that ships **no tokens and no components by design**. That gap is
-recorded inside each skill rather than smoothed over, because a skill that assumes a token set it
-cannot find will invent one.
+`ds-component` requires a governing decision, a component, and a selected backend/output directory.
+`ds-figma-component` can prepare a contract plan without a token set or Figma bridge; publishing
+requires an authorized target and an available write bridge. The default output is unstyled.
 
-`ds-decide` and `ds-component` are ready in the sense that matters — they refuse to start without
-their input, which is a working state, not a blocked one.
-
-| Skill                | State          | Blocked on                                                                                      |
-| -------------------- | -------------- | ----------------------------------------------------------------------------------------------- |
-| `ds-decide`          | ready          | a research report to decide from                                                                |
-| `ds-component`       | ready          | an accepted ADR to build against                                                                |
-| `ds-figma-explain`   | **usable now** | nothing — it needs a file and something true to explain                                         |
-| `ds-figma-document`  | partial        | works on the 44 hand-built sets already in the file; the code-side description needs components |
-| `ds-figma-component` | **blocked**    | a component to generate from, and a decided token set to bind to                                |
-
-Three preconditions are unmet across them. Each is a decision, not a bug:
-
-1. **No token set exists.** `identity.variableCollections` is empty and `packages/tokens/tokens/`
-   holds no DTCG source. Bindings cannot be checked against a mapping that is not there.
-2. **No components exist.** `packages/contracts/components/` is empty on purpose, and component
-   source is no longer held in this repo at all — it is generated into a consumer's repository.
-3. **The source file has one mode.** Every collection has a single mode, so the **mode-flip
-   verification cannot run** — and it is the strongest check in both `ds-figma-component` and
-   `ds-figma-document`. With one mode a bound value and a baked literal render identically. Read
-   bindings back instead, and report that the check did not run rather than letting silence imply it
-   passed.
-
-A fourth used to sit at the top of this list: the manifest declared a read-only bridge while three
-skills wrote to Figma. That is **settled** — `.figma/manifest.json` → `bridges` now records `read`
-and `write` separately, and the write bridge is opt-in and unwired so nothing depends on it.
-
-## Anatomy of a skill
-
-```
-<name>/
-├── SKILL.md          frontmatter (name, description) + the procedure
-├── references/       loaded on demand, one file per territory
-├── assets/           code pasted into the target runtime (e.g. a plugin prelude)
-└── scripts/          code run on this machine
-```
-
-`SKILL.md` frontmatter carries `name` and `description`. The description is the routing surface —
-it is what decides whether the skill is reached for at all, so it names the phrasings a user actually
-types, not a summary of the contents.
-
-## Rules for writing one
-
-These come from the root `CLAUDE.md` and apply to every skill here.
-
-- **Progressive disclosure.** `SKILL.md` holds the procedure and routes to `references/`. Do not
-  inline a reference; do not make the reader load all of them to start.
-- **A gap is a finding, not a blank to fill.** Where a precondition is unmet, say so in the skill and
-  say what it blocks. Never write a plausible placeholder that reads as decided.
-- **Never hard-code a Figma file key.** Read it from `.figma/manifest.json` → `sources.*.key`. The
-  same goes for the token, scope and data prefixes: `/ds.config.json` is the single source of truth,
-  and `pnpm init-ds` rewrites every reference to it.
-- **Date what you measured.** A snapshot without a date is indistinguishable from a claim about the
-  present. `ds-figma-component/references/figma-file.md` is the worked example.
-- **Say which checks did not run.** A skipped check and a passing check must never look the same in
-  a report.
+`ds-figma-document` explains existing sets. `ds-figma-explain` creates explanatory boards.
+Their file observations must be checked against the current target before writes.

@@ -52,7 +52,7 @@ Look for, specifically:
 - Anything still black or white that should be token-coloured — an unbound fill.
 - Icons rendering black — recolouring stopped before the `VECTOR`.
 
-## 3. Audit the bindings
+## 3. Audit explicit consumer bindings (themed mode only)
 
 Counting is not checking. `setBoundVariable` succeeds without throwing while producing wrong values,
 and this repo has already been bitten: 41 text styles reported "bound", and four rendered a font

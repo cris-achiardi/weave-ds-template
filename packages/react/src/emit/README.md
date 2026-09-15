@@ -3,8 +3,8 @@
 The React backend: templates that turn a contract plus its binding into component source in a
 consumer's repo.
 
-**Nothing here is built.** This directory holds the rules the emitter must honour, salvaged from the
-hand-authoring contract it replaces, so they are not lost between deciding and building.
+The executable emitter reads contracts and writes generated source into a consumer directory.
+Run `node packages/react/src/emit/emit.mjs <Name> --out <directory>`. Existing theme files are preserved.
 
 ## What it will emit, per component
 

@@ -66,8 +66,10 @@ const EXTENSIONS = new Set([
 ]);
 
 const args = process.argv.slice(2);
-const dry = args.includes('--dry');
-const name = args.find((a) => !a.startsWith('-'));
+const check = args.includes('--check');
+const dry = args.includes('--dry') || check;
+const current = JSON.parse(readFileSync(join(REPO_ROOT, 'ds.config.json'), 'utf8'));
+const name = args.find((a) => !a.startsWith('-')) ?? (check ? current.name : undefined);
 
 function fatal(msg) {
   console.error(msg);
@@ -88,13 +90,12 @@ if (!/^[a-z][a-z0-9]*$/.test(name)) {
   );
 }
 
-const current = JSON.parse(readFileSync(join(REPO_ROOT, 'ds.config.json'), 'utf8'));
-const from = current.name;
+const from = check ? 'ds' : current.name;
 
-if (from === name) {
+if (!check && from === name) {
   fatal(`This repo is already branded "${name}". init-ds runs once; it is not a migration tool.`);
 }
-if (from !== 'ds') {
+if (!check && from !== 'ds') {
   fatal(
     `This repo has already been branded "${from}". init-ds runs once, before any components exist.\n` +
       'Re-branding an established system is a different and much larger operation — every published\n' +
@@ -180,6 +181,16 @@ for (const file of walk(REPO_ROOT)) {
     changed.push({ file: rel, hits });
     if (!dry) writeFileSync(file, after);
   }
+}
+
+// Check with exactly the rename patterns and traversal rules. Never maintain a second grep list.
+if (check) {
+  if (current.name === from)
+    fatal('Brand the repository before checking for old-prefix stragglers.');
+  if (changed.length)
+    fatal(changed.map((c) => `${c.file}: ${c.hits} old-prefix occurrence(s)`).join('\n'));
+  console.log('No old-prefix stragglers across all rename rules.');
+  process.exit(0);
 }
 
 // ds.config.json is rewritten from the parsed object rather than by regex, so the identity fields

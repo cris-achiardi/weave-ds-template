@@ -1,12 +1,9 @@
-# Token → Figma variable
+# Consumer theme mapping to Figma variables
 
-How a `--ds-*` token in a component's CSS module becomes a binding in Figma, and what has no binding
-at all.
-
-Read `<Name>.module.css`. By the authoring contract it contains **tokens only** — every value
-carrying design intent is `var(--ds-*)` — which is what makes this mapping mechanical rather than a
-judgement call. A raw `#5146e6` or `12px` in there is a defect `pnpm report:paints` exists to find,
-not a value for you to translate.
+This reference applies only when the consumer supplies an explicit part/channel mapping.
+Unstyled contract generation does not require tokens or variables. Do not read generated source
+or infer bindings from a removed CSS module. A contract policy constrains a source; it does not
+select a particular variable. Historical observations below must be remeasured before use.
 
 ## The naming chain — and the part that is currently wrong
 
