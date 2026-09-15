@@ -95,6 +95,7 @@ function emitComponent(name, contract, binding, prefix) {
   const root = contract.anatomy.root;
   const el = binding.element;
   const rootRole = root.role ?? contract.semantics?.role;
+  const acceptsLabel = Boolean(rootRole || implicitRole(el, WEB));
   const tag = tagFor(name, prefix);
   // THE CLASS IS NOT PREFIXED, and only the TAG is. A custom element name is required to contain a
   // hyphen, which is the platform reserving every single-word tag for itself — so `<ds-button>` has
@@ -380,6 +381,7 @@ function emitComponent(name, contract, binding, prefix) {
   const observed = [...inputs, ...axes, ...models, ...(identity ? [identity] : [])].map(
     (p) => p.attribute,
   );
+  if (acceptsLabel) observed.push('aria-label');
   s.push(`export class ${className} extends HTMLElement {`);
   s.push(`  static readonly tagName = '${tag}';`);
   if (observed.length) {
@@ -796,6 +798,14 @@ function emitComponent(name, contract, binding, prefix) {
   s.push(``);
   s.push(`  #write(): void {`);
   s.push(`    const root = this.#root;`);
+  if (acceptsLabel) {
+    s.push(
+      `    // The semantic control is inside the shadow root; naming only the host misses it.`,
+    );
+    s.push(`    const label = this.getAttribute('aria-label');`);
+    s.push(`    if (label === null) root.removeAttribute('aria-label');`);
+    s.push(`    else root.setAttribute('aria-label', label);`);
+  }
   if (reflected.length) {
     assume(
       'an axis default has to be written into the DOM',

@@ -31,7 +31,7 @@ let nextId = 0;
 
 export class TabPanel extends HTMLElement {
   static readonly tagName = 'ds-tab-panel';
-  static readonly observedAttributes = ['value'];
+  static readonly observedAttributes = ['value', 'aria-label'];
 
   readonly #root: HTMLElement;
   readonly #baseId = 'ds-tab-panel-' + nextId++;
@@ -102,6 +102,10 @@ export class TabPanel extends HTMLElement {
 
   #write(): void {
     const root = this.#root;
+    // The semantic control is inside the shadow root; naming only the host misses it.
+    const label = this.getAttribute('aria-label');
+    if (label === null) root.removeAttribute('aria-label');
+    else root.setAttribute('aria-label', label);
     // The host carries it too, because CSS cannot select inside a shadow root from
     // outside and cannot append an attribute selector to ::part(). One fact, two
     // places — forced by the boundary, not chosen.

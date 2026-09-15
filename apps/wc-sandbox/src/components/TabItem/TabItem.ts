@@ -36,7 +36,7 @@ let nextId = 0;
 
 export class TabItem extends HTMLElement {
   static readonly tagName = 'ds-tab-item';
-  static readonly observedAttributes = ['disabled', 'value'];
+  static readonly observedAttributes = ['disabled', 'value', 'aria-label'];
 
   readonly #root: HTMLElement;
   readonly #baseId = 'ds-tab-item-' + nextId++;
@@ -150,6 +150,10 @@ export class TabItem extends HTMLElement {
 
   #write(): void {
     const root = this.#root;
+    // The semantic control is inside the shadow root; naming only the host misses it.
+    const label = this.getAttribute('aria-label');
+    if (label === null) root.removeAttribute('aria-label');
+    else root.setAttribute('aria-label', label);
     if (this.disabled) root.setAttribute('aria-disabled', 'true');
     else root.removeAttribute('aria-disabled');
     root.setAttribute('aria-selected', String(this.#selected));

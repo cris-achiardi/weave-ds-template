@@ -54,6 +54,12 @@ because `addEventListener` is additive.
 
 ### The one thing it cannot do
 
+A literal `aria-label` on a host is forwarded to its internal root when that root has
+a semantic role. Changes and removal are reflected too. This lets a consumer name a
+TextField, Slider, or icon-only Button without reaching into the shadow root. The
+emitter preserves contract-owned roles and `aria-labelledby` relationships; the
+latter still take precedence over a literal label.
+
 `aria-controls`, `aria-labelledby` and `aria-describedby` take **IDREFs**, and an IDREF resolves
 within a single tree. A `Field`'s control is slotted in from the page; a `TabItem` points at a
 `TabPanel` in a different shadow root. Both references name an element that, from where the
