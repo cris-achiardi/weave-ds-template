@@ -17,7 +17,7 @@
 
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(HERE, '../../../..');
@@ -174,7 +174,7 @@ function renderPart(key, node, ctx, depth) {
 // ---------------------------------------------------------------------------------------
 // the component
 // ---------------------------------------------------------------------------------------
-function emitComponent(name, contract, binding, prefix) {
+export function emitComponent(name, contract, binding, prefix) {
   const props = surfaceFrom(contract);
   const slots = slotsFrom(contract);
   const root = contract.anatomy.root;
@@ -297,13 +297,7 @@ function emitComponent(name, contract, binding, prefix) {
     (x) => contract.states?.[x.from]?.valueType === 'string' && x.name === 'value',
   );
   const nativelyEdited = editable && valueState;
-  if (nativelyEdited) {
-    assume(
-      'what changes a natively edited value',
-      `wired the DOM's own (input) event because the binding attaches to <${el}>`,
-      "TWO OF THREE BACKENDS AGREE. Angular and Vue both reach the DOM's `input` event; React's `onChange` is React's synthetic per-keystroke invention and the odd one out. The contract says only that the element edits its own value — which is right, and which also means it cannot currently express 'as the user types' versus 'when they are done'.",
-    );
-  }
+  const commitEditing = nativelyEdited && contract.states[valueState.from].editing === 'commit';
   if (range) {
     assume(
       'how a pointer becomes a number',
@@ -508,9 +502,12 @@ function emitComponent(name, contract, binding, prefix) {
     // Vue's runtime sets `value` on an <input> as a property, and the web-components backend
     // assigns `HTMLInputElement.value` directly. Angular is the only one where `[attr.]` and `[]`
     // are a visible choice, and the first draft chose the wrong one.
-    host.push([`value`, `${camel(valueState.from)}()`]);
+    host.push([`value`, commitEditing ? 'editingDraft()' : `${camel(valueState.from)}()`]);
     if (hasReadOnly) host.push([`attr.readonly`, orNull('readOnly()')]);
-    onEvent('input', 'handleInput($event)');
+    if (commitEditing) {
+      onEvent('input', 'handleDraft($event)');
+      onEvent('blur', 'handleInput($event)');
+    } else onEvent('input', 'handleInput($event)');
   }
 
   const ranged = Object.entries(contract.states ?? {}).find(([, d]) => d.valueType === 'number');
@@ -596,6 +593,7 @@ function emitComponent(name, contract, binding, prefix) {
   };
   need(inputs.length || axes.length || identity, 'input');
   need(models.length, 'model');
+  need(commitEditing, 'signal', 'effect');
   need(member, 'computed', 'inject');
   need(collection, 'InjectionToken', 'forwardRef');
   // `computed` only where one is actually written: a collection's `collectionDisabled` is a
@@ -828,6 +826,12 @@ function emitComponent(name, contract, binding, prefix) {
     s.push(`  readonly ${m.name} = model<${m.type}>(${dflt});`);
   }
   if (inputs.length || axes.length || identity || models.length) s.push(``);
+  if (commitEditing) {
+    s.push(`  protected readonly editingDraft = signal(this.${camel(valueState.from)}());`);
+    s.push(
+      `  protected handleDraft(event: Event): void { this.editingDraft.set((event.target as HTMLInputElement).value); }`,
+    );
+  }
 
   if (needsIds && !member) {
     s.push(`  readonly baseId = '${prefix}-${kebab(name)}-' + nextId++;`);
@@ -947,6 +951,8 @@ function emitComponent(name, contract, binding, prefix) {
 
   // ---- constructor
   const ctor = [];
+  if (commitEditing)
+    ctor.push(`    effect(() => this.editingDraft.set(this.${camel(valueState.from)}()));`);
   if (registers) {
     ctor.push(`    // The collection moves focus between its members, so each one announces its`);
     ctor.push(
@@ -1067,7 +1073,10 @@ function emitComponent(name, contract, binding, prefix) {
   if (nativelyEdited) {
     const v = camel(valueState.from);
     s.push(`  protected handleInput(event: Event): void {`);
-    s.push(`    this.${v}.set((event.target as HTMLInputElement).value);`);
+    s.push(`    const next = (event.target as HTMLInputElement).value;`);
+    if (commitEditing) s.push(`    if (next !== this.${v}()) this.${v}.set(next);`);
+    else s.push(`    this.${v}.set(next);`);
+    if (commitEditing) s.push(`    this.editingDraft.set(this.${v}());`);
     s.push(`  }`);
     s.push(``);
   }
@@ -1109,75 +1118,79 @@ function emitComponent(name, contract, binding, prefix) {
 // ---------------------------------------------------------------------------------------
 // main
 // ---------------------------------------------------------------------------------------
-const name = process.argv[2];
-const outIdx = process.argv.indexOf('--out');
-if (!name || outIdx === -1) {
-  console.error('usage: node emit.mjs <Name> --out <dir>');
-  process.exit(1);
-}
-const outDir = resolve(process.cwd(), process.argv[outIdx + 1], name);
+if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
+  const name = process.argv[2];
+  const outIdx = process.argv.indexOf('--out');
+  if (!name || outIdx === -1) {
+    console.error('usage: node emit.mjs <Name> --out <dir>');
+    process.exit(1);
+  }
+  const outDir = resolve(process.cwd(), process.argv[outIdx + 1], name);
 
-const { contract, binding } = loadPair({
-  name,
-  contractsDir: CONTRACTS,
-  bindingsDir: BINDINGS,
-  suffix: '.angular.json',
-});
-const prefix = readJson(join(REPO_ROOT, 'ds.config.json')).dataPrefix;
+  const { contract, binding } = loadPair({
+    name,
+    contractsDir: CONTRACTS,
+    bindingsDir: BINDINGS,
+    suffix: '.angular.json',
+  });
+  const prefix = readJson(join(REPO_ROOT, 'ds.config.json')).dataPrefix;
 
-mkdirSync(outDir, { recursive: true });
-writeFileSync(join(outDir, `${name}.ts`), emitComponent(name, contract, binding, prefix), 'utf8');
-writeFileSync(
-  join(outDir, `${name}.structure.css`),
-  emitStructure(name, contract, binding.element, prefix, WEB, assume),
-  'utf8',
-);
+  mkdirSync(outDir, { recursive: true });
+  writeFileSync(join(outDir, `${name}.ts`), emitComponent(name, contract, binding, prefix), 'utf8');
+  writeFileSync(
+    join(outDir, `${name}.structure.css`),
+    emitStructure(name, contract, binding.element, prefix, WEB, assume),
+    'utf8',
+  );
 
-const themePath = join(outDir, `${name}.theme.css`);
-if (existsSync(themePath)) {
-  console.log(`  kept   ${name}.theme.css (yours — never regenerated)`);
-} else {
-  writeFileSync(themePath, emitTheme(name, contract, prefix, WEB), 'utf8');
-}
+  const themePath = join(outDir, `${name}.theme.css`);
+  if (existsSync(themePath)) {
+    console.log(`  kept   ${name}.theme.css (yours — never regenerated)`);
+  } else {
+    writeFileSync(themePath, emitTheme(name, contract, prefix, WEB), 'utf8');
+  }
 
-const hasContext = Boolean(contract.collection);
-writeFileSync(
-  join(outDir, 'index.ts'),
-  hasContext
-    ? `export { ${name}, ${name.toUpperCase()}, type ${name}Context } from './${name}';\n`
-    : `export { ${name} } from './${name}';\n`,
-  'utf8',
-);
+  const hasContext = Boolean(contract.collection);
+  writeFileSync(
+    join(outDir, 'index.ts'),
+    hasContext
+      ? `export { ${name}, ${name.toUpperCase()}, type ${name}Context } from './${name}';\n`
+      : `export { ${name} } from './${name}';\n`,
+    'utf8',
+  );
 
-const surface = surfaceFrom(contract);
-console.log(`\nemitted ${name} -> ${outDir}`);
-console.log(`  selector: ${selectorFor(binding.element, name, prefix)}`);
-console.log(
-  `  inputs:   ${
-    surface
-      .filter((p) => p.role !== 'model')
-      .map((p) => p.name)
-      .join(', ') || '(none)'
-  }`,
-);
-console.log(
-  `  models:   ${
-    surface
-      .filter((p) => p.role === 'model')
-      .map((p) => `${p.name} ([(${p.name})])`)
-      .join(', ') || '(none)'
-  }`,
-);
-console.log(
-  `  slots:    ${
-    slotsFrom(contract)
-      .map((x) => x.name)
-      .join(', ') || '(none)'
-  }`,
-);
-console.log(`\n${EMITTER_ASSUMPTIONS.length} thing(s) the contract could not tell the emitter:\n`);
-for (const a of EMITTER_ASSUMPTIONS) {
-  console.log(`  ${a.topic}`);
-  console.log(`      chose: ${a.decision}`);
-  console.log(`      why:   ${a.why}\n`);
+  const surface = surfaceFrom(contract);
+  console.log(`\nemitted ${name} -> ${outDir}`);
+  console.log(`  selector: ${selectorFor(binding.element, name, prefix)}`);
+  console.log(
+    `  inputs:   ${
+      surface
+        .filter((p) => p.role !== 'model')
+        .map((p) => p.name)
+        .join(', ') || '(none)'
+    }`,
+  );
+  console.log(
+    `  models:   ${
+      surface
+        .filter((p) => p.role === 'model')
+        .map((p) => `${p.name} ([(${p.name})])`)
+        .join(', ') || '(none)'
+    }`,
+  );
+  console.log(
+    `  slots:    ${
+      slotsFrom(contract)
+        .map((x) => x.name)
+        .join(', ') || '(none)'
+    }`,
+  );
+  console.log(
+    `\n${EMITTER_ASSUMPTIONS.length} thing(s) the contract could not tell the emitter:\n`,
+  );
+  for (const a of EMITTER_ASSUMPTIONS) {
+    console.log(`  ${a.topic}`);
+    console.log(`      chose: ${a.decision}`);
+    console.log(`      why:   ${a.why}\n`);
+  }
 }

@@ -45,6 +45,7 @@ export class TextField {
   readonly value = model<string>('');
 
   protected handleInput(event: Event): void {
-    this.value.set((event.target as HTMLInputElement).value);
+    const next = (event.target as HTMLInputElement).value;
+    this.value.set(next);
   }
 }

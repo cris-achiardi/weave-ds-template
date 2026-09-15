@@ -14,7 +14,7 @@
 
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import {
   ariaAttributeFor,
@@ -89,7 +89,7 @@ function renderPart(key, node, ctx, depth) {
 // ---------------------------------------------------------------------------------------
 // the component
 // ---------------------------------------------------------------------------------------
-function emitComponent(name, contract, binding, prefix) {
+export function emitComponent(name, contract, binding, prefix) {
   const props = surfaceFrom(contract);
   const slots = slotsFrom(contract);
   const root = contract.anatomy.root;
@@ -191,6 +191,7 @@ function emitComponent(name, contract, binding, prefix) {
     (x) => contract.states?.[x.from]?.valueType === 'string' && x.name === 'value',
   );
   const nativelyEdited = editable && valueState;
+  const commitEditing = nativelyEdited && contract.states[valueState.from].editing === 'commit';
 
   // --- assumptions unique to this backend -----------------------------------------------
   assume(
@@ -203,13 +204,6 @@ function emitComponent(name, contract, binding, prefix) {
     'an attribute, a property, and a `<prefix>-<name>-change` event',
     'React spends three props on this, Vue and Angular spend one binding each. The platform has no binding at all, so the component keeps an attribute and a property in step by hand and announces changes with an event. Closest in shape to React — and unlike React, each of the three is doing a genuinely different job rather than standing in for a missing feature.',
   );
-  if (nativelyEdited) {
-    assume(
-      'what changes a natively edited value',
-      "wired the DOM's own `input` event on the inner element",
-      "Three of four backends now agree on `input`; React's synthetic `onChange` is the outlier. Here it is not even a choice — there is no synthetic layer to choose from.",
-    );
-  }
   if (navigation) {
     assume(
       'how a collection moves focus between its members',
@@ -389,6 +383,10 @@ function emitComponent(name, contract, binding, prefix) {
     s.push(`  static readonly observedAttributes = [${observed.map((a) => `'${a}'`).join(', ')}];`);
   }
   s.push(``);
+  if (commitEditing) {
+    s.push(`  #editingDraft = '';`);
+    s.push(`  #draftSource: string | undefined;`);
+  }
   s.push(`  readonly #root: HTMLElement;`);
   if (range) s.push(`  readonly #track: HTMLElement;`);
   if (needsIds) s.push(`  readonly #baseId = '${prefix}-${kebab(name)}-' + nextId++;`);
@@ -483,7 +481,15 @@ function emitComponent(name, contract, binding, prefix) {
     listeners.push([null, 'click', 'this.#dismissal.onClick(event as MouseEvent)']);
   }
   if (navigation) listeners.push([null, 'keydown', 'this.#nav.onKeyDown(event as KeyboardEvent)']);
-  if (nativelyEdited) listeners.push([null, 'input', 'this.#handleInput(event)']);
+  if (nativelyEdited) {
+    if (commitEditing)
+      listeners.push([
+        null,
+        'input',
+        'this.#editingDraft = (event.target as HTMLInputElement).value',
+      ]);
+    listeners.push([null, commitEditing ? 'blur' : 'input', 'this.#handleInput(event)']);
+  }
 
   for (const [target, event, call] of listeners) {
     const on = target ? `shadow.querySelector('${target}')!` : `this.#root`;
@@ -776,7 +782,9 @@ function emitComponent(name, contract, binding, prefix) {
   if (nativelyEdited) {
     const v = camel(valueState.from);
     s.push(`  #handleInput(event: Event): void {`);
-    s.push(`    this.${v} = (event.target as HTMLInputElement).value;`);
+    s.push(`    const next = (event.target as HTMLInputElement).value;`);
+    if (commitEditing) s.push(`    if (next === this.${v}) return;`);
+    s.push(`    this.${v} = next;`);
     s.push(`    this.#emit('${valueState.attribute}-change', this.${v});`);
     s.push(`  }`);
     s.push(``);
@@ -957,7 +965,15 @@ function emitComponent(name, contract, binding, prefix) {
     );
   }
   if (nativelyEdited) {
-    s.push(`    (root as HTMLInputElement).value = this.${camel(valueState.from)};`);
+    if (commitEditing) {
+      s.push(`    if (this.#draftSource !== this.${camel(valueState.from)}) {`);
+      s.push(`      this.#draftSource = this.${camel(valueState.from)};`);
+      s.push(`      this.#editingDraft = this.${camel(valueState.from)};`);
+      s.push(`    }`);
+    }
+    s.push(
+      `    (root as HTMLInputElement).value = ${commitEditing ? 'this.#editingDraft' : `this.${camel(valueState.from)}`};`,
+    );
     if (hasReadOnly) s.push(`    root.toggleAttribute('readonly', this.readOnly);`);
   }
   if (needsIds) {
@@ -1070,61 +1086,65 @@ function stateRead(spec, member) {
 // ---------------------------------------------------------------------------------------
 // main
 // ---------------------------------------------------------------------------------------
-const name = process.argv[2];
-const outIdx = process.argv.indexOf('--out');
-if (!name || outIdx === -1) {
-  console.error('usage: node emit.mjs <Name> --out <dir>');
-  process.exit(1);
-}
-const outDir = resolve(process.cwd(), process.argv[outIdx + 1], name);
+if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
+  const name = process.argv[2];
+  const outIdx = process.argv.indexOf('--out');
+  if (!name || outIdx === -1) {
+    console.error('usage: node emit.mjs <Name> --out <dir>');
+    process.exit(1);
+  }
+  const outDir = resolve(process.cwd(), process.argv[outIdx + 1], name);
 
-const { contract, binding } = loadPair({
-  name,
-  contractsDir: CONTRACTS,
-  bindingsDir: BINDINGS,
-  suffix: '.wc.json',
-});
-const prefix = readJson(join(REPO_ROOT, 'ds.config.json')).dataPrefix;
+  const { contract, binding } = loadPair({
+    name,
+    contractsDir: CONTRACTS,
+    bindingsDir: BINDINGS,
+    suffix: '.wc.json',
+  });
+  const prefix = readJson(join(REPO_ROOT, 'ds.config.json')).dataPrefix;
 
-mkdirSync(outDir, { recursive: true });
-writeFileSync(join(outDir, `${name}.ts`), emitComponent(name, contract, binding, prefix), 'utf8');
-writeFileSync(
-  join(outDir, `${name}.structure.css`),
-  emitStructureShadow(name, contract, prefix, assume),
-  'utf8',
-);
+  mkdirSync(outDir, { recursive: true });
+  writeFileSync(join(outDir, `${name}.ts`), emitComponent(name, contract, binding, prefix), 'utf8');
+  writeFileSync(
+    join(outDir, `${name}.structure.css`),
+    emitStructureShadow(name, contract, prefix, assume),
+    'utf8',
+  );
 
-const themePath = join(outDir, `${name}.theme.css`);
-if (existsSync(themePath)) {
-  console.log(`  kept   ${name}.theme.css (yours — never regenerated)`);
-} else {
-  writeFileSync(themePath, emitThemeShadow(name, contract, WEB), 'utf8');
-}
+  const themePath = join(outDir, `${name}.theme.css`);
+  if (existsSync(themePath)) {
+    console.log(`  kept   ${name}.theme.css (yours — never regenerated)`);
+  } else {
+    writeFileSync(themePath, emitThemeShadow(name, contract, WEB), 'utf8');
+  }
 
-writeFileSync(join(outDir, 'index.ts'), `export { ${name} } from './${name}';\n`, 'utf8');
+  writeFileSync(join(outDir, 'index.ts'), `export { ${name} } from './${name}';\n`, 'utf8');
 
-const surface = surfaceFrom(contract);
-console.log(`\nemitted ${name} -> ${outDir}`);
-console.log(`  tag:    <${tagFor(name, prefix)}>`);
-console.log(`  attrs:  ${surface.map((p) => p.attribute).join(', ') || '(none)'}`);
-console.log(
-  `  events: ${
-    surface
-      .filter((p) => p.event)
-      .map((p) => `${prefix}-${p.event}`)
-      .join(', ') || '(none)'
-  }`,
-);
-console.log(
-  `  slots:  ${
-    slotsFrom(contract)
-      .map((x) => x.name)
-      .join(', ') || '(none)'
-  }`,
-);
-console.log(`\n${EMITTER_ASSUMPTIONS.length} thing(s) the contract could not tell the emitter:\n`);
-for (const a of EMITTER_ASSUMPTIONS) {
-  console.log(`  ${a.topic}`);
-  console.log(`      chose: ${a.decision}`);
-  console.log(`      why:   ${a.why}\n`);
+  const surface = surfaceFrom(contract);
+  console.log(`\nemitted ${name} -> ${outDir}`);
+  console.log(`  tag:    <${tagFor(name, prefix)}>`);
+  console.log(`  attrs:  ${surface.map((p) => p.attribute).join(', ') || '(none)'}`);
+  console.log(
+    `  events: ${
+      surface
+        .filter((p) => p.event)
+        .map((p) => `${prefix}-${p.event}`)
+        .join(', ') || '(none)'
+    }`,
+  );
+  console.log(
+    `  slots:  ${
+      slotsFrom(contract)
+        .map((x) => x.name)
+        .join(', ') || '(none)'
+    }`,
+  );
+  console.log(
+    `\n${EMITTER_ASSUMPTIONS.length} thing(s) the contract could not tell the emitter:\n`,
+  );
+  for (const a of EMITTER_ASSUMPTIONS) {
+    console.log(`  ${a.topic}`);
+    console.log(`      chose: ${a.decision}`);
+    console.log(`      why:   ${a.why}\n`);
+  }
 }

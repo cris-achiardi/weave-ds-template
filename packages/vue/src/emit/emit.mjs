@@ -15,7 +15,7 @@
 
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(HERE, '../../../..');
@@ -165,7 +165,7 @@ function renderPart(key, node, ctx, depth) {
 // ---------------------------------------------------------------------------------------
 // the single-file component
 // ---------------------------------------------------------------------------------------
-function emitSfc(name, contract, binding, prefix) {
+export function emitSfc(name, contract, binding, prefix) {
   const props = surfaceFrom(contract);
   const slots = slotsFrom(contract);
   const root = contract.anatomy.root;
@@ -281,13 +281,7 @@ function emitSfc(name, contract, binding, prefix) {
     (x) => contract.states?.[x.from]?.valueType === 'string' && x.name === 'value',
   );
   const nativelyEdited = editable && valueState;
-  if (nativelyEdited) {
-    assume(
-      'what changes a natively edited value',
-      `wired @input, NOT @change, because the binding renders <${el}>`,
-      "THE BACKENDS DISAGREE HERE AND BOTH ARE RIGHT. React wires this to `onChange`, which is React's SYNTHETIC event and fires per keystroke; the DOM's own `change` event fires on blur. Vue has no synthetic layer, so the DOM applies and the per-keystroke event is `input`. The contract says only that the element edits its own value — correctly, because naming either event would have baked one framework's runtime into the specification.",
-    );
-  }
+  const commitEditing = nativelyEdited && contract.states[valueState.from].editing === 'commit';
   if (range) {
     assume(
       'how a pointer becomes a number',
@@ -447,6 +441,7 @@ function emitSfc(name, contract, binding, prefix) {
   // -------------------------------------------------------------------------------------
   const s = [];
   const vueImports = new Set(['computed', 'useAttrs']);
+  if (commitEditing) for (const i of ['ref', 'watch']) vueImports.add(i);
   if (needsIds && !member) vueImports.add('useId');
   if (collection) vueImports.add('provide');
   if (member) vueImports.add('inject');
@@ -803,8 +798,18 @@ function emitSfc(name, contract, binding, prefix) {
   // ---- natively edited value
   if (nativelyEdited) {
     const v = camel(valueState.from);
+    if (commitEditing) {
+      s.push(`const editingDraft = ref(${v}.value);`);
+      s.push(`watch(${v}, next => { editingDraft.value = next; });`);
+      s.push(
+        `function handleDraft(event: Event) { editingDraft.value = (event.target as HTMLInputElement).value; }`,
+      );
+    }
     s.push(`function handleInput(event: Event) {`);
-    s.push(`  ${v}.value = (event.target as HTMLInputElement).value;`);
+    s.push(`  const next = (event.target as HTMLInputElement).value;`);
+    if (commitEditing) s.push(`  if (next !== ${v}.value) ${v}.value = next;`);
+    else s.push(`  ${v}.value = next;`);
+    if (commitEditing) s.push(`  editingDraft.value = ${v}.value;`);
     s.push(`}`);
     s.push(``);
   }
@@ -908,9 +913,12 @@ function emitSfc(name, contract, binding, prefix) {
   }
 
   if (nativelyEdited) {
-    rootAttrs.push(`:value="${camel(valueState.from)}"`);
+    rootAttrs.push(`:value="${commitEditing ? 'editingDraft' : camel(valueState.from)}"`);
     if (hasReadOnly) rootAttrs.push(`:readonly="readOnly"`);
-    onEvent('input', 'handleInput');
+    if (commitEditing) {
+      onEvent('input', 'handleDraft');
+      onEvent('blur', 'handleInput');
+    } else onEvent('input', 'handleInput');
   }
 
   const ranged = Object.entries(contract.states ?? {}).find(([, d]) => d.valueType === 'number');
@@ -1071,78 +1079,84 @@ function emitSfc(name, contract, binding, prefix) {
 // ---------------------------------------------------------------------------------------
 // main
 // ---------------------------------------------------------------------------------------
-const name = process.argv[2];
-const outIdx = process.argv.indexOf('--out');
-if (!name || outIdx === -1) {
-  console.error('usage: node emit.mjs <Name> --out <dir>');
-  process.exit(1);
-}
-const outDir = resolve(process.cwd(), process.argv[outIdx + 1], name);
+if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
+  const name = process.argv[2];
+  const outIdx = process.argv.indexOf('--out');
+  if (!name || outIdx === -1) {
+    console.error('usage: node emit.mjs <Name> --out <dir>');
+    process.exit(1);
+  }
+  const outDir = resolve(process.cwd(), process.argv[outIdx + 1], name);
 
-const { contract, binding } = loadPair({
-  name,
-  contractsDir: CONTRACTS,
-  bindingsDir: BINDINGS,
-  suffix: '.vue.json',
-});
-const prefix = readJson(join(REPO_ROOT, 'ds.config.json')).dataPrefix;
+  const { contract, binding } = loadPair({
+    name,
+    contractsDir: CONTRACTS,
+    bindingsDir: BINDINGS,
+    suffix: '.vue.json',
+  });
+  const prefix = readJson(join(REPO_ROOT, 'ds.config.json')).dataPrefix;
 
-mkdirSync(outDir, { recursive: true });
-writeFileSync(join(outDir, `${name}.vue`), emitSfc(name, contract, binding, prefix), 'utf8');
-writeFileSync(
-  join(outDir, `${name}.structure.css`),
-  emitStructure(name, contract, binding.element, prefix, WEB, assume),
-  'utf8',
-);
+  mkdirSync(outDir, { recursive: true });
+  writeFileSync(join(outDir, `${name}.vue`), emitSfc(name, contract, binding, prefix), 'utf8');
+  writeFileSync(
+    join(outDir, `${name}.structure.css`),
+    emitStructure(name, contract, binding.element, prefix, WEB, assume),
+    'utf8',
+  );
 
-const themePath = join(outDir, `${name}.theme.css`);
-if (existsSync(themePath)) {
-  console.log(`  kept   ${name}.theme.css (yours — never regenerated)`);
-} else {
-  writeFileSync(themePath, emitTheme(name, contract, prefix, WEB), 'utf8');
-}
+  const themePath = join(outDir, `${name}.theme.css`);
+  if (existsSync(themePath)) {
+    console.log(`  kept   ${name}.theme.css (yours — never regenerated)`);
+  } else {
+    writeFileSync(themePath, emitTheme(name, contract, prefix, WEB), 'utf8');
+  }
 
-const declared = surfaceFrom(contract).filter((p) => p.role !== 'model' || p.from === 'selection');
-void declared;
-const exportsType = surfaceFrom(contract).some((p) =>
-  ['input', 'axis', 'identity'].includes(p.role),
-);
-writeFileSync(
-  join(outDir, 'index.ts'),
-  exportsType
-    ? `export { default as ${name} } from './${name}.vue';\nexport type { ${name}Props } from './${name}.vue';\n`
-    : `export { default as ${name} } from './${name}.vue';\n`,
-  'utf8',
-);
+  const declared = surfaceFrom(contract).filter(
+    (p) => p.role !== 'model' || p.from === 'selection',
+  );
+  void declared;
+  const exportsType = surfaceFrom(contract).some((p) =>
+    ['input', 'axis', 'identity'].includes(p.role),
+  );
+  writeFileSync(
+    join(outDir, 'index.ts'),
+    exportsType
+      ? `export { default as ${name} } from './${name}.vue';\nexport type { ${name}Props } from './${name}.vue';\n`
+      : `export { default as ${name} } from './${name}.vue';\n`,
+    'utf8',
+  );
 
-const surface = surfaceFrom(contract);
-console.log(`\nemitted ${name} -> ${outDir}`);
-console.log(
-  `  props:  ${
-    surface
-      .filter((p) => p.role !== 'model')
-      .map((p) => p.name)
-      .join(', ') || '(none)'
-  }`,
-);
-console.log(
-  `  models: ${
-    surface
-      .filter((p) => p.role === 'model')
-      .map((p) => `${p.name} (v-model:${kebab(p.name)})`)
-      .join(', ') || '(none)'
-  }`,
-);
-console.log(
-  `  slots:  ${
-    slotsFrom(contract)
-      .map((x) => x.name)
-      .join(', ') || '(none)'
-  }`,
-);
-console.log(`\n${EMITTER_ASSUMPTIONS.length} thing(s) the contract could not tell the emitter:\n`);
-for (const a of EMITTER_ASSUMPTIONS) {
-  console.log(`  ${a.topic}`);
-  console.log(`      chose: ${a.decision}`);
-  console.log(`      why:   ${a.why}\n`);
+  const surface = surfaceFrom(contract);
+  console.log(`\nemitted ${name} -> ${outDir}`);
+  console.log(
+    `  props:  ${
+      surface
+        .filter((p) => p.role !== 'model')
+        .map((p) => p.name)
+        .join(', ') || '(none)'
+    }`,
+  );
+  console.log(
+    `  models: ${
+      surface
+        .filter((p) => p.role === 'model')
+        .map((p) => `${p.name} (v-model:${kebab(p.name)})`)
+        .join(', ') || '(none)'
+    }`,
+  );
+  console.log(
+    `  slots:  ${
+      slotsFrom(contract)
+        .map((x) => x.name)
+        .join(', ') || '(none)'
+    }`,
+  );
+  console.log(
+    `\n${EMITTER_ASSUMPTIONS.length} thing(s) the contract could not tell the emitter:\n`,
+  );
+  for (const a of EMITTER_ASSUMPTIONS) {
+    console.log(`  ${a.topic}`);
+    console.log(`      chose: ${a.decision}`);
+    console.log(`      why:   ${a.why}\n`);
+  }
 }

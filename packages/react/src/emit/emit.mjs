@@ -16,7 +16,7 @@
 
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(HERE, '../../../..');
@@ -179,7 +179,7 @@ function stateExpr(spec, ctx) {
 // ---------------------------------------------------------------------------------------
 // TSX
 // ---------------------------------------------------------------------------------------
-function emitTsx(name, contract, binding, prefix) {
+export function emitTsx(name, contract, binding, prefix) {
   const props = surfaceFrom(contract);
   const root = contract.anatomy.root;
   const el = binding.element;
@@ -316,13 +316,7 @@ function emitTsx(name, contract, binding, prefix) {
     (x) => contract.states?.[x.from]?.valueType === 'string' && x.name === 'value',
   );
   const nativelyEdited = editable && valueState;
-  if (nativelyEdited) {
-    assume(
-      'what changes a natively edited value',
-      `wired ${valueState.name} to the element's own change event because the binding renders <${el}>`,
-      'Nothing in the contract says typing changes the value — `activates` covers activation, not editing. The emitter knows it because an <input> edits its own value, which is PLATFORM knowledge sitting in a React emitter. A backend rendering something other than a native input would have to reimplement editing from scratch with nothing to guide it.',
-    );
-  }
+  const commitEditing = nativelyEdited && contract.states[valueState.from].editing === 'commit';
   if (range) {
     assume(
       'how a pointer becomes a number',
@@ -911,14 +905,31 @@ function emitTsx(name, contract, binding, prefix) {
   if (nativelyEdited) {
     const st = valueState.from;
     const v = camel(st);
+    if (commitEditing) {
+      s.push(`  const [editingDraft, setEditingDraft] = useState(${v}Value);`);
+      s.push(`  const [draftSource, setDraftSource] = useState(${v}Value);`);
+      s.push(`  if (draftSource !== ${v}Value) {`);
+      s.push(`    setDraftSource(${v}Value);`);
+      s.push(`    setEditingDraft(${v}Value);`);
+      s.push(`  }`);
+    }
     s.push(`  const handleChange = useCallback(`);
     s.push(`    (event: ChangeEvent<${elType}>) => {`);
     s.push(`      const next = event.target.value;`);
+    if (commitEditing) s.push(`      if (next === ${v}Value) return;`);
     s.push(`      if (!${v}Controlled) set${pascal(st)}Internal(next);`);
     s.push(`      on${pascal(st)}Change?.(next);`);
     s.push(`    },`);
-    s.push(`    [${v}Controlled, on${pascal(st)}Change],`);
+    s.push(`    [${v}Controlled, on${pascal(st)}Change${commitEditing ? `, ${v}Value` : ''}],`);
     s.push(`  );`);
+    if (commitEditing) {
+      s.push(
+        `  const handleDraft = (event: ChangeEvent<${elType}>) => setEditingDraft(event.target.value);`,
+      );
+      s.push(
+        `  const handleCommit = (event: ChangeEvent<${elType}>) => { handleChange(event); setEditingDraft(${v}Value); };`,
+      );
+    }
     s.push(``);
   }
 
@@ -1058,8 +1069,11 @@ function emitTsx(name, contract, binding, prefix) {
     for (const axis of axisNames) rootAttrs.push(`data-${prefix}-${kebab(axis)}={${axis}}`);
   }
   if (nativelyEdited) {
-    rootAttrs.push(`value={${camel(valueState.from)}Value}`);
-    onEvent('onChange', 'handleChange');
+    rootAttrs.push(`value={${commitEditing ? 'editingDraft' : `${camel(valueState.from)}Value`}}`);
+    if (commitEditing) {
+      onEvent('onChange', 'handleDraft');
+      onEvent('onBlur', 'handleCommit');
+    } else onEvent('onChange', 'handleChange');
     rootAttrs.push(`readOnly={readOnly}`);
   }
   // A slider's range is part of what it MEANS, and ARIA has attributes for exactly it.
@@ -1200,48 +1214,52 @@ function emitTsx(name, contract, binding, prefix) {
 // ---------------------------------------------------------------------------------------
 // main
 // ---------------------------------------------------------------------------------------
-const name = process.argv[2];
-const outIdx = process.argv.indexOf('--out');
-if (!name || outIdx === -1) {
-  console.error('usage: node emit.mjs <Name> --out <dir>');
-  process.exit(1);
-}
-const outDir = resolve(process.cwd(), process.argv[outIdx + 1], name);
+if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
+  const name = process.argv[2];
+  const outIdx = process.argv.indexOf('--out');
+  if (!name || outIdx === -1) {
+    console.error('usage: node emit.mjs <Name> --out <dir>');
+    process.exit(1);
+  }
+  const outDir = resolve(process.cwd(), process.argv[outIdx + 1], name);
 
-const { contract, binding } = loadPair({
-  name,
-  contractsDir: CONTRACTS,
-  bindingsDir: BINDINGS,
-  suffix: '.react.json',
-});
-const prefix = readJson(join(REPO_ROOT, 'ds.config.json')).dataPrefix;
+  const { contract, binding } = loadPair({
+    name,
+    contractsDir: CONTRACTS,
+    bindingsDir: BINDINGS,
+    suffix: '.react.json',
+  });
+  const prefix = readJson(join(REPO_ROOT, 'ds.config.json')).dataPrefix;
 
-mkdirSync(outDir, { recursive: true });
-writeFileSync(join(outDir, `${name}.tsx`), emitTsx(name, contract, binding, prefix), 'utf8');
-writeFileSync(
-  join(outDir, `${name}.structure.css`),
-  emitStructure(name, contract, binding.element, prefix, WEB, assume),
-  'utf8',
-);
+  mkdirSync(outDir, { recursive: true });
+  writeFileSync(join(outDir, `${name}.tsx`), emitTsx(name, contract, binding, prefix), 'utf8');
+  writeFileSync(
+    join(outDir, `${name}.structure.css`),
+    emitStructure(name, contract, binding.element, prefix, WEB, assume),
+    'utf8',
+  );
 
-const themePath = join(outDir, `${name}.theme.css`);
-if (existsSync(themePath)) {
-  console.log(`  kept   ${name}.theme.css (yours — never regenerated)`);
-} else {
-  writeFileSync(themePath, emitTheme(name, contract, prefix, WEB), 'utf8');
-}
-writeFileSync(
-  join(outDir, 'index.ts'),
-  `export { ${name}, type ${name}Props } from './${name}';\n`,
-  'utf8',
-);
+  const themePath = join(outDir, `${name}.theme.css`);
+  if (existsSync(themePath)) {
+    console.log(`  kept   ${name}.theme.css (yours — never regenerated)`);
+  } else {
+    writeFileSync(themePath, emitTheme(name, contract, prefix, WEB), 'utf8');
+  }
+  writeFileSync(
+    join(outDir, 'index.ts'),
+    `export { ${name}, type ${name}Props } from './${name}';\n`,
+    'utf8',
+  );
 
-const surface = surfaceFrom(contract);
-console.log(`\nemitted ${name} -> ${outDir}`);
-console.log(`  props: ${surface.map((p) => p.name).join(', ') || '(none)'}`);
-console.log(`\n${EMITTER_ASSUMPTIONS.length} thing(s) the contract could not tell the emitter:\n`);
-for (const a of EMITTER_ASSUMPTIONS) {
-  console.log(`  ${a.topic}`);
-  console.log(`      chose: ${a.decision}`);
-  console.log(`      why:   ${a.why}\n`);
+  const surface = surfaceFrom(contract);
+  console.log(`\nemitted ${name} -> ${outDir}`);
+  console.log(`  props: ${surface.map((p) => p.name).join(', ') || '(none)'}`);
+  console.log(
+    `\n${EMITTER_ASSUMPTIONS.length} thing(s) the contract could not tell the emitter:\n`,
+  );
+  for (const a of EMITTER_ASSUMPTIONS) {
+    console.log(`  ${a.topic}`);
+    console.log(`      chose: ${a.decision}`);
+    console.log(`      why:   ${a.why}\n`);
+  }
 }
