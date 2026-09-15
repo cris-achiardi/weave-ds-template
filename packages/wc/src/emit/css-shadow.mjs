@@ -67,8 +67,10 @@ export function stateSelectorShadow(base, spec, profile) {
  * the host from the box tree, so `[part='root']` lays out exactly where the light-DOM backends' root
  * element does — and the theme paints `[part='root']`, never `:host`.
  */
+// Navigation collections retain a block host for reliable Firefox sequential focus.
 export function emitStructureShadow(name, contract, prefix, assume) {
   const root = contract.anatomy.root;
+  const navigationScope = Boolean(contract.collection?.navigation);
   const kids = Object.values(root.parts ?? {});
   const hides = JSON.stringify(contract.anatomy).includes('"visibleWhen"');
 
@@ -79,8 +81,12 @@ export function emitStructureShadow(name, contract, prefix, assume) {
   );
   assume(
     'what the host box is',
-    '`display: contents` — the host generates no box, and the theme paints `[part=root]`',
-    "THIS WAS THE SECOND ANSWER AND THE FIRST ONE WAS WRONG. A custom element is `display: inline` until a stylesheet says otherwise, so the first version left `:host { /* display: ; */ }` as an obligation for the consumer — a genuinely new one, since a <div> root is already block and a <button> root already inline-block. But handing it over was solving the wrong problem. The contract's `anatomy.root` describes the component's outermost VISUAL box, and in a shadow build that is the element the binding names, not the host wrapping it; painting `:host` put the background on a wrapper and left the real control unstyled. `display: contents` is the one answer here that is not a guess about layout, and with root paints on `[part=root]` the translated stylesheet produces computed styles IDENTICAL to the light-DOM backends'.",
+    navigationScope
+      ? '`display: block` preserves a navigable collection scope in Firefox'
+      : '`display: contents` — the host generates no box, and the theme paints `[part=root]`',
+    navigationScope
+      ? 'A real host box prevents Firefox from cycling Tab inside nested display:contents shadow hosts. The semantic root still owns paint; the collection host adds a structural block container.'
+      : "THIS WAS THE SECOND ANSWER AND THE FIRST ONE WAS WRONG. A custom element is `display: inline` until a stylesheet says otherwise, so the first version left `:host { /* display: ; */ }` as an obligation for the consumer — a genuinely new one, since a <div> root is already block and a <button> root already inline-block. But handing it over was solving the wrong problem. The contract's `anatomy.root` describes the component's outermost VISUAL box, and in a shadow build that is the element the binding names, not the host wrapping it; painting `:host` put the background on a wrapper and left the real control unstyled. `display: contents` is the one answer here that is not a guess about layout, and with root paints on `[part=root]` the translated stylesheet produces computed styles IDENTICAL to the light-DOM backends'.",
   );
   assume(
     'no scoping attribute, no part attribute, no axis attribute',
@@ -99,21 +105,28 @@ export function emitStructureShadow(name, contract, prefix, assume) {
   L.push(` * there is nothing to derive from. The emitter will not guess: an inferred layout that`);
   L.push(` * renders is harder to catch than one that does not.`);
   L.push(` *`);
-  L.push(
-    ` * THE HOST GENERATES NO BOX. A custom element is \`display: inline\` until a stylesheet`,
-  );
-  L.push(` * says otherwise, and \`contents\` is the one answer that is not a guess about layout:`);
-  L.push(
-    ` * it removes the host from the box tree entirely, so \`[part='root']\` lays out exactly`,
-  );
-  L.push(
-    ` * where the light-DOM backends' root element does. Your theme paints \`[part='root']\`,`,
-  );
-  L.push(` * not \`:host\`.`);
+  if (navigationScope) {
+    L.push(` * A navigation collection keeps a host box. Nested display:contents shadow hosts`);
+    L.push(` * can trap Tab on the first member in Firefox. Paint still belongs to [part=root].`);
+  } else {
+    L.push(
+      ` * THE HOST GENERATES NO BOX. A custom element is \`display: inline\` until a stylesheet`,
+    );
+    L.push(
+      ` * says otherwise, and \`contents\` is the one answer that is not a guess about layout:`,
+    );
+    L.push(
+      ` * it removes the host from the box tree entirely, so \`[part='root']\` lays out exactly`,
+    );
+    L.push(
+      ` * where the light-DOM backends' root element does. Your theme paints \`[part='root']\`,`,
+    );
+    L.push(` * not \`:host\`.`);
+  }
   L.push(` */`);
   L.push(``);
   L.push(`:host {`);
-  L.push(`  display: contents;`);
+  L.push(`  display: ${navigationScope ? 'block' : 'contents'};`);
   L.push(`}`);
   L.push(``);
   L.push(`/* A hidden host stays hidden, and outranks the rule above. */`);

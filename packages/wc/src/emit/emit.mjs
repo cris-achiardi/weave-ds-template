@@ -97,7 +97,7 @@ function renderPart(key, node, ctx, depth) {
 // ---------------------------------------------------------------------------------------
 // the component
 // ---------------------------------------------------------------------------------------
-export function emitComponent(name, contract, binding, prefix) {
+export function emitComponent(name, contract, binding, prefix, { declareTagTypes = true } = {}) {
   const form = formFor(contract);
   const props = surfaceFrom(contract);
   const slots = slotsFrom(contract);
@@ -419,8 +419,10 @@ export function emitComponent(name, contract, binding, prefix) {
   s.push(`  constructor() {`);
   s.push(`    super();`);
   // `delegatesFocus` — a platform feature where React needed `refTarget` to stand in for one.
-  const delegates =
-    binding.delegatesFocus ?? Boolean(contract.semantics?.focusable || rootToggles || activator);
+  const delegates = registers
+    ? false
+    : (binding.delegatesFocus ??
+      Boolean(contract.semantics?.focusable || rootToggles || activator));
   s.push(`    const shadow = this.attachShadow({ mode: 'open', delegatesFocus: ${delegates} });`);
   s.push(`    shadow.adoptedStyleSheets = [SHEET];`);
   s.push(`    shadow.append(TEMPLATE.content.cloneNode(true));`);
@@ -540,6 +542,13 @@ export function emitComponent(name, contract, binding, prefix) {
   s.push(`  }`);
   s.push(``);
 
+  if (registers) {
+    s.push(
+      `  /** Roving members focus the semantic root directly, including tabindex=-1 targets. */`,
+    );
+    s.push(`  override focus(options?: FocusOptions): void { this.#root.focus(options); }`);
+    s.push(``);
+  }
   // --- lifecycle
   if (namedSlots.length) {
     assume(
@@ -1125,12 +1134,14 @@ export function emitComponent(name, contract, binding, prefix) {
   s.push(`  customElements.define(${className}.tagName, ${className});`);
   s.push(`}`);
   s.push(``);
-  s.push(`declare global {`);
-  s.push(`  interface HTMLElementTagNameMap {`);
-  s.push(`    '${tag}': ${className};`);
-  s.push(`  }`);
-  s.push(`}`);
-  s.push(``);
+  if (declareTagTypes) {
+    s.push(`declare global {`);
+    s.push(`  interface HTMLElementTagNameMap {`);
+    s.push(`    '${tag}': ${className};`);
+    s.push(`  }`);
+    s.push(`}`);
+    s.push(``);
+  }
 
   void attrLit;
   return s.join('\n');
