@@ -36,16 +36,7 @@ import { fileURLToPath } from 'node:url';
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const readJson = (p) => JSON.parse(readFileSync(p, 'utf8'));
 
-/**
- * Every framework package that holds bindings and an emitter. Adding a backend means adding one
- * line here and nothing else in this file.
- */
-const BACKENDS = [
-  { framework: 'react', dir: 'packages/react', suffix: '.react.json' },
-  { framework: 'vue', dir: 'packages/vue', suffix: '.vue.json' },
-  { framework: 'angular', dir: 'packages/angular', suffix: '.angular.json' },
-  { framework: 'wc', dir: 'packages/wc', suffix: '.wc.json' },
-];
+import { BACKENDS } from './backends.mjs';
 
 /** The framework-free decision logic. It lives in ONE place and must stay there. */
 const SHARED_CORES = ['dismissal.ts', 'linear-navigation.ts', 'range-stepping.ts'];
