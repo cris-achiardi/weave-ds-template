@@ -29,6 +29,7 @@ export class Switch extends HTMLElement {
   static readonly observedAttributes = ['disabled', 'read-only', 'checked', 'aria-label'];
 
   readonly #root: HTMLElement;
+  readonly #pendingActivations = new Set<number>();
 
   constructor() {
     super();
@@ -37,14 +38,18 @@ export class Switch extends HTMLElement {
     shadow.append(TEMPLATE.content.cloneNode(true));
     this.#root = shadow.querySelector('[part="root"]')!;
 
-    // NO HANDLER COMPOSITION. `addEventListener` is additive by definition, so a
-    // consumer's listener on this element and the ones below both run — the problem
-    // React and Vue each solve with a hand-written chain does not exist here.
-    this.#root.addEventListener('click', (event) => this.#activate(event as MouseEvent));
+    // Listeners are additive, but internal listeners run before host bubbling listeners.
+    // Queue click activation so the consumer can cancel it before state changes.
+    this.#root.addEventListener('click', (event) => this.#queueActivation(event as MouseEvent));
   }
 
   connectedCallback(): void {
     this.#update();
+  }
+
+  disconnectedCallback(): void {
+    for (const timer of this.#pendingActivations) window.clearTimeout(timer);
+    this.#pendingActivations.clear();
   }
 
   attributeChangedCallback(): void {
@@ -77,9 +82,21 @@ export class Switch extends HTMLElement {
     this.toggleAttribute('checked', Boolean(value));
   }
 
-  #activate(event?: { defaultPrevented: boolean }): void {
-    // Guards, because this runs on a CLICK and the platform guards there too.
-    if (event?.defaultPrevented) return;
+  #queueActivation(event: MouseEvent): void {
+    if (!this.isConnected || event.defaultPrevented) return;
+    if (this.disabled || this.readOnly) return;
+    // A task, not a microtask: trusted events can checkpoint between listeners.
+    const timer = window.setTimeout(() => {
+      this.#pendingActivations.delete(timer);
+      if (!this.isConnected) return;
+      this.#activate(event);
+    }, 0);
+    this.#pendingActivations.add(timer);
+  }
+
+  #activate(event: MouseEvent): void {
+    // Recheck cancellation and availability after every host listener has run.
+    if (event.defaultPrevented) return;
     if (this.disabled || this.readOnly) return;
     this.checked = !this.checked;
     this.#emit('checked-change', this.checked);

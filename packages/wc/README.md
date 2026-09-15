@@ -38,9 +38,10 @@ document nowhere, are all **unnecessary** here:
 That is not this backend being clever. It is evidence that all three were standing in for scoping
 the platform can do itself — and that nothing in the contract system ever defined them.
 
-Two more it supplies: `delegatesFocus` is a shadow-root option where React's binding carries
-`refTarget` and says outright that it exists because React has none; and handler composition is free,
-because `addEventListener` is additive.
+`delegatesFocus` is a shadow-root option where React's binding carries `refTarget`.
+Event listeners are additive, but their ordering still matters: click-driven activation
+runs in a later task so a normal host listener can call `preventDefault()` before state
+and change notifications are committed. See the [event rules](./src/emit/README.md#5-event-handlers-are-composed-never-overridden).
 
 ## What it costs
 

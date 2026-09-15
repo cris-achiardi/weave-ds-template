@@ -66,9 +66,7 @@ export class Slider extends HTMLElement {
       () => this.#update(),
     );
 
-    // NO HANDLER COMPOSITION. `addEventListener` is additive by definition, so a
-    // consumer's listener on this element and the ones below both run — the problem
-    // React and Vue each solve with a hand-written chain does not exist here.
+    // Listeners are additive, but internal listeners run before host bubbling listeners.
     this.#root.addEventListener('keydown', (event) =>
       this.#range.onKeyDown(event as KeyboardEvent),
     );

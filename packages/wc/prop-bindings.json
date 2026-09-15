@@ -57,7 +57,7 @@
     "scoping": "The shadow root IS the scope. `data-<prefix>-component`, `data-<prefix>-part` and `data-<prefix>-<axis>` — three attribute families the other backends invented and nothing in the contract system defines — are all unnecessary here.",
     "part": "`part` is a real platform attribute with a real selector behind it, `::part()`. The other three spell it `data-<prefix>-part` and reach it with a descendant selector.",
     "delegatesFocus": "A shadow root option. React's binding carries `refTarget` and says outright that it exists because React has no delegatesFocus.",
-    "handler composition": "`addEventListener` is additive by definition. React and Vue each write a chain by hand; Angular gets it free the same way this does."
+    "handler composition": "Listeners are additive, but internal handlers run before host bubbling listeners. Click-driven activation is queued as a task so a host listener can cancel it before shared state and its notification change."
   },
   "_whatItCosts": {
     "one fact, two places": "A state has to reach ARIA on the INNER element, where assistive technology reads it, and be reflected onto the HOST, where CSS can select it. `::part()` cannot take an attribute selector, so there is no single place that serves both.",

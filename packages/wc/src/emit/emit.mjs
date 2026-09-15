@@ -145,6 +145,7 @@ function emitComponent(name, contract, binding, prefix) {
   const allParts = partsOf(root);
   const activator = allParts.find((p) => p.node.activates?.toggles);
   const rootToggles = root.activates?.toggles;
+  const hasActivation = Boolean(activator || rootToggles);
 
   const range = contract.range ?? null;
   let rangeState = null;
@@ -393,6 +394,7 @@ function emitComponent(name, contract, binding, prefix) {
   if (needsIds) s.push(`  readonly #baseId = '${prefix}-${kebab(name)}-' + nextId++;`);
   if (member) s.push(`  #collection: ${member.of} | null = null;`);
   if (registers) s.push(`  #registeredValue: string | null = null;`);
+  if (hasActivation) s.push(`  readonly #pendingActivations = new Set<number>();`);
   if (dismissCauses.length) s.push(`  readonly #dismissal;`);
   if (range) s.push(`  readonly #range;`);
   if (navigation) s.push(`  readonly #nav;`);
@@ -452,13 +454,16 @@ function emitComponent(name, contract, binding, prefix) {
     s.push(`    this.#watchSlots(shadow);`);
     s.push(``);
   }
-  s.push(`    // NO HANDLER COMPOSITION. \`addEventListener\` is additive by definition, so a`);
-  s.push(`    // consumer's listener on this element and the ones below both run — the problem`);
-  s.push(`    // React and Vue each solve with a hand-written chain does not exist here.`);
+  s.push(
+    `    // Listeners are additive, but internal listeners run before host bubbling listeners.`,
+  );
+  if (hasActivation) {
+    s.push(`    // Queue click activation so the consumer can cancel it before state changes.`);
+  }
   const listeners = [];
   if (rootToggles || activator) {
     const target = activator && activator.key !== 'root' ? `[part="${activator.node.part}"]` : null;
-    listeners.push([target, 'click', 'this.#activate(event as MouseEvent)']);
+    listeners.push([target, 'click', 'this.#queueActivation(event as MouseEvent)']);
   }
   if (range) {
     listeners.push([null, 'keydown', 'this.#range.onKeyDown(event as KeyboardEvent)']);
@@ -557,8 +562,12 @@ function emitComponent(name, contract, binding, prefix) {
   s.push(`    this.#update();`);
   s.push(`  }`);
   s.push(``);
-  if (member || platformModal) {
+  if (member || platformModal || hasActivation) {
     s.push(`  disconnectedCallback(): void {`);
+    if (hasActivation) {
+      s.push(`    for (const timer of this.#pendingActivations) window.clearTimeout(timer);`);
+      s.push(`    this.#pendingActivations.clear();`);
+    }
     if (member) {
       s.push(`    this.#collection?.removeEventListener(`);
       s.push(`      ${member.of.toUpperCase()}_CHANGE,`);
@@ -711,15 +720,36 @@ function emitComponent(name, contract, binding, prefix) {
   }
 
   // --- activation
-  if (activator || rootToggles) {
+  if (hasActivation) {
     const what = activator?.node.activates.toggles ?? rootToggles;
-    s.push(`  #activate(event?: { defaultPrevented: boolean }): void {`);
-    s.push(`    // Guards, because this runs on a CLICK and the platform guards there too.`);
-    s.push(`    if (event?.defaultPrevented) return;`);
     const guards = [];
     if (member) guards.push('this.#isDisabled');
     else if (hasDisabled) guards.push('this.disabled');
     if (hasReadOnly) guards.push('this.readOnly');
+    s.push(`  #queueActivation(event: MouseEvent): void {`);
+    s.push(`    if (!this.isConnected || event.defaultPrevented) return;`);
+    if (guards.length) s.push(`    if (${guards.join(' || ')}) return;`);
+    if (member) {
+      s.push(`    const collection = this.#collection;`);
+      s.push(`    const value = this.${member.identity};`);
+    }
+    s.push(`    // A task, not a microtask: trusted events can checkpoint between listeners.`);
+    s.push(`    const timer = window.setTimeout(() => {`);
+    s.push(`      this.#pendingActivations.delete(timer);`);
+    s.push(`      if (!this.isConnected) return;`);
+    if (member) {
+      s.push(
+        `      if (collection !== this.#collection || value !== this.${member.identity}) return;`,
+      );
+    }
+    s.push(`      this.#activate(event);`);
+    s.push(`    }, 0);`);
+    s.push(`    this.#pendingActivations.add(timer);`);
+    s.push(`  }`);
+    s.push(``);
+    s.push(`  #activate(event: MouseEvent): void {`);
+    s.push(`    // Recheck cancellation and availability after every host listener has run.`);
+    s.push(`    if (event.defaultPrevented) return;`);
     if (guards.length) s.push(`    if (${guards.join(' || ')}) return;`);
     if (what === 'member') {
       s.push(`    this.#collection?.toggle(this.${member.identity});`);

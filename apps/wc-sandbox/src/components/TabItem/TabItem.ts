@@ -42,6 +42,7 @@ export class TabItem extends HTMLElement {
   readonly #baseId = 'ds-tab-item-' + nextId++;
   #collection: Tabs | null = null;
   #registeredValue: string | null = null;
+  readonly #pendingActivations = new Set<number>();
 
   constructor() {
     super();
@@ -52,10 +53,9 @@ export class TabItem extends HTMLElement {
 
     this.#watchSlots(shadow);
 
-    // NO HANDLER COMPOSITION. `addEventListener` is additive by definition, so a
-    // consumer's listener on this element and the ones below both run — the problem
-    // React and Vue each solve with a hand-written chain does not exist here.
-    this.#root.addEventListener('click', (event) => this.#activate(event as MouseEvent));
+    // Listeners are additive, but internal listeners run before host bubbling listeners.
+    // Queue click activation so the consumer can cancel it before state changes.
+    this.#root.addEventListener('click', (event) => this.#queueActivation(event as MouseEvent));
   }
 
   /**
@@ -86,6 +86,8 @@ export class TabItem extends HTMLElement {
   }
 
   disconnectedCallback(): void {
+    for (const timer of this.#pendingActivations) window.clearTimeout(timer);
+    this.#pendingActivations.clear();
     this.#collection?.removeEventListener(TABS_CHANGE, this.#onCollectionChange);
     const previous = this.#registeredValue;
     this.#registeredValue = null;
@@ -125,9 +127,24 @@ export class TabItem extends HTMLElement {
     return this.#collection?.value === this.value;
   }
 
-  #activate(event?: { defaultPrevented: boolean }): void {
-    // Guards, because this runs on a CLICK and the platform guards there too.
-    if (event?.defaultPrevented) return;
+  #queueActivation(event: MouseEvent): void {
+    if (!this.isConnected || event.defaultPrevented) return;
+    if (this.#isDisabled) return;
+    const collection = this.#collection;
+    const value = this.value;
+    // A task, not a microtask: trusted events can checkpoint between listeners.
+    const timer = window.setTimeout(() => {
+      this.#pendingActivations.delete(timer);
+      if (!this.isConnected) return;
+      if (collection !== this.#collection || value !== this.value) return;
+      this.#activate(event);
+    }, 0);
+    this.#pendingActivations.add(timer);
+  }
+
+  #activate(event: MouseEvent): void {
+    // Recheck cancellation and availability after every host listener has run.
+    if (event.defaultPrevented) return;
     if (this.#isDisabled) return;
     this.#collection?.toggle(this.value);
   }
