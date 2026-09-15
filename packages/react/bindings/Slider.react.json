@@ -3,7 +3,6 @@
   "component": "Slider",
   "contract": "../../contracts/components/Slider/Slider.contract.json",
   "framework": "react",
-  "element": "div",
   "refTarget": "root",
   "classNamePassthrough": "root",
   "notes": [

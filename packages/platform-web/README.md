@@ -150,3 +150,15 @@ element's visibility is `imperative`, and enters that code path _because the pro
 second web backend reads the same flag and knows it owes the topology. A non-web backend reads
 `supplies` and learns exactly which four behaviours it must implement by hand, instead of
 discovering them one accessibility bug at a time.
+
+## Per-component roots and styling
+
+[`components.json`](./components.json) declares each contract's semantic root element once.
+Its [schema](./components.schema.json) and `verify:parity` reject missing roots, orphan entries,
+unknown platform elements, and copies reintroduced into backend bindings. `loadPair` augments the
+validated binding with this resolved element for emitter use; the field is not persisted there.
+
+WC's host tag stays derived by `tagFor(component, prefix)`. Its inner root comes from the same
+map as the other backends. No host-only field is imposed on their bindings.
+
+[`styling.md`](./styling.md) specifies the component, part, and axis handles for both DOM models.

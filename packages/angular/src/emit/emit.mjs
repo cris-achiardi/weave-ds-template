@@ -496,11 +496,6 @@ function emitComponent(name, contract, binding, prefix) {
   const axisNames = Object.keys(contract.axes ?? {});
   if (axisNames.length) {
     for (const axis of axisNames) host.push([`attr.data-${prefix}-${kebab(axis)}`, `${axis}()`]);
-    assume(
-      'axis values in the DOM',
-      `data-${prefix}-<axis>="<value>" on the host`,
-      'An axis that reaches no attribute cannot be styled. THREE backends now depend on this attribute family and nothing in the contract system defines it — it is the one invention a fourth backend could get wrong while passing every gate in the repo.',
-    );
   }
 
   if (nativelyEdited) {

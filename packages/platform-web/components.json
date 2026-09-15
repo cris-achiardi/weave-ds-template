@@ -1,0 +1,20 @@
+{
+  "$schema": "./components.schema.json",
+  "components": {
+    "Accordion": "div",
+    "AccordionItem": "div",
+    "Button": "button",
+    "Checkbox": "button",
+    "Dialog": "dialog",
+    "Field": "div",
+    "RadioGroup": "div",
+    "RadioItem": "div",
+    "Slider": "div",
+    "Switch": "button",
+    "TabItem": "button",
+    "TabPanel": "div",
+    "Tabs": "div",
+    "TextField": "input",
+    "Tooltip": "div"
+  }
+}

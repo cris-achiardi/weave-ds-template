@@ -34,26 +34,11 @@ destroys consumer work, which makes it the highest-risk behaviour in the emitter
 These are the invariants the tooling depends on. They were learned expensively in the hand-authored
 flow and none of them stopped being true.
 
-### 1. Every named node carries a part attribute and a matching class
+### 1. Every named node has a stable styling handle
 
-```tsx
-<span data-ds-part="icon-start" className={styles.iconStart}>
-```
-
-Attribute is kebab-case; style key is camelCase; the tooling converts. Three reasons this is a rule
-and not a preference:
-
-1. **CSS Modules hashes class names.** `.root` becomes `Button__root___a1b2c`, which a consumer
-   cannot target. `[data-ds-part="root"]` is stable and semantic — it is the styling handle the
-   library actually offers, and for an unstyled library it is the _only_ one.
-2. **It is what makes the contract checkable.** Part names are read back out of the source, so a
-   contract cannot name a node that does not render.
-3. **It is what makes the paint surface checkable.** The chain is
-   part → class → declarations → `var()` → declared channel. Break the pairing and the check
-   silently degrades into a comment.
-
-Read the prefix from `/ds.config.json`. Never hard-code `ds` — `pnpm init-ds` renames it, and a
-hard-coded prefix in emitted code survives the rename and breaks silently.
+Generated light-DOM nodes use the component and part attributes specified in
+`packages/platform-web/styling.md`. Read prefixes from `ds.config.json`. Generated styles use
+these selectors directly; there is no required CSS Module class or `cva` object.
 
 ### 1b. Three attribute families, not one
 
@@ -67,8 +52,7 @@ styling an unstyled library depends on all of them:
 | `data-<prefix>-<axis>`    | an axis value                                | `data-ds-hierarchy="primary"` |
 
 **Why `component` exists.** Without CSS Modules there is no hashing, so `[data-ds-part="root"]`
-would match every component on the page. Something has to scope it. The emitter invented this and
-it is now load-bearing.
+would match every component on the page. Something has to scope it. This is specified in the shared web styling convention.
 
 **Why an axis needs an attribute at all.** A variant that reaches no attribute cannot be styled:
 there is no class to select in an unstyled library, so a declared `variant` would generate a prop

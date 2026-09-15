@@ -3,7 +3,6 @@
   "component": "RadioGroup",
   "contract": "../../contracts/components/RadioGroup/RadioGroup.contract.json",
   "framework": "react",
-  "element": "div",
   "refTarget": "root",
   "classNamePassthrough": "root",
   "notes": [

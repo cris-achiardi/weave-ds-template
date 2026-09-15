@@ -3,7 +3,6 @@
   "component": "Tooltip",
   "contract": "../../contracts/components/Tooltip/Tooltip.contract.json",
   "framework": "react",
-  "element": "div",
   "refTarget": "root",
   "classNamePassthrough": "root",
   "notes": [

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /** Read a contract with every backend's derived public surface; no generated code required. */
 import { existsSync, readdirSync } from 'node:fs';
+import { elementFor } from '../packages/platform-web/resolve.mjs';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {
@@ -28,7 +29,7 @@ export function composeComponent(name, selected) {
       ];
     }),
   );
-  return { component: name, contract, backends };
+  return { component: name, contract, web: { element: elementFor(name) }, backends };
 }
 export function coverage() {
   const contracts = listContracts();

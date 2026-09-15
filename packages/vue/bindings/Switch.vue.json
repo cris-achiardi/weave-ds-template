@@ -3,7 +3,6 @@
   "component": "Switch",
   "contract": "../../contracts/components/Switch/Switch.contract.json",
   "framework": "vue",
-  "element": "button",
   "notes": [
     "`checked` is `control: shared`, and Vue spells that as one `defineModel`, not React's three props. See packages/vue/prop-bindings.json > controlRules."
   ]

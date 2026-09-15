@@ -3,7 +3,6 @@
   "component": "Switch",
   "contract": "../../contracts/components/Switch/Switch.contract.json",
   "framework": "wc",
-  "element": "button",
   "notes": [
     "`checked` is `control: shared`: an attribute, a property, and a `ds-checked-change` event. There is no two-way binding to spell it with, so this is the one backend where React's three-part shape reappears — as three MECHANISMS rather than three props."
   ]

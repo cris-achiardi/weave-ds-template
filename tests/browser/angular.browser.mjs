@@ -25,3 +25,6 @@ test('accordion relationships resolve before and after a member identity changes
   await expect(trigger).not.toHaveAttribute('id', originalId);
   await expectRelationships();
 });
+
+import { stylingRegressions } from './styling.mjs';
+stylingRegressions('angular');

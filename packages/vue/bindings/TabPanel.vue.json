@@ -3,7 +3,6 @@
   "component": "TabPanel",
   "contract": "../../contracts/components/TabPanel/TabPanel.contract.json",
   "framework": "vue",
-  "element": "div",
   "notes": [
     "A member that is NOT in the arrow path: its root declares no `activates`, which is how the contract distinguishes a thing you arrow onto from a thing you reveal. Neither contract says so in prose; it falls out of `activates`."
   ]

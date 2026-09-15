@@ -3,7 +3,6 @@
   "component": "Tabs",
   "contract": "../../contracts/components/Tabs/Tabs.contract.json",
   "framework": "wc",
-  "element": "div",
   "notes": [
     "A collection. A member finds it with `closest()` rather than through any injection mechanism, which is the DOM answering a question three frameworks each answered with a container of their own."
   ]

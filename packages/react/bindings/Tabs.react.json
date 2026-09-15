@@ -3,7 +3,6 @@
   "component": "Tabs",
   "contract": "../../contracts/components/Tabs/Tabs.contract.json",
   "framework": "react",
-  "element": "div",
   "refTarget": "root",
   "classNamePassthrough": "root",
   "notes": [

@@ -183,3 +183,13 @@ export function channelFor(situation, profile) {
   if (hasValueType) return { channel: 'none', attribute: null, rendersFalse: null };
   return { channel: 'data', attribute: null, rendersFalse: Boolean(hasValues) };
 }
+
+/** The semantic root element, shared by every web backend; never a WC host tag. */
+export function loadComponents() {
+  return JSON.parse(readFileSync(new URL('./components.json', import.meta.url), 'utf8')).components;
+}
+export function elementFor(component, components = loadComponents()) {
+  const element = components[component];
+  if (!element) throw new Error(`No web root element declared for ${component}`);
+  return element;
+}

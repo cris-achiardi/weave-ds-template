@@ -3,7 +3,6 @@
   "component": "TextField",
   "contract": "../../contracts/components/TextField/TextField.contract.json",
   "framework": "vue",
-  "element": "input",
   "notes": [
     "Renders a native <input>, which edits its own value.",
     "THE EDITING EVENT IS NOT THE SAME EVENT. React wires this to `onChange`, which is React's synthetic per-keystroke event and is NOT the DOM `change` event. Vue has no synthetic layer, so the DOM applies: `change` fires on blur and `input` fires per keystroke. The emitter wires `@input`. Two backends reading one contract reach different event names for the same sentence, and the contract is right not to name either."

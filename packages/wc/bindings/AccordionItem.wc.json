@@ -3,6 +3,5 @@
   "component": "AccordionItem",
   "contract": "../../contracts/components/AccordionItem/AccordionItem.contract.json",
   "framework": "wc",
-  "element": "div",
   "notes": ["A member."]
 }

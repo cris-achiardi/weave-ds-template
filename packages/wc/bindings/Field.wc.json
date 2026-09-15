@@ -3,7 +3,6 @@
   "component": "Field",
   "contract": "../../contracts/components/Field/Field.contract.json",
   "framework": "wc",
-  "element": "div",
   "notes": [
     "A pure composition wrapper. Its ARIA relationships point at ids INSIDE its own shadow root, which is the only place they can resolve — see packages/wc/src/emit/README.md on what that costs."
   ]

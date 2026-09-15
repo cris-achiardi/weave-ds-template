@@ -3,7 +3,6 @@
   "component": "Field",
   "contract": "../../contracts/components/Field/Field.contract.json",
   "framework": "react",
-  "element": "div",
   "refTarget": "root",
   "classNamePassthrough": "root",
   "notes": [

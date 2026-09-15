@@ -3,7 +3,6 @@
   "component": "Switch",
   "contract": "../../contracts/components/Switch/Switch.contract.json",
   "framework": "react",
-  "element": "button",
   "refTarget": "root",
   "classNamePassthrough": "root",
   "notes": [

@@ -3,7 +3,6 @@
   "component": "Slider",
   "contract": "../../contracts/components/Slider/Slider.contract.json",
   "framework": "angular",
-  "element": "div",
   "notes": [
     "The track part is reached with a `viewChild` signal query, so the pointer geometry has a box to measure against."
   ]

@@ -3,6 +3,5 @@
   "component": "Accordion",
   "contract": "../../contracts/components/Accordion/Accordion.contract.json",
   "framework": "wc",
-  "element": "div",
   "notes": ["A collection. Same closest() protocol as Tabs."]
 }

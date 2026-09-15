@@ -99,3 +99,6 @@ test('dialog accepts open state while detached and presents again after reconnec
   await expect(modal).not.toBeVisible();
   expect(errors).toEqual([]);
 });
+
+import { stylingRegressions } from './styling.mjs';
+stylingRegressions('wc');

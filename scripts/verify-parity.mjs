@@ -15,7 +15,7 @@
  *   surface   two backends' `behavior` barrels export a different set of names. Each backend wraps
  *             the SAME primitives in its own binding and re-exports them; a barrel that drifts means
  *             an emitted component compiles against one backend and not another.
- *   element   two bindings disagree about a contract's root ELEMENT. Which element carries a role is
+ *   element   a root element map is missing or a binding overrides shared ELEMENT data. Which element carries a role is
  *             web-platform knowledge, so the two cannot both be right — one backend would render a
  *             <div> where another renders a <button>, with every ARIA consequence that follows.
  *
@@ -37,6 +37,8 @@ const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const readJson = (p) => JSON.parse(readFileSync(p, 'utf8'));
 
 import { BACKENDS } from './backends.mjs';
+import Ajv from 'ajv/dist/2020.js';
+import { loadComponents, loadProfile } from '../packages/platform-web/resolve.mjs';
 
 /** The framework-free decision logic. It lives in ONE place and must stay there. */
 const SHARED_CORES = ['dismissal.ts', 'linear-navigation.ts', 'range-stepping.ts'];
@@ -111,9 +113,7 @@ if (barrels.length > 1) {
 //
 // STILL DUPLICATED, DELIBERATELY, where the behaviour cores no longer are. `element` is
 // web-platform knowledge sitting in a framework artifact, fifteen times per backend, and by
-// @ds/platform-web's own rule it belongs there. It did not move with the rest because a shadow-DOM
-// backend introduces a HOST TAG alongside the internal element, and a shared map designed before
-// anyone has seen that shape is a guess. Gated meanwhile.
+// Root elements are shared platform data. Bindings may not override them.
 const bindingsFor = (backend) => {
   const dir = join(REPO_ROOT, backend.dir, 'bindings');
   if (!existsSync(dir)) return new Map();
@@ -130,6 +130,43 @@ const everyComponent = [...new Set([...byBackend.values()].flatMap((m) => [...m.
   (a, b) => (a < b ? -1 : a > b ? 1 : 0),
 );
 
+const ajv = new Ajv({ allErrors: true, strict: false });
+const platform = loadComponents();
+const profile = loadProfile();
+const platformSchema = ajv.compile(
+  readJson(join(REPO_ROOT, 'packages/platform-web/components.schema.json')),
+);
+if (!platformSchema(readJson(join(REPO_ROOT, 'packages/platform-web/components.json'))))
+  failures.push(`element map: ${ajv.errorsText(platformSchema.errors)}`);
+for (const [component, element] of Object.entries(platform)) {
+  if (
+    !existsSync(
+      join(REPO_ROOT, 'packages/contracts/components', component, `${component}.contract.json`),
+    )
+  )
+    failures.push(`element map: orphan ${component}`);
+  if (!(element in profile.elements))
+    failures.push(`element map: ${component} uses unknown element ${element}`);
+}
+for (const backend of BACKENDS) {
+  const validate = ajv.compile(
+    readJson(join(REPO_ROOT, backend.dir, 'bindings/binding.schema.json')),
+  );
+  for (const [name, binding] of byBackend.get(backend.framework)) {
+    if (!validate(binding))
+      failures.push(`${backend.framework}/${name}: ${ajv.errorsText(validate.errors)}`);
+    if (
+      !existsSync(join(REPO_ROOT, 'packages/contracts/components', name, `${name}.contract.json`))
+    )
+      failures.push(`${backend.framework}/${name}: orphan binding`);
+    if (
+      resolve(REPO_ROOT, backend.dir, 'bindings', binding.contract) !==
+      resolve(REPO_ROOT, 'packages/contracts/components', name, `${name}.contract.json`)
+    )
+      failures.push(`${backend.framework}/${name}: invalid contract pointer`);
+  }
+}
+
 for (const component of everyComponent) {
   const present = BACKENDS.filter((b) => byBackend.get(b.framework).has(component));
   const missing = BACKENDS.filter((b) => !byBackend.get(b.framework).has(component));
@@ -139,17 +176,7 @@ for (const component of everyComponent) {
         `but not ${missing.map((b) => b.framework).join(', ')}`,
     );
   }
-  const elements = new Map(
-    present.map((b) => [b.framework, byBackend.get(b.framework).get(component).element]),
-  );
-  if (new Set(elements.values()).size > 1) {
-    failures.push(
-      `element   ${component} renders a different root element per backend: ` +
-        [...elements].map(([f, e]) => `${f}=<${e}>`).join(', ') +
-        `.\n          Which element carries a role is a fact about the WEB PLATFORM, so the ` +
-        `bindings\n          cannot both be right. See packages/platform-web/README.md.`,
-    );
-  }
+  if (!platform[component]) failures.push(`element map: no semantic root for ${component}`);
 }
 
 // ---------------------------------------------------------------------------------------
