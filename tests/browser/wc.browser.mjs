@@ -1,5 +1,50 @@
 import { expect, test } from '@playwright/test';
 
+for (const [tag, role] of [
+  ['ds-text-field', 'textbox'],
+  ['ds-button', 'button'],
+  ['ds-slider', 'slider'],
+]) {
+  test(`${tag} forwards a literal accessible name, updates, and removal`, async ({ page }) => {
+    await page.goto('/browser-tests.html');
+    await page.evaluate(async (tagName) => {
+      await customElements.whenDefined(tagName);
+      const host = document.createElement(tagName);
+      host.id = 'named-control';
+      host.setAttribute('aria-label', 'Initial name');
+      document.body.append(host);
+    }, tag);
+    const host = page.locator('#named-control');
+    const control = host.getByRole(role);
+    await expect(control).toHaveAccessibleName('Initial name');
+    await host.evaluate((node) => {
+      node.ariaLabel = 'Updated name';
+    });
+    await expect(control).toHaveAccessibleName('Updated name');
+    await host.evaluate((node) => node.removeAttribute('aria-label'));
+    await expect(control).toHaveAccessibleName('');
+    await expect(control).not.toHaveAttribute('aria-label');
+  });
+}
+
+test('consumer labels preserve contract-owned dialog naming and control roles', async ({
+  page,
+}) => {
+  await page.goto('/browser-tests.html');
+  await page.evaluate(async () => {
+    await customElements.whenDefined('ds-dialog');
+    const host = document.createElement('ds-dialog');
+    host.innerHTML = '<span slot="title">Contract title</span>';
+    host.setAttribute('aria-label', 'Fallback name');
+    host.setAttribute('role', 'alert');
+    document.body.append(host);
+    host.open = true;
+  });
+  await expect(page.locator('ds-dialog').getByRole('dialog')).toHaveAccessibleName(
+    'Contract title',
+  );
+});
+
 test('dialog accepts open state while detached and presents again after reconnection', async ({
   page,
 }) => {

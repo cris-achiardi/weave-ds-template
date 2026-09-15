@@ -44,7 +44,7 @@ export const RADIOGROUP_CHANGE = 'ds-radio-group-internal-change';
 
 export class RadioGroup extends HTMLElement {
   static readonly tagName = 'ds-radio-group';
-  static readonly observedAttributes = ['disabled', 'read-only', 'value'];
+  static readonly observedAttributes = ['disabled', 'read-only', 'value', 'aria-label'];
 
   readonly #root: HTMLElement;
   readonly #baseId = 'ds-radio-group-' + nextId++;
@@ -165,6 +165,10 @@ export class RadioGroup extends HTMLElement {
 
   #write(): void {
     const root = this.#root;
+    // The semantic control is inside the shadow root; naming only the host misses it.
+    const label = this.getAttribute('aria-label');
+    if (label === null) root.removeAttribute('aria-label');
+    else root.setAttribute('aria-label', label);
     if (this.disabled) root.setAttribute('aria-disabled', 'true');
     else root.removeAttribute('aria-disabled');
     if (this.readOnly) root.setAttribute('aria-readonly', 'true');

@@ -33,7 +33,7 @@ TEMPLATE.innerHTML = `
 
 export class Checkbox extends HTMLElement {
   static readonly tagName = 'ds-checkbox';
-  static readonly observedAttributes = ['disabled', 'invalid', 'checked'];
+  static readonly observedAttributes = ['disabled', 'invalid', 'checked', 'aria-label'];
 
   readonly #root: HTMLElement;
 
@@ -138,6 +138,10 @@ export class Checkbox extends HTMLElement {
 
   #write(): void {
     const root = this.#root;
+    // The semantic control is inside the shadow root; naming only the host misses it.
+    const label = this.getAttribute('aria-label');
+    if (label === null) root.removeAttribute('aria-label');
+    else root.setAttribute('aria-label', label);
     // Write enumerated defaults into the DOM. A getter can fall back to the contract's
     // default and every script sees the right value; CSS cannot, because
     // `:host([hierarchy='secondary'])` matches an ATTRIBUTE. Idempotent, and the

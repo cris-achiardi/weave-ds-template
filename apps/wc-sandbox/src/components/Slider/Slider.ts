@@ -40,7 +40,7 @@ const RANGE: RangeOptions = {
 
 export class Slider extends HTMLElement {
   static readonly tagName = 'ds-slider';
-  static readonly observedAttributes = ['disabled', 'value'];
+  static readonly observedAttributes = ['disabled', 'value', 'aria-label'];
 
   readonly #root: HTMLElement;
   readonly #track: HTMLElement;
@@ -141,6 +141,10 @@ export class Slider extends HTMLElement {
 
   #write(): void {
     const root = this.#root;
+    // The semantic control is inside the shadow root; naming only the host misses it.
+    const label = this.getAttribute('aria-label');
+    if (label === null) root.removeAttribute('aria-label');
+    else root.setAttribute('aria-label', label);
     if (this.disabled) root.setAttribute('aria-disabled', 'true');
     else root.removeAttribute('aria-disabled');
     root.setAttribute('aria-valuemin', '0');

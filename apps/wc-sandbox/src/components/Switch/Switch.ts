@@ -26,7 +26,7 @@ TEMPLATE.innerHTML = `
 
 export class Switch extends HTMLElement {
   static readonly tagName = 'ds-switch';
-  static readonly observedAttributes = ['disabled', 'read-only', 'checked'];
+  static readonly observedAttributes = ['disabled', 'read-only', 'checked', 'aria-label'];
 
   readonly #root: HTMLElement;
 
@@ -113,6 +113,10 @@ export class Switch extends HTMLElement {
 
   #write(): void {
     const root = this.#root;
+    // The semantic control is inside the shadow root; naming only the host misses it.
+    const label = this.getAttribute('aria-label');
+    if (label === null) root.removeAttribute('aria-label');
+    else root.setAttribute('aria-label', label);
     root.setAttribute('aria-checked', String(this.checked));
     root.toggleAttribute('disabled', this.disabled);
     if (this.readOnly) root.setAttribute('aria-readonly', 'true');
