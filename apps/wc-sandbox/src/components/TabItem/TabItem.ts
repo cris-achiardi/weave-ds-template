@@ -41,6 +41,7 @@ export class TabItem extends HTMLElement {
   readonly #root: HTMLElement;
   readonly #baseId = 'ds-tab-item-' + nextId++;
   #collection: Tabs | null = null;
+  #registeredValue: string | null = null;
 
   constructor() {
     super();
@@ -81,16 +82,14 @@ export class TabItem extends HTMLElement {
       );
     }
     this.#collection.addEventListener(TABS_CHANGE, this.#onCollectionChange);
-    this.#collection.register(this.value, {
-      element: this,
-      disabled: this.#isDisabled,
-    });
     this.#update();
   }
 
   disconnectedCallback(): void {
     this.#collection?.removeEventListener(TABS_CHANGE, this.#onCollectionChange);
-    this.#collection?.unregister(this.value);
+    const previous = this.#registeredValue;
+    this.#registeredValue = null;
+    if (previous !== null) this.#collection?.unregister(previous);
     this.#collection = null;
   }
 
@@ -161,11 +160,15 @@ export class TabItem extends HTMLElement {
     // outside and cannot append an attribute selector to ::part(). One fact, two
     // places — forced by the boundary, not chosen.
     this.toggleAttribute('selected', this.#selected);
+    if (this.#collection) {
+      const value = this.value;
+      const previous = this.#registeredValue;
+      // Record before notifying: collection announcements are synchronous.
+      this.#registeredValue = value;
+      if (previous !== null && previous !== value) this.#collection.unregister(previous);
+      this.#collection.register(value, { element: this, disabled: this.#isDisabled });
+    }
     root.setAttribute('tabindex', this.#collection?.isTabStop(this.value) ? '0' : '-1');
-    this.#collection?.register(this.value, {
-      element: this,
-      disabled: this.#isDisabled,
-    });
     root?.setAttribute('id', this.#baseId);
     this.#part('indicator')?.toggleAttribute('hidden', !this.#selected);
   }

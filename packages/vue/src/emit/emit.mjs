@@ -453,7 +453,7 @@ function emitSfc(name, contract, binding, prefix) {
   // ONE NAME PER CALL. `Set.add` takes a single argument and silently ignores the rest, so the
   // multi-argument form emitted a component that used `watchEffect` without importing it — and
   // the emitter reported success, because nothing it does resolves an import.
-  if (registers) for (const i of ['ref', 'watchEffect', 'onBeforeUnmount']) vueImports.add(i);
+  if (registers) for (const i of ['ref', 'watch', 'onBeforeUnmount']) vueImports.add(i);
   if (platformModal) {
     for (const i of ['ref', 'watchEffect', 'onMounted', 'onBeforeUnmount']) vueImports.add(i);
   }
@@ -563,14 +563,23 @@ function emitSfc(name, contract, binding, prefix) {
     s.push(`// needs no composition, because a consumer's own ref reaches this component through`);
     s.push(`// \`$el\` rather than through anything the emitter has to thread.`);
     s.push(`const rootEl = ref<HTMLElement | null>(null);`);
-    s.push(`watchEffect(() => {`);
-    s.push(`  const node = rootEl.value;`);
-    s.push(`  if (!node) return;`);
+    s.push(`let registeredValue: string | null = null;`);
+    s.push(`// Explicit sources keep registry notifications out of this watcher's dependencies.`);
     s.push(
-      `  collection.register(props.${member.identity}, { element: node, disabled: isDisabled.value });`,
+      `watch([rootEl, () => props.${member.identity}, isDisabled], ([node, value, disabled]) => {`,
     );
+    s.push(`  if (registeredValue !== null && (!node || registeredValue !== value)) {`);
+    s.push(`    collection.unregister(registeredValue);`);
+    s.push(`    registeredValue = null;`);
+    s.push(`  }`);
+    s.push(`  if (node) {`);
+    s.push(`    registeredValue = value;`);
+    s.push(`    collection.register(value, { element: node, disabled });`);
+    s.push(`  }`);
     s.push(`});`);
-    s.push(`onBeforeUnmount(() => collection.unregister(props.${member.identity}));`);
+    s.push(`onBeforeUnmount(() => {`);
+    s.push(`  if (registeredValue !== null) collection.unregister(registeredValue);`);
+    s.push(`});`);
     s.push(``);
   }
 

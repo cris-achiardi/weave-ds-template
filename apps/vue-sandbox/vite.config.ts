@@ -25,5 +25,5 @@ export default defineConfig({
     ],
   },
   // 4301, one past the React sandbox. Both can run at once, which is the only way to compare them.
-  server: { port: 4301, open: true },
+  server: { port: 4301, open: !process.env.PLAYWRIGHT_TEST },
 });

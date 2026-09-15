@@ -69,13 +69,21 @@ export class TabItem {
     // element. `inject(ElementRef)` reaches the host directly — there is no ref to
     // forward and no template ref to declare, because the host is the consumer's
     // own element.
+    let registeredValue: string | null = null;
     effect(() => {
-      this.collection.register(this.value(), {
+      const value = this.value();
+      if (registeredValue !== null && registeredValue !== value) {
+        this.collection.unregister(registeredValue);
+      }
+      registeredValue = value;
+      this.collection.register(value, {
         element: this.host.nativeElement,
         disabled: this.isDisabled(),
       });
     });
-    inject(DestroyRef).onDestroy(() => this.collection.unregister(this.value()));
+    inject(DestroyRef).onDestroy(() => {
+      if (registeredValue !== null) this.collection.unregister(registeredValue);
+    });
   }
 
   protected activate(event?: { defaultPrevented: boolean }): void {
