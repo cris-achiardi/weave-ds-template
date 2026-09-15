@@ -105,3 +105,42 @@ stylingRegressions('wc');
 
 import { editingRegressions } from './editing.mjs';
 editingRegressions();
+
+test('known relationship gaps remain explicitly non-conforming (ADR 0005)', async ({ page }) => {
+  await page.goto('/browser-tests.html');
+  await page.evaluate(() => {
+    const field = document.createElement('ds-field');
+    field.id = 'relationship-field';
+    field.innerHTML =
+      '<span slot="label">Account</span><input slot="control"><span slot="description">Help</span>';
+    document.body.append(field);
+    const panel = document.createElement('ds-tab-panel');
+    panel.value = 'a';
+    panel.id = 'relationship-panel';
+    document.querySelector('#tabs').append(panel);
+  });
+  await expect(page.locator('#relationship-field').getByRole('textbox')).toHaveAccessibleName('');
+  await expect(page.locator('#relationship-field [part="control"]')).toHaveAttribute(
+    'aria-labelledby',
+    /label/,
+  );
+  await expect(page.locator('#tabs').getByRole('tab').first()).not.toHaveAttribute('aria-controls');
+  await expect(page.locator('#relationship-panel').getByRole('tabpanel')).toHaveAccessibleName('');
+
+  // Even element reflection rejects a sibling's internal semantic element.
+  const scope = await page.evaluate(() => {
+    const tabHost = document.querySelector('#tabs ds-tab-item');
+    const panelHost = document.querySelector('#relationship-panel');
+    const tab = tabHost.shadowRoot.querySelector('[part="root"]');
+    const panel = panelHost.shadowRoot.querySelector('[part="root"]');
+    const supported = 'ariaControlsElements' in tab;
+    if (!supported) return { supported };
+    tab.ariaControlsElements = [panel];
+    const siblingCount = tab.ariaControlsElements.length;
+    tab.ariaControlsElements = [panelHost];
+    const hostCount = tab.ariaControlsElements.length;
+    tab.ariaControlsElements = [];
+    return { supported, siblingCount, hostCount };
+  });
+  if (scope.supported) expect(scope).toEqual({ supported: true, siblingCount: 0, hostCount: 1 });
+});

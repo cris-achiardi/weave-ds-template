@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /** Read a contract with every backend's derived public surface; no generated code required. */
 import { existsSync, readdirSync } from 'node:fs';
+import { relationshipConformance } from './relationship-conformance.mjs';
 import { elementFor } from '../packages/platform-web/resolve.mjs';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -25,6 +26,7 @@ export function composeComponent(name, selected) {
         {
           binding: existsSync(path) ? readJson(path) : null,
           surface: surfaceFor(contract, b.framework),
+          relationshipConformance: relationshipConformance(contract, b.framework),
         },
       ];
     }),
@@ -68,6 +70,9 @@ function main() {
     console.log(`# ${name}\n\n${view.contract.intent?.purpose ?? ''}`);
     for (const [framework, info] of Object.entries(view.backends)) {
       console.log(`\n## ${framework}${info.binding ? '' : ' (unbound)'}\n`);
+      console.log(`Relationship conformance: ${info.relationshipConformance.status}`);
+      for (const gap of info.relationshipConformance.gaps)
+        console.log(`- ${gap.path}: ${gap.reason}`);
       for (const entry of info.surface)
         console.log(
           `- ${entry.name}: ${entry.type} (${entry.role})${entry.event ? `; event: ${entry.event}` : ''}${entry.attribute ? `; attribute: ${entry.attribute}` : ''}`,

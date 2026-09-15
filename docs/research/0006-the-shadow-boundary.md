@@ -1,5 +1,7 @@
 # 0006 — The shadow boundary
 
+> Update (2026-09-15): [ADR 0005](../ADR/0005-unsupported-contract-claims-are-non-conforming.md) corrects the historical IDREF findings below and defines explicit non-conformance reporting.
+
 - **Date:** 2026-09-13
 - **Author:** cris
 - **Status:** report. Measurements and open questions; no decisions.

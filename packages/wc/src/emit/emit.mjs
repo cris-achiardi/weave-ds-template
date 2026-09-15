@@ -239,9 +239,9 @@ export function emitComponent(name, contract, binding, prefix) {
   const crossShadow = allParts.some((p) => refsOf(p.node).some((r) => typeof r !== 'string'));
   if (crossShadow) {
     assume(
-      'AN ARIA REFERENCE CANNOT CROSS A SHADOW BOUNDARY',
-      'the id is written anyway, and it resolves to nothing',
-      "THE ONE THING THIS BACKEND CANNOT DO. A tab points at its panel with aria-controls, and the two live in different shadow roots — so the id names an element that, from the tab's root, does not exist. This is not an emitter shortcut: `aria-controls`, `aria-labelledby` and `aria-describedby` take IDREFs, and an IDREF is resolved within a single tree. The platform answer is ariaControlsElements (the ARIA reflection API, element references rather than ids), which ships in Chrome and Safari and not yet in Firefox. Recorded rather than worked around, because every workaround — moving the reference to light DOM, duplicating the panel, dropping the relationship — changes what the contract says.",
+      'non-conforming cross-member relationships',
+      'object-valued references are omitted; string references remain local',
+      'Element-reference reflection cannot target a semantic part inside a sibling shadow root. See ADR 0005 and pnpm contract <Name> --backend wc for explicit gaps. A host reference would name a different target.',
     );
   }
 
