@@ -9,8 +9,8 @@ Existing user edits stay outside this worktree. Remove this log in the final PR.
 | 2     | #3, #4, #17 | Contract-first skills, explicit Figma paint policy, rename checks | Merged in #29 |
 | 3     | #11, #14    | Shared web element map and styling conventions                    | Merged in #30 |
 | 4     | #12         | Explicit live versus committed editing semantics                  | Merged in #31 |
-| 5     | #10         | Shadow-DOM relationships and explicit backend conformance         | In progress   |
-| 6     | #16         | Contract form semantics and WC form participation                 | Planned       |
+| 5     | #10         | Shadow-DOM relationships and explicit backend conformance         | Merged in #32 |
+| 6     | #16         | Contract form semantics and WC form participation                 | In progress   |
 | 7     | #15         | Deferred browser conformance cases and final log removal          | Planned       |
 
 ## Decisions and evidence
@@ -34,3 +34,7 @@ Existing user edits stay outside this worktree. Remove this log in the final PR.
 - Group 5: chose explicit non-conformance (ADR 0005). No exemption counts as success; Field wrapper gaps affect all four backends, WC cross-member references are omitted.
 
 - Group 5 validation: full verify passed (122 tests, 8 deferred); all 35 browser cases passed, including omitted references, the unnamed supplied control, and reflection scope restrictions.
+
+- Group 6: explicit form answers for five contracts; WC uses ElementInternals. Other backend form gaps remain explicitly non-conforming. Reset restores the first connected answer; restoration is silent; effective fieldset disability is separate from the explicit disabled property.
+
+- Group 6 validation: full verify passed (123 tests, 8 deferred); all 42 browser cases passed. Tests exposed and fixed fieldset-disabled slider input and queued activation overwriting form reset.
