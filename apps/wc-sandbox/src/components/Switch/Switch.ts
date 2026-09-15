@@ -26,8 +26,21 @@ TEMPLATE.innerHTML = `
 
 export class Switch extends HTMLElement {
   static readonly tagName = 'ds-switch';
-  static readonly observedAttributes = ['disabled', 'read-only', 'checked', 'aria-label'];
+  static readonly formAssociated = true;
+  static readonly observedAttributes = [
+    'disabled',
+    'read-only',
+    'name',
+    'required',
+    'value',
+    'checked',
+    'aria-label',
+  ];
 
+  readonly #internals = this.attachInternals();
+  #formDisabled = false;
+  #customValidity = '';
+  #initialFormValue: boolean | undefined;
   readonly #root: HTMLElement;
   readonly #pendingActivations = new Set<number>();
 
@@ -44,6 +57,7 @@ export class Switch extends HTMLElement {
   }
 
   connectedCallback(): void {
+    this.#initialFormValue ??= this.checked;
     this.#update();
   }
 
@@ -74,6 +88,30 @@ export class Switch extends HTMLElement {
     this.toggleAttribute('read-only', Boolean(value));
   }
 
+  /** Name of the submitted answer. An empty name contributes nothing. */
+  get name(): string {
+    return this.getAttribute('name') ?? '';
+  }
+  set name(value: string) {
+    this.setAttribute('name', value);
+  }
+
+  /** Whether an answer is required for form validation. */
+  get required(): boolean {
+    return this.hasAttribute('required');
+  }
+  set required(value: boolean) {
+    this.toggleAttribute('required', Boolean(value));
+  }
+
+  /** Value submitted when checked. */
+  get value(): string {
+    return this.getAttribute('value') ?? 'on';
+  }
+  set value(value: string) {
+    this.setAttribute('value', value);
+  }
+
   /** The switch is on. Tracked by the implementation and reflected to assistive technology. */
   get checked(): boolean {
     return this.hasAttribute('checked');
@@ -84,7 +122,7 @@ export class Switch extends HTMLElement {
 
   #queueActivation(event: MouseEvent): void {
     if (!this.isConnected || event.defaultPrevented) return;
-    if (this.disabled || this.readOnly) return;
+    if (this.disabled || this.#formDisabled || this.readOnly) return;
     // A task, not a microtask: trusted events can checkpoint between listeners.
     const timer = window.setTimeout(() => {
       this.#pendingActivations.delete(timer);
@@ -97,7 +135,7 @@ export class Switch extends HTMLElement {
   #activate(event: MouseEvent): void {
     // Recheck cancellation and availability after every host listener has run.
     if (event.defaultPrevented) return;
-    if (this.disabled || this.readOnly) return;
+    if (this.disabled || this.#formDisabled || this.readOnly) return;
     this.checked = !this.checked;
     this.#emit('checked-change', this.checked);
   }
@@ -135,9 +173,73 @@ export class Switch extends HTMLElement {
     if (label === null) root.removeAttribute('aria-label');
     else root.setAttribute('aria-label', label);
     root.setAttribute('aria-checked', String(this.checked));
-    root.toggleAttribute('disabled', this.disabled);
+    root.toggleAttribute('disabled', this.disabled || this.#formDisabled);
     if (this.readOnly) root.setAttribute('aria-readonly', 'true');
     else root.removeAttribute('aria-readonly');
+    this.#syncForm();
+  }
+
+  get form(): HTMLFormElement | null {
+    return this.#internals.form;
+  }
+  get validity(): ValidityState {
+    return this.#internals.validity;
+  }
+  get validationMessage(): string {
+    return this.#internals.validationMessage;
+  }
+  get willValidate(): boolean {
+    return this.#internals.willValidate;
+  }
+  checkValidity(): boolean {
+    return this.#internals.checkValidity();
+  }
+  reportValidity(): boolean {
+    return this.#internals.reportValidity();
+  }
+  setCustomValidity(message: string): void {
+    this.#customValidity = String(message);
+    this.#update();
+  }
+  formDisabledCallback(disabled: boolean): void {
+    this.#formDisabled = disabled;
+    this.#update();
+  }
+  formResetCallback(): void {
+    for (const timer of this.#pendingActivations) window.clearTimeout(timer);
+    this.#pendingActivations.clear();
+
+    if (this.#initialFormValue !== undefined) this.checked = this.#initialFormValue;
+
+    this.#update();
+  }
+  formStateRestoreCallback(state: string | File | FormData | null): void {
+    if (typeof state !== 'string') return;
+    if (state !== 'true' && state !== 'false') return;
+    for (const timer of this.#pendingActivations) window.clearTimeout(timer);
+    this.#pendingActivations.clear();
+
+    this.checked = state === 'true';
+
+    this.#update();
+  }
+  #syncForm(): void {
+    const answer = this.checked;
+    const disabled = this.disabled || this.#formDisabled;
+    this.#internals.setFormValue(
+      disabled ? null : answer === true ? this.value : null,
+      String(answer),
+    );
+    this.toggleAttribute('readonly', this.readOnly);
+    const valueMissing = this.required && answer !== true;
+    const customError = Boolean(this.#customValidity);
+    const flags = { valueMissing, customError };
+    const message =
+      this.#customValidity ||
+      (customError ? 'Invalid value.' : valueMissing ? 'Please provide an answer.' : '');
+    this.#internals.setValidity(flags, message, this.#root);
+    this.#root.setAttribute('aria-invalid', String(valueMissing || customError));
+    this.#root.setAttribute('aria-required', String(this.required));
   }
 }
 

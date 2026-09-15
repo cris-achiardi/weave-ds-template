@@ -134,6 +134,26 @@ export function surfaceFrom(contract) {
     });
   }
 
+  if (contract.form) {
+    for (const [name, kind, dflt, description] of [
+      ['name', 'string', '', 'Name of the submitted answer. An empty name contributes nothing.'],
+      ['required', 'boolean', false, 'Whether an answer is required for form validation.'],
+      ...(contract.form.encoding === 'checked'
+        ? [['value', 'string', 'on', 'Value submitted when checked.']]
+        : []),
+    ])
+      props.push({
+        name,
+        attribute: name,
+        type: kind,
+        kind,
+        default: dflt,
+        origin: 'form',
+        from: name,
+        role: 'input',
+        description,
+      });
+  }
   return props;
 }
 

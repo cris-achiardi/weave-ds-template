@@ -24,15 +24,22 @@ TEMPLATE.innerHTML = `
 
 export class TextField extends HTMLElement {
   static readonly tagName = 'ds-text-field';
+  static readonly formAssociated = true;
   static readonly observedAttributes = [
     'disabled',
     'read-only',
     'invalid',
+    'name',
+    'required',
     'size',
     'value',
     'aria-label',
   ];
 
+  readonly #internals = this.attachInternals();
+  #formDisabled = false;
+  #customValidity = '';
+  #initialFormValue: string | undefined;
   readonly #root: HTMLElement;
 
   constructor() {
@@ -47,6 +54,7 @@ export class TextField extends HTMLElement {
   }
 
   connectedCallback(): void {
+    this.#initialFormValue ??= this.value;
     this.#update();
   }
 
@@ -80,6 +88,22 @@ export class TextField extends HTMLElement {
     this.toggleAttribute('invalid', Boolean(value));
   }
 
+  /** Name of the submitted answer. An empty name contributes nothing. */
+  get name(): string {
+    return this.getAttribute('name') ?? '';
+  }
+  set name(value: string) {
+    this.setAttribute('name', value);
+  }
+
+  /** Whether an answer is required for form validation. */
+  get required(): boolean {
+    return this.hasAttribute('required');
+  }
+  set required(value: boolean) {
+    this.toggleAttribute('required', Boolean(value));
+  }
+
   /** A contiguous subset of the canon's ladder. */
   get size(): 's' | 'm' | 'l' {
     return (this.getAttribute('size') ?? 'm') as 's' | 'm' | 'l';
@@ -97,6 +121,7 @@ export class TextField extends HTMLElement {
   }
 
   #handleInput(event: Event): void {
+    if (this.disabled || this.#formDisabled || this.readOnly) return;
     const next = (event.target as HTMLInputElement).value;
     this.value = next;
     this.#emit('value-change', this.value);
@@ -140,13 +165,68 @@ export class TextField extends HTMLElement {
     // re-entrancy guard above absorbs the callback each write causes.
     if (!this.hasAttribute('size')) this.setAttribute('size', 'm');
 
-    root.toggleAttribute('disabled', this.disabled);
+    root.toggleAttribute('disabled', this.disabled || this.#formDisabled);
     if (this.readOnly) root.setAttribute('aria-readonly', 'true');
     else root.removeAttribute('aria-readonly');
     if (this.invalid) root.setAttribute('aria-invalid', 'true');
     else root.removeAttribute('aria-invalid');
     (root as HTMLInputElement).value = this.value;
     root.toggleAttribute('readonly', this.readOnly);
+    this.#syncForm();
+  }
+
+  get form(): HTMLFormElement | null {
+    return this.#internals.form;
+  }
+  get validity(): ValidityState {
+    return this.#internals.validity;
+  }
+  get validationMessage(): string {
+    return this.#internals.validationMessage;
+  }
+  get willValidate(): boolean {
+    return this.#internals.willValidate;
+  }
+  checkValidity(): boolean {
+    return this.#internals.checkValidity();
+  }
+  reportValidity(): boolean {
+    return this.#internals.reportValidity();
+  }
+  setCustomValidity(message: string): void {
+    this.#customValidity = String(message);
+    this.#update();
+  }
+  formDisabledCallback(disabled: boolean): void {
+    this.#formDisabled = disabled;
+    this.#update();
+  }
+  formResetCallback(): void {
+    if (this.#initialFormValue !== undefined) this.value = this.#initialFormValue;
+
+    this.#update();
+  }
+  formStateRestoreCallback(state: string | File | FormData | null): void {
+    if (typeof state !== 'string') return;
+
+    this.value = state as string;
+
+    this.#update();
+  }
+  #syncForm(): void {
+    const answer = this.value;
+    const disabled = this.disabled || this.#formDisabled;
+    this.#internals.setFormValue(disabled ? null : String(answer), String(answer));
+    this.toggleAttribute('readonly', this.readOnly);
+    const valueMissing = this.required && answer === '';
+    const customError = Boolean(this.#customValidity) || this.invalid;
+    const flags = { valueMissing, customError };
+    const message =
+      this.#customValidity ||
+      (customError ? 'Invalid value.' : valueMissing ? 'Please provide an answer.' : '');
+    this.#internals.setValidity(flags, message, this.#root);
+    this.#root.setAttribute('aria-invalid', String(valueMissing || customError));
+    this.#root.setAttribute('aria-required', String(this.required));
   }
 }
 

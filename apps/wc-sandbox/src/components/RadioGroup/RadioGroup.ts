@@ -44,10 +44,23 @@ export const RADIOGROUP_CHANGE = 'ds-radio-group-internal-change';
 
 export class RadioGroup extends HTMLElement {
   static readonly tagName = 'ds-radio-group';
-  static readonly observedAttributes = ['disabled', 'read-only', 'value', 'aria-label'];
+  static readonly formAssociated = true;
+  static readonly observedAttributes = [
+    'disabled',
+    'read-only',
+    'name',
+    'required',
+    'value',
+    'aria-label',
+  ];
 
+  readonly #internals = this.attachInternals();
+  #formDisabled = false;
+  #customValidity = '';
+  #initialFormValue: string | undefined;
   readonly #root: HTMLElement;
   readonly #baseId = 'ds-radio-group-' + nextId++;
+  #interactionVersion = 0;
   readonly #nav;
 
   constructor() {
@@ -68,6 +81,7 @@ export class RadioGroup extends HTMLElement {
   }
 
   connectedCallback(): void {
+    this.#initialFormValue ??= this.value;
     this.#update();
   }
 
@@ -94,6 +108,22 @@ export class RadioGroup extends HTMLElement {
     this.toggleAttribute('read-only', Boolean(value));
   }
 
+  /** Name of the submitted answer. An empty name contributes nothing. */
+  get name(): string {
+    return this.getAttribute('name') ?? '';
+  }
+  set name(value: string) {
+    this.setAttribute('name', value);
+  }
+
+  /** Whether an answer is required for form validation. */
+  get required(): boolean {
+    return this.hasAttribute('required');
+  }
+  set required(value: boolean) {
+    this.toggleAttribute('required', Boolean(value));
+  }
+
   /** The current selection, by member identity. */
   get value(): string {
     return this.getAttribute('value') ?? '';
@@ -102,8 +132,13 @@ export class RadioGroup extends HTMLElement {
     this.setAttribute('value', value);
   }
 
+  /** Internal member protocol: invalidate queued activation after a form lifecycle change. */
+  get interactionVersion(): number {
+    return this.#interactionVersion;
+  }
   /** Called by a member when it is activated. */
   toggle(memberValue: string): void {
+    if (this.disabled || this.#formDisabled || this.readOnly) return;
     if (this.value === memberValue) return;
     this.value = memberValue;
     this.#emit('value-change', this.value);
@@ -167,10 +202,69 @@ export class RadioGroup extends HTMLElement {
     const label = this.getAttribute('aria-label');
     if (label === null) root.removeAttribute('aria-label');
     else root.setAttribute('aria-label', label);
-    if (this.disabled) root.setAttribute('aria-disabled', 'true');
+    if (this.disabled || this.#formDisabled) root.setAttribute('aria-disabled', 'true');
     else root.removeAttribute('aria-disabled');
     if (this.readOnly) root.setAttribute('aria-readonly', 'true');
     else root.removeAttribute('aria-readonly');
+    root.setAttribute('tabindex', '-1');
+    this.#syncForm();
+  }
+
+  get form(): HTMLFormElement | null {
+    return this.#internals.form;
+  }
+  get validity(): ValidityState {
+    return this.#internals.validity;
+  }
+  get validationMessage(): string {
+    return this.#internals.validationMessage;
+  }
+  get willValidate(): boolean {
+    return this.#internals.willValidate;
+  }
+  checkValidity(): boolean {
+    return this.#internals.checkValidity();
+  }
+  reportValidity(): boolean {
+    return this.#internals.reportValidity();
+  }
+  setCustomValidity(message: string): void {
+    this.#customValidity = String(message);
+    this.#update();
+  }
+  formDisabledCallback(disabled: boolean): void {
+    this.#formDisabled = disabled;
+    this.#update();
+    this.#announce();
+  }
+  formResetCallback(): void {
+    this.#interactionVersion++;
+    if (this.#initialFormValue !== undefined) this.value = this.#initialFormValue;
+
+    this.#update();
+  }
+  formStateRestoreCallback(state: string | File | FormData | null): void {
+    if (typeof state !== 'string') return;
+
+    this.#interactionVersion++;
+    this.value = state as string;
+
+    this.#update();
+  }
+  #syncForm(): void {
+    const answer = this.value;
+    const disabled = this.disabled || this.#formDisabled;
+    this.#internals.setFormValue(disabled ? null : String(answer), String(answer));
+    this.toggleAttribute('readonly', this.readOnly);
+    const valueMissing = this.required && answer === '';
+    const customError = Boolean(this.#customValidity);
+    const flags = { valueMissing, customError };
+    const message =
+      this.#customValidity ||
+      (customError ? 'Invalid value.' : valueMissing ? 'Please provide an answer.' : '');
+    this.#internals.setValidity(flags, message, this.#root);
+    this.#root.setAttribute('aria-invalid', String(valueMissing || customError));
+    this.#root.setAttribute('aria-required', String(this.required));
   }
 }
 

@@ -62,7 +62,7 @@
   "_whatItCosts": {
     "one fact, two places": "A state has to reach ARIA on the INNER element, where assistive technology reads it, and be reflected onto the HOST, where CSS can select it. `::part()` cannot take an attribute selector, so there is no single place that serves both.",
     "the host has no display": "A custom element is `display: inline` until a stylesheet says otherwise. A <div> root is already block and a <button> root is already inline-block, so no other backend hands this obligation to a consumer.",
-    "an IDREF cannot cross a shadow boundary": "`aria-controls`, `aria-labelledby` and `aria-describedby` take IDREFs, and an IDREF resolves within one tree. A tab and its panel are in different shadow roots. The platform answer is the ARIA reflection API (element references rather than ids), which is not in every browser yet.",
-    "no form participation": "A host is not a form control. ElementInternals and form association are their own piece of work and are not done here."
+    "an IDREF cannot cross a shadow boundary": "Cross-member references are omitted and explicitly non-conforming. Element references cannot reach a sibling internal shadow part either. See ADR 0005.",
+    "form lifecycle": "Explicit contract.form contributions generate ElementInternals, validity and form reset/restore/disabled callbacks. See forms.md."
   }
 }

@@ -96,6 +96,10 @@ export class Tabs extends HTMLElement {
     this.setAttribute('value', value);
   }
 
+  /** Internal member protocol: invalidate queued activation after a form lifecycle change. */
+  get interactionVersion(): number {
+    return 0;
+  }
   /** Called by a member when it is activated. */
   toggle(memberValue: string): void {
     if (this.value === memberValue) return;

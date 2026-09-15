@@ -120,7 +120,10 @@ export class TabItem extends HTMLElement {
   }
 
   get #isDisabled(): boolean {
-    return this.disabled || Boolean(this.#collection?.hasAttribute('disabled'));
+    return (
+      this.disabled ||
+      Boolean(this.#collection?.hasAttribute('disabled') || this.#collection?.matches(':disabled'))
+    );
   }
 
   get #selected(): boolean {
@@ -131,12 +134,18 @@ export class TabItem extends HTMLElement {
     if (!this.isConnected || event.defaultPrevented) return;
     if (this.#isDisabled) return;
     const collection = this.#collection;
+    const version = collection?.interactionVersion;
     const value = this.value;
     // A task, not a microtask: trusted events can checkpoint between listeners.
     const timer = window.setTimeout(() => {
       this.#pendingActivations.delete(timer);
       if (!this.isConnected) return;
-      if (collection !== this.#collection || value !== this.value) return;
+      if (
+        collection !== this.#collection ||
+        value !== this.value ||
+        version !== collection?.interactionVersion
+      )
+        return;
       this.#activate(event);
     }, 0);
     this.#pendingActivations.add(timer);
@@ -170,7 +179,7 @@ export class TabItem extends HTMLElement {
     const label = this.getAttribute('aria-label');
     if (label === null) root.removeAttribute('aria-label');
     else root.setAttribute('aria-label', label);
-    if (this.disabled) root.setAttribute('aria-disabled', 'true');
+    if (this.#isDisabled) root.setAttribute('aria-disabled', 'true');
     else root.removeAttribute('aria-disabled');
     root.setAttribute('aria-selected', String(this.#selected));
     // The host carries it too, because CSS cannot select inside a shadow root from

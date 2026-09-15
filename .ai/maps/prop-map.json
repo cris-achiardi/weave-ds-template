@@ -4293,13 +4293,13 @@
         "prose": "packages/contracts/components/README.md §2"
       },
       "componentCount": 15,
-      "propCount": 14,
+      "propCount": 16,
       "kindCounts": {
         "axis": 5,
         "enum": 1,
-        "boolean": 7,
+        "boolean": 8,
         "node": 0,
-        "local": 1
+        "local": 2
       },
       "conventions": {
         "propCase": "camelCase",
@@ -4650,6 +4650,46 @@
           ],
           "usedCount": 1
         },
+        "name": {
+          "kind": "local",
+          "axis": null,
+          "valueSets": [],
+          "typesOn": [
+            {
+              "type": "string",
+              "on": [
+                "Checkbox",
+                "RadioGroup",
+                "Slider",
+                "Switch",
+                "TextField"
+              ]
+            }
+          ],
+          "valuelessOn": [
+            {
+              "type": "string",
+              "on": [
+                "Checkbox",
+                "RadioGroup",
+                "Slider",
+                "Switch",
+                "TextField"
+              ]
+            }
+          ],
+          "types": [
+            "string"
+          ],
+          "usedOn": [
+            "Checkbox",
+            "RadioGroup",
+            "Slider",
+            "Switch",
+            "TextField"
+          ],
+          "usedCount": 5
+        },
         "open": {
           "kind": "boolean",
           "axis": null,
@@ -4782,6 +4822,46 @@
           ],
           "usedCount": 3
         },
+        "required": {
+          "kind": "boolean",
+          "axis": null,
+          "valueSets": [],
+          "typesOn": [
+            {
+              "type": "boolean",
+              "on": [
+                "Checkbox",
+                "RadioGroup",
+                "Slider",
+                "Switch",
+                "TextField"
+              ]
+            }
+          ],
+          "valuelessOn": [
+            {
+              "type": "boolean",
+              "on": [
+                "Checkbox",
+                "RadioGroup",
+                "Slider",
+                "Switch",
+                "TextField"
+              ]
+            }
+          ],
+          "types": [
+            "boolean"
+          ],
+          "usedOn": [
+            "Checkbox",
+            "RadioGroup",
+            "Slider",
+            "Switch",
+            "TextField"
+          ],
+          "usedCount": 5
+        },
         "size": {
           "kind": "axis",
           "axis": "size",
@@ -4863,8 +4943,10 @@
               "type": "string",
               "on": [
                 "AccordionItem",
+                "Checkbox",
                 "RadioGroup",
                 "RadioItem",
+                "Switch",
                 "TabItem",
                 "TabPanel",
                 "Tabs",
@@ -4888,7 +4970,9 @@
             {
               "type": "string",
               "on": [
+                "Checkbox",
                 "RadioGroup",
+                "Switch",
                 "Tabs",
                 "TextField"
               ]
@@ -4908,15 +4992,17 @@
           "usedOn": [
             "Accordion",
             "AccordionItem",
+            "Checkbox",
             "RadioGroup",
             "RadioItem",
             "Slider",
+            "Switch",
             "TabItem",
             "TabPanel",
             "Tabs",
             "TextField"
           ],
-          "usedCount": 9
+          "usedCount": 11
         },
         "variant": {
           "kind": "axis",
@@ -4965,7 +5051,7 @@
       "flagCount": 1,
       "extraction": {
         "componentsScanned": 15,
-        "propsResolved": 14,
+        "propsResolved": 16,
         "degraded": false,
         "warnings": []
       },
@@ -5121,6 +5207,39 @@
             "description": "The answer failed validation — typically a required checkbox left unchecked.",
             "kind": "boolean",
             "role": "input"
+          },
+          {
+            "name": "name",
+            "attribute": "name",
+            "type": "string",
+            "kind": "string",
+            "default": "",
+            "origin": "form",
+            "from": "name",
+            "role": "input",
+            "description": "Name of the submitted answer. An empty name contributes nothing."
+          },
+          {
+            "name": "required",
+            "attribute": "required",
+            "type": "boolean",
+            "kind": "boolean",
+            "default": false,
+            "origin": "form",
+            "from": "required",
+            "role": "input",
+            "description": "Whether an answer is required for form validation."
+          },
+          {
+            "name": "value",
+            "attribute": "value",
+            "type": "string",
+            "kind": "string",
+            "default": "on",
+            "origin": "form",
+            "from": "value",
+            "role": "input",
+            "description": "Value submitted when checked."
           }
         ],
         "Dialog": [
@@ -5231,6 +5350,28 @@
             "default": "",
             "event": "ds-value-change",
             "description": "The current selection, by member identity."
+          },
+          {
+            "name": "name",
+            "attribute": "name",
+            "type": "string",
+            "kind": "string",
+            "default": "",
+            "origin": "form",
+            "from": "name",
+            "role": "input",
+            "description": "Name of the submitted answer. An empty name contributes nothing."
+          },
+          {
+            "name": "required",
+            "attribute": "required",
+            "type": "boolean",
+            "kind": "boolean",
+            "default": false,
+            "origin": "form",
+            "from": "required",
+            "role": "input",
+            "description": "Whether an answer is required for form validation."
           }
         ],
         "RadioItem": [
@@ -5280,6 +5421,28 @@
             "description": "The platform's own disabled state. Removed from the focus order and cannot be moved.",
             "kind": "boolean",
             "role": "input"
+          },
+          {
+            "name": "name",
+            "attribute": "name",
+            "type": "string",
+            "kind": "string",
+            "default": "",
+            "origin": "form",
+            "from": "name",
+            "role": "input",
+            "description": "Name of the submitted answer. An empty name contributes nothing."
+          },
+          {
+            "name": "required",
+            "attribute": "required",
+            "type": "boolean",
+            "kind": "boolean",
+            "default": false,
+            "origin": "form",
+            "from": "required",
+            "role": "input",
+            "description": "Whether an answer is required for form validation."
           }
         ],
         "Switch": [
@@ -5316,6 +5479,39 @@
             "description": "Cannot be toggled, but remains focusable and readable. Distinct from disabled, which removes it from the focus order entirely.",
             "kind": "boolean",
             "role": "input"
+          },
+          {
+            "name": "name",
+            "attribute": "name",
+            "type": "string",
+            "kind": "string",
+            "default": "",
+            "origin": "form",
+            "from": "name",
+            "role": "input",
+            "description": "Name of the submitted answer. An empty name contributes nothing."
+          },
+          {
+            "name": "required",
+            "attribute": "required",
+            "type": "boolean",
+            "kind": "boolean",
+            "default": false,
+            "origin": "form",
+            "from": "required",
+            "role": "input",
+            "description": "Whether an answer is required for form validation."
+          },
+          {
+            "name": "value",
+            "attribute": "value",
+            "type": "string",
+            "kind": "string",
+            "default": "on",
+            "origin": "form",
+            "from": "value",
+            "role": "input",
+            "description": "Value submitted when checked."
           }
         ],
         "TabItem": [
@@ -5436,6 +5632,28 @@
             "kind": "enum",
             "default": "m",
             "description": "A contiguous subset of the canon's ladder."
+          },
+          {
+            "name": "name",
+            "attribute": "name",
+            "type": "string",
+            "kind": "string",
+            "default": "",
+            "origin": "form",
+            "from": "name",
+            "role": "input",
+            "description": "Name of the submitted answer. An empty name contributes nothing."
+          },
+          {
+            "name": "required",
+            "attribute": "required",
+            "type": "boolean",
+            "kind": "boolean",
+            "default": false,
+            "origin": "form",
+            "from": "required",
+            "role": "input",
+            "description": "Whether an answer is required for form validation."
           }
         ],
         "Tooltip": [
