@@ -1,7 +1,9 @@
 import { expect, test } from '@playwright/test';
 import { navigationRegressions } from './navigation.mjs';
+import { activationRegressions } from './activation.mjs';
 
 navigationRegressions();
+activationRegressions();
 
 for (const [tag, role] of [
   ['ds-text-field', 'textbox'],
