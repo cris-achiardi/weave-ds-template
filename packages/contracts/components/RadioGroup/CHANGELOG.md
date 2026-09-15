@@ -22,3 +22,7 @@ demands a keyboard model and the contract has no way to carry it.
 
 - `read-only` has no designed visual, recorded rather than filled.
 - No form participation, so a generated group cannot be submitted.
+
+## Form participation (2026-09-15)
+
+Declared a named form answer, its source and serialization. Disabled answers are omitted; reset restores the initial answer. WC implements ElementInternals and required/custom validation. Other backend form support is reported separately.

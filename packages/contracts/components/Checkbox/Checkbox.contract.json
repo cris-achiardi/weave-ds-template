@@ -153,5 +153,10 @@
         }
       }
     }
+  },
+  "form": {
+    "source": "checked",
+    "encoding": "checked",
+    "checkedValue": "checked"
   }
 }

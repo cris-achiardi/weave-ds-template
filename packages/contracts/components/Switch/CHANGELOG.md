@@ -29,3 +29,7 @@ differently: a state removed, a state's `control` narrowed, a part renamed, a ro
 - **No `layout` block.** The structural CSS a generated Switch needs — the thumb being out of flow so
   its position can carry the state — is not stated in this contract. The emitter supplies it, which
   means it is not the contract's decision and nothing checks it.
+
+## Form participation (2026-09-15)
+
+Declared a named form answer, its source and serialization. Disabled answers are omitted; reset restores the initial answer. WC implements ElementInternals and required/custom validation. Other backend form support is reported separately.

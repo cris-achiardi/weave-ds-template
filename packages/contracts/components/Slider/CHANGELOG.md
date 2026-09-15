@@ -28,3 +28,7 @@
   number — a rating, a date, named tiers — and there is no way to supply the text.
 - **The drawn size and the hit area are different numbers** and only one is stated. `minHitArea: 44`
   is recorded and read by nothing.
+
+## Form participation (2026-09-15)
+
+Declared a named form answer, its source and serialization. Disabled answers are omitted; reset restores the initial answer. WC implements ElementInternals and required/custom validation. Other backend form support is reported separately.

@@ -141,5 +141,9 @@
         }
       }
     }
+  },
+  "form": {
+    "source": "value",
+    "encoding": "number"
   }
 }

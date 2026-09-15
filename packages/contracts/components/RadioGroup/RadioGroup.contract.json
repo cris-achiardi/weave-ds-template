@@ -81,5 +81,9 @@
         "gap": null
       }
     }
+  },
+  "form": {
+    "source": "selection",
+    "encoding": "string"
   }
 }

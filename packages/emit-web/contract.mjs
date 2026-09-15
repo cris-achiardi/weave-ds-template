@@ -79,6 +79,7 @@ export function loadPair({ name, contractsDir, bindingsDir, suffix }) {
         okContract.errors.map((e) => `  ${e.instancePath || '(root)'} ${e.message}`).join('\n'),
     );
   }
+  formFor(contract);
   const okBinding = ajv.compile(readJson(join(bindingsDir, 'binding.schema.json')));
   if (!okBinding(binding)) {
     throw new Error(
@@ -140,4 +141,30 @@ export function referencedByASibling(name, member, contractsDir) {
         return JSON.stringify(readJson(f)).includes(`"member": "${name}"`);
       }),
   );
+}
+
+/** Validate form sources independently of a backend's public prop vocabulary. */
+export function formFor(contract) {
+  const form = contract.form;
+  if (!form) return null;
+  const state = contract.states?.[form.source];
+  const selection = form.source === 'selection' && contract.collection?.selection;
+  if (selection) {
+    if (
+      selection.control !== 'shared' ||
+      selection.cardinality === 'many' ||
+      form.encoding !== 'string'
+    )
+      throw new Error(`${contract.component}.form requires a shared single selection`);
+  } else {
+    if (!state || state.control !== 'shared')
+      throw new Error(`${contract.component}.form source must name shared state`);
+    if (form.encoding === 'checked') {
+      const allowed = state.values ?? (state.valueType ? [] : [true, false]);
+      if (!allowed.includes(form.checkedValue))
+        throw new Error(`${contract.component}.form checkedValue is outside its source domain`);
+    } else if (state.valueType !== form.encoding)
+      throw new Error(`${contract.component}.form encoding must match its source valueType`);
+  }
+  return { ...form, property: selection ? 'value' : camel(form.source) };
 }

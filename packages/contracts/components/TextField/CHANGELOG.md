@@ -28,3 +28,7 @@
 
 Declared `value.editing: live` explicitly. Existing per-edit reporting is unchanged. The schema
 also supports commit-at-session-end contracts; their generated fields retain a local draft.
+
+## Form participation (2026-09-15)
+
+Declared a named form answer, its source and serialization. Disabled answers are omitted; reset restores the initial answer. WC implements ElementInternals and required/custom validation. Other backend form support is reported separately.
