@@ -1,4 +1,7 @@
 import { expect, test } from '@playwright/test';
+import { navigationRegressions } from './navigation.mjs';
+
+navigationRegressions();
 
 test('accordion relationships resolve before and after a member identity changes', async ({
   page,

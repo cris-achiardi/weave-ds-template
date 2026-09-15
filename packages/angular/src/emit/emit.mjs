@@ -959,15 +959,21 @@ function emitComponent(name, contract, binding, prefix) {
     );
     ctor.push(`    // forward and no template ref to declare, because the host is the consumer's`);
     ctor.push(`    // own element.`);
+    ctor.push(`    let registeredValue: string | null = null;`);
     ctor.push(`    effect(() => {`);
-    ctor.push(`      this.collection.register(this.${member.identity}(), {`);
+    ctor.push(`      const value = this.${member.identity}();`);
+    ctor.push(`      if (registeredValue !== null && registeredValue !== value) {`);
+    ctor.push(`        this.collection.unregister(registeredValue);`);
+    ctor.push(`      }`);
+    ctor.push(`      registeredValue = value;`);
+    ctor.push(`      this.collection.register(value, {`);
     ctor.push(`        element: this.host.nativeElement,`);
     ctor.push(`        disabled: this.isDisabled(),`);
     ctor.push(`      });`);
     ctor.push(`    });`);
-    ctor.push(
-      `    inject(DestroyRef).onDestroy(() => this.collection.unregister(this.${member.identity}()));`,
-    );
+    ctor.push(`    inject(DestroyRef).onDestroy(() => {`);
+    ctor.push(`      if (registeredValue !== null) this.collection.unregister(registeredValue);`);
+    ctor.push(`    });`);
   }
   if (platformModal) {
     const v = camel(platformModal);

@@ -392,6 +392,7 @@ function emitComponent(name, contract, binding, prefix) {
   if (range) s.push(`  readonly #track: HTMLElement;`);
   if (needsIds) s.push(`  readonly #baseId = '${prefix}-${kebab(name)}-' + nextId++;`);
   if (member) s.push(`  #collection: ${member.of} | null = null;`);
+  if (registers) s.push(`  #registeredValue: string | null = null;`);
   if (dismissCauses.length) s.push(`  readonly #dismissal;`);
   if (range) s.push(`  readonly #range;`);
   if (navigation) s.push(`  readonly #nav;`);
@@ -552,12 +553,6 @@ function emitComponent(name, contract, binding, prefix) {
     s.push(`      ${member.of.toUpperCase()}_CHANGE,`);
     s.push(`      this.#onCollectionChange,`);
     s.push(`    );`);
-    if (registers) {
-      s.push(`    this.#collection.register(this.${identity.name}, {`);
-      s.push(`      element: this,`);
-      s.push(`      disabled: this.#isDisabled,`);
-      s.push(`    });`);
-    }
   }
   s.push(`    this.#update();`);
   s.push(`  }`);
@@ -569,7 +564,11 @@ function emitComponent(name, contract, binding, prefix) {
       s.push(`      ${member.of.toUpperCase()}_CHANGE,`);
       s.push(`      this.#onCollectionChange,`);
       s.push(`    );`);
-      if (registers) s.push(`    this.#collection?.unregister(this.${identity.name});`);
+      if (registers) {
+        s.push(`    const previous = this.#registeredValue;`);
+        s.push(`    this.#registeredValue = null;`);
+        s.push(`    if (previous !== null) this.#collection?.unregister(previous);`);
+      }
       s.push(`    this.#collection = null;`);
     }
     if (platformModal) {
@@ -895,14 +894,22 @@ function emitComponent(name, contract, binding, prefix) {
     s.push(`    // places — forced by the boundary, not chosen.`);
     s.push(`    this.toggleAttribute('${kebab(member.reflects)}', this.#selected);`);
     if (registers) {
+      s.push(`    if (this.#collection) {`);
+      s.push(`      const value = this.${identity.name};`);
+      s.push(`      const previous = this.#registeredValue;`);
+      s.push(`      // Record before notifying: collection announcements are synchronous.`);
+      s.push(`      this.#registeredValue = value;`);
+      s.push(
+        `      if (previous !== null && previous !== value) this.#collection.unregister(previous);`,
+      );
+      s.push(
+        `      this.#collection.register(value, { element: this, disabled: this.#isDisabled });`,
+      );
+      s.push(`    }`);
       s.push(`    root.setAttribute(`);
       s.push(`      'tabindex',`);
       s.push(`      this.#collection?.isTabStop(this.${identity.name}) ? '0' : '-1',`);
       s.push(`    );`);
-      s.push(`    this.#collection?.register(this.${identity.name}, {`);
-      s.push(`      element: this,`);
-      s.push(`      disabled: this.#isDisabled,`);
-      s.push(`    });`);
     }
   }
   if (range) {

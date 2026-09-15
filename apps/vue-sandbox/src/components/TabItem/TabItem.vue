@@ -16,7 +16,7 @@ export interface TabItemProps {
 </script>
 
 <script setup lang="ts">
-import { computed, inject, onBeforeUnmount, ref, useAttrs, watchEffect } from 'vue';
+import { computed, inject, onBeforeUnmount, ref, useAttrs, watch } from 'vue';
 import { TabsKey, type TabsContextValue } from '../Tabs/Tabs.vue';
 import './TabItem.structure.css';
 import './TabItem.theme.css';
@@ -50,12 +50,21 @@ const baseId = computed(() => `${collection.baseId}-TabItem-${props.value}`);
 // needs no composition, because a consumer's own ref reaches this component through
 // `$el` rather than through anything the emitter has to thread.
 const rootEl = ref<HTMLElement | null>(null);
-watchEffect(() => {
-  const node = rootEl.value;
-  if (!node) return;
-  collection.register(props.value, { element: node, disabled: isDisabled.value });
+let registeredValue: string | null = null;
+// Explicit sources keep registry notifications out of this watcher's dependencies.
+watch([rootEl, () => props.value, isDisabled], ([node, value, disabled]) => {
+  if (registeredValue !== null && (!node || registeredValue !== value)) {
+    collection.unregister(registeredValue);
+    registeredValue = null;
+  }
+  if (node) {
+    registeredValue = value;
+    collection.register(value, { element: node, disabled });
+  }
 });
-onBeforeUnmount(() => collection.unregister(props.value));
+onBeforeUnmount(() => {
+  if (registeredValue !== null) collection.unregister(registeredValue);
+});
 
 function activate(event?: { defaultPrevented: boolean }) {
   // Guards, because this runs on a CLICK and the platform guards there too: calling
