@@ -17,7 +17,7 @@ The sandbox browser-tests entries are dedicated fixtures, separate from the spec
 pages. Fixtures import the same generated components consumers use. Add assertions for
 observable behavior rather than emitter source text.
 
-Current coverage includes Angular accordion ID references, Vue/Angular/WC collection
+Current coverage includes styling handles and semantic roots across all four backends, Angular accordion ID references, Vue/Angular/WC collection
 identity changes, WC literal accessible names, dialog connection state, and activation
 cancellation through real mouse and keyboard input. It does not yet replace the eight
 deferred conformance cases tracked in #15, and Chromium is the only browser in this lane.

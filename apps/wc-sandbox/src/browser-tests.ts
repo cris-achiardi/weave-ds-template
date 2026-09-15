@@ -47,3 +47,7 @@ export function updateRoster(
   if (patch.visible === false) first.remove();
   else if (patch.visible === true && !first.isConnected) collection.insertBefore(first, second);
 }
+
+const styleProbe = document.createElement('ds-button');
+styleProbe.textContent = 'Style probe';
+document.body.append(styleProbe);

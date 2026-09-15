@@ -1,3 +1,4 @@
+import Button from './components/Button/Button.vue';
 import { createApp, h, reactive } from 'vue';
 import type { Component } from 'vue';
 import Tabs from './components/Tabs/Tabs.vue';
@@ -42,3 +43,7 @@ createApp({
       });
   },
 }).mount('#fixtures');
+
+const styleHost = document.createElement('div');
+document.body.append(styleHost);
+createApp({ setup: () => () => h(Button, {}, () => 'Style probe') }).mount(styleHost);

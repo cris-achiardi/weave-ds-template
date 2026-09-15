@@ -1,3 +1,4 @@
+import { Button } from './components/Button';
 import { Component, signal } from '@angular/core';
 import { bootstrapApplication } from '@angular/platform-browser';
 import { Accordion } from './components/Accordion';
@@ -28,8 +29,9 @@ export function updateRoster(
 
 @Component({
   selector: 'browser-fixtures',
-  imports: [Accordion, AccordionItem, Tabs, TabItem, RadioGroup, RadioItem],
+  imports: [Button, Accordion, AccordionItem, Tabs, TabItem, RadioGroup, RadioItem],
   template: `
+    <button dsButton>Style probe</button>
     <button id="rename-accordion" (click)="identity.set('renamed')">Rename section</button>
     <div dsAccordion>
       <div dsAccordionItem [value]="identity()">

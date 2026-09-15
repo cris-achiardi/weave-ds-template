@@ -1,6 +1,7 @@
 import { defineConfig } from '@playwright/test';
 
 const backends = [
+  { name: 'react', port: 4404 },
   { name: 'vue', port: 4401 },
   { name: 'angular', port: 4402 },
   { name: 'wc', port: 4403 },

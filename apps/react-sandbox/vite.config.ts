@@ -24,5 +24,5 @@ export default defineConfig({
       },
     ],
   },
-  server: { port: 4300, open: true },
+  server: { port: 4300, open: !process.env.PLAYWRIGHT_TEST },
 });
