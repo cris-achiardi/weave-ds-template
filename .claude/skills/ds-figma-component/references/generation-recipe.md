@@ -1,6 +1,8 @@
 # Generation recipe
 
-The working shape of the `figma_execute` scripts, and the mistakes worth not repeating.
+Plugin execution mechanics. Build the input with `.claude/skills/ds-figma-component/scripts/contract-plan.mjs`; anatomy and axes
+come from that plan. The themed examples below require an explicit consumer mapping. In unstyled
+mode omit their variable/style lookups and report each unbound channel.
 
 The gotcha table is largely tool-level rather than repo-level, and is adapted from the equivalent
 Taxonomy skill and <https://www.giorris.dev/figma/refs/refs-map.md>. Where a row is specific to this

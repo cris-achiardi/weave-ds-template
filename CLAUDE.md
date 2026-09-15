@@ -28,8 +28,8 @@ decision; the arc that produces one is:
 
 Exploring the design source and writing up what is there are **done by hand** — Figma is a canvas to
 read, not a pipeline stage, and no skill sweeps it. `ds-decide` turns a report's open questions into
-a record. The build step is mid-migration: the library is moving to contract-driven generation, so
-`ds-component` describes a retired flow and carries a banner saying so.
+a record. The build step is contract-first: `ds-component` authors the specification and invokes a selected
+backend emitter into the consumer repository.
 
 ```
 packages/contracts/ @ds/contracts — THE PRODUCT. Agnostic component contracts + their schema

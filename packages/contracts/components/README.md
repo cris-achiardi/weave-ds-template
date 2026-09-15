@@ -57,11 +57,10 @@ generated output and are not versioned at all — so the changelog is the only r
 consumer's regenerated component will do differently. A contract change with no changelog entry is
 an unannounced API change.
 
-A spike emitter exists — `packages/react/src/emit/emit.mjs` — and compiles `Switch/` into working
-React. It is a probe rather than the emitter, it is wired into no gate, and **nothing validates a
-contract in this directory automatically**: `verify:contract` still enumerates components by looking
-for a `<Name>.tsx` that this architecture no longer produces. Until that inverts, a contract here is
-checked only when something reads it on purpose.
+All four backend emitters read these contracts and generate source into a consumer directory.
+`pnpm verify:contract` enumerates the contracts and validates their schemas and React bindings;
+`pnpm verify:parity` compares backend coverage and shared platform facts. Browser tests exercise
+generated components independently of those readers.
 
 ## 2. Prop naming — the canon
 
