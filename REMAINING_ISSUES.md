@@ -10,8 +10,8 @@ Existing user edits stay outside this worktree. Remove this log in the final PR.
 | 3     | #11, #14    | Shared web element map and styling conventions                    | Merged in #30 |
 | 4     | #12         | Explicit live versus committed editing semantics                  | Merged in #31 |
 | 5     | #10         | Shadow-DOM relationships and explicit backend conformance         | Merged in #32 |
-| 6     | #16         | Contract form semantics and WC form participation                 | In progress   |
-| 7     | #15         | Deferred browser conformance cases and final log removal          | Planned       |
+| 6     | #16         | Contract form semantics and WC form participation                 | Merged in #33 |
+| 7     | #15         | Deferred browser conformance cases and final log removal          | In progress   |
 
 ## Decisions and evidence
 
@@ -38,3 +38,9 @@ Existing user edits stay outside this worktree. Remove this log in the final PR.
 - Group 6: explicit form answers for five contracts; WC uses ElementInternals. Other backend form gaps remain explicitly non-conforming. Reset restores the first connected answer; restoration is silent; effective fieldset disability is separate from the explicit disabled property.
 
 - Group 6 validation: full verify passed (123 tests, 8 deferred); all 42 browser cases passed. Tests exposed and fixed fieldset-disabled slider input and queued activation overwriting form reset.
+
+- Group 7: all eight DOM cases now run from contract case IDs across four backends. Broader browsers found Firefox delegated-focus failures; roving WC members now focus their semantic root directly. WebKit pointer fixtures suppress native HTML text dragging.
+
+- Firefox also required a real host box for navigation collections: nested display:contents hosts trapped sequential focus on the first member. The corrected fixtures use the emitted WC structure stylesheet, and the direct probe now enters, exits and re-enters correctly.
+
+- Group 7 validation: full verify passed with 123 tests and no skips. All 141 React/Vue/Angular browser cases passed; the final affected WC rerun passed all 117 cases across Chromium, Firefox and WebKit. Remove this log in the final PR.

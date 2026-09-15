@@ -3,20 +3,9 @@
 // Same arrangement as the other two primitives: the cases are DATA owned by the contracts package,
 // and this file is the adapter that executes them.
 //
-// THREE CASES ARE DEFERRED TO A BROWSER, and an earlier version of this file claimed none were.
-// That claim was wrong in a way that cost a shipped bug: whether a point falls inside an element's
-// box is NOT answerable from plain values, so the mapping from a real event to the word `region`
-// was never tested here at all. Every executable case passed while a press on the dialog's own
-// padding closed it.
-//
-// READ "DEFERRED TO A BROWSER" LITERALLY: Vitest runs in node and these three cases remain
-// skipped here. The Playwright lane in tests/browser now covers emitted-component regressions,
-// but it does not yet implement these geometry cases. The prior manual checks are not automated
-// conformance coverage. Track the remaining browser cases in #15.
-//
-// The deferred cases are listed below with a reason each, following the pattern
-// `linear-navigation.test.ts` established, so the gap between "tested here" and "verified
-// somewhere" stays visible instead of looking like completeness.
+// Three geometry cases execute in tests/browser/conformance.mjs against all four backends.
+// Their contract DOM flags are checked here, so every case has an explicit execution lane.
+// A pure core cannot determine whether an actual press is inside a rendered dialog's box.
 
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -58,20 +47,22 @@ const SUITE = JSON.parse(
 ) as { primitive: string; cases: Case[] };
 
 describe(`conformance: ${SUITE.primitive}`, () => {
-  it('every case is either executed here or explicitly deferred to a browser', () => {
+  it('every case is either executed here or executed in the browser conformance lane', () => {
     const ids = SUITE.cases.map((c) => c.id);
     for (const deferred of Object.keys(NEEDS_A_BROWSER)) {
-      expect(ids, `${deferred} is deferred but no longer exists in the suite`).toContain(deferred);
+      expect(ids, `${deferred} runs in the browser but no longer exists in the suite`).toContain(
+        deferred,
+      );
       // AND THE DATA HAS TO AGREE THAT IT NEEDS A DOM. Without this, adding an id and a sentence
       // to the map above silences any case at all — which is the dumping ground its own comment
       // says it must not become. The flag lives in the contracts package, so silencing a case now
       // takes an edit a backend cannot make alone.
       expect(
         SUITE.cases.find((c) => c.id === deferred)?.needsARenderedDOM,
-        `${deferred} is deferred here but the suite does not flag it needsARenderedDOM`,
+        `${deferred} runs in the browser but the suite does not flag it needsARenderedDOM`,
       ).toBe(true);
     }
-    // And the reverse, which the navigation suite does not assert: a case flagged in the DATA as
+    // And the reverse: a case flagged in the DATA as
     // needing a DOM must be named here with a reason, so one cannot be added and silently skipped.
     for (const c of SUITE.cases) {
       if (c.needsARenderedDOM) {
@@ -85,7 +76,6 @@ describe(`conformance: ${SUITE.primitive}`, () => {
 
   for (const c of SUITE.cases) {
     if (c.id in NEEDS_A_BROWSER) {
-      it.skip(`${c.id} — in a browser: ${NEEDS_A_BROWSER[c.id]}`, () => {});
       continue;
     }
     it(`${c.id} [apg: ${c.apg}]`, () => {

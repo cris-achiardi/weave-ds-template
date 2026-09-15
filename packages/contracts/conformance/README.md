@@ -68,13 +68,16 @@ negative requirement in either pattern is expressed: a horizontal tab list must 
 | `range-stepping.json`    | moving a number within a bounded, stepped range  | slider               |
 | `dismissal.json`         | closing a region with a key or a press           | dialog, tooltip      |
 
-All three are consumed by adapters in `packages/react/src/behavior/`. 24 of the navigation cases
-execute there and 5 are deferred to a browser, each naming why. All 29 range cases execute, because
-range stepping is arithmetic and a case needing a rendered DOM would mean the arithmetic had leaked.
-12 of the 15 dismissal cases execute and 3 are deferred — and those three matter more than the
-count suggests: they assert the MAPPING from a real event rather than the decision, which is the gap
-a shipped bug went through. A press on a dialog's own padding closed it while every executable case
-passed, because whether a point falls inside an element's box is not answerable from plain values.
+The shared cores in `packages/behavior/src/` execute the value-only cases. Five navigation
+cases and three dismissal geometry cases declare `needsARenderedDOM: true`; the browser lane
+reads those same records and executes them against all four backends in Chromium, Firefox and
+WebKit. There are no skipped placeholders in the pure suites. Their coverage checks require
+matching DOM flags, and an unknown flagged browser case fails instead of being ignored.
+
+[The browser tests](../../../tests/browser/conformance.mjs) check real Tab/Shift+Tab entry and exit,
+manual Space activation and change counts, dialog padding, overflowing descendants, and drags
+across the backdrop. Positive controls verify that activation/dismissal handlers actually work.
+Manual tabs are generated through the emitter with `followsFocus: false` on a fixture contract.
 
 There is a sibling of this directory for the WEB PLATFORM mapping — which ARIA attribute a state
 reaches the DOM through — in [`@ds/platform-web/conformance`](../../platform-web/conformance/). It

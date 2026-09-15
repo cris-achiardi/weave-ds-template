@@ -1,28 +1,43 @@
-# Browser regressions
+# Browser conformance and regressions
 
-These tests drive generated components in the sandboxes with Playwright and Chromium.
-They complement the pure behavior tests: actual DOM relationships, focus, browser events,
-and custom-element lifecycle callbacks must run in a browser.
+Playwright drives generated components in Chromium, Firefox and WebKit across React, Vue,
+Angular and vanilla web components. The browser lane complements pure behavior tests with
+real focus order, geometry, accessibility relationships, events, and form lifecycle behavior.
 
-Install the browser once with `pnpm exec playwright install chromium`, then run
-`pnpm test:browser`. That command builds tokens and starts isolated Vite servers on
-ports 4401–4403. It refuses to reuse an existing server, so another checkout cannot
-silently supply the components under test.
+Install once with `pnpm exec playwright install chromium firefox webkit`, then run
+`pnpm test:browser`. On Linux, use `playwright install --with-deps` to install system libraries.
+The command generates alternate contract fixtures, builds tokens, and starts isolated Vite
+servers on ports 4401 through 4404. Existing servers are never reused.
 
-The `browser` CI job installs Chromium and runs this lane separately from `pnpm verify`.
-Test files use the `.browser.mjs` suffix so Vitest does not collect them. Failure traces
-are written beneath node_modules and can be opened with Playwright's trace viewer.
+Select a backend/browser pair with `pnpm test:browser --project=wc-firefox`. The `browser` CI
+job runs the complete matrix separately from `pnpm verify`. `.browser.mjs` files are excluded
+from Vitest. Failure traces are kept under `node_modules/.cache/playwright-results`.
 
-The sandbox browser-tests entries are dedicated fixtures, separate from the specimen
-pages. Fixtures import the same generated components consumers use. Add assertions for
-observable behavior rather than emitter source text.
+## Contract cases
 
-Current coverage includes styling handles and semantic roots across all four backends, Angular accordion ID references, Vue/Angular/WC collection
-identity changes, WC literal accessible names, dialog connection state, and activation
-cancellation through real mouse and keyboard input. It does not yet replace the eight
-deferred conformance cases tracked in #15, and Chromium is the only browser in this lane.
+`conformance.mjs` reads all `needsARenderedDOM` records from the contract JSON. Five navigation
+and three dismissal cases run across all four backends. Multi-pattern cases exercise both
+radio and tabs where declared. Unknown case IDs fail. The pure suites require matching flags
+and contain no skipped placeholders for these cases.
 
-`pnpm browser:generate` creates alternate contract modes under each sandbox's ignored
-`src/browser-generated/` directory through the real emitters. Both `pnpm typecheck` and
-`pnpm test:browser` run it first. The editing fixtures cover live and committed text, draft
-retention on unrelated rerenders, duplicate blur suppression, and external value replacement.
+Assertions cover forward and reverse Tab entry, one Tab stop and exit from a collection,
+manual Space activation, inert reselection, dialog padding, overflowing children and backdrop
+drags. Positive controls ensure a disabled or absent event handler cannot falsely pass the
+negative cases. Drag fixtures suppress native HTML drag-and-drop so they exercise pointer
+press/release rather than browser text dragging. This is coverage of those declared cases, not blanket accessibility certification.
+
+## Generated fixtures
+
+`pnpm browser:generate` writes alternate modes under ignored `src/browser-generated/` folders:
+commit-mode TextField and manual-activation Tabs with its TabItem. Both `pnpm typecheck` and
+`pnpm test:browser` run generation. WC alternate tabs omit duplicate global tag typings and
+load only on their dedicated page; the production emitter still emits its global tag declarations by default.
+
+Fixtures import generated components. They remain separate from specimen pages. Additional
+regressions cover styling, editing drafts, ARIA references, collection identity, modal lifecycle,
+activation cancellation, and form contribution/validation/reset/disabled behavior. Form state
+restoration invokes the platform callback directly; history/autofill scheduling is not asserted.
+Known relationship gaps are characterized and reported as non-conforming under ADR 0005.
+
+The matrix also guards WC roving focus without host delegation: negative-tabindex arrow targets
+and forward/reverse Tab traversal must work in every engine.
