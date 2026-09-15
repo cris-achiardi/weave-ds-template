@@ -18,3 +18,5 @@ Existing user edits stay outside this worktree. Remove this log in the final PR.
 - #13: readers expose each backend separately; framework surfaces must never be presented as a shared public API. Paint reporting accepts a consumer theme explicitly.
 
 - Group 1 validation: full `pnpm verify` passed (116 tests, 8 deferred); six tooling regression tests cover backend attribution and both stylesheet grammars.
+
+- Group 1 CI found stale generated WC event names after branding. `init-ds` now regenerates the glossary after updating identity; both branding matrix jobs must pass before merge.
