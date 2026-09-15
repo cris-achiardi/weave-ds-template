@@ -3,7 +3,6 @@
   "component": "TextField",
   "contract": "../../contracts/components/TextField/TextField.contract.json",
   "framework": "react",
-  "element": "input",
   "refTarget": "root",
   "classNamePassthrough": "root",
   "notes": [

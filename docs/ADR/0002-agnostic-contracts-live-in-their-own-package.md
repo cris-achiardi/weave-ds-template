@@ -59,6 +59,17 @@ agnosticism enforceable at a package boundary rather than by convention about a 
    framework is evidence the split has been breached, and the fix is to move the fact out, not to
    widen the schema.
 
+## Shared web roots and output conventions
+
+The semantic root element belongs to `platform-web`, shared by all web emitters. Framework
+bindings keep their own additions. A WC host tag is derived from component identity and branding;
+it is separate from the semantic element inside the shadow root and is not added to other bindings.
+This replaces the duplicated `element` field with a shared, validated component map.
+
+The platform also specifies existing component/part/axis styling handles for light and shadow DOM.
+These are web scoping mechanisms, not agnostic contract fields. See
+`packages/platform-web/components.json` and `packages/platform-web/styling.md`.
+
 ## Why this is still Draft
 
 Everything in the decision above is on disk and gated. It is held at Draft anyway, because a

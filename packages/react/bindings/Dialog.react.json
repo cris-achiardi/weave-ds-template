@@ -3,7 +3,6 @@
   "component": "Dialog",
   "contract": "../../contracts/components/Dialog/Dialog.contract.json",
   "framework": "react",
-  "element": "dialog",
   "refTarget": "root",
   "classNamePassthrough": "root",
   "notes": [

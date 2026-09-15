@@ -7,11 +7,14 @@
   "exports": {
     ".": "./resolve.mjs",
     "./profile.json": "./profile.json",
-    "./conformance/*": "./conformance/*"
+    "./conformance/*": "./conformance/*",
+    "./components.json": "./components.json"
   },
   "files": [
     "profile.json",
     "resolve.mjs",
-    "conformance"
+    "conformance",
+    "components.json",
+    "components.schema.json"
   ]
 }

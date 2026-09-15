@@ -3,7 +3,6 @@
   "component": "Button",
   "contract": "../../contracts/components/Button/Button.contract.json",
   "framework": "vue",
-  "element": "button",
   "notes": [
     "Renders a native <button type=\"button\">. Nothing here overrides `type`, so a Button inside a form will not submit it — a submit button is a different contract, or a prop this one does not yet have.",
     "The `hierarchy` axis is spelled `hierarchy`, not `role`, for the reason the React binding gives: `role` is a real HTML attribute and a button carrying role=\"primary\" would stop being announced as a button. That reason is about HTML, not about React, so it holds here word for word — which is evidence the axis name belongs to the canon and not to either backend.",

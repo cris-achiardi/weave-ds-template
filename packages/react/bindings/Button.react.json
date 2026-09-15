@@ -3,7 +3,6 @@
   "component": "Button",
   "contract": "../../contracts/components/Button/Button.contract.json",
   "framework": "react",
-  "element": "button",
   "refTarget": "root",
   "classNamePassthrough": "root",
   "notes": [

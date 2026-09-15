@@ -905,11 +905,6 @@ function emitSfc(name, contract, binding, prefix) {
   const axisNames = Object.keys(contract.axes ?? {});
   if (axisNames.length) {
     for (const axis of axisNames) rootAttrs.push(`:data-${prefix}-${kebab(axis)}="${axis}"`);
-    assume(
-      'axis values in the DOM',
-      `data-${prefix}-<axis>="<value>" on the root`,
-      'An axis that reaches no attribute cannot be styled. This is a third attribute family beside part and state, invented by the React emitter and copied here because the emitted CSS is shared between the two backends — which is itself the finding: the attribute contract is real and is written down nowhere.',
-    );
   }
 
   if (nativelyEdited) {

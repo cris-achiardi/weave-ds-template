@@ -3,7 +3,6 @@
   "component": "Button",
   "contract": "../../contracts/components/Button/Button.contract.json",
   "framework": "wc",
-  "element": "button",
   "notes": [
     "Renders <button part=\"root\" type=\"button\"> inside a shadow root. A consumer writes <ds-button hierarchy=\"primary\">."
   ]

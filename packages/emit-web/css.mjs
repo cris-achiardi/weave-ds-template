@@ -69,12 +69,6 @@ export function emitStructure(name, contract, element, prefix, profile, assume) 
     "THE BIG ONE, and it is reported identically by every backend because it is now ONE function. The contract has no `layout` block, so there is nothing to derive from and a guess that renders is more dangerous than one that does not. Every component's real layout therefore lives in the CONSUMER's theme file, which is the wrong place. Three independent emitters hit it in the same place before this was shared, which is what established that the gap is in the CONTRACT.",
   );
 
-  assume(
-    'scoping selector',
-    `data-${prefix}-component="<Name>" on the root`,
-    'Without CSS Modules there is no hashing, so [data-*-part="root"] would match every component on the page. Nothing in the contract system defines a component-level attribute; the React emitter invented one and every backend since has had to reproduce it exactly, because one stylesheet dresses them all.',
-  );
-
   const L = [];
   L.push(`/* GENERATED from ${name}.contract.json. Do not edit by hand — regenerate instead. */`);
   L.push(`/*`);

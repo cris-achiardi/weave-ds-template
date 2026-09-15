@@ -32,18 +32,10 @@ was one comment line pointing here.
 [data-ds-component='Button'] [data-ds-part='label'] { … }
 ```
 
-A descendant selector cannot cross a shadow boundary. A backend that puts its parts inside a shadow
-root needs a different grammar for the same contract:
-
-```css
-:host([data-ds-hierarchy='primary']) { … }
-::part(label) { … }
-```
-
-That is not a different value in the same rule — it is a different rule. **Whether it becomes a
-parameter on these functions or a second module beside them is not decided here**, because nothing
-has built it yet and a shape invented for a backend that does not exist is a guess. It is written
-down so the first person to hit it knows it was expected rather than missed.
+The WC backend uses `packages/wc/src/emit/css-shadow.mjs` for the corresponding shadow grammar.
+The shared [web styling convention](../platform-web/styling.md) defines both grammars.
+Inside a shadow stylesheet use `[part="root"]` or `:host([hierarchy="primary"]) [part="root"]`.
+The WC host and the inner semantic root are separate elements.
 
 Note what does **not** break at that boundary: CSS custom properties inherit into a shadow root, so
 `--ds-*` tokens reach inside untouched. It is only the part and state selectors that stop.

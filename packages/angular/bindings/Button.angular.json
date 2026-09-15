@@ -3,7 +3,6 @@
   "component": "Button",
   "contract": "../../contracts/components/Button/Button.contract.json",
   "framework": "angular",
-  "element": "button",
   "notes": [
     "Attaches to a native <button type=\"button\">: `selector: 'button[dsButton]'`. A consumer writes <button dsButton hierarchy=\"primary\">.",
     "The `hierarchy` axis is spelled `hierarchy`, not `role`, for the reason the React binding gives — `role` is a real HTML attribute and a button carrying role=\"primary\" would stop being announced as a button. That reason is about HTML, so all three backends reach it independently.",

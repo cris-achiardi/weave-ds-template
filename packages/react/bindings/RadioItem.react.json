@@ -3,7 +3,6 @@
   "component": "RadioItem",
   "contract": "../../contracts/components/RadioItem/RadioItem.contract.json",
   "framework": "react",
-  "element": "div",
   "refTarget": "root",
   "classNamePassthrough": "root",
   "notes": [

@@ -3,7 +3,6 @@
   "component": "Dialog",
   "contract": "../../contracts/components/Dialog/Dialog.contract.json",
   "framework": "wc",
-  "element": "dialog",
   "notes": [
     "A native <dialog part=\"root\"> INSIDE the shadow root. The platform supplies focus containment, inertness and Escape to an element it owns, wherever that element lives."
   ]

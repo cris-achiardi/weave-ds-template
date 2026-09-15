@@ -3,7 +3,6 @@
   "component": "TabPanel",
   "contract": "../../contracts/components/TabPanel/TabPanel.contract.json",
   "framework": "angular",
-  "element": "div",
   "notes": [
     "A member that is NOT in the arrow path: its root declares no `activates`. Neither contract says so in prose; it falls out of `activates`."
   ]

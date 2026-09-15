@@ -3,7 +3,6 @@
   "component": "Slider",
   "contract": "../../contracts/components/Slider/Slider.contract.json",
   "framework": "vue",
-  "element": "div",
   "notes": [
     "The track part takes a function ref so the pointer geometry has a box to measure against. Vue's function refs take the element directly, so there is no callback-ref composition of the kind the React emitter has to write."
   ]

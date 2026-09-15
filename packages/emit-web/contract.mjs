@@ -7,6 +7,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import Ajv from 'ajv/dist/2020.js';
+import { elementFor } from '@ds/platform-web';
 
 export const readJson = (p) => JSON.parse(readFileSync(p, 'utf8'));
 
@@ -89,7 +90,7 @@ export function loadPair({ name, contractsDir, bindingsDir, suffix }) {
   if (resolve(contractPath) !== target) {
     throw new Error(`binding.contract points at ${target}, not ${contractPath}`);
   }
-  return { contract, binding };
+  return { contract, binding: { ...binding, element: elementFor(name) } };
 }
 
 /**

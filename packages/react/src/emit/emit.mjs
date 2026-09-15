@@ -1052,15 +1052,10 @@ function emitTsx(name, contract, binding, prefix) {
   }
   // An axis has to be visible to CSS or a variant cannot be styled at all. Without CSS Modules
   // there is no class to hang it on, so it becomes an attribute — a THIRD attribute family
-  // alongside part and state, invented here and documented nowhere.
+  // specified by packages/platform-web/styling.md.
   const axisNames = Object.keys(contract.axes ?? {});
   if (axisNames.length) {
     for (const axis of axisNames) rootAttrs.push(`data-${prefix}-${kebab(axis)}={${axis}}`);
-    assume(
-      'axis values in the DOM',
-      `data-${prefix}-<axis>="<value>" on the root`,
-      'An axis that reaches no attribute cannot be styled: there is no class to select in an unstyled library, so a declared variant would generate a prop that changes nothing. This is a third attribute family beside part and state, and nothing in the contract system defines it.',
-    );
   }
   if (nativelyEdited) {
     rootAttrs.push(`value={${camel(valueState.from)}Value}`);
