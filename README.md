@@ -142,14 +142,20 @@ Two rules about enforcement, both learned expensively in the systems this templa
   nothing.** Uncontracted components, paint findings and extraction warnings therefore **report**
   rather than fail. Promoting one to a gate is deliberate work against a clean baseline.
 
-`verify:parity` is the newest, and it only became possible once there was more than one backend: it
+`verify:parity` only became possible once there was more than one backend: it
 fails when a shared core reappears inside a framework package, when the behaviour barrels stop
 agreeing, or when two bindings disagree about a root element.
 
+`pnpm test:browser` drives generated components in Chromium and runs in its own CI job.
+It covers the review regressions in accessible names, ARIA references, collection
+identity changes, dialog lifecycle, and activation cancellation. See the
+[browser test guide](./tests/browser/README.md) for setup and scope.
+
 ## What this does not do yet
 
-- **No browser test lane**, and it is where the last six defects came from — including one that froze
-  the tab it was opened in. Every gate above was green throughout ([#15](https://github.com/cris-achiardi/weave-ds-template/issues/15)).
+- **Browser conformance coverage is incomplete.** The regression lane is running, but eight
+  deferred cases in the pure behavior suites still need dedicated browser coverage
+  ([#15](https://github.com/cris-achiardi/weave-ds-template/issues/15)).
 - **The contract tooling still lives in `packages/react/scripts/`** — `pnpm contract`, `prop-map` and
   `report:paints` are agnostic work hosted by one backend ([#13](https://github.com/cris-achiardi/weave-ds-template/issues/13)).
 - **The `data-<prefix>-*` attribute families are unspecified.** Three backends invented and

@@ -9,16 +9,10 @@
 // was never tested here at all. Every executable case passed while a press on the dialog's own
 // padding closed it.
 //
-// READ "DEFERRED TO A BROWSER" LITERALLY: there is no browser lane in this repo. No jsdom, no
-// happy-dom, no Playwright — `vitest` runs in node and these three cases run NOWHERE automated.
-// They were verified by HAND, once, on the sandbox Dialog, and that is the same standard
-// `apps/react-sandbox/src/status.ts` holds every verdict to. So a regression in exactly the code that
-// fixed the padding bug would not redden anything; it would need someone to press the panel again.
-//
-// That is a real gap and it is recorded rather than papered over — `CROSS_CUTTING` in status.ts
-// carries it too, because `linear-navigation.test.ts` defers five cases on the same terms. Building
-// the lane is its own work with its own decision about which runner; skipping straight to it here
-// would have been a second unreviewed change in a file that just had a bug.
+// READ "DEFERRED TO A BROWSER" LITERALLY: Vitest runs in node and these three cases remain
+// skipped here. The Playwright lane in tests/browser now covers emitted-component regressions,
+// but it does not yet implement these geometry cases. The prior manual checks are not automated
+// conformance coverage. Track the remaining browser cases in #15.
 //
 // The deferred cases are listed below with a reason each, following the pattern
 // `linear-navigation.test.ts` established, so the gap between "tested here" and "verified
