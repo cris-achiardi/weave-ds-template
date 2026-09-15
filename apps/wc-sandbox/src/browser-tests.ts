@@ -1,3 +1,5 @@
+import './components/Field';
+import './components/TabPanel';
 import './components/Dialog';
 import './components/TextField';
 import './components/Button';

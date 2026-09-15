@@ -50,3 +50,25 @@ describe('repository contract readers', () => {
     },
   );
 });
+
+describe('relationship conformance is separate from binding coverage', () => {
+  it('reports the actual-control gap in every Field backend', () => {
+    for (const info of Object.values(composeComponent('Field').backends)) {
+      expect(info.binding).not.toBeNull();
+      expect(info.relationshipConformance.status).toBe('non-conforming');
+      expect(info.relationshipConformance.gaps.map((gap) => gap.reason)).toEqual([
+        'wrapper-not-control',
+        'wrapper-not-control',
+        'wrapper-not-control',
+      ]);
+    }
+  });
+  it('distinguishes omitted cross-shadow references from unevaluated claims', () => {
+    const tabs = composeComponent('TabItem').backends;
+    expect(tabs.wc.relationshipConformance.gaps[0]).toMatchObject({
+      reason: 'omitted-cross-shadow-reference',
+    });
+    expect(tabs.react.relationshipConformance.status).toBe('not-evaluated');
+    expect(composeComponent('Dialog').backends.wc.relationshipConformance.gaps).toEqual([]);
+  });
+});
