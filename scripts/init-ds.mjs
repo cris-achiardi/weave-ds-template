@@ -27,6 +27,7 @@ const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
 const SKIP_DIRS = new Set([
   'node_modules',
+  'browser-generated',
   '.git',
   'dist',
   'build',

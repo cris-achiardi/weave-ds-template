@@ -59,3 +59,6 @@ reported as not evaluated, and the report does not claim to resolve CSS cascade 
 
 After branding, `pnpm init-ds --check` checks for stragglers using all rename rules and the same
 file traversal as the codemod. It does not mutate files. CI runs it for each branded fixture.
+
+`pnpm browser:generate` invokes importable emitters for alternate-contract browser fixtures.
+These generated fixtures are ignored by Git and formatting, and are typechecked before use.

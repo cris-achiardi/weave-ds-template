@@ -38,6 +38,7 @@ const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SEP = String.fromCharCode(92); // backslash, without writing one into a regex
 const SKIP_DIRS = new Set([
   'node_modules',
+  'browser-generated',
   '.git',
   'dist',
   'build',
