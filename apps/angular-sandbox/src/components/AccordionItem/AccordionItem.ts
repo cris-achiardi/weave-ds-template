@@ -30,7 +30,7 @@ import { ACCORDION, type AccordionContext } from '../Accordion/Accordion';
     <div data-ds-part="header">
       <button
         [attr.id]="baseId() + '-trigger'"
-        [attr.aria-controls]="baseId + '-panel'"
+        [attr.aria-controls]="baseId() + '-panel'"
         (click)="activate($event)"
         type="button"
         [attr.disabled]="isDisabled() || null"
@@ -44,7 +44,7 @@ import { ACCORDION, type AccordionContext } from '../Accordion/Accordion';
     <div
       role="region"
       [attr.id]="baseId() + '-panel'"
-      [attr.aria-labelledby]="baseId + '-trigger'"
+      [attr.aria-labelledby]="baseId() + '-trigger'"
       [attr.hidden]="selected() ? null : ''"
       data-ds-part="panel"
     >
