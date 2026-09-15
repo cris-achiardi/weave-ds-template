@@ -36,6 +36,7 @@ import { fileURLToPath } from 'node:url';
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const readJson = (p) => JSON.parse(readFileSync(p, 'utf8'));
 
+import { relationshipConformance } from './relationship-conformance.mjs';
 import { BACKENDS } from './backends.mjs';
 import Ajv from 'ajv/dist/2020.js';
 import { loadComponents, loadProfile } from '../packages/platform-web/resolve.mjs';
@@ -111,8 +112,6 @@ if (barrels.length > 1) {
 // element — the bindings must agree about what is rendered
 // ---------------------------------------------------------------------------------------
 //
-// STILL DUPLICATED, DELIBERATELY, where the behaviour cores no longer are. `element` is
-// web-platform knowledge sitting in a framework artifact, fifteen times per backend, and by
 // Root elements are shared platform data. Bindings may not override them.
 const bindingsFor = (backend) => {
   const dir = join(REPO_ROOT, backend.dir, 'bindings');
@@ -175,6 +174,14 @@ for (const component of everyComponent) {
       `coverage  ${component} has a binding for ${present.map((b) => b.framework).join(', ')} ` +
         `but not ${missing.map((b) => b.framework).join(', ')}`,
     );
+  }
+  const contract = readJson(
+    join(REPO_ROOT, 'packages/contracts/components', component, `${component}.contract.json`),
+  );
+  for (const backend of present) {
+    const result = relationshipConformance(contract, backend.framework);
+    for (const gap of result.gaps)
+      reports.push(`NON-CONFORMING ${backend.framework}/${component} ${gap.path}: ${gap.reason}`);
   }
   if (!platform[component]) failures.push(`element map: no semantic root for ${component}`);
 }

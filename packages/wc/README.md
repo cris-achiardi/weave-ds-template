@@ -49,28 +49,27 @@ and change notifications are committed. See the [event rules](./src/emit/README.
 | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **one fact, two places**               | a state reaches ARIA on the INNER element and is reflected onto the HOST for CSS. `::part()` cannot take an attribute selector, so no single place serves both |
 | **the host has no display**            | a custom element is `display: inline` until told otherwise. No other backend hands a consumer this                                                             |
-| **an IDREF cannot cross a boundary**   | a tab and its panel are in different shadow roots, so `aria-controls` names nothing. See below                                                                 |
+| **an IDREF cannot cross a boundary**   | cross-member references are omitted; these claims are non-conforming. See below                                                                                |
 | **no form participation**              | the host is not a form control. `ElementInternals` is its own work and is not done here                                                                        |
 | **slot emptiness is invisible to CSS** | a `<slot>` element is always present, so `:empty` never matches. The component reflects `has-<slot>` on a `slotchange`                                         |
 
-### The one thing it cannot do
+### Relationship conformance
 
-A literal `aria-label` on a host is forwarded to its internal root when that root has
-a semantic role. Changes and removal are reflected too. This lets a consumer name a
-TextField, Slider, or icon-only Button without reaching into the shadow root. The
-emitter preserves contract-owned roles and `aria-labelledby` relationships; the
-latter still take precedence over a literal label.
+Literal `aria-label` values are forwarded to semantic inner roots, including changes and removal.
+Local relationships within a single shadow root (such as a Dialog title) resolve normally.
 
-`aria-controls`, `aria-labelledby` and `aria-describedby` take **IDREFs**, and an IDREF resolves
-within a single tree. A `Field`'s control is slotted in from the page; a `TabItem` points at a
-`TabPanel` in a different shadow root. Both references name an element that, from where the
-reference is written, does not exist.
+Cross-member object references are **omitted**, so WC TabItem and TabPanel are non-conforming
+for those claims. ARIA element-reference reflection also has tree-scope restrictions: it cannot
+reference a semantic part inside a sibling shadow root. Referencing that component's host is a
+different target and is not treated as satisfying the current contract.
 
-This is not an emitter shortcut. The platform answer is the **ARIA reflection API**
-(`ariaControlsElements` — element references rather than ids), which ships in Chrome and Safari and
-not yet in Firefox. It is recorded rather than worked around, because every workaround — moving the
-reference to light DOM, duplicating the panel, dropping the relationship — changes what the contract
-says.
+Field has a separate defect in **all four backends**: its references are emitted on the wrapper,
+not the supplied control. The IDs may resolve while the input remains unnamed.
+
+[ADR 0005](../../docs/ADR/0005-unsupported-contract-claims-are-non-conforming.md) records the decision.
+`pnpm contract Field --pretty` and `pnpm verify:parity` report these known gaps explicitly.
+Binding coverage and successful CI are not accessibility conformance; untested claims remain
+`not-evaluated`. The experimental implementations remain available for research.
 
 ## What is here
 

@@ -8,8 +8,8 @@ Existing user edits stay outside this worktree. Remove this log in the final PR.
 | 1     | #13         | Repo-wide contract, prop-map, and paint tooling                   | Merged in #28 |
 | 2     | #3, #4, #17 | Contract-first skills, explicit Figma paint policy, rename checks | Merged in #29 |
 | 3     | #11, #14    | Shared web element map and styling conventions                    | Merged in #30 |
-| 4     | #12         | Explicit live versus committed editing semantics                  | In progress   |
-| 5     | #10         | Shadow-DOM relationships and explicit backend conformance         | Planned       |
+| 4     | #12         | Explicit live versus committed editing semantics                  | Merged in #31 |
+| 5     | #10         | Shadow-DOM relationships and explicit backend conformance         | In progress   |
 | 6     | #16         | Contract form semantics and WC form participation                 | Planned       |
 | 7     | #15         | Deferred browser conformance cases and final log removal          | Planned       |
 
@@ -30,3 +30,7 @@ Existing user edits stay outside this worktree. Remove this log in the final PR.
 - Group 4 decision: shared text explicitly chooses live or commit reporting. Commit means focus leaves on web; keep a local draft, suppress unchanged commits, and let changed external values replace the draft.
 
 - Group 4 validation: all 34 browser tests passed, including eight live/commit scenarios; full verify passed (120 unit tests, 8 deferred). The schema rejects missing editing modes and modes on non-text/non-shared states.
+
+- Group 5: chose explicit non-conformance (ADR 0005). No exemption counts as success; Field wrapper gaps affect all four backends, WC cross-member references are omitted.
+
+- Group 5 validation: full verify passed (122 tests, 8 deferred); all 35 browser cases passed, including omitted references, the unnamed supplied control, and reflection scope restrictions.
