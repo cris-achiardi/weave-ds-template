@@ -36,7 +36,8 @@ withDefaults(defineProps<TextFieldProps>(), {
 const value = defineModel<string>('value', { default: '' });
 
 function handleInput(event: Event) {
-  value.value = (event.target as HTMLInputElement).value;
+  const next = (event.target as HTMLInputElement).value;
+  value.value = next;
 }
 
 const attrs = useAttrs();

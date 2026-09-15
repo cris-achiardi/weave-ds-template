@@ -97,7 +97,8 @@ export class TextField extends HTMLElement {
   }
 
   #handleInput(event: Event): void {
-    this.value = (event.target as HTMLInputElement).value;
+    const next = (event.target as HTMLInputElement).value;
+    this.value = next;
     this.#emit('value-change', this.value);
   }
 

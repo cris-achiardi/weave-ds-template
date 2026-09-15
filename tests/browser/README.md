@@ -21,3 +21,8 @@ Current coverage includes styling handles and semantic roots across all four bac
 identity changes, WC literal accessible names, dialog connection state, and activation
 cancellation through real mouse and keyboard input. It does not yet replace the eight
 deferred conformance cases tracked in #15, and Chromium is the only browser in this lane.
+
+`pnpm browser:generate` creates alternate contract modes under each sandbox's ignored
+`src/browser-generated/` directory through the real emitters. Both `pnpm typecheck` and
+`pnpm test:browser` run it first. The editing fixtures cover live and committed text, draft
+retention on unrelated rerenders, duplicate blur suppression, and external value replacement.

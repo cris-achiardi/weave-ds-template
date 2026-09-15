@@ -23,3 +23,8 @@
 - The emitter had to be taught that a free-form value must NOT reach the DOM as a data attribute:
   the first version mirrored whatever was typed into `data-ds-state-value`. A boolean or an
   enumerated state is a styling hook; free text is content.
+
+## 2026-09-15
+
+Declared `value.editing: live` explicitly. Existing per-edit reporting is unchanged. The schema
+also supports commit-at-session-end contracts; their generated fields retain a local draft.

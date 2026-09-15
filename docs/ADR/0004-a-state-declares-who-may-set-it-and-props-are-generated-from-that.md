@@ -162,3 +162,20 @@ express without inventing a compound name for every combination.
 consumer-settable. `disabled` and `read-only` are both intrinsic and both consumer-settable, so the
 convention is wrong often enough to be dangerous — and an inference that is usually right is worse
 than an explicit field, because nobody checks it.
+
+## Reporting time for editable text
+
+Ownership and timing are separate. Shared string states must declare `editing: live | commit`.
+Live mode publishes each edit. Commit mode retains a local draft until the editing session ends;
+for web inputs this means blur, including keyboard focus movement. A changed external value replaces
+the draft; unrelated rerenders do not. An unchanged session produces no additional commit.
+
+The schema requires this choice, and all four emitters implement it. TextField selects live mode.
+Generated alternate-contract browser fixtures validate both choices without changing the shipped
+contract during tests. Composition is not a separate commit trigger.
+
+React's [input reference](https://react.dev/reference/react-dom/components/input) explains why a
+controlled input needs synchronous local updates even when public reporting is deferred. The
+[HTML input specification](https://html.spec.whatwg.org/multipage/input.html) distinguishes editing
+from committing; this contract deliberately chooses an explicit session boundary rather than
+relying on differently named framework events.

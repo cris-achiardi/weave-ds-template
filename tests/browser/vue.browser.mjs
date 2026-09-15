@@ -4,3 +4,6 @@ navigationRegressions();
 
 import { stylingRegressions } from './styling.mjs';
 stylingRegressions('vue');
+
+import { editingRegressions } from './editing.mjs';
+editingRegressions();

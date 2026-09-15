@@ -28,3 +28,6 @@ test('accordion relationships resolve before and after a member identity changes
 
 import { stylingRegressions } from './styling.mjs';
 stylingRegressions('angular');
+
+import { editingRegressions } from './editing.mjs';
+editingRegressions();

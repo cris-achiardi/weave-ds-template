@@ -7,8 +7,8 @@ Existing user edits stay outside this worktree. Remove this log in the final PR.
 | ----- | ----------- | ----------------------------------------------------------------- | ------------- |
 | 1     | #13         | Repo-wide contract, prop-map, and paint tooling                   | Merged in #28 |
 | 2     | #3, #4, #17 | Contract-first skills, explicit Figma paint policy, rename checks | Merged in #29 |
-| 3     | #11, #14    | Shared web element map and styling conventions                    | In progress   |
-| 4     | #12         | Explicit live versus committed editing semantics                  | Planned       |
+| 3     | #11, #14    | Shared web element map and styling conventions                    | Merged in #30 |
+| 4     | #12         | Explicit live versus committed editing semantics                  | In progress   |
 | 5     | #10         | Shadow-DOM relationships and explicit backend conformance         | Planned       |
 | 6     | #16         | Contract form semantics and WC form participation                 | Planned       |
 | 7     | #15         | Deferred browser conformance cases and final log removal          | Planned       |
@@ -26,3 +26,7 @@ Existing user edits stay outside this worktree. Remove this log in the final PR.
 - Group 2 validation: both skills passed metadata validation; Figma plan tests passed; all four emitters preserved an edited consumer theme on regeneration. Full `pnpm verify`: 119 passed, 8 deferred. No live Figma publication was part of this skill repair.
 
 - Group 3: shared root map replaces 60 duplicated element fields; all binding schemas and pointers are gated. Regenerating and formatting all 60 components produced identical output. Existing 22 browser cases passed, plus four new styling/root cases; full verify passed (119 unit tests, 8 deferred).
+
+- Group 4 decision: shared text explicitly chooses live or commit reporting. Commit means focus leaves on web; keep a local draft, suppress unchanged commits, and let changed external values replace the draft.
+
+- Group 4 validation: all 34 browser tests passed, including eight live/commit scenarios; full verify passed (120 unit tests, 8 deferred). The schema rejects missing editing modes and modes on non-text/non-shared states.

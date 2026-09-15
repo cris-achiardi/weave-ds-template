@@ -189,3 +189,15 @@ written by hand and the contract annotated it afterwards.
 That flow is being replaced. The React-specific rules that a generator must still honour moved to
 `packages/react/src/emit/README.md`; the rest retires with the flow. `.claude/skills/ds-component`
 describes the retired flow and carries a banner saying so.
+
+## Editing sessions
+
+A shared string state declares `editing: "live"` or `editing: "commit"`. Live reporting publishes
+user edits as they happen. Commit reporting keeps a private draft and publishes a changed value
+when the editing session ends; web backends define that boundary as focus leaving the control.
+Unchanged focus/blur cycles do not publish another commit. External value changes replace the draft.
+
+This declares timing, not an event name. React uses its per-edit handler to retain the draft;
+Vue, Angular, and WC use native input. All four end the web editing session on blur. TextField
+explicitly selects live reporting, preserving its existing behavior. No mode prop is added: choosing
+a different product behavior is a contract decision.

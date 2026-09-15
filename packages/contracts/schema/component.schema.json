@@ -137,8 +137,46 @@
           "visual": {
             "type": "string",
             "description": "What must visibly change, where anything does. Most states paint something, and one that paints nothing is worth questioning hard.\n\nBut not all of them do, and the earlier form of this rule — 'a state nobody can see is not a state' — was measured to be wrong. A GATING state like `touched` or `dirty` exists to decide WHEN another state may display; it is real, the implementation must track it, and it honestly paints nothing. Say so plainly rather than inventing a treatment to fill the field. Whether such states deserve a `kind` of their own is open — see docs/research/0001-contract-schema-smoke-test.md."
+          },
+          "editing": {
+            "enum": ["live", "commit"],
+            "description": "When a shared free-text value becomes public. live reports each edit; commit keeps a local draft until the editing session ends (focus leaves on web). External value changes replace the draft."
           }
-        }
+        },
+        "allOf": [
+          {
+            "if": {
+              "required": ["editing"]
+            },
+            "then": {
+              "required": ["valueType"],
+              "properties": {
+                "valueType": {
+                  "const": "string"
+                },
+                "control": {
+                  "const": "shared"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "required": ["valueType"],
+              "properties": {
+                "valueType": {
+                  "const": "string"
+                },
+                "control": {
+                  "const": "shared"
+                }
+              }
+            },
+            "then": {
+              "required": ["editing"]
+            }
+          }
+        ]
       }
     },
     "axes": {

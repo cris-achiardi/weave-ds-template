@@ -102,3 +102,6 @@ test('dialog accepts open state while detached and presents again after reconnec
 
 import { stylingRegressions } from './styling.mjs';
 stylingRegressions('wc');
+
+import { editingRegressions } from './editing.mjs';
+editingRegressions();

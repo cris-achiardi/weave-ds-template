@@ -11,7 +11,7 @@
   "intent": {
     "purpose": "Collects a single line of text from a person. It is the control itself, where Field is the plumbing around a control — the two compose, and neither does the other's job.",
     "behaviour": [
-      "Holds a string, controlled via `value` + `onValueChange` or uncontrolled via `defaultValue`.",
+      "Holds a string that the consumer may set and the user may edit.",
       "Reports every keystroke, not only the final answer, so a caller may validate as the person types or wait until they leave.",
       "Shows placeholder text only while empty. Placeholder is never a label: it disappears exactly when the person needs it most, and it is the wrong contrast for reading.",
       "Renders nothing about validity itself. Whether this text is acceptable is a Field's decision, and duplicating it here would let the two disagree."
@@ -29,6 +29,7 @@
       "kind": "authored",
       "control": "shared",
       "valueType": "string",
+      "editing": "live",
       "description": "The text itself. Free-form: not a boolean, and not one of a fixed set — which is what makes this the first state in the library that `values` cannot describe.",
       "visual": "The text appears in the box. An empty field shows its placeholder instead."
     },
