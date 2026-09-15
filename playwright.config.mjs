@@ -14,12 +14,14 @@ export default defineConfig({
   forbidOnly: Boolean(process.env.CI),
   retries: 0,
   workers: 1,
-  use: { browserName: 'chromium', trace: 'retain-on-failure' },
-  projects: backends.map(({ name, port }) => ({
-    name,
-    testMatch: `${name}.browser.mjs`,
-    use: { baseURL: `http://127.0.0.1:${port}` },
-  })),
+  use: { trace: 'retain-on-failure' },
+  projects: ['chromium', 'firefox', 'webkit'].flatMap((browserName) =>
+    backends.map(({ name, port }) => ({
+      name: `${name}-${browserName}`,
+      testMatch: `${name}.browser.mjs`,
+      use: { browserName, baseURL: `http://127.0.0.1:${port}` },
+    })),
+  ),
   webServer: backends.map(({ name, port }) => ({
     name,
     command: `pnpm --filter ${name}-sandbox exec vite --host 127.0.0.1 --port ${port} --strictPort`,

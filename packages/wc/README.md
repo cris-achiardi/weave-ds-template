@@ -39,6 +39,11 @@ That is not this backend being clever. It is evidence that all three were standi
 the platform can do itself — and that nothing in the contract system ever defined them.
 
 `delegatesFocus` is a shadow-root option where React's binding carries `refTarget`.
+Roving navigation members use `delegatesFocus: false` and forward `focus()` directly to
+their semantic root. Firefox can miss a negative-tabindex target or trap sequential focus
+when delegation is used across these nested shadow roots. Navigation collections retain a
+block host box to avoid a separate Firefox Tab trap with nested `display: contents`; the
+semantic root still owns paint.
 Event listeners are additive, but their ordering still matters: click-driven activation
 runs in a later task so a normal host listener can call `preventDefault()` before state
 and change notifications are committed. See the [event rules](./src/emit/README.md#5-event-handlers-are-composed-never-overridden).

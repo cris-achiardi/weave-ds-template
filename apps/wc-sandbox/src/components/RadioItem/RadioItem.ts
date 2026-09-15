@@ -43,7 +43,7 @@ export class RadioItem extends HTMLElement {
 
   constructor() {
     super();
-    const shadow = this.attachShadow({ mode: 'open', delegatesFocus: true });
+    const shadow = this.attachShadow({ mode: 'open', delegatesFocus: false });
     shadow.adoptedStyleSheets = [SHEET];
     shadow.append(TEMPLATE.content.cloneNode(true));
     this.#root = shadow.querySelector('[part="root"]')!;
@@ -53,6 +53,11 @@ export class RadioItem extends HTMLElement {
     // Listeners are additive, but internal listeners run before host bubbling listeners.
     // Queue click activation so the consumer can cancel it before state changes.
     this.#root.addEventListener('click', (event) => this.#queueActivation(event as MouseEvent));
+  }
+
+  /** Roving members focus the semantic root directly, including tabindex=-1 targets. */
+  override focus(options?: FocusOptions): void {
+    this.#root.focus(options);
   }
 
   /**

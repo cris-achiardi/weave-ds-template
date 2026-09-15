@@ -26,3 +26,6 @@ Custom properties inherit across shadow boundaries; selectors and string ID refe
 This specifies the existing convention. Adopting the native `part` spelling in light DOM would
 not add shadow scoping or enable `::part`, so it would change consumer selectors without removing
 the need for a component scope. Keep both grammars explicit.
+
+Navigation collections in WC retain a block host box for cross-browser Tab traversal. Other
+WC hosts normally use `display: contents`. The semantic root remains the paint target.

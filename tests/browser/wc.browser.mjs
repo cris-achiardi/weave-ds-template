@@ -147,3 +147,6 @@ test('known relationship gaps remain explicitly non-conforming (ADR 0005)', asyn
 
 import { formRegressions } from './forms.mjs';
 formRegressions();
+
+import { browserConformance } from './conformance.mjs';
+browserConformance();

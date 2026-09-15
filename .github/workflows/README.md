@@ -14,7 +14,7 @@ The scripts themselves live in [`scripts/`](../../scripts/README.md) and
 
 ### `browser`
 
-Installs Chromium and runs `pnpm test:browser`. This separate job catches DOM,
+Installs Chromium, Firefox and WebKit and runs `pnpm test:browser`. This separate job catches DOM,
 accessibility and event/lifecycle defects that pass the pure behavior tests and type
 checks. The [browser test guide](../../tests/browser/README.md) describes the fixtures
 and local setup. Browser installation is not required for `pnpm verify`.

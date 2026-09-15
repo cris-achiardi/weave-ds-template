@@ -139,6 +139,7 @@
     },
     {
       "id": "tabs-space-activates-when-focus-does-not",
+      "needsARenderedDOM": true,
       "patterns": ["tabs"],
       "given": {
         "orientation": "horizontal",
@@ -155,6 +156,7 @@
     },
     {
       "id": "reselecting-the-selected-member-is-inert",
+      "needsARenderedDOM": true,
       "patterns": ["radio", "tabs"],
       "given": { "items": ["a", "b", "c"], "focused": "a", "selected": "a" },
       "press": " ",
@@ -166,6 +168,7 @@
 
     {
       "id": "entry-lands-on-the-selected-member",
+      "needsARenderedDOM": true,
       "patterns": ["radio", "tabs"],
       "given": { "items": ["a", "b", "c"], "selected": "b", "focusWithin": false },
       "press": "Tab",
@@ -176,6 +179,7 @@
     },
     {
       "id": "entry-with-nothing-selected-lands-on-first",
+      "needsARenderedDOM": true,
       "patterns": ["radio"],
       "given": { "items": ["a", "b", "c"], "selected": null, "focusWithin": false },
       "press": "Tab",
@@ -186,6 +190,7 @@
     },
     {
       "id": "exactly-one-member-in-the-tab-sequence",
+      "needsARenderedDOM": true,
       "patterns": ["radio", "tabs"],
       "given": { "items": ["a", "b", "c"], "selected": "b" },
       "press": null,

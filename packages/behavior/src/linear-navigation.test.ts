@@ -42,6 +42,7 @@ interface Case {
     changed?: boolean;
   };
   apg: string;
+  needsARenderedDOM?: boolean;
 }
 
 const SUITE = JSON.parse(
@@ -52,11 +53,7 @@ const SUITE = JSON.parse(
  * Cases whose assertion is about rendered output rather than about the decision logic. Each names
  * WHY, so this list cannot quietly become a dumping ground for anything inconvenient.
  */
-// KNOWN GAP, and it is a finding rather than an oversight: unlike `dismissal.test.ts`, nothing
-// asserts that a case listed here is ALSO flagged in the conformance data as needing a DOM —
-// because `linear-navigation.json` carries no such flag on any case. So an id added below silences
-// that case with no second opinion. Closing it means flagging these five in the contracts package,
-// which is a framework-neutral artifact every backend reads, and belongs in its own change.
+// Matching DOM flags are required in the contract data. The browser lane executes all flagged cases.
 const NEEDS_A_BROWSER: Record<string, string> = {
   'entry-lands-on-the-selected-member': 'Tab into the collection — real focus order',
   'entry-with-nothing-selected-lands-on-first': 'Tab into the collection — real focus order',
@@ -84,16 +81,23 @@ function membersFor(c: Case): Member[] {
 }
 
 describe(`conformance: ${SUITE.primitive}`, () => {
-  it('every case is either executed here or explicitly deferred to a browser', () => {
+  it('every case is either executed here or executed in the browser conformance lane', () => {
     const ids = SUITE.cases.map((c) => c.id);
+    expect(
+      SUITE.cases
+        .filter((c) => c.needsARenderedDOM)
+        .map((c) => c.id)
+        .sort(),
+    ).toEqual(Object.keys(NEEDS_A_BROWSER).sort());
     for (const deferred of Object.keys(NEEDS_A_BROWSER)) {
-      expect(ids, `${deferred} is deferred but no longer exists in the suite`).toContain(deferred);
+      expect(ids, `${deferred} runs in the browser but no longer exists in the suite`).toContain(
+        deferred,
+      );
     }
   });
 
   for (const c of SUITE.cases) {
     if (c.id in NEEDS_A_BROWSER) {
-      it.skip(`${c.id} — in a browser: ${NEEDS_A_BROWSER[c.id]}`, () => {});
       continue;
     }
 

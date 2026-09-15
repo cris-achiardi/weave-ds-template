@@ -146,23 +146,20 @@ Two rules about enforcement, both learned expensively in the systems this templa
 fails when a shared core reappears inside a framework package, when the behaviour barrels stop
 agreeing, or when two bindings disagree about a root element.
 
-`pnpm test:browser` drives generated components in Chromium and runs in its own CI job.
+`pnpm test:browser` drives generated components in Chromium, Firefox and WebKit and runs in its own CI job.
 It covers the review regressions in accessible names, ARIA references, collection
 identity changes, dialog lifecycle, and activation cancellation. See the
 [browser test guide](./tests/browser/README.md) for setup and scope.
 
 ## What this does not do yet
 
-- **Browser conformance coverage is incomplete.** The regression lane is running, but eight
-  deferred cases in the pure behavior suites still need dedicated browser coverage
-  ([#15](https://github.com/cris-achiardi/weave-ds-template/issues/15)).
-- **The contract tooling still lives in `packages/react/scripts/`** — `pnpm contract`, `prop-map` and
-  `report:paints` are agnostic work hosted by one backend ([#13](https://github.com/cris-achiardi/weave-ds-template/issues/13)).
-- **The `data-<prefix>-*` attribute families are unspecified.** Three backends invented and
-  reproduced them; the shadow-DOM backend showed they were standing in for scoping the platform does
-  itself ([#11](https://github.com/cris-achiardi/weave-ds-template/issues/11)).
-- **No form participation**, no `layout` block, and no way for a contract to state a relationship
-  between parts — which is most of what a Field does.
+- **Known accessibility relationships are non-conforming.** Field targets a wrapper instead of
+  its supplied control; WC omits cross-member references. Contract and CI reports expose these
+  gaps under [ADR 0005](./docs/ADR/0005-unsupported-contract-claims-are-non-conforming.md).
+- **Form lifecycle support varies by backend.** WC implements the five declared form controls;
+  other backend gaps are explicit in contract reports. See [form support](./packages/wc/forms.md).
+- **No `layout` block.** Structure and consumer paint remain separate; component layout needs
+  an explicit declaration before an emitter can derive it.
 - **Styling is duplicated per sandbox on purpose.** The token package is deliberately empty here; the
   real arrangement is to build it first, so every backend paints from one source.
 
