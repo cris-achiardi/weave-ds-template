@@ -42,5 +42,5 @@ export default defineConfig({
     ],
   },
   // 4302, one past the Vue sandbox. All three can run at once, which is the only way to compare.
-  server: { port: 4302, open: true },
+  server: { port: 4302, open: !process.env.PLAYWRIGHT_TEST },
 });

@@ -34,12 +34,14 @@
     "verify:docs": "node scripts/verify-docs.mjs",
     "typecheck": "tsc --noEmit -p packages/behavior/tsconfig.json && tsc --noEmit -p packages/react/tsconfig.json && tsc --noEmit -p apps/react-sandbox/tsconfig.json && tsc --noEmit -p packages/vue/tsconfig.json && pnpm --filter vue-sandbox typecheck && tsc --noEmit -p packages/angular/tsconfig.json && pnpm --filter angular-sandbox typecheck && tsc --noEmit -p packages/wc/tsconfig.json && pnpm --filter wc-sandbox typecheck",
     "test": "vitest run --passWithNoTests",
+    "test:browser": "pnpm build:tokens && playwright test",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint .",
     "clean": "node -e \"for (const p of ['packages/tokens/build','packages/react/dist','packages/vue/dist','packages/angular/dist','packages/wc/dist','node_modules/.vite']) require('fs').rmSync(p,{recursive:true,force:true})\""
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@types/node": "^24.0.0",
     "ajv": "^8.17.1",
     "eslint": "^10.9.1",

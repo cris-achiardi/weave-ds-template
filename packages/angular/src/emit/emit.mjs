@@ -359,7 +359,9 @@ function emitComponent(name, contract, binding, prefix) {
     );
   }
 
-  const idFor = (key) => (key === 'root' ? 'baseId' : `baseId + '-${key}'`);
+  // Members derive their ID from a signal. IDs and references must read it identically.
+  const baseIdRead = member ? 'baseId()' : 'baseId';
+  const idFor = (key) => (key === 'root' ? baseIdRead : `${baseIdRead} + '-${key}'`);
   const refId = (spec) => {
     if (typeof spec === 'string') return idFor(spec);
     if (!member) {
@@ -383,11 +385,6 @@ function emitComponent(name, contract, binding, prefix) {
   const referencedBySibling = referencedByASibling(name, member, CONTRACTS);
   const needsIds = Boolean(collection) || referencesParts || referencedBySibling;
 
-  // `baseId` is a plain string field on a non-member and a computed signal on a member, because a
-  // member's id root contains its identity input. `idFor` above spells the read the same way in
-  // both, so the difference is absorbed here.
-  const baseIdRead = member ? 'baseId()' : 'baseId';
-
   const needsIdsHelper = { value: false };
 
   const ctx = {
@@ -395,7 +392,7 @@ function emitComponent(name, contract, binding, prefix) {
     needsIdsHelper,
     slots: namedSlots,
     contract,
-    idFor: (key) => (key === 'root' ? baseIdRead : `${baseIdRead} + '-${key}'`),
+    idFor,
     childrenPart,
     memberReflects: member?.reflects,
     rangeTrack: range && range.track !== 'root' ? range.track : null,
@@ -403,7 +400,6 @@ function emitComponent(name, contract, binding, prefix) {
     refId,
     disabledExpr,
   };
-  void idFor;
 
   // -------------------------------------------------------------------------------------
   // host bindings — everything that would be a root attribute in the other two backends
