@@ -192,6 +192,14 @@ cfg.tokenPrefix = name;
 cfg.dataPrefix = name;
 if (!dry) writeFileSync(cfgPath, JSON.stringify(cfg, null, 2) + '\n');
 
+// Public WC event names are derived from the identity, not all covered by text replacements.
+// Regenerate this artifact after changing the config so it remains byte-identical to its reader.
+if (!dry)
+  execFileSync(process.execPath, [join(REPO_ROOT, 'scripts/build-prop-map.mjs')], {
+    cwd: REPO_ROOT,
+    stdio: 'inherit',
+  });
+
 // ---------------------------------------------------------------------------------------
 
 // A longer or shorter name changes string widths inside markdown tables, so Prettier's column

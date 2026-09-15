@@ -3,8 +3,7 @@
 Repo-wide scripts — the ones that operate on the whole repository rather than on one package.
 
 Package-specific machinery lives beside its package:
-[`packages/react/scripts/`](../packages/react/scripts/README.md) holds everything that reads or
-checks component source.
+[`packages/react/scripts/`](../packages/react/scripts/README.md) holds the React contract gate.
 
 Every script here is plain Node with no build step, run through a `pnpm` alias. Each one carries a
 header comment saying **what it catches that nothing else would** — that is the test for whether it
@@ -41,3 +40,19 @@ decision in three syntaxes. Renaming one by hand leaves a repo that builds green
 `/ds.config.json` is the source of truth for that identity; `init-ds` rewrites it and every
 reference to it. Run `--dry` first. CI runs the whole codemod on a matrix of names and asserts the
 renamed repo is still green, so the rename cannot rot.
+
+## Contract readers
+
+`backends.mjs` registers the backends used by these readers and `verify:parity`.
+
+- `pnpm contract Button`: the contract plus each backend's binding and derived public surface.
+- `pnpm contract Button --backend vue --pretty`: one backend's props, slots, and model events.
+- `pnpm contract --coverage`: bound, unbound, and orphan contracts for every backend.
+- `pnpm prop-map`: a glossary attributed by backend, including model events and WC attributes.
+  The JSON format is version 2 with a `backends` object; there is no ambiguous shared prop surface.
+- `pnpm report:paints --backend react --theme apps/react-sandbox/src/components/Button/Button.theme.css`: compare declared
+  policies against a consumer light-DOM theme. For a shadow stylesheet, also pass
+  `--backend wc --component Button --theme <consumer-theme.css>`.
+
+Paint findings remain advisory. Null channels are reported as unbound. A missing theme is
+reported as not evaluated, and the report does not claim to resolve CSS cascade or computed values.
