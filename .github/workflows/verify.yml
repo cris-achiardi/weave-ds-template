@@ -161,11 +161,4 @@ jobs:
       # A half-rename is the failure this whole codemod exists to prevent, and it produces no
       # build error — so assert directly that nothing kept the old prefix.
       - name: no stragglers left behind
-        run: |
-          if grep -rIn --exclude-dir=node_modules --exclude-dir=.git \
-               --exclude=init-ds.mjs --exclude=pnpm-lock.yaml \
-               -e '--ds-' -e '@ds/' -e 'data-ds-' . ; then
-            echo "::error::Found references to the old prefix after init-ds."
-            exit 1
-          fi
-          echo "No stragglers."
+        run: pnpm init-ds --check

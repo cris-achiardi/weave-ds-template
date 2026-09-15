@@ -56,3 +56,6 @@ renamed repo is still green, so the rename cannot rot.
 
 Paint findings remain advisory. Null channels are reported as unbound. A missing theme is
 reported as not evaluated, and the report does not claim to resolve CSS cascade or computed values.
+
+After branding, `pnpm init-ds --check` checks for stragglers using all rename rules and the same
+file traversal as the codemod. It does not mutate files. CI runs it for each branded fixture.

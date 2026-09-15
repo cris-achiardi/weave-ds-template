@@ -46,7 +46,7 @@ const byCodePoint = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
  * A JS constants file, so tokens are reachable from script without parsing CSS.
  *
  * Keyed by the **CSS custom-property name** — the same string the stylesheet uses — because the
- * thing callers actually want is `var(...)`, and a second casing convention (DsColorBrandPrimary)
+ * thing callers actually want is `var(...)`, and a second casing convention (PascalCaseTokenName)
  * would be a second name for one token, which is the duplication this whole repo is built to
  * avoid. Emits plain JS; the types live in the generated .d.ts beside it.
  */
