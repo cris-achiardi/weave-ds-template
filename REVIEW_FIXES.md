@@ -6,8 +6,8 @@ Delete this temporary plan in the final PR.
 
 | Order | Issue | Work                                                                                                     | Status                  |
 | ----- | ----- | -------------------------------------------------------------------------------------------------------- | ----------------------- |
-| 1     | #18   | Angular accordion IDs and ARIA references share one signal-aware helper; introduce browser regression CI | Implemented; CI pending |
-| 2     | #22   | Defer WC dialog presentation until connection                                                            | Pending                 |
+| 1     | #18   | Angular accordion IDs and ARIA references share one signal-aware helper; introduce browser regression CI | Merged in #23           |
+| 2     | #22   | Defer WC dialog presentation until connection                                                            | Implemented; CI pending |
 | 3     | #20   | Forward literal accessible names to WC controls                                                          | Pending                 |
 | 4     | #19   | Remove obsolete navigation registrations on member identity changes                                      | Pending                 |
 | 5     | #21   | Let host consumers cancel activation before state changes; remove this plan                              | Pending                 |

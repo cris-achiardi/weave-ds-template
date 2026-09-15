@@ -1,6 +1,9 @@
 import { defineConfig } from '@playwright/test';
 
-const backends = [{ name: 'angular', port: 4402 }];
+const backends = [
+  { name: 'angular', port: 4402 },
+  { name: 'wc', port: 4403 },
+];
 
 export default defineConfig({
   testDir: './tests/browser',

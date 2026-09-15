@@ -491,6 +491,8 @@ function emitComponent(name, contract, binding, prefix) {
     s.push(`    // writer of its own state. Synced from the element's own \`${vis.reflects}\``);
     s.push(`    // attribute rather than a \`close\` event, which is measured unreliable.`);
     s.push(`    new MutationObserver(() => {`);
+    s.push(`      // Disconnect closes presentation without changing the requested public state.`);
+    s.push(`      if (!this.isConnected) return;`);
     s.push(
       `      if (!(this.#root as HTMLDialogElement).${vis.reflects} && this.${camel(platformModal)}) {`,
     );
@@ -558,16 +560,24 @@ function emitComponent(name, contract, binding, prefix) {
   s.push(`    this.#update();`);
   s.push(`  }`);
   s.push(``);
-  if (member) {
+  if (member || platformModal) {
     s.push(`  disconnectedCallback(): void {`);
-    s.push(`    this.#collection?.removeEventListener(`);
-    s.push(`      ${member.of.toUpperCase()}_CHANGE,`);
-    s.push(`      this.#onCollectionChange,`);
-    s.push(`    );`);
-    if (registers) s.push(`    this.#collection?.unregister(this.${identity.name});`);
-    s.push(`    this.#collection = null;`);
+    if (member) {
+      s.push(`    this.#collection?.removeEventListener(`);
+      s.push(`      ${member.of.toUpperCase()}_CHANGE,`);
+      s.push(`      this.#onCollectionChange,`);
+      s.push(`    );`);
+      if (registers) s.push(`    this.#collection?.unregister(this.${identity.name});`);
+      s.push(`    this.#collection = null;`);
+    }
+    if (platformModal) {
+      s.push(`    // Reset native presentation so reconnect can establish modality again.`);
+      s.push(`    (this.#root as HTMLDialogElement).${visibilityOf(el, WEB).hide}();`);
+    }
     s.push(`  }`);
     s.push(``);
+  }
+  if (member) {
     s.push(`  readonly #onCollectionChange = () => this.#update();`);
     s.push(``);
   }
@@ -964,6 +974,10 @@ function emitComponent(name, contract, binding, prefix) {
   if (platformModal) {
     const vis = visibilityOf(el, WEB);
     const v = camel(platformModal);
+    s.push(
+      `    // Properties may be assigned before insertion; showing needs a connected document.`,
+    );
+    s.push(`    if (!this.isConnected) return;`);
     s.push(
       `    // A <dialog> is opened by CALLING ${vis.show}(), never by rendering an attribute.`,
     );
