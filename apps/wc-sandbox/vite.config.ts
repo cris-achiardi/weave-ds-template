@@ -18,5 +18,5 @@ export default defineConfig({
     ],
   },
   // 4303, one past the Angular sandbox. All four can run at once.
-  server: { port: 4303, open: true },
+  server: { port: 4303, open: !process.env.PLAYWRIGHT_TEST },
 });

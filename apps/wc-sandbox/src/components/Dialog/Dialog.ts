@@ -82,6 +82,8 @@ export class Dialog extends HTMLElement {
     // writer of its own state. Synced from the element's own `open`
     // attribute rather than a `close` event, which is measured unreliable.
     new MutationObserver(() => {
+      // Disconnect closes presentation without changing the requested public state.
+      if (!this.isConnected) return;
       if (!(this.#root as HTMLDialogElement).open && this.open) {
         this.open = false;
         this.#emit('open-change', false);
@@ -107,6 +109,11 @@ export class Dialog extends HTMLElement {
 
   connectedCallback(): void {
     this.#update();
+  }
+
+  disconnectedCallback(): void {
+    // Reset native presentation so reconnect can establish modality again.
+    (this.#root as HTMLDialogElement).close();
   }
 
   attributeChangedCallback(): void {
@@ -168,6 +175,8 @@ export class Dialog extends HTMLElement {
     root?.setAttribute('id', this.#baseId);
     this.#part('title')?.setAttribute('id', this.#baseId + '-title');
     root?.setAttribute('aria-labelledby', this.#baseId + '-title');
+    // Properties may be assigned before insertion; showing needs a connected document.
+    if (!this.isConnected) return;
     // A <dialog> is opened by CALLING showModal(), never by rendering an attribute.
     const dlg = root as HTMLDialogElement;
     if (this.open && !dlg.open) dlg.showModal();
