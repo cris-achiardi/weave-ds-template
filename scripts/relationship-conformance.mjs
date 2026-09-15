@@ -44,3 +44,19 @@ export function relationshipConformance(contract, backend) {
     gaps,
   };
 }
+
+export function formConformance(contract, backend) {
+  if (!contract.form) return { status: 'not-applicable' };
+  if (backend === 'wc')
+    return {
+      status: 'implemented',
+      scope: 'named answer, required/custom validation, reset and restore lifecycle',
+    };
+  return {
+    status: 'non-conforming',
+    detail:
+      contract.component === 'TextField'
+        ? 'The native input submits, but the full declared reset/validation lifecycle is not implemented by this backend.'
+        : 'This backend does not emit a form contribution for this custom control.',
+  };
+}

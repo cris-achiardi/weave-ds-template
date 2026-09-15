@@ -40,8 +40,13 @@ const RANGE: RangeOptions = {
 
 export class Slider extends HTMLElement {
   static readonly tagName = 'ds-slider';
-  static readonly observedAttributes = ['disabled', 'value', 'aria-label'];
+  static readonly formAssociated = true;
+  static readonly observedAttributes = ['disabled', 'name', 'required', 'value', 'aria-label'];
 
+  readonly #internals = this.attachInternals();
+  #formDisabled = false;
+  #customValidity = '';
+  #initialFormValue: number | undefined;
   readonly #root: HTMLElement;
   readonly #track: HTMLElement;
   readonly #range;
@@ -61,7 +66,7 @@ export class Slider extends HTMLElement {
         this.value = next;
         this.#emit('value-change', next);
       },
-      () => this.disabled,
+      () => this.disabled || this.#formDisabled,
       () => this.#track,
       () => this.#update(),
     );
@@ -85,6 +90,7 @@ export class Slider extends HTMLElement {
   }
 
   connectedCallback(): void {
+    this.#initialFormValue ??= this.value;
     this.#update();
   }
 
@@ -100,6 +106,22 @@ export class Slider extends HTMLElement {
   }
   set disabled(value: boolean) {
     this.toggleAttribute('disabled', Boolean(value));
+  }
+
+  /** Name of the submitted answer. An empty name contributes nothing. */
+  get name(): string {
+    return this.getAttribute('name') ?? '';
+  }
+  set name(value: string) {
+    this.setAttribute('name', value);
+  }
+
+  /** Whether an answer is required for form validation. */
+  get required(): boolean {
+    return this.hasAttribute('required');
+  }
+  set required(value: boolean) {
+    this.toggleAttribute('required', Boolean(value));
   }
 
   /** The chosen number. Bounded and stepped — facts that live nowhere else, and that no boolean or enumeration can carry. */
@@ -143,14 +165,70 @@ export class Slider extends HTMLElement {
     const label = this.getAttribute('aria-label');
     if (label === null) root.removeAttribute('aria-label');
     else root.setAttribute('aria-label', label);
-    if (this.disabled) root.setAttribute('aria-disabled', 'true');
+    if (this.disabled || this.#formDisabled) root.setAttribute('aria-disabled', 'true');
     else root.removeAttribute('aria-disabled');
     root.setAttribute('aria-valuemin', '0');
     root.setAttribute('aria-valuemax', '100');
     root.setAttribute('aria-valuenow', String(snap(this.value, RANGE)));
     root.style.setProperty('--ds-fraction', String(this.#range.fraction));
     this.toggleAttribute('dragging', this.#range.dragging);
-    root.setAttribute('tabindex', this.disabled ? '-1' : '0');
+    root.setAttribute('tabindex', this.disabled || this.#formDisabled ? '-1' : '0');
+    this.#syncForm();
+  }
+
+  get form(): HTMLFormElement | null {
+    return this.#internals.form;
+  }
+  get validity(): ValidityState {
+    return this.#internals.validity;
+  }
+  get validationMessage(): string {
+    return this.#internals.validationMessage;
+  }
+  get willValidate(): boolean {
+    return this.#internals.willValidate;
+  }
+  checkValidity(): boolean {
+    return this.#internals.checkValidity();
+  }
+  reportValidity(): boolean {
+    return this.#internals.reportValidity();
+  }
+  setCustomValidity(message: string): void {
+    this.#customValidity = String(message);
+    this.#update();
+  }
+  formDisabledCallback(disabled: boolean): void {
+    this.#formDisabled = disabled;
+    this.#update();
+  }
+  formResetCallback(): void {
+    if (this.#initialFormValue !== undefined) this.value = this.#initialFormValue;
+
+    this.#update();
+  }
+  formStateRestoreCallback(state: string | File | FormData | null): void {
+    if (typeof state !== 'string') return;
+    if (!Number.isFinite(Number(state))) return;
+
+    this.value = Number(state);
+
+    this.#update();
+  }
+  #syncForm(): void {
+    const answer = snap(Number.isFinite(this.value) ? this.value : 0, RANGE);
+    const disabled = this.disabled || this.#formDisabled;
+    this.#internals.setFormValue(disabled ? null : String(answer), String(answer));
+
+    const valueMissing = this.required && false;
+    const customError = Boolean(this.#customValidity);
+    const flags = { valueMissing, customError };
+    const message =
+      this.#customValidity ||
+      (customError ? 'Invalid value.' : valueMissing ? 'Please provide an answer.' : '');
+    this.#internals.setValidity(flags, message, this.#root);
+    this.#root.setAttribute('aria-invalid', String(valueMissing || customError));
+    this.#root.setAttribute('aria-required', String(this.required));
   }
 }
 

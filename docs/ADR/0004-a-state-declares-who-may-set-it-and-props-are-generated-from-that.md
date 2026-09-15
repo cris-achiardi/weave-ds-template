@@ -179,3 +179,13 @@ controlled input needs synchronous local updates even when public reporting is d
 [HTML input specification](https://html.spec.whatwg.org/multipage/input.html) distinguishes editing
 from committing; this contract deliberately chooses an explicit session boundary rather than
 relying on differently named framework events.
+
+## Form answers (2026-09-15)
+
+A `form` block declares a shared state (or shared single selection) and `string`, `number`, or
+`checked` encoding. Checked encoding names the source value that contributes an answer. The
+consumer supplies the submission name, requiredness and checked submission value. Disabled
+answers are omitted; reset restores the initial answer. Button is an action and has no contribution.
+This is answer semantics, not framework prop spelling. WC realizes it with ElementInternals;
+[its form lifecycle](../../packages/wc/forms.md) records the web mapping and validation boundary.
+Other backends report unimplemented claims explicitly under ADR 0005.

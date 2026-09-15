@@ -4,6 +4,6 @@
   "contract": "../../contracts/components/TextField/TextField.contract.json",
   "framework": "wc",
   "notes": [
-    "A native <input part=\"root\"> inside the shadow root. The host is not a form control: it does not participate in a form and does not carry the value. That is a real gap and is recorded rather than solved — ElementInternals and form association are their own piece of work."
+    "A native input inside the shadow root handles editing. The host participates in forms through ElementInternals because TextField.form declares a contribution. See packages/wc/forms.md."
   ]
 }

@@ -33,8 +33,21 @@ TEMPLATE.innerHTML = `
 
 export class Checkbox extends HTMLElement {
   static readonly tagName = 'ds-checkbox';
-  static readonly observedAttributes = ['disabled', 'invalid', 'checked', 'aria-label'];
+  static readonly formAssociated = true;
+  static readonly observedAttributes = [
+    'disabled',
+    'invalid',
+    'name',
+    'required',
+    'value',
+    'checked',
+    'aria-label',
+  ];
 
+  readonly #internals = this.attachInternals();
+  #formDisabled = false;
+  #customValidity = '';
+  #initialFormValue: 'unchecked' | 'checked' | 'mixed' | undefined;
   readonly #root: HTMLElement;
   readonly #pendingActivations = new Set<number>();
 
@@ -69,6 +82,7 @@ export class Checkbox extends HTMLElement {
   }
 
   connectedCallback(): void {
+    this.#initialFormValue ??= this.checked;
     this.#update();
   }
 
@@ -99,6 +113,30 @@ export class Checkbox extends HTMLElement {
     this.toggleAttribute('invalid', Boolean(value));
   }
 
+  /** Name of the submitted answer. An empty name contributes nothing. */
+  get name(): string {
+    return this.getAttribute('name') ?? '';
+  }
+  set name(value: string) {
+    this.setAttribute('name', value);
+  }
+
+  /** Whether an answer is required for form validation. */
+  get required(): boolean {
+    return this.hasAttribute('required');
+  }
+  set required(value: boolean) {
+    this.toggleAttribute('required', Boolean(value));
+  }
+
+  /** Value submitted when checked. */
+  get value(): string {
+    return this.getAttribute('value') ?? 'on';
+  }
+  set value(value: string) {
+    this.setAttribute('value', value);
+  }
+
   /** The answer. Three values, not two: `mixed` reports that a set of checkboxes below this one is partly checked, and is set by the implementation rather than chosen by a user. */
   get checked(): 'unchecked' | 'checked' | 'mixed' {
     return (this.getAttribute('checked') ?? 'unchecked') as 'unchecked' | 'checked' | 'mixed';
@@ -109,7 +147,7 @@ export class Checkbox extends HTMLElement {
 
   #queueActivation(event: MouseEvent): void {
     if (!this.isConnected || event.defaultPrevented) return;
-    if (this.disabled) return;
+    if (this.disabled || this.#formDisabled) return;
     // A task, not a microtask: trusted events can checkpoint between listeners.
     const timer = window.setTimeout(() => {
       this.#pendingActivations.delete(timer);
@@ -122,7 +160,7 @@ export class Checkbox extends HTMLElement {
   #activate(event: MouseEvent): void {
     // Recheck cancellation and availability after every host listener has run.
     if (event.defaultPrevented) return;
-    if (this.disabled) return;
+    if (this.disabled || this.#formDisabled) return;
     this.checked = this.checked === 'checked' ? 'unchecked' : 'checked';
     this.#emit('checked-change', this.checked);
   }
@@ -177,11 +215,75 @@ export class Checkbox extends HTMLElement {
       if (next === null) root.removeAttribute('aria-checked');
       else root.setAttribute('aria-checked', next);
     }
-    root.toggleAttribute('disabled', this.disabled);
+    root.toggleAttribute('disabled', this.disabled || this.#formDisabled);
     if (this.invalid) root.setAttribute('aria-invalid', 'true');
     else root.removeAttribute('aria-invalid');
     this.#part('tick')?.toggleAttribute('hidden', !(this.checked === 'checked'));
     this.#part('dash')?.toggleAttribute('hidden', !(this.checked === 'mixed'));
+    this.#syncForm();
+  }
+
+  get form(): HTMLFormElement | null {
+    return this.#internals.form;
+  }
+  get validity(): ValidityState {
+    return this.#internals.validity;
+  }
+  get validationMessage(): string {
+    return this.#internals.validationMessage;
+  }
+  get willValidate(): boolean {
+    return this.#internals.willValidate;
+  }
+  checkValidity(): boolean {
+    return this.#internals.checkValidity();
+  }
+  reportValidity(): boolean {
+    return this.#internals.reportValidity();
+  }
+  setCustomValidity(message: string): void {
+    this.#customValidity = String(message);
+    this.#update();
+  }
+  formDisabledCallback(disabled: boolean): void {
+    this.#formDisabled = disabled;
+    this.#update();
+  }
+  formResetCallback(): void {
+    for (const timer of this.#pendingActivations) window.clearTimeout(timer);
+    this.#pendingActivations.clear();
+
+    if (this.#initialFormValue !== undefined) this.checked = this.#initialFormValue;
+
+    this.#update();
+  }
+  formStateRestoreCallback(state: string | File | FormData | null): void {
+    if (typeof state !== 'string') return;
+    if (!['unchecked', 'checked', 'mixed'].includes(state)) return;
+    for (const timer of this.#pendingActivations) window.clearTimeout(timer);
+    this.#pendingActivations.clear();
+
+    this.checked = state as 'unchecked' | 'checked' | 'mixed';
+
+    this.#update();
+  }
+  #syncForm(): void {
+    const answer = this.checked;
+    const disabled = this.disabled || this.#formDisabled;
+    this.#internals.setFormValue(
+      disabled ? null : answer === 'checked' ? this.value : null,
+      String(answer),
+    );
+
+    const valueMissing = this.required && answer !== 'checked';
+    const customError = Boolean(this.#customValidity) || this.invalid;
+    const flags = { valueMissing, customError };
+    const message =
+      this.#customValidity ||
+      (customError ? 'Invalid value.' : valueMissing ? 'Please provide an answer.' : '');
+    this.#internals.setValidity(flags, message, this.#root);
+    this.#root.setAttribute('aria-invalid', String(valueMissing || customError));
+    this.#root.setAttribute('aria-required', String(this.required));
   }
 
   #part(name: string): HTMLElement | null {

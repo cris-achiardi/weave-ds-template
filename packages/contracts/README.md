@@ -82,3 +82,11 @@ each framework's `prop-bindings.json` compiles it into that framework's vocabula
 Those gaps are earned by evidence rather than designed in advance. The first pass is
 `docs/research/0001-contract-schema-smoke-test.md`, which drafted four contracts against real
 reference APIs and reported where the schema fell short; ADRs 0003 and 0004 record what it settled.
+
+### Form contributions
+
+`form: { source: "value", encoding: "string" }` declares a named answer. Sources must be shared
+state, or `selection` on a shared single-selection collection. Number encoding requires numeric
+state. Checked encoding requires a `checkedValue` in the source domain and contributes only while
+that value is active. Consumers choose name and requiredness; disabled controls are omitted and
+reset restores the initial answer. Backend contract reports identify unimplemented form claims.

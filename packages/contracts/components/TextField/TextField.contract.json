@@ -119,5 +119,6 @@
         "focus-visible": { "outline": null, "outline-offset": null }
       }
     }
-  }
+  },
+  "form": { "source": "value", "encoding": "string" }
 }

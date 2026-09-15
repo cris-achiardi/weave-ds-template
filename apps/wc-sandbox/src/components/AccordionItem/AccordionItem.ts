@@ -123,7 +123,10 @@ export class AccordionItem extends HTMLElement {
   }
 
   get #isDisabled(): boolean {
-    return this.disabled || Boolean(this.#collection?.hasAttribute('disabled'));
+    return (
+      this.disabled ||
+      Boolean(this.#collection?.hasAttribute('disabled') || this.#collection?.matches(':disabled'))
+    );
   }
 
   get #selected(): boolean {
@@ -134,12 +137,18 @@ export class AccordionItem extends HTMLElement {
     if (!this.isConnected || event.defaultPrevented) return;
     if (this.#isDisabled) return;
     const collection = this.#collection;
+    const version = collection?.interactionVersion;
     const value = this.value;
     // A task, not a microtask: trusted events can checkpoint between listeners.
     const timer = window.setTimeout(() => {
       this.#pendingActivations.delete(timer);
       if (!this.isConnected) return;
-      if (collection !== this.#collection || value !== this.value) return;
+      if (
+        collection !== this.#collection ||
+        value !== this.value ||
+        version !== collection?.interactionVersion
+      )
+        return;
       this.#activate(event);
     }, 0);
     this.#pendingActivations.add(timer);
@@ -169,7 +178,7 @@ export class AccordionItem extends HTMLElement {
 
   #write(): void {
     const root = this.#root;
-    if (this.disabled) root.setAttribute('aria-disabled', 'true');
+    if (this.#isDisabled) root.setAttribute('aria-disabled', 'true');
     else root.removeAttribute('aria-disabled');
     // The host carries it too, because CSS cannot select inside a shadow root from
     // outside and cannot append an attribute selector to ::part(). One fact, two

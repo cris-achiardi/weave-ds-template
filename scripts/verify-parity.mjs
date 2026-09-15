@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { formFor } from '../packages/emit-web/contract.mjs';
 /**
  * `pnpm verify:parity` — the many-backends gate.
  *
@@ -36,7 +37,7 @@ import { fileURLToPath } from 'node:url';
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const readJson = (p) => JSON.parse(readFileSync(p, 'utf8'));
 
-import { relationshipConformance } from './relationship-conformance.mjs';
+import { relationshipConformance, formConformance } from './relationship-conformance.mjs';
 import { BACKENDS } from './backends.mjs';
 import Ajv from 'ajv/dist/2020.js';
 import { loadComponents, loadProfile } from '../packages/platform-web/resolve.mjs';
@@ -178,7 +179,15 @@ for (const component of everyComponent) {
   const contract = readJson(
     join(REPO_ROOT, 'packages/contracts/components', component, `${component}.contract.json`),
   );
+  try {
+    formFor(contract);
+  } catch (error) {
+    failures.push(error.message);
+  }
   for (const backend of present) {
+    const formResult = formConformance(contract, backend.framework);
+    if (formResult.status === 'non-conforming')
+      reports.push(`NON-CONFORMING ${backend.framework}/${component} form: ${formResult.detail}`);
     const result = relationshipConformance(contract, backend.framework);
     for (const gap of result.gaps)
       reports.push(`NON-CONFORMING ${backend.framework}/${component} ${gap.path}: ${gap.reason}`);

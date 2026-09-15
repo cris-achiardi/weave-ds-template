@@ -50,7 +50,7 @@ and change notifications are committed. See the [event rules](./src/emit/README.
 | **one fact, two places**               | a state reaches ARIA on the INNER element and is reflected onto the HOST for CSS. `::part()` cannot take an attribute selector, so no single place serves both |
 | **the host has no display**            | a custom element is `display: inline` until told otherwise. No other backend hands a consumer this                                                             |
 | **an IDREF cannot cross a boundary**   | cross-member references are omitted; these claims are non-conforming. See below                                                                                |
-| **no form participation**              | the host is not a form control. `ElementInternals` is its own work and is not done here                                                                        |
+| **form lifecycle**                     | explicit contract contributions generate `ElementInternals` and lifecycle callbacks; see [forms](./forms.md)                                                   |
 | **slot emptiness is invisible to CSS** | a `<slot>` element is always present, so `:empty` never matches. The component reflects `has-<slot>` on a `slotchange`                                         |
 
 ### Relationship conformance

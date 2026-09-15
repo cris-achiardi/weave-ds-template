@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://example.invalid/schemas/component-contract-12.json",
+  "$id": "https://example.invalid/schemas/component-contract-13.json",
   "title": "Component contract (framework-agnostic)",
   "description": "Describes ONE component completely enough to build it, in any framework. The reasoning is in contracts/README.md.\n\nThis file lives at contracts/ rather than inside a package on purpose: it belongs to no framework. It says what the component IS — its purpose, its behaviour, the states it must be able to show, the axes it exposes, its anatomy, and which family of token paints each part. It does NOT say how any of that is expressed in React, or in React Native, or in a web component. That is a binding, and bindings live beside the implementation.\n\nBuildable means: someone handed this file, the prop map for their framework, and the code standards should be able to produce the component without asking what it is for.",
   "type": "object",
@@ -450,6 +450,45 @@
           "$ref": "#/$defs/part"
         }
       }
+    },
+    "form": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "encoding"],
+      "description": "Contributes one named answer. The consumer supplies the name and whether an answer is required. Disabled controls contribute nothing; reset restores the initial answer. Web bindings implement form ownership and serialization.",
+      "properties": {
+        "source": {
+          "type": "string",
+          "minLength": 1,
+          "description": "A shared state name, or selection for a shared single-selection collection."
+        },
+        "encoding": {
+          "enum": ["string", "number", "checked"]
+        },
+        "checkedValue": {
+          "type": ["string", "boolean"],
+          "description": "For checked encoding, the source value that contributes the consumer submission value (default on). All other values contribute nothing."
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "encoding": {
+                "const": "checked"
+              }
+            }
+          },
+          "then": {
+            "required": ["checkedValue"]
+          },
+          "else": {
+            "not": {
+              "required": ["checkedValue"]
+            }
+          }
+        }
+      ]
     }
   },
   "$defs": {

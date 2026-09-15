@@ -34,3 +34,7 @@ illegal combination unrepresentable.
 - Nothing derives `mixed` from a set of child checkboxes. The contract says that is where it comes
   from; expressing "this checkbox summarises those" would need the collection vocabulary pointed
   the other way, and has not been tried.
+
+## Form participation (2026-09-15)
+
+Declared a named form answer, its source and serialization. Disabled answers are omitted; reset restores the initial answer. WC implements ElementInternals and required/custom validation. Other backend form support is reported separately.

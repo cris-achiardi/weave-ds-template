@@ -35,7 +35,15 @@ import {
 
 const WEB = loadProfile();
 
-import { loadPair, memberFacts, partsOf, readJson, referencedByASibling } from '@ds/emit-web';
+import { emitFormMethods } from './form.mjs';
+import {
+  formFor,
+  loadPair,
+  memberFacts,
+  partsOf,
+  readJson,
+  referencedByASibling,
+} from '@ds/emit-web';
 import { emitStructureShadow, emitThemeShadow } from './css-shadow.mjs';
 import { camel, kebab, pascal, slotsFrom, surfaceFrom, tagFor } from './surface.mjs';
 
@@ -90,6 +98,7 @@ function renderPart(key, node, ctx, depth) {
 // the component
 // ---------------------------------------------------------------------------------------
 export function emitComponent(name, contract, binding, prefix) {
+  const form = formFor(contract);
   const props = surfaceFrom(contract);
   const slots = slotsFrom(contract);
   const root = contract.anatomy.root;
@@ -191,6 +200,7 @@ export function emitComponent(name, contract, binding, prefix) {
     (x) => contract.states?.[x.from]?.valueType === 'string' && x.name === 'value',
   );
   const nativelyEdited = editable && valueState;
+  const formModel = form && models.find((model) => model.name === form.property);
   const commitEditing = nativelyEdited && contract.states[valueState.from].editing === 'commit';
 
   // --- assumptions unique to this backend -----------------------------------------------
@@ -379,6 +389,7 @@ export function emitComponent(name, contract, binding, prefix) {
   if (acceptsLabel) observed.push('aria-label');
   s.push(`export class ${className} extends HTMLElement {`);
   s.push(`  static readonly tagName = '${tag}';`);
+  if (form) s.push(`  static readonly formAssociated = true;`);
   if (observed.length) {
     s.push(`  static readonly observedAttributes = [${observed.map((a) => `'${a}'`).join(', ')}];`);
   }
@@ -387,10 +398,17 @@ export function emitComponent(name, contract, binding, prefix) {
     s.push(`  #editingDraft = '';`);
     s.push(`  #draftSource: string | undefined;`);
   }
+  if (form) {
+    s.push(`  readonly #internals = this.attachInternals();`);
+    s.push(`  #formDisabled = false;`);
+    s.push(`  #customValidity = '';`);
+    s.push(`  #initialFormValue: ${formModel.type} | undefined;`);
+  }
   s.push(`  readonly #root: HTMLElement;`);
   if (range) s.push(`  readonly #track: HTMLElement;`);
   if (needsIds) s.push(`  readonly #baseId = '${prefix}-${kebab(name)}-' + nextId++;`);
   if (member) s.push(`  #collection: ${member.of} | null = null;`);
+  if (collection && form) s.push(`  #interactionVersion = 0;`);
   if (registers) s.push(`  #registeredValue: string | null = null;`);
   if (hasActivation) s.push(`  readonly #pendingActivations = new Set<number>();`);
   if (dismissCauses.length) s.push(`  readonly #dismissal;`);
@@ -434,7 +452,9 @@ export function emitComponent(name, contract, binding, prefix) {
     s.push(`        this.${v} = next;`);
     s.push(`        this.#emit('${kebab(range.state)}-change', next);`);
     s.push(`      },`);
-    s.push(`      () => ${hasDisabled ? 'this.disabled' : 'false'},`);
+    s.push(
+      `      () => ${form ? 'this.disabled || this.#formDisabled' + (hasReadOnly ? ' || this.readOnly' : '') : hasDisabled ? 'this.disabled' : 'false'},`,
+    );
     s.push(`      () => this.#track,`);
     s.push(`      () => this.#update(),`);
     s.push(`    );`);
@@ -551,6 +571,7 @@ export function emitComponent(name, contract, binding, prefix) {
   }
 
   s.push(`  connectedCallback(): void {`);
+  if (form) s.push(`    this.#initialFormValue ??= this.${form.property};`);
   if (member) {
     s.push(`    this.#collection = this.closest<${member.of}>(`);
     s.push(`      '${tagFor(member.of, prefix)}',`);
@@ -645,7 +666,9 @@ export function emitComponent(name, contract, binding, prefix) {
       s.push(`  }`);
     } else {
       s.push(`  get ${p.name}(): string {`);
-      s.push(`    return this.getAttribute('${p.attribute}') ?? '';`);
+      s.push(
+        `    return this.getAttribute('${p.attribute}') ?? ${JSON.stringify(p.default ?? '')};`,
+      );
       s.push(`  }`);
       s.push(`  set ${p.name}(value: string) {`);
       s.push(`    this.setAttribute('${p.attribute}', value);`);
@@ -660,7 +683,7 @@ export function emitComponent(name, contract, binding, prefix) {
   if (member && (registers || activator || rootToggles)) {
     s.push(`  get #isDisabled(): boolean {`);
     s.push(
-      `    return ${hasDisabled ? 'this.disabled || ' : ''}Boolean(this.#collection?.hasAttribute('disabled'));`,
+      `    return ${hasDisabled ? 'this.disabled || ' : ''}Boolean(this.#collection?.hasAttribute('disabled') || this.#collection?.matches(':disabled'));`,
     );
     s.push(`  }`);
     s.push(``);
@@ -674,11 +697,23 @@ export function emitComponent(name, contract, binding, prefix) {
     s.push(``);
   }
 
+  if (collection) {
+    s.push(
+      `  /** Internal member protocol: invalidate queued activation after a form lifecycle change. */`,
+    );
+    s.push(
+      `  get interactionVersion(): number { return ${form ? 'this.#interactionVersion' : '0'}; }`,
+    );
+  }
   // --- the collection's API, called by members
   if (selShared) {
     const idn = collection.identity;
     s.push(`  /** Called by a member when it is activated. */`);
     s.push(`  toggle(member${pascal(idn)}: string): void {`);
+    if (form)
+      s.push(
+        `    if (this.disabled || this.#formDisabled${hasReadOnly ? ' || this.readOnly' : ''}) return;`,
+      );
     if (many) {
       s.push(`    const current = this.value;`);
       s.push(`    this.value = current.includes(member${pascal(idn)})`);
@@ -730,13 +765,15 @@ export function emitComponent(name, contract, binding, prefix) {
     const what = activator?.node.activates.toggles ?? rootToggles;
     const guards = [];
     if (member) guards.push('this.#isDisabled');
-    else if (hasDisabled) guards.push('this.disabled');
+    else if (hasDisabled)
+      guards.push(form ? 'this.disabled || this.#formDisabled' : 'this.disabled');
     if (hasReadOnly) guards.push('this.readOnly');
     s.push(`  #queueActivation(event: MouseEvent): void {`);
     s.push(`    if (!this.isConnected || event.defaultPrevented) return;`);
     if (guards.length) s.push(`    if (${guards.join(' || ')}) return;`);
     if (member) {
       s.push(`    const collection = this.#collection;`);
+      s.push(`    const version = collection?.interactionVersion;`);
       s.push(`    const value = this.${member.identity};`);
     }
     s.push(`    // A task, not a microtask: trusted events can checkpoint between listeners.`);
@@ -745,7 +782,7 @@ export function emitComponent(name, contract, binding, prefix) {
     s.push(`      if (!this.isConnected) return;`);
     if (member) {
       s.push(
-        `      if (collection !== this.#collection || value !== this.${member.identity}) return;`,
+        `      if (collection !== this.#collection || value !== this.${member.identity} || version !== collection?.interactionVersion) return;`,
       );
     }
     s.push(`      this.#activate(event);`);
@@ -782,6 +819,10 @@ export function emitComponent(name, contract, binding, prefix) {
   if (nativelyEdited) {
     const v = camel(valueState.from);
     s.push(`  #handleInput(event: Event): void {`);
+    if (form)
+      s.push(
+        `    if (this.disabled || this.#formDisabled${hasReadOnly ? ' || this.readOnly' : ''}) return;`,
+      );
     s.push(`    const next = (event.target as HTMLInputElement).value;`);
     if (commitEditing) s.push(`    if (next === this.${v}) return;`);
     s.push(`    this.${v} = next;`);
@@ -867,7 +908,12 @@ export function emitComponent(name, contract, binding, prefix) {
     const asModel = models.find((m) => m.from === st);
     const asInput = inputs.find((p) => p.from === st);
     if (!asModel && !asInput) continue;
-    const expr = `this.${camel(st)}`;
+    const expr =
+      st === 'disabled' && form
+        ? '(this.disabled || this.#formDisabled)'
+        : st === 'disabled' && member && (registers || activator || rootToggles)
+          ? 'this.#isDisabled'
+          : `this.${camel(st)}`;
     const decision = channelFor(
       {
         state: st,
@@ -961,7 +1007,7 @@ export function emitComponent(name, contract, binding, prefix) {
   }
   if (!member && contract.semantics?.focusable && !registers && !isNativelyFocusable(el, WEB)) {
     s.push(
-      `    root.setAttribute('tabindex', ${hasDisabled ? "this.disabled ? '-1' : '0'" : "'0'"});`,
+      `    root.setAttribute('tabindex', ${hasDisabled ? (form ? "(this.disabled || this.#formDisabled) ? '-1' : '0'" : "this.disabled ? '-1' : '0'") : "'0'"});`,
     );
   }
   if (nativelyEdited) {
@@ -1031,6 +1077,10 @@ export function emitComponent(name, contract, binding, prefix) {
       }
     }
   }
+  if (form) {
+    if (!contract.semantics?.focusable) s.push(`    root.setAttribute('tabindex', '-1');`);
+    s.push(`    this.#syncForm();`);
+  }
   if (root.visibleWhen && !platformModal) {
     s.push(`    this.toggleAttribute('hidden', !(${stateRead(root.visibleWhen, member)}));`);
   }
@@ -1050,6 +1100,16 @@ export function emitComponent(name, contract, binding, prefix) {
   }
   s.push(`  }`);
   s.push(``);
+  if (form)
+    s.push(
+      emitFormMethods(form, formModel, {
+        range: rangeState,
+        hasInvalid: inputs.some((p) => p.name === 'invalid'),
+        commitEditing,
+        hasReadOnly,
+        hasActivation,
+      }),
+    );
   // Emitted only when something calls it: `noUnusedLocals` treats an unused private member as
   // an error, so a helper written unconditionally would fail the typecheck on half the library.
   if (s.some((l) => l.includes('this.#part('))) {

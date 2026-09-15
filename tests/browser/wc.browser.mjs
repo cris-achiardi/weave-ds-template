@@ -144,3 +144,6 @@ test('known relationship gaps remain explicitly non-conforming (ADR 0005)', asyn
   });
   if (scope.supported) expect(scope).toEqual({ supported: true, siblingCount: 0, hostCount: 1 });
 });
+
+import { formRegressions } from './forms.mjs';
+formRegressions();
