@@ -7,6 +7,7 @@ import {
   readFileSync,
   readdirSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -237,6 +238,24 @@ describe('repository traversal', () => {
     expect(readFileSync(join(root, 'scripts/init-ds.mjs'), 'utf8')).toBe(`@${generic}/react`);
     expect(readFileSync(join(root, 'scripts/init-ds-lib.mjs'), 'utf8')).toBe(`@${generic}/react`);
     expect(readFileSync(join(root, 'pnpm-lock.yaml'), 'utf8')).toContain(`@${generic}/react`);
+  });
+
+  it('does not write through a symlink to a target outside the repository', () => {
+    const root = temporaryRoot('symlinked-file');
+    const outside = join(root, 'outside');
+    const repository = join(root, 'repo');
+    const target = join(outside, 'target.ts');
+
+    write(target, `@${generic}/react`);
+    mkdirSync(repository, { recursive: true });
+    symlinkSync(target, join(repository, 'component.ts'));
+    write(join(repository, 'real.ts'), `@${generic}/react`);
+
+    const changed = renameTree(repository, buildRules(generic, 'juro', []));
+
+    expect(changed.map((change) => change.file)).toEqual(['real.ts']);
+    expect(readFileSync(target, 'utf8')).toBe(`@${generic}/react`);
+    expect(readFileSync(join(repository, 'real.ts'), 'utf8')).toBe('@juro/react');
   });
 
   it('only skips files that exist in the repository', () => {

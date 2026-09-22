@@ -199,7 +199,9 @@ export function* walk(root, dir = root) {
       // or a gitdir file; either form is a hard traversal boundary.
       if (existsSync(join(full, '.git'))) continue;
       yield* walk(root, full);
-    } else if (EXTENSIONS.has(entry.name.slice(entry.name.lastIndexOf('.')))) {
+    } else if (entry.isFile() && EXTENSIONS.has(entry.name.slice(entry.name.lastIndexOf('.')))) {
+      // Regular files only. A symlink reports neither isFile nor isDirectory, and renaming one
+      // would write through it to a target outside the repository.
       yield full;
     }
   }
