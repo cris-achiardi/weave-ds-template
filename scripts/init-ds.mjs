@@ -28,6 +28,13 @@ const CONFIG_PATH = join(REPO_ROOT, 'ds.config.json');
 const PROP_MAP_DIR = join(REPO_ROOT, '.ai/maps');
 const PROP_MAP_PATHS = [join(PROP_MAP_DIR, 'prop-map.json'), join(PROP_MAP_DIR, 'prop-map.md')];
 
+/**
+ * Print a message and stop. Every refusal in this script ends here, so the exit code is always
+ * non-zero on a failure and CI cannot read a half-rename as success.
+ *
+ * @param {string} message
+ * @returns {never}
+ */
 function fatal(message) {
   console.error(message);
   process.exit(1);
@@ -39,6 +46,13 @@ const USAGE =
   '  pnpm init-ds --check\n\n' +
   '  <name>  lowercase letters and digits, e.g. `weave`';
 
+/**
+ * Read the command line: one name with an optional `--dry`, or `--check` on its own. Anything
+ * else is refused rather than guessed at, because a misread argument renames the repository.
+ *
+ * @param {string[]} args - argv after the node binary and this script
+ * @returns {{check: boolean, dry: boolean, name: string | undefined}}
+ */
 function parseArguments(args) {
   if (args.length === 1 && args[0] === '--check') {
     return { check: true, dry: true, name: undefined };
@@ -52,10 +66,25 @@ function parseArguments(args) {
   return { check: false, dry: flags.length === 1, name: names[0] };
 }
 
+/**
+ * Render `identityProblems` output as one message.
+ *
+ * @param {string[]} problems
+ * @returns {string}
+ */
 function formatIdentityProblems(problems) {
   return `Invalid design-system identity:\n${problems.map((problem) => `  ${problem}`).join('\n')}`;
 }
 
+/**
+ * Print what moved: the totals, then one line per file. On a real run this is called only after
+ * every write, the generator and Prettier have succeeded.
+ *
+ * @param {Array<{file: string, hits: number}>} changed
+ * @param {string} from - the prefix being replaced
+ * @param {string} name - the new prefix
+ * @param {boolean} dry - whether the run wrote anything
+ */
 function report(changed, from, name, dry) {
   const total = changed.reduce((count, change) => count + change.hits, 0);
   console.log(
@@ -67,6 +96,15 @@ function report(changed, from, name, dry) {
   }
 }
 
+/**
+ * Undo a failed run and stop. It says whether the repository was fully restored, because an
+ * incomplete rollback is the one outcome the operator has to act on.
+ *
+ * @param {ReturnType<typeof snapshotPaths>} snapshot
+ * @param {Array<{path: string, existed: boolean}>} directories
+ * @param {unknown} cause - the error that stopped the run
+ * @returns {never}
+ */
 function rollback(snapshot, directories, cause) {
   const failures = [...restoreSnapshot(snapshot), ...removeCreatedDirectories(directories)];
   console.error(

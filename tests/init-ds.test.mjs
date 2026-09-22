@@ -36,17 +36,36 @@ afterEach(() => {
   for (const root of temporaryRoots.splice(0)) rmSync(root, { recursive: true, force: true });
 });
 
+/**
+ * Make a throwaway directory, registered for removal after the test.
+ *
+ * @param {string} label - included in the directory name so a leaked one is identifiable
+ * @returns {string} absolute path
+ */
 function temporaryRoot(label) {
   const root = mkdtempSync(join(tmpdir(), `weave-${label}-`));
   temporaryRoots.push(root);
   return root;
 }
 
+/**
+ * Write a file, creating its parent directories.
+ *
+ * @param {string} path
+ * @param {string} contents
+ */
 function write(path, contents) {
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, contents);
 }
 
+/**
+ * A minimal repository the codemod can run against: the two script files under test, one contract
+ * directory so the tag rule has something to match, and an identity to rename.
+ *
+ * @param {object} [identity] - the ds.config.json to start from
+ * @returns {string} the fixture's root
+ */
 function fixture(identity = baseIdentity) {
   const root = temporaryRoot('init-ds');
   mkdirSync(join(root, 'scripts'), { recursive: true });
@@ -57,6 +76,12 @@ function fixture(identity = baseIdentity) {
   return root;
 }
 
+/**
+ * Stand in for `scripts/build-prop-map.mjs`, writing the two prop-map files the real generator
+ * produces. Tests that assert a rollback remove or break this file instead of the real one.
+ *
+ * @param {string} root - a fixture root
+ */
 function writeGenerator(root) {
   write(
     join(root, 'scripts/build-prop-map.mjs'),
@@ -70,6 +95,14 @@ function writeGenerator(root) {
   );
 }
 
+/**
+ * Run the fixture's own copy of the CLI, so the command under test is the one on disk.
+ *
+ * @param {string} root - a fixture root
+ * @param {string[]} args
+ * @param {{env?: NodeJS.ProcessEnv}} [options]
+ * @returns {import('node:child_process').SpawnSyncReturns<string>}
+ */
 function run(root, args, options = {}) {
   return spawnSync(process.execPath, [join(root, 'scripts/init-ds.mjs'), ...args], {
     encoding: 'utf8',
@@ -77,6 +110,13 @@ function run(root, args, options = {}) {
   });
 }
 
+/**
+ * A sorted list of every directory and file under `root`, each file with the hash of its contents.
+ * Comparing two inventories is how a test asserts that a tree is byte-for-byte unchanged.
+ *
+ * @param {string} root
+ * @returns {string[]}
+ */
 function inventory(root) {
   const entries = [];
   function visit(dir) {
@@ -98,6 +138,15 @@ function inventory(root) {
   return entries;
 }
 
+/**
+ * Return one section of a markdown file: the exact heading and everything up to the next heading
+ * of that level or above. Fails the test when the heading is missing.
+ *
+ * @param {string} path
+ * @param {string} heading - the heading text, without its hashes
+ * @param {number} [level] - heading depth, 2 by default
+ * @returns {string}
+ */
 function markdownSection(path, heading, level = 2) {
   const lines = readFileSync(path, 'utf8').split('\n');
   const marker = `${'#'.repeat(level)} ${heading}`;
@@ -109,6 +158,13 @@ function markdownSection(path, heading, level = 2) {
   return lines.slice(start, end).join('\n');
 }
 
+/**
+ * Return the paragraph that starts at `marker`. Fails the test when the marker is missing.
+ *
+ * @param {string} path
+ * @param {string} marker - text the paragraph begins with
+ * @returns {string}
+ */
 function paragraphStarting(path, marker) {
   const text = readFileSync(path, 'utf8');
   const start = text.indexOf(marker);
