@@ -418,6 +418,37 @@ describe('CLI', () => {
     expect(inventory(root)).toEqual(before);
   });
 
+  // The fake pnpm is a POSIX shell script; CI runs this suite on Linux.
+  it.skipIf(process.platform === 'win32')(
+    'rolls back generator output and reports captured Prettier diagnostics',
+    () => {
+      const root = fixture();
+      write(join(root, 'example.md'), `Use @${generic}/react and ${generic}-button-spin.`);
+      write(join(root, '.ai/maps/prop-map.json'), JSON.stringify({ package: `@${generic}/react` }));
+      write(join(root, '.ai/maps/prop-map.md'), `Use @${generic}/react.\n`);
+      writeGenerator(root);
+      const bin = join(root, 'bin');
+      const diagnostics = Array.from(
+        { length: 23 },
+        (_, index) => `fixture Prettier failure ${index + 1}`,
+      ).join('\n');
+      write(join(bin, 'pnpm'), `#!/bin/sh\nprintf '%s\\n' '${diagnostics}' >&2\nexit 1\n`);
+      chmodSync(join(bin, 'pnpm'), 0o755);
+      const before = inventory(root);
+
+      const result = run(root, ['juro'], { env: { ...process.env, PATH: bin } });
+
+      expect(result.status).toBe(1);
+      expect(result.stderr).toContain('init-ds failed while running Prettier');
+      expect(result.stderr).toContain('Prettier stderr:\n... 3 earlier line(s) omitted');
+      expect(result.stderr).not.toContain('fixture Prettier failure 1\n');
+      expect(result.stderr).toContain('fixture Prettier failure 23');
+      expect(result.stderr).toContain('All writes were rolled back');
+      expect(result.stdout).not.toContain('renamed "');
+      expect(inventory(root)).toEqual(before);
+    },
+  );
+
   it('rolls back generator output when Prettier cannot start', () => {
     const root = fixture();
     write(join(root, 'example.md'), `Use @${generic}/react and ${generic}-button-spin.`);
@@ -429,6 +460,7 @@ describe('CLI', () => {
     const result = run(root, ['juro'], { env: { ...process.env, PATH: '' } });
 
     expect(result.status).toBe(1);
+    expect(result.stderr).toContain('init-ds failed while running Prettier');
     expect(result.stderr).toContain('All writes were rolled back');
     expect(result.stdout).not.toContain('renamed "');
     expect(inventory(root)).toEqual(before);

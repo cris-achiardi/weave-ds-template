@@ -27,6 +27,7 @@ const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const CONFIG_PATH = join(REPO_ROOT, 'ds.config.json');
 const PROP_MAP_DIR = join(REPO_ROOT, '.ai/maps');
 const PROP_MAP_PATHS = [join(PROP_MAP_DIR, 'prop-map.json'), join(PROP_MAP_DIR, 'prop-map.md')];
+const MAX_CAPTURED_OUTPUT_LINES = 20;
 
 /**
  * Print a message and stop. Every refusal in this script ends here, so the exit code is always
@@ -97,21 +98,61 @@ function report(changed, from, name, dry) {
 }
 
 /**
- * Undo a failed run and stop. It says whether the repository was fully restored, because an
- * incomplete rollback is the one outcome the operator has to act on.
+ * Label one captured child-process stream, keeping its most recent lines so a noisy formatter
+ * cannot hide the rollback result above it.
+ *
+ * @param {string} label
+ * @param {unknown} value
+ * @returns {string | null}
+ */
+function formatCapturedOutput(label, value) {
+  const lines = String(value).trim().split('\n');
+  if (!lines[0]) return null;
+
+  const omitted = lines.length - MAX_CAPTURED_OUTPUT_LINES;
+  const excerpt = omitted > 0 ? lines.slice(-MAX_CAPTURED_OUTPUT_LINES) : lines;
+  return `${label}:\n${omitted > 0 ? `... ${omitted} earlier line(s) omitted\n` : ''}${excerpt.join('\n')}`;
+}
+
+/**
+ * Keep the structural first line of an error. Node appends captured child-process output to
+ * `execFileSync` error messages, which is reported separately and with a line limit.
+ *
+ * @param {unknown} cause
+ * @returns {string}
+ */
+function failureMessage(cause) {
+  const message = cause instanceof Error ? cause.message : String(cause);
+  return message.split('\n', 1)[0];
+}
+
+/**
+ * Undo a failed run and stop. It reports captured child-process diagnostics and whether the
+ * repository was fully restored, because an incomplete rollback is the one outcome the operator
+ * has to act on.
  *
  * @param {ReturnType<typeof snapshotPaths>} snapshot
  * @param {Array<{path: string, existed: boolean}>} directories
+ * @param {{description: string, label: string}} stage - the operation that failed
  * @param {unknown} cause - the error that stopped the run
  * @returns {never}
  */
-function rollback(snapshot, directories, cause) {
+function rollback(snapshot, directories, stage, cause) {
   const failures = [...restoreSnapshot(snapshot), ...removeCreatedDirectories(directories)];
+  const capturedOutput = [
+    [`${stage.label} stderr`, cause?.stderr],
+    [`${stage.label} stdout`, cause?.stdout],
+  ]
+    .filter(([, value]) => value)
+    .map(([label, value]) => formatCapturedOutput(label, value))
+    .filter(Boolean);
   console.error(
-    `init-ds failed: ${cause instanceof Error ? cause.message : String(cause)}\n` +
+    `init-ds failed while ${stage.description}: ${failureMessage(cause)}\n` +
+      '\n' +
       (failures.length
         ? `Rollback was incomplete:\n${failures.map((failure) => `  ${failure}`).join('\n')}`
-        : 'All writes were rolled back. The repository is unchanged.'),
+        : 'All writes were rolled back. The repository is unchanged.') +
+      (capturedOutput.length ? `\n\n${capturedOutput.join('\n')}` : ''),
   );
   process.exit(1);
 }
@@ -187,14 +228,17 @@ const snapshot = snapshotPaths([
   ...PROP_MAP_PATHS,
 ]);
 
+let stage = { description: 'writing renamed files', label: 'File writes' };
 try {
   writeRenamePlan(changed);
   writeFileSync(CONFIG_PATH, JSON.stringify(nextIdentity, null, 2) + '\n');
+  stage = { description: 'generating the prop map', label: 'Prop-map generator' };
   execFileSync(process.execPath, [join(REPO_ROOT, 'scripts/build-prop-map.mjs')], {
     cwd: REPO_ROOT,
     stdio: 'inherit',
   });
   if (changed.length) {
+    stage = { description: 'running Prettier', label: 'Prettier' };
     execFileSync(
       'pnpm',
       [
@@ -213,7 +257,7 @@ try {
     );
   }
 } catch (error) {
-  rollback(snapshot, directoryState, error);
+  rollback(snapshot, directoryState, stage, error);
 }
 
 // Reported only once every write, the generator and Prettier have succeeded.
