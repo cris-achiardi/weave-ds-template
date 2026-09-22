@@ -38,10 +38,13 @@ custom-property prefix and data-attribute prefix **together**, because they are 
 three syntaxes. Renaming one by hand leaves a repo that builds green and is wrong. It refuses to
 re-brand an identity that has already been initialized.
 
-`/ds.config.json` is the source of truth for that identity; `init-ds` rewrites it and every
-reference to it. Run `--dry` first and start from a clean Git working tree: ordinary failures are rolled
-back, but interrupting the process with `Ctrl+C`, `SIGTERM` or `SIGKILL`, or losing power, can prevent
-that recovery. CI runs the whole codemod on a matrix of names and asserts the renamed repo is still
+`/ds.config.json` is the source of truth for that identity; `init-ds` rewrites it and supported
+identity references it finds. It intentionally skips its own files, the lockfile and excluded
+directories, nested Git repositories and worktrees, and symlinks, which could write outside the
+repository. It reads only supported file extensions; adding a backend means reviewing that list.
+Run `--dry` first and start from a clean Git working tree: ordinary failures are rolled back, but
+interrupting the process with `Ctrl+C`, `SIGTERM` or `SIGKILL`, or losing power, can prevent that
+recovery. CI runs the whole codemod on a matrix of names and asserts the renamed repo is still
 green, so the rename cannot rot.
 
 ## Contract readers
