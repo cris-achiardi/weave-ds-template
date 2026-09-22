@@ -97,8 +97,10 @@ export function buildRules(from, name, tags) {
     // so the rule silently matches nothing. Prefix+capital identifiers are reserved for Angular
     // selectors and other generated identifiers in this family.
     [new RegExp(String.raw`\b${from}(?=[A-Z])`, 'g'), name],
-    // A component tag also namespaces related identifiers such as ds-button-spin. Only reject a
-    // match when the old prefix is itself the suffix of another word or hyphenated namespace.
+    // A component tag also namespaces related identifiers such as ds-button-spin, so the match
+    // ends at the tag rather than at a word boundary. The lookbehind rejects a prefix that is
+    // itself the tail of a longer word or hyphenated name, which is what keeps it out of
+    // `data-<prefix>-button` and anything of the form `<something>-<prefix>-button`.
     ...(tags.length
       ? [[new RegExp(String.raw`(?<![\w-])${from}-(?=(?:${tags.join('|')})\b)`, 'g'), `${name}-`]]
       : []),
