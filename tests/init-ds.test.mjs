@@ -78,22 +78,24 @@ function fixture(identity = baseIdentity) {
 }
 
 /**
- * Stand in for `scripts/build-prop-map.mjs`, writing the two prop-map files the real generator
- * produces. Tests that assert a rollback remove or break this file instead of the real one.
+ * Stand in for `scripts/build-prop-map.mjs`, writing its two prop-map files or failing with a
+ * controlled diagnostic. Rollback tests omit or break this fixture instead of the real generator.
  *
  * @param {string} root - a fixture root
+ * @param {{failureStderr?: string}} [options]
  */
-function writeGenerator(root) {
-  write(
-    join(root, 'scripts/build-prop-map.mjs'),
-    `import { mkdirSync, writeFileSync } from 'node:fs';\n` +
-      `import { dirname, join, resolve } from 'node:path';\n` +
-      `import { fileURLToPath } from 'node:url';\n` +
-      `const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');\n` +
-      `mkdirSync(join(root, '.ai/maps'), { recursive: true });\n` +
-      `writeFileSync(join(root, '.ai/maps/prop-map.json'), '{"generated":true}\\n');\n` +
-      `writeFileSync(join(root, '.ai/maps/prop-map.md'), '# Generated\\n');\n`,
-  );
+function writeGenerator(root, { failureStderr } = {}) {
+  const source =
+    failureStderr !== undefined
+      ? `console.error(${JSON.stringify(failureStderr)});\nprocess.exit(1);\n`
+      : `import { mkdirSync, writeFileSync } from 'node:fs';\n` +
+        `import { dirname, join, resolve } from 'node:path';\n` +
+        `import { fileURLToPath } from 'node:url';\n` +
+        `const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');\n` +
+        `mkdirSync(join(root, '.ai/maps'), { recursive: true });\n` +
+        `writeFileSync(join(root, '.ai/maps/prop-map.json'), '{"generated":true}\\n');\n` +
+        `writeFileSync(join(root, '.ai/maps/prop-map.md'), '# Generated\\n');\n`;
+  write(join(root, 'scripts/build-prop-map.mjs'), source);
 }
 
 /**
@@ -415,6 +417,44 @@ describe('CLI', () => {
     expect(result.status).toBe(1);
     expect(result.stderr).toContain('All writes were rolled back');
     expect(result.stdout).not.toContain('renamed "');
+    expect(inventory(root)).toEqual(before);
+  });
+
+  it('rolls back and reports captured prop-map generator diagnostics', () => {
+    const root = fixture();
+    write(join(root, 'example.md'), `Use @${generic}/react and ${generic}-button-spin.`);
+    const diagnostics = Array.from(
+      { length: 23 },
+      (_, index) => `fixture prop-map failure ${index + 1}`,
+    ).join('\n');
+    writeGenerator(root, { failureStderr: diagnostics });
+    const before = inventory(root);
+
+    const result = run(root, ['juro']);
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('init-ds failed while generating the prop map');
+    expect(result.stderr).toContain('Prop-map generator stderr:\n... 3 earlier line(s) omitted');
+    expect(result.stderr).not.toContain('fixture prop-map failure 1\n');
+    expect(result.stderr).toContain('fixture prop-map failure 23');
+    expect(result.stderr).toContain('All writes were rolled back');
+    expect(result.stdout).not.toContain('renamed "');
+    expect(inventory(root)).toEqual(before);
+  });
+
+  it('omits empty captured output when the prop-map generator fails silently', () => {
+    const root = fixture();
+    write(join(root, 'example.md'), `Use @${generic}/react.`);
+    writeGenerator(root, { failureStderr: '' });
+    const before = inventory(root);
+
+    const result = run(root, ['juro']);
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('init-ds failed while generating the prop map');
+    expect(result.stderr).toContain('All writes were rolled back');
+    expect(result.stderr).not.toContain('Prop-map generator stderr');
+    expect(result.stderr).not.toContain('Prop-map generator stdout');
     expect(inventory(root)).toEqual(before);
   });
 

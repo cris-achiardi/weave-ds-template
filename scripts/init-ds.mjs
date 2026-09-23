@@ -235,7 +235,7 @@ try {
   stage = { description: 'generating the prop map', label: 'Prop-map generator' };
   execFileSync(process.execPath, [join(REPO_ROOT, 'scripts/build-prop-map.mjs')], {
     cwd: REPO_ROOT,
-    stdio: 'inherit',
+    stdio: 'pipe',
   });
   if (changed.length) {
     stage = { description: 'running Prettier', label: 'Prettier' };
