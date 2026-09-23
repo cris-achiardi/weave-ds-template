@@ -2,87 +2,169 @@
 /**
  * `pnpm init-ds <name> [--dry]` — brand this template once.
  *
- * Renames, in one pass:
- *   @ds/…          -> @<name>/…        package scope
- *   --ds-…         -> --<name>-…       CSS custom properties
- *   data-ds-…      -> data-<name>-…    component anatomy attributes
- *   ds.config.json                     the identity itself
- *
- * WHY A CODEMOD RATHER THAN FIND-AND-REPLACE
- * The three prefixes above are the same decision expressed in three syntaxes, and they must move
- * together. Renaming the scope but not the token prefix leaves a repo that builds, tests green,
- * and is wrong — the CSS variables no longer match the package that documents them, and nothing
- * anywhere reports it. That is exactly the class of breach this repo gates elsewhere; here it is
- * cheaper to make the operation atomic than to check it afterwards.
- *
- * Run it ONCE, before writing any components. It is not a migration tool.
+ * The operation moves the package scope, CSS custom properties, anatomy attributes, Angular
+ * selectors and component-derived web identifiers together. Run it once, before authoring
+ * components; it is not a migration tool for an established design system.
  */
 
-import { existsSync, readFileSync, writeFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { dirname, resolve, join, relative } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
+import {
+  buildRules,
+  componentTags,
+  identityProblems,
+  planRenames,
+  removeCreatedDirectories,
+  restoreSnapshot,
+  snapshotPaths,
+  validName,
+  writeRenamePlan,
+} from './init-ds-lib.mjs';
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-
-const SKIP_DIRS = new Set([
-  'node_modules',
-  'browser-generated',
-  '.git',
-  'dist',
-  'build',
-  '.vite',
-  '.turbo',
-  'storybook-static',
-  'coverage',
-]);
+const CONFIG_PATH = join(REPO_ROOT, 'ds.config.json');
+const PROP_MAP_DIR = join(REPO_ROOT, '.ai/maps');
+const PROP_MAP_PATHS = [join(PROP_MAP_DIR, 'prop-map.json'), join(PROP_MAP_DIR, 'prop-map.md')];
+const MAX_CAPTURED_OUTPUT_LINES = 20;
 
 /**
- * Two files must not be rewritten:
- *   init-ds.mjs   — it contains the rename rules themselves, and rewriting them mid-run would
- *                   both corrupt the tool and make the operation non-repeatable.
- *   pnpm-lock.yaml— a lockfile is generated, and regexing it risks a subtly invalid graph.
- *                   `pnpm install` regenerates it correctly from the renamed manifests.
+ * Print a message and stop. Every refusal in this script ends here, so the exit code is always
+ * non-zero on a failure and CI cannot read a half-rename as success.
+ *
+ * @param {string} message
+ * @returns {never}
  */
-const SKIP_FILES = new Set(['scripts/init-ds.mjs', 'pnpm-lock.yaml']);
-//
-// A FILE TYPE MISSING FROM THIS LIST IS THE HALF-RENAME THIS TOOL EXISTS TO PREVENT. `.vue` was
-// added when the Vue backend landed: without it every generated single-file component kept
-// `data-ds-component` and `@ds/vue/behavior` after a rename, the repo still built, and the only
-// symptom was styling that silently stopped matching. Adding a backend means checking this list.
-const EXTENSIONS = new Set([
-  '.ts',
-  '.tsx',
-  '.js',
-  '.jsx',
-  '.mjs',
-  '.cjs',
-  '.json',
-  '.css',
-  '.md',
-  '.html',
-  '.vue',
-  '.yaml',
-  '.yml',
-]);
-
-const args = process.argv.slice(2);
-const check = args.includes('--check');
-const dry = args.includes('--dry') || check;
-const current = JSON.parse(readFileSync(join(REPO_ROOT, 'ds.config.json'), 'utf8'));
-const name = args.find((a) => !a.startsWith('-')) ?? (check ? current.name : undefined);
-
-function fatal(msg) {
-  console.error(msg);
+function fatal(message) {
+  console.error(message);
   process.exit(1);
 }
 
-if (!name) {
-  fatal(
-    'Usage: pnpm init-ds <name> [--dry]\n\n  <name>  lowercase letters and digits, e.g. `weave`',
-  );
+const USAGE =
+  'Usage:\n' +
+  '  pnpm init-ds <name> [--dry]\n' +
+  '  pnpm init-ds --check\n\n' +
+  '  <name>  lowercase letters and digits, e.g. `weave`';
+
+/**
+ * Read the command line: one name with an optional `--dry`, or `--check` on its own. Anything
+ * else is refused rather than guessed at, because a misread argument renames the repository.
+ *
+ * @param {string[]} args - argv after the node binary and this script
+ * @returns {{check: boolean, dry: boolean, name: string | undefined}}
+ */
+function parseArguments(args) {
+  if (args.length === 1 && args[0] === '--check') {
+    return { check: true, dry: true, name: undefined };
+  }
+
+  const names = args.filter((arg) => !arg.startsWith('-'));
+  const flags = args.filter((arg) => arg.startsWith('-'));
+  const valid = names.length === 1 && flags.length <= 1 && flags.every((flag) => flag === '--dry');
+
+  if (!valid) fatal(`Invalid arguments.\n\n${USAGE}`);
+  return { check: false, dry: flags.length === 1, name: names[0] };
 }
-if (!/^[a-z][a-z0-9]*$/.test(name)) {
+
+/**
+ * Render `identityProblems` output as one message.
+ *
+ * @param {string[]} problems
+ * @returns {string}
+ */
+function formatIdentityProblems(problems) {
+  return `Invalid design-system identity:\n${problems.map((problem) => `  ${problem}`).join('\n')}`;
+}
+
+/**
+ * Print what moved: the totals, then one line per file. On a real run this is called only after
+ * every write, the generator and Prettier have succeeded.
+ *
+ * @param {Array<{file: string, hits: number}>} changed
+ * @param {string} from - the prefix being replaced
+ * @param {string} name - the new prefix
+ * @param {boolean} dry - whether the run wrote anything
+ */
+function report(changed, from, name, dry) {
+  const total = changed.reduce((count, change) => count + change.hits, 0);
+  console.log(
+    `${dry ? '[dry run] would rename' : 'renamed'} "${from}" -> "${name}" — ` +
+      `${total} occurrence(s) across ${changed.length} file(s), plus ds.config.json.\n`,
+  );
+  for (const change of changed) {
+    console.log(`  ${String(change.hits).padStart(4)}  ${change.file}`);
+  }
+}
+
+/**
+ * Label one captured child-process stream, keeping its most recent lines so a noisy formatter
+ * cannot hide the rollback result above it.
+ *
+ * @param {string} label
+ * @param {unknown} value
+ * @returns {string | null}
+ */
+function formatCapturedOutput(label, value) {
+  const lines = String(value).trim().split('\n');
+  if (!lines[0]) return null;
+
+  const omitted = lines.length - MAX_CAPTURED_OUTPUT_LINES;
+  const excerpt = omitted > 0 ? lines.slice(-MAX_CAPTURED_OUTPUT_LINES) : lines;
+  return `${label}:\n${omitted > 0 ? `... ${omitted} earlier line(s) omitted\n` : ''}${excerpt.join('\n')}`;
+}
+
+/**
+ * Keep the structural first line of an error. Node appends captured child-process output to
+ * `execFileSync` error messages, which is reported separately and with a line limit.
+ *
+ * @param {unknown} cause
+ * @returns {string}
+ */
+function failureMessage(cause) {
+  const message = cause instanceof Error ? cause.message : String(cause);
+  return message.split('\n', 1)[0];
+}
+
+/**
+ * Undo a failed run and stop. It reports captured child-process diagnostics and whether the
+ * repository was fully restored, because an incomplete rollback is the one outcome the operator
+ * has to act on.
+ *
+ * @param {ReturnType<typeof snapshotPaths>} snapshot
+ * @param {Array<{path: string, existed: boolean}>} directories
+ * @param {{description: string, label: string}} stage - the operation that failed
+ * @param {unknown} cause - the error that stopped the run
+ * @returns {never}
+ */
+function rollback(snapshot, directories, stage, cause) {
+  const failures = [...restoreSnapshot(snapshot), ...removeCreatedDirectories(directories)];
+  const capturedOutput = [
+    [`${stage.label} stderr`, cause?.stderr],
+    [`${stage.label} stdout`, cause?.stdout],
+  ]
+    .filter(([, value]) => value)
+    .map(([label, value]) => formatCapturedOutput(label, value))
+    .filter(Boolean);
+  console.error(
+    `init-ds failed while ${stage.description}: ${failureMessage(cause)}\n` +
+      '\n' +
+      (failures.length
+        ? `Rollback was incomplete:\n${failures.map((failure) => `  ${failure}`).join('\n')}`
+        : 'All writes were rolled back. The repository is unchanged.') +
+      (capturedOutput.length ? `\n\n${capturedOutput.join('\n')}` : ''),
+  );
+  process.exit(1);
+}
+
+const rawArgs = process.argv.slice(2);
+const args = rawArgs[0] === '--' ? rawArgs.slice(1) : rawArgs;
+const parsed = parseArguments(args);
+const { check, dry } = parsed;
+const current = JSON.parse(readFileSync(CONFIG_PATH, 'utf8'));
+const name = parsed.name ?? current.name;
+
+if (!validName(name)) {
   fatal(
     `"${name}" is not usable as a prefix.\n\n` +
       'It becomes an npm scope, a CSS custom-property namespace and a data-attribute prefix, so it\n' +
@@ -91,8 +173,10 @@ if (!/^[a-z][a-z0-9]*$/.test(name)) {
   );
 }
 
-const from = check ? 'ds' : current.name;
+const currentIdentityProblems = identityProblems(current);
+if (currentIdentityProblems.length) fatal(formatIdentityProblems(currentIdentityProblems));
 
+const from = check ? 'ds' : current.name;
 if (!check && from === name) {
   fatal(`This repo is already branded "${name}". init-ds runs once; it is not a migration tool.`);
 }
@@ -104,149 +188,80 @@ if (!check && from !== 'ds') {
   );
 }
 
-// Order matters: `data-ds-` must be rewritten before the bare `--ds-`/`@ds/` rules, or a partial
-// match leaves a half-renamed attribute.
-//
-// THE FOURTH RULE IS THE ANGULAR SELECTOR, and it is a fourth syntax of the same one decision.
-// An Angular component attaches to an element through an attribute selector built from the prefix
-// and the component name — `button[dsButton]`, written by a consumer as `<button dsButton>`. The
-// emitter derives it from `ds.config.json` like everything else, so a rename that skipped it would
-// leave already-generated components answering to `dsButton` while the emitter produced
-// `weaveButton`: a repo that builds green, passes every gate, and breaks the next time anyone
-// regenerates. That is precisely the half-rename this codemod exists to prevent.
-//
-// The word-boundary rule is tight enough to be safe because identifiers of the shape `ds<Capital>` are
-// RESERVED for this family — two unrelated locals called `dsConfig` were renamed when this rule
-// landed, rather than widening the regex to dodge them.
-// THE FIFTH RULE IS THE CUSTOM ELEMENT TAG, and it is built from the component list rather than
-// guessed. A web component's tag is `ds-button`, `ds-tab-item` — a fifth syntax of the same one
-// decision, and one a blanket `ds-` rule cannot safely match: `.claude/skills/` holds
-// `ds-decide`, `ds-figma-component` and others that are agent tooling rather than the brand, and
-// renaming those would break the names they are invoked by.
-//
-// So the tags come from `packages/contracts/components/`, which is the authoritative list of what
-// exists. Precise by construction, and it stays correct as components are added.
-const COMPONENT_DIR = join(REPO_ROOT, 'packages/contracts/components');
-const TAGS = existsSync(COMPONENT_DIR)
-  ? readdirSync(COMPONENT_DIR, { withFileTypes: true })
-      .filter((e) => e.isDirectory())
-      .map((e) => e.name.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase())
-      .sort()
-  : [];
+const rules = buildRules(from, name, componentTags(REPO_ROOT));
+const changed = planRenames(REPO_ROOT, rules);
 
-const RULES = [
-  [new RegExp(`data-${from}-`, 'g'), `data-${name}-`],
-  [new RegExp(`@${from}/`, 'g'), `@${name}/`],
-  [new RegExp(`--${from}-`, 'g'), `--${name}-`],
-  // `String.raw`, because in an ordinary template literal \b is the BACKSPACE
-  // character rather than a word boundary. The rule then matches nothing at all, silently,
-  // which is the only way a codemod can be wrong and still look finished.
-  [new RegExp(String.raw`\b${from}(?=[A-Z])`, 'g'), name],
-  // The tag rule, built from the component list above. Absent entirely when no component exists
-  // yet, which is this template's own shipping state.
-  ...(TAGS.length
-    ? [[new RegExp(String.raw`\b${from}-(?=(?:${TAGS.join('|')})\b)`, 'g'), `${name}-`]]
-    : []),
-];
-
-function* walk(dir) {
-  for (const entry of readdirSync(dir, { withFileTypes: true }).sort((a, b) =>
-    a.name < b.name ? -1 : 1,
-  )) {
-    // Skip by DENYLIST, never by an allowlist of dot-directories.
-    //
-    // This was an allowlist once (.figma, .ai, .claude, .github) and it silently missed
-    // apps/storybook/.storybook — so a renamed repo shipped Storybook config importing a package
-    // scope that no longer existed, and nothing failed until someone switched Storybook on weeks
-    // later. A denylist fails the safe way: a new dot-directory gets renamed by default rather
-    // than skipped by default.
-    if (SKIP_DIRS.has(entry.name)) continue;
-
-    const full = join(dir, entry.name);
-    if (entry.isDirectory()) yield* walk(full);
-    else if (EXTENSIONS.has(entry.name.slice(entry.name.lastIndexOf('.')))) yield full;
-  }
-}
-
-const changed = [];
-
-for (const file of walk(REPO_ROOT)) {
-  const rel = relative(REPO_ROOT, file).split('\\').join('/');
-  if (SKIP_FILES.has(rel)) continue;
-
-  const before = readFileSync(file, 'utf8');
-  let after = before;
-  for (const [re, to] of RULES) after = after.replace(re, to);
-  if (after !== before) {
-    const hits = RULES.reduce((n, [re]) => n + (before.match(re)?.length ?? 0), 0);
-    changed.push({ file: rel, hits });
-    if (!dry) writeFileSync(file, after);
-  }
-}
-
-// Check with exactly the rename patterns and traversal rules. Never maintain a second grep list.
 if (check) {
-  if (current.name === from)
+  if (current.name === from) {
     fatal('Brand the repository before checking for old-prefix stragglers.');
-  if (changed.length)
-    fatal(changed.map((c) => `${c.file}: ${c.hits} old-prefix occurrence(s)`).join('\n'));
-  console.log('No old-prefix stragglers across all rename rules.');
+  }
+  if (changed.length) {
+    fatal(
+      changed.map((change) => `${change.file}: ${change.hits} old-prefix occurrence(s)`).join('\n'),
+    );
+  }
+  console.log('No old-prefix stragglers across all rename rules, and the identity is consistent.');
   process.exit(0);
 }
 
-// ds.config.json is rewritten from the parsed object rather than by regex, so the identity fields
-// move even though they hold bare `ds` with none of the three syntaxes around it.
-const cfgPath = join(REPO_ROOT, 'ds.config.json');
-const cfg = JSON.parse(readFileSync(cfgPath, 'utf8'));
-cfg.name = name;
-cfg.scope = `@${name}`;
-cfg.tokenPrefix = name;
-cfg.dataPrefix = name;
-if (!dry) writeFileSync(cfgPath, JSON.stringify(cfg, null, 2) + '\n');
+const nextIdentity = {
+  ...current,
+  name,
+  scope: `@${name}`,
+  tokenPrefix: name,
+  dataPrefix: name,
+};
 
-// Public WC event names are derived from the identity, not all covered by text replacements.
-// Regenerate this artifact after changing the config so it remains byte-identical to its reader.
-if (!dry)
+if (dry) {
+  report(changed, from, name, true);
+  console.log('\nNothing was written. Re-run without --dry to apply.');
+  process.exit(0);
+}
+
+const directoryState = [join(REPO_ROOT, '.ai'), PROP_MAP_DIR].map((path) => ({
+  path,
+  existed: existsSync(path),
+}));
+const snapshot = snapshotPaths([
+  ...changed.map((change) => change.path),
+  CONFIG_PATH,
+  ...PROP_MAP_PATHS,
+]);
+
+let stage = { description: 'writing renamed files', label: 'File writes' };
+try {
+  writeRenamePlan(changed);
+  writeFileSync(CONFIG_PATH, JSON.stringify(nextIdentity, null, 2) + '\n');
+  stage = { description: 'generating the prop map', label: 'Prop-map generator' };
   execFileSync(process.execPath, [join(REPO_ROOT, 'scripts/build-prop-map.mjs')], {
     cwd: REPO_ROOT,
-    stdio: 'inherit',
+    stdio: 'pipe',
   });
-
-// ---------------------------------------------------------------------------------------
-
-// A longer or shorter name changes string widths inside markdown tables, so Prettier's column
-// alignment goes stale and `pnpm verify` fails on format:check. Reformatting here is not a
-// nicety: the first command a new user runs must leave the repo green, or the first thing they
-// see is a red gate they did not cause.
-if (!dry && changed.length) {
-  try {
+  if (changed.length) {
+    stage = { description: 'running Prettier', label: 'Prettier' };
     execFileSync(
-      'npx',
-      ['prettier', '--write', '--log-level', 'warn', ...changed.map((c) => c.file)],
+      'pnpm',
+      [
+        'exec',
+        'prettier',
+        '--write',
+        '--log-level',
+        'warn',
+        ...changed.map((change) => change.file),
+      ],
       {
         cwd: REPO_ROOT,
         stdio: 'pipe',
         shell: process.platform === 'win32',
       },
     );
-  } catch {
-    console.warn(
-      '\nNote: could not run Prettier automatically. Run `pnpm format` before `pnpm verify`.',
-    );
   }
+} catch (error) {
+  rollback(snapshot, directoryState, stage, error);
 }
 
-const total = changed.reduce((n, c) => n + c.hits, 0);
-console.log(
-  `${dry ? '[dry run] would rename' : 'renamed'} "${from}" -> "${name}" — ` +
-    `${total} occurrence(s) across ${changed.length} file(s), plus ds.config.json.\n`,
-);
-for (const c of changed) console.log(`  ${String(c.hits).padStart(4)}  ${c.file}`);
-
-if (dry) {
-  console.log('\nNothing was written. Re-run without --dry to apply.');
-} else {
-  console.log('\nDone. Next:');
-  console.log('  pnpm install        # the workspace links move with the scope');
-  console.log('  pnpm verify         # should be green on an empty repo');
-}
+// Reported only once every write, the generator and Prettier have succeeded.
+report(changed, from, name, false);
+console.log('\nDone. Next:');
+console.log('  pnpm install        # the workspace links move with the scope');
+console.log('  pnpm verify         # should be green on an empty repo');

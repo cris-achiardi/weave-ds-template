@@ -50,15 +50,16 @@ meant to consume as is. I encourage you to modify or build your own emitters bas
 
 ```bash
 pnpm install
-pnpm init-ds <yourname>    # brand it: @ds/* -> @yourname/*, --ds-* -> --yourname-*
+pnpm init-ds yourname      # fresh, unbranded checkout only; use your own name
 pnpm install               # workspace links move with the scope
 pnpm verify                # every gate, green
 pnpm dev                   # React sandbox at localhost:4300
 ```
 
-`pnpm init-ds` runs **once**, before any components exist. Try `--dry` first to see what moves. The
-scope, the token prefix and the data-attribute prefix are one decision in three syntaxes; renaming
-one by hand leaves a repo that builds green and is wrong.
+`pnpm init-ds` runs **once** on a fresh, unbranded checkout, before any components exist, and refuses
+to re-brand an initialized repository. Try `--dry` first to see what moves. The scope, the token
+prefix and the data-attribute prefix are one decision in three syntaxes; renaming one by hand leaves
+a repo that builds green and is wrong. The current identity always comes from `ds.config.json`.
 
 The other three sandboxes render the same fifteen contracts, and running them side by side is the
 whole demonstration:

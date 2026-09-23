@@ -168,11 +168,12 @@ report that something was designed well the first time.
 
 ### A fourth syntax for the prefix
 
-`pnpm init-ds` rewrote `data-ds-`, `@ds/` and `--ds-`. The Angular selector — `dsButton` — is a
-fourth syntax of the same decision and matched none of them, so a renamed repo would have kept
-`dsButton` in already-generated components while the emitter produced `weaveButton`: green
-everywhere, broken on the next regeneration. A fourth rule was added, and two unrelated locals named
-`dsConfig` were renamed so the rule's blast radius is exactly the selectors.
+`pnpm init-ds` already covered the data-attribute, package-scope and custom-property forms of the
+prefix. The Angular selector — `<prefix>Button` — is a fourth syntax of the same decision and matched
+none of them, so a renamed repo would have kept the old selector in already-generated components
+while the emitter produced `<new-prefix>Button`: green everywhere, broken on the next regeneration.
+A fourth rule was added, and two unrelated locals matching `<prefix>Config` were renamed so the
+rule's blast radius is exactly the selectors.
 
 Worth noting how close that came to shipping: the rule's first version used `` `\b${from}` `` inside
 a template literal, where `\b` is the BACKSPACE character. It matched nothing, silently, and the dry

@@ -66,16 +66,18 @@ governance.
 
 ## Brand it before anything else
 
-The repo ships generic (`@ds/*`, `--ds-*`, `data-ds-*`). Run **once**, before writing components:
+On a fresh, unbranded checkout, set the repository identity **once**, before writing components.
+Replace `yourname` with your system's name:
 
 ```bash
-pnpm init-ds weave --dry   # inspect
-pnpm init-ds weave         # apply, then pnpm install
+pnpm init-ds yourname --dry    # inspect
+pnpm init-ds yourname          # apply, then pnpm install
 ```
 
 The scope, the token prefix and the data-attribute prefix are one decision in three syntaxes and
 must move together — renaming one by hand leaves a repo that builds green and is wrong. `/ds.config.json`
-is the single source of truth; never hard-code a prefix anywhere else.
+is the single source of truth; never hard-code a prefix anywhere else. The command refuses to
+re-brand a repository whose identity has already been initialized.
 
 ## Commands
 
