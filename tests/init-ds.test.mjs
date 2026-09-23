@@ -78,24 +78,26 @@ function fixture(identity = baseIdentity) {
 }
 
 /**
- * Stand in for `scripts/build-prop-map.mjs`, writing its two prop-map files or failing with a
- * controlled diagnostic. Rollback tests omit or break this fixture instead of the real generator.
+ * Stand in for `scripts/build-prop-map.mjs`, writing its first prop-map file before either writing
+ * the second or failing with a controlled diagnostic. Rollback tests omit or break this fixture
+ * instead of the real generator.
  *
  * @param {string} root - a fixture root
  * @param {{failureStderr?: string}} [options]
  */
 function writeGenerator(root, { failureStderr } = {}) {
-  const source =
+  const writeFirstPropMap =
+    `import { mkdirSync, writeFileSync } from 'node:fs';\n` +
+    `import { dirname, join, resolve } from 'node:path';\n` +
+    `import { fileURLToPath } from 'node:url';\n` +
+    `const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');\n` +
+    `mkdirSync(join(root, '.ai/maps'), { recursive: true });\n` +
+    `writeFileSync(join(root, '.ai/maps/prop-map.json'), '{"generated":true}\\n');\n`;
+  const finish =
     failureStderr !== undefined
       ? `console.error(${JSON.stringify(failureStderr)});\nprocess.exit(1);\n`
-      : `import { mkdirSync, writeFileSync } from 'node:fs';\n` +
-        `import { dirname, join, resolve } from 'node:path';\n` +
-        `import { fileURLToPath } from 'node:url';\n` +
-        `const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');\n` +
-        `mkdirSync(join(root, '.ai/maps'), { recursive: true });\n` +
-        `writeFileSync(join(root, '.ai/maps/prop-map.json'), '{"generated":true}\\n');\n` +
-        `writeFileSync(join(root, '.ai/maps/prop-map.md'), '# Generated\\n');\n`;
-  write(join(root, 'scripts/build-prop-map.mjs'), source);
+      : `writeFileSync(join(root, '.ai/maps/prop-map.md'), '# Generated\\n');\n`;
+  write(join(root, 'scripts/build-prop-map.mjs'), writeFirstPropMap + finish);
 }
 
 /**
