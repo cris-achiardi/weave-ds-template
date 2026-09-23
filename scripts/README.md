@@ -40,8 +40,9 @@ re-brand an identity that has already been initialized.
 
 `/ds.config.json` is the source of truth for that identity; `init-ds` rewrites it and supported
 identity references it finds. It intentionally skips its own files, the lockfile and excluded
-directories, nested Git repositories and worktrees, and symlinks, which could write outside the
-repository. It reads only supported file extensions; adding a backend means reviewing that list.
+directories, nested Git repositories and worktrees, and symbolic links found during traversal, which
+could write outside the repository. It reads only supported file extensions; adding a backend means
+reviewing that list.
 Run `--dry` first and start from a clean Git working tree: ordinary failures are rolled back, but
 interrupting the process with `Ctrl+C`, `SIGTERM` or `SIGKILL`, or losing power, can prevent that
 recovery. CI runs the whole codemod on a matrix of names and asserts the renamed repo is still
