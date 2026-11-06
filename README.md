@@ -98,6 +98,7 @@ pnpm dev:wc         # :4303 — plain HTML, no framework in the document
 | `apps/storybook` | Complete on disk, deliberately **not installed** — one line to switch on        |
 | `docs/ADR`       | Four decision records. One Accepted, three Draft — pre-v0, most stay Draft      |
 | `docs/research`  | Pre-decision space: what is measurably true, ending in open questions           |
+| `docs/design`    | Design direction: one record per concern — principles, checks, open questions   |
 | `.ai/maps`       | The prop glossary. Generated, descriptive, CI-gated                             |
 | `.figma`         | Which design file we read, how names map, what has been reconciled              |
 | `.claude/skills` | Five. `ds-component` is superseded and `ds-figma-component` is blocked — #3, #4 |
