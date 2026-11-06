@@ -48,6 +48,7 @@ apps/wc-sandbox/     plain HTML at :4303 — no framework in the page at all
 apps/storybook/    complete on disk, deliberately OUT of the install graph
 docs/research/     pre-decision: what is measurably true
 docs/ADR/          post-decision: what we decided and why
+docs/design/       design direction: how a screen should look, one record per concern
 .ai/maps/          the prop glossary — generated, descriptive, gated
 .figma/            which design file we read, and what has been reconciled
 ```
@@ -91,14 +92,15 @@ pnpm contract <Name>     # what IS this component (source + contract, merged, no
 pnpm contract --coverage # who is contracted
 pnpm prop-map            # regenerate the prop glossary
 pnpm adr-index           # regenerate the ADR index from the records — never edit it by hand
+pnpm design-index        # regenerate the design-record index — never edit it by hand
 pnpm verify:docs         # every link, path and command in the docs resolves
 pnpm verify:parity       # the four backends have not drifted apart
 pnpm report:paints       # token policy vs stylesheet — a REPORT, never a gate
 ```
 
 `pnpm verify` chains: `format:check → lint → typecheck → verify:contract → prop-map:check →
-adr-index:check → verify:docs → verify:figma → verify:parity → build → test`. All of it is green on a fresh clone
-with zero components — that is the template's acceptance test.
+adr-index:check → design-index:check → verify:docs → verify:figma → verify:parity → build → test`.
+All of it is green on a fresh clone with zero components — that is the template's acceptance test.
 
 ## Governance lives in the ADRs — consult the one your task touches
 
@@ -120,17 +122,18 @@ Working against an accepted ADR without updating it is a defect, not a shortcut.
 
 ## The other contracts, and when to read them
 
-| Read it when                                    | File                                                                                                                     |
-| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| Explaining any of this to a designer            | `docs/documentation/` — plain language + diagrams. Explanation, not spec: where it disagrees with a spec, the spec wins. |
-| Authoring or changing a component               | `packages/contracts/components/README.md` — **the** authoring contract                                                   |
-| Adding or changing a framework backend          | `packages/vue/README.md` — the worked example of what a second backend costs                                             |
-| Deciding what is agnostic vs framework-specific | `packages/contracts/schema/README.md` — the two schemas and where the line falls                                         |
-| Naming a prop or a value                        | `.ai/maps/prop-map.md` §1–2                                                                                              |
-| Writing a token                                 | `packages/tokens/tokens/README.md`                                                                                       |
-| Reading the design source                       | `.figma/README.md`                                                                                                       |
-| Writing up what you found                       | `docs/research/README.md`                                                                                                |
-| Proposing an API for something not yet built    | `.ai/maps/proposals/README.md`                                                                                           |
+| Read it when                                           | File                                                                                                                     |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| Explaining any of this to a designer                   | `docs/documentation/` — plain language + diagrams. Explanation, not spec: where it disagrees with a spec, the spec wins. |
+| Authoring or changing a component                      | `packages/contracts/components/README.md` — **the** authoring contract                                                   |
+| Adding or changing a framework backend                 | `packages/vue/README.md` — the worked example of what a second backend costs                                             |
+| Deciding what is agnostic vs framework-specific        | `packages/contracts/schema/README.md` — the two schemas and where the line falls                                         |
+| Naming a prop or a value                               | `.ai/maps/prop-map.md` §1–2                                                                                              |
+| Writing a token                                        | `packages/tokens/tokens/README.md`                                                                                       |
+| Reading the design source                              | `.figma/README.md`                                                                                                       |
+| Designing or reviewing a screen, or a component's look | `docs/design/README.md` — start at `design-priorities`                                                                   |
+| Writing up what you found                              | `docs/research/README.md`                                                                                                |
+| Proposing an API for something not yet built           | `.ai/maps/proposals/README.md`                                                                                           |
 
 ## Two rules about enforcement
 
