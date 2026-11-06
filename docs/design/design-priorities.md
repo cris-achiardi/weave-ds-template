@@ -145,7 +145,7 @@ choice (consequence). Use one size, or make the difference at least one step on 
 - **OQ1 — Which checks become gates.** Contrast, distinct text sizes, line height and duration
   ranges are computable once tokens exist; grouping, focal point and eye path stay human review.
   Nothing is gated until a clean baseline exists — see the enforcement rules in
-  [`CLAUDE.md`](../../CLAUDE.md).
+  [`AGENTS.md`](../../AGENTS.md).
 - **OQ2 — Where "use the components as they ship" sits in DR2.** Some systems rank "compose with
   the components and tokens; do not restyle them" directly after accessibility. This order does not
   include it. Deciding it needs the first real composition review.
