@@ -47,7 +47,7 @@ drift for dangling, and only one of those two failures is currently detectable.
 restates. Context is pulled on demand, never front-loaded. Pointers are mechanically verified.**
 
 1. **A layer that holds a decision or a convention carries an entry doc** — `README.md`, or
-   `CLAUDE.md` where the audience is an agent. Pass-through directories that hold only
+   `AGENTS.md` / `CLAUDE.md` where the audience is an agent. Pass-through directories that hold only
    subdirectories do not need one; the reader lands on the child.
 2. **An entry doc does three things:** says what the layer is for, says how it relates to its
    neighbours, and indexes what is inside it. An index that lists files without saying when to read
@@ -80,7 +80,7 @@ entry doc that already governs that territory.
 
 | Concern                               | Where                                                                       |
 | ------------------------------------- | --------------------------------------------------------------------------- |
-| The rule, stated for agents at entry  | `CLAUDE.md` — "First rule: modular context, loaded on demand"               |
+| The rule, stated for agents at entry  | `AGENTS.md` — "First rule: modular context, loaded on demand"               |
 | Pointer enforcement                   | `scripts/verify-docs.mjs` (`pnpm verify:docs`, in `pnpm verify` **and** CI) |
 | Entry-doc coverage enforcement        | the same script — every directory holding content must be covered           |
 | ADR index generation                  | `scripts/adr-index.mjs` (`pnpm adr-index`)                                  |

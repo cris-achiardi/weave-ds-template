@@ -5,7 +5,7 @@
  * ---------------------------------------
  * There was no linter here at all, and `.mjs` is not typechecked by anything — so an unused import
  * or an orphaned constant was invisible to every gate in the repo. That is exactly the
- * "breach produces no build error" category `CLAUDE.md` is written about, and it let three defects
+ * "breach produces no build error" category `AGENTS.md` is written about, and it let three defects
  * through a commit that had already been reviewed by hand:
  *
  *   - five extraction readers imported into `verify-contract.mjs` and never called

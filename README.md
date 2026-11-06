@@ -173,7 +173,7 @@ becomes a component.
 
 ## Working in it
 
-- **[`CLAUDE.md`](./CLAUDE.md)** — the entry map. Start here.
+- **[`AGENTS.md`](./AGENTS.md)** — the entry map for agents. Start here. ([`CLAUDE.md`](./CLAUDE.md) imports it.)
 - **[`packages/react/CLAUDE.md`](./packages/react/CLAUDE.md)** — library internals.
 - **[`packages/contracts/components/README.md`](./packages/contracts/components/README.md)** — the
   authoring contract. The most important document in the repo if you are writing a component.

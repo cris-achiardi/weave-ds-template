@@ -1,0 +1,162 @@
+# AGENTS.md
+
+Guidance for coding agents working in this repository. This is the single source; the root
+[`CLAUDE.md`](./CLAUDE.md) only imports it, so Claude Code and every other agent read the same file.
+
+## First rule: modular context, loaded on demand
+
+Pull the right context at the right time — not everything up front. Every piece of this system's
+documentation is a **module**: each ADR, each README beside the thing it governs, each
+package-level `CLAUDE.md` (such as [`packages/react/CLAUDE.md`](./packages/react/CLAUDE.md)), each skill. Load a module only when the task actually needs the
+decision or detail it holds.
+
+In particular, **do not read all the ADRs at startup** — read the one that governs the surface you
+are about to touch, when you are about to touch it.
+
+This is deliberate **progressive disclosure**: it keeps working context lean and lets the system
+scale, because the entry map stays small and you descend into a module only when you are in its
+territory. This file and every doc it points to is written to be reached that way.
+
+## What this is
+
+A **design-system starter template**. It ships the machinery — token pipeline, component contract
+system, prop glossary, Figma wiring, ADR governance, agent skills, CI — and **no components**.
+
+That emptiness is the design, not an unfinished state. Components are built against an accepted
+decision; the arc that produces one is:
+
+> **explore → report → decide (ADR) → build**
+
+Exploring the design source and writing up what is there are **done by hand** — Figma is a canvas to
+read, not a pipeline stage, and no skill sweeps it. `ds-decide` turns a report's open questions into
+a record. The build step is contract-first: `ds-component` authors the specification and invokes a selected
+backend emitter into the consumer repository.
+
+```
+packages/contracts/ @ds/contracts — THE PRODUCT. Agnostic component contracts + their schema
+packages/tokens/   @ds/tokens — DTCG JSON -> CSS custom properties + TS constants
+packages/behavior/  @ds/behavior — what Escape means, where an arrow goes. No framework, no DOM
+packages/platform-web/ @ds/platform-web — the web platform as data. Every WEB backend reads it
+packages/emit-web/ @ds/emit-web — what every DOM-emitting backend shares: contract reading + CSS
+packages/react/    @ds/react  — a backend: React bindings, emitter, behaviour primitives
+packages/vue/      @ds/vue    — a second backend, same shape. It exists to TEST the contract
+packages/angular/  @ds/angular — a third. Attaches to elements rather than rendering them
+packages/wc/       @ds/wc     — a fourth, with NO framework: custom elements + a shadow root
+apps/react-sandbox/  fast Vite harness at :4300, in the workspace
+apps/vue-sandbox/    the same fifteen contracts at :4301
+apps/angular-sandbox/ and again at :4302
+apps/wc-sandbox/     plain HTML at :4303 — no framework in the page at all
+apps/storybook/    complete on disk, deliberately OUT of the install graph
+docs/research/     pre-decision: what is measurably true
+docs/ADR/          post-decision: what we decided and why
+docs/design/       design direction: how a screen should look, one record per concern
+.ai/maps/          the prop glossary — generated, descriptive, gated
+.figma/            which design file we read, and what has been reconciled
+```
+
+There are FOUR backends on purpose. A contract that compiles to only one framework is not a
+specification, it is that framework with extra steps — see
+[`docs/research/0004`](./docs/research/0004-a-second-backend-reading-the-same-contracts.md) and
+[`0005`](./docs/research/0005-a-third-backend-and-what-only-it-could-find.md) and
+[`0006`](./docs/research/0006-the-shadow-boundary.md) for what they proved
+and, more usefully, what they did not.
+
+**[`packages/react/CLAUDE.md`](./packages/react/CLAUDE.md) is the authority for library
+internals** — component anatomy, the contract system, extraction, the gates. Read it before
+authoring or modifying a component. This file covers the monorepo, the token pipeline and
+governance.
+
+## Brand it before anything else
+
+The repo ships generic (`@ds/*`, `--ds-*`, `data-ds-*`). Run **once**, before writing components:
+
+```bash
+pnpm init-ds weave --dry   # inspect
+pnpm init-ds weave         # apply, then pnpm install
+```
+
+The scope, the token prefix and the data-attribute prefix are one decision in three syntaxes and
+must move together — renaming one by hand leaves a repo that builds green and is wrong. `/ds.config.json`
+is the single source of truth; never hard-code a prefix anywhere else.
+
+## Commands
+
+```bash
+pnpm dev                 # React sandbox at :4300
+pnpm dev:vue             # Vue sandbox at :4301
+pnpm dev:angular         # Angular sandbox at :4302
+pnpm dev:wc              # web components at :4303 — the comparison is the point
+pnpm build               # tokens, then the library
+pnpm verify              # the full local gate — run this before pushing
+
+pnpm contract <Name>     # what IS this component (source + contract, merged, no build)
+pnpm contract --coverage # who is contracted
+pnpm prop-map            # regenerate the prop glossary
+pnpm adr-index           # regenerate the ADR index from the records — never edit it by hand
+pnpm design-index        # regenerate the design-record index — never edit it by hand
+pnpm verify:docs         # every link, path and command in the docs resolves
+pnpm verify:parity       # the four backends have not drifted apart
+pnpm report:paints       # token policy vs stylesheet — a REPORT, never a gate
+```
+
+`pnpm verify` chains: `format:check → lint → typecheck → verify:contract → prop-map:check →
+adr-index:check → design-index:check → verify:docs → verify:figma → verify:parity → build → test`.
+All of it is green on a fresh clone with zero components — that is the template's acceptance test.
+
+## Governance lives in the ADRs — consult the one your task touches
+
+[`docs/ADR/`](./docs/ADR/) is the governance layer. Per the first rule, do not read them all up
+front; when a task touches a structural decision, open the governing record then.
+[`docs/ADR/README.md`](./docs/ADR/README.md) is the index that routes you there.
+
+Two rules make the records durable rather than a maintenance burden:
+
+- **Decision vs contract.** An ADR records the _decision_ and stays agnostic; the schemas, scripts
+  and generated files that realize it are its **contracts**, they live with the code they govern,
+  and the ADR _links_ them in a `## Contract` table. This is what lets an accepted decision stay
+  stable while its implementation moves.
+- **Pre-v0 status policy.** Before the first release, records are edited in place and most stay
+  **Draft**. Only decisions **already mechanized in code** are Accepted. At v0 the
+  supersede-don't-edit discipline switches on.
+
+Working against an accepted ADR without updating it is a defect, not a shortcut.
+
+## The other contracts, and when to read them
+
+| Read it when                                           | File                                                                                                                     |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| Explaining any of this to a designer                   | `docs/documentation/` — plain language + diagrams. Explanation, not spec: where it disagrees with a spec, the spec wins. |
+| Authoring or changing a component                      | `packages/contracts/components/README.md` — **the** authoring contract                                                   |
+| Adding or changing a framework backend                 | `packages/vue/README.md` — the worked example of what a second backend costs                                             |
+| Deciding what is agnostic vs framework-specific        | `packages/contracts/schema/README.md` — the two schemas and where the line falls                                         |
+| Naming a prop or a value                               | `.ai/maps/prop-map.md` §1–2                                                                                              |
+| Writing a token                                        | `packages/tokens/tokens/README.md`                                                                                       |
+| Reading the design source                              | `.figma/README.md`                                                                                                       |
+| Designing or reviewing a screen, or a component's look | `docs/design/README.md` — start at `design-priorities`                                                                   |
+| Writing up what you found                              | `docs/research/README.md`                                                                                                |
+| Proposing an API for something not yet built           | `.ai/maps/proposals/README.md`                                                                                           |
+
+## Two rules about enforcement
+
+Both are load-bearing, and both were learned the expensive way in the systems this template draws
+from:
+
+- **A contract whose breach produces no build error has to be gated in CI, not only in
+  `pnpm verify`** — otherwise it is enforced on whichever machine happens to run verify. Equally:
+  a build step that throws must reach a non-zero exit, or CI stays green on a failed build.
+- **A gate that fails on everything on day one gets switched off, and a switched-off gate protects
+  nothing.** Uncontracted components, paint findings and extraction warnings therefore **report**
+  rather than fail. Promoting one to a gate is deliberate work, done against a clean baseline.
+
+## Honesty rules for generated and authored artifacts
+
+- **Never hand-edit a generated file.** They carry a do-not-edit banner and a regeneration command.
+  `prop-map:check` asserts byte-equality in CI, so an edit is discarded and reddens the build.
+- **Generated output must be deterministic.** Fixed code-point comparators, never `localeCompare`;
+  sorted directory reads, never filesystem order; nothing machine-specific in any output.
+- **A gap is a finding, not a blank to fill.** `code: null`, `separatorUnknown: true`,
+  "uncontracted" — these record _not measured yet_, which is more useful than a confident guess,
+  because a guess never gets revisited.
+- **Never invent a part, a state, an accessibility claim or a token policy to fill a field.** An
+  empty field is an honest "not decided". A plausible wrong one passes every check in this repo and
+  misleads every reader after you.
