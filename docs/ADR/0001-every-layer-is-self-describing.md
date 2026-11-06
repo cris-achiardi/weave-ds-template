@@ -4,6 +4,7 @@
 - **Date:** 2026-08-28
 - **Deciders:** cris
 - **Tags:** governance, documentation, ai-consumption, determinism
+- **Related:** [ADR 0006 — Design guidelines live in `docs/design`](./0006-design-guidelines-live-in-docs-design-as-principles-agents-can-check.md)
 
 ## Context
 

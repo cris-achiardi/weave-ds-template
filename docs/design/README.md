@@ -12,6 +12,9 @@ says so under _Open questions_ rather than pinning a value here.
 starts from, the order principles give way in when they conflict, the create and review procedures,
 and the reporting format for a review. Every other record is reached from there.
 
+Why this layer exists, and why it holds principles rather than recipes, is
+[ADR 0006](../ADR/0006-design-guidelines-live-in-docs-design-as-principles-agents-can-check.md).
+
 ## How this differs from the ADRs and the research
 
 | Directory                        | Holds                                                   | Answers                   |

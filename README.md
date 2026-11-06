@@ -96,7 +96,7 @@ pnpm dev:wc         # :4303 — plain HTML, no framework in the document
 | ---------------- | ------------------------------------------------------------------------------- |
 | `apps/*-sandbox` | Four Vite harnesses at `:4300`–`:4303`, pointed at generated source             |
 | `apps/storybook` | Complete on disk, deliberately **not installed** — one line to switch on        |
-| `docs/ADR`       | Four decision records. One Accepted, three Draft — pre-v0, most stay Draft      |
+| `docs/ADR`       | Six decision records. Two Accepted, four Draft — pre-v0, most stay Draft        |
 | `docs/research`  | Pre-decision space: what is measurably true, ending in open questions           |
 | `docs/design`    | Design direction: one record per concern — principles, checks, open questions   |
 | `.ai/maps`       | The prop glossary. Generated, descriptive, CI-gated                             |
