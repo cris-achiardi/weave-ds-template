@@ -4,7 +4,7 @@ import { formFor } from '../packages/emit-web/contract.mjs';
  * `pnpm verify:parity` — the many-backends gate.
  *
  * More than one backend created ways for this repo to be quietly wrong that produce no build error,
- * no type error and no failing test. That is the category `CLAUDE.md` says must be gated in CI
+ * no type error and no failing test. That is the category `AGENTS.md` says must be gated in CI
  * rather than trusted to a reviewer.
  *
  * FAILS

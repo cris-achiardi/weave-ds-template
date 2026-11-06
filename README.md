@@ -96,8 +96,9 @@ pnpm dev:wc         # :4303 — plain HTML, no framework in the document
 | ---------------- | ------------------------------------------------------------------------------- |
 | `apps/*-sandbox` | Four Vite harnesses at `:4300`–`:4303`, pointed at generated source             |
 | `apps/storybook` | Complete on disk, deliberately **not installed** — one line to switch on        |
-| `docs/ADR`       | Four decision records. One Accepted, three Draft — pre-v0, most stay Draft      |
+| `docs/ADR`       | Six decision records. Two Accepted, four Draft — pre-v0, most stay Draft        |
 | `docs/research`  | Pre-decision space: what is measurably true, ending in open questions           |
+| `docs/design`    | Design direction: one record per concern — principles, checks, open questions   |
 | `.ai/maps`       | The prop glossary. Generated, descriptive, CI-gated                             |
 | `.figma`         | Which design file we read, how names map, what has been reconciled              |
 | `.claude/skills` | Five. `ds-component` is superseded and `ds-figma-component` is blocked — #3, #4 |
@@ -172,7 +173,7 @@ becomes a component.
 
 ## Working in it
 
-- **[`CLAUDE.md`](./CLAUDE.md)** — the entry map. Start here.
+- **[`AGENTS.md`](./AGENTS.md)** — the entry map for agents. Start here. ([`CLAUDE.md`](./CLAUDE.md) imports it.)
 - **[`packages/react/CLAUDE.md`](./packages/react/CLAUDE.md)** — library internals.
 - **[`packages/contracts/components/README.md`](./packages/contracts/components/README.md)** — the
   authoring contract. The most important document in the repo if you are writing a component.
