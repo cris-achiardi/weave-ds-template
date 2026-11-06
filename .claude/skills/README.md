@@ -1,7 +1,7 @@
 # Skills
 
 Agent skills for this design system. Each one is a **module** in the sense the root
-[`CLAUDE.md`](../../CLAUDE.md) means it: loaded when a task is in its territory, not read up front.
+[`AGENTS.md`](../../AGENTS.md) means it: loaded when a task is in its territory, not read up front.
 
 A skill is not documentation. It is the procedure plus the traps — what to read, in what order, what
 the tooling will let you do wrong, and what to write down when you are finished.

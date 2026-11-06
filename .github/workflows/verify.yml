@@ -84,6 +84,10 @@ jobs:
       # invisible — nobody browses a directory listing — while every other tool stays green.
       - run: pnpm adr-index:check
 
+      # Same failure for design records, plus one more: a record that drops its Checks or its
+      # "In this system" section still renders, but can no longer be reviewed against or traced.
+      - run: pnpm design-index:check
+
       # This repo points instead of restating, so its characteristic defect is a pointer that
       # resolves to nothing: a moved schema, a deleted skill, a `pnpm` script that was never
       # added. Docs still render, the build still passes, the reader lands on nothing.
