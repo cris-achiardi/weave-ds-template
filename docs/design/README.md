@@ -74,8 +74,6 @@ for different reasons.
 
 The principles come from the **Square One principles** reference — foundational composition,
 typography, Gestalt and motion principles, each with a procedure and a check. They were split into
-one record per concern on the shape of
-[Figma OSDS's design records](https://github.com/figma/osds/tree/main/src/docs/design): numbered
-principles, a pointer to the contract that carries each one, and open questions instead of guessed
-values. The Square One _Check_ lines became each record's **Checks** section, which the OSDS shape
-does not have.
+one record per concern: numbered principles, a pointer to the contract that carries each one, and
+open questions instead of guessed values. The Square One _Check_ lines became each record's
+**Checks** section.
