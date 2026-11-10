@@ -1202,7 +1202,9 @@ export function emitTsx(name, contract, binding, prefix) {
     );
     for (const o of orphaned) s.push(`      {${o.name}}`);
   }
-  if (takesChildren && !childrenPart) s.push(`      {children}`);
+  // A children part of `root` is the root itself: it still needs the outlet, which renderPart only
+  // emits for named sub-parts.
+  if (takesChildren && (!childrenPart || childrenPart === root.part)) s.push(`      {children}`);
   if (collection) s.push(`      </${name}Context.Provider>`);
   s.push(`    </${el}>`);
   s.push(`  );`);

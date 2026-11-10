@@ -1069,7 +1069,7 @@ export function emitSfc(name, contract, binding, prefix) {
     );
     for (const o of orphaned) t.push(`    <slot name="${o.name}" />`);
   }
-  if (takesChildren && !childrenPart) t.push(`    <slot />`);
+  if (takesChildren && (!childrenPart || childrenPart === root.part)) t.push(`    <slot />`);
   t.push(`  </${el}>`);
   t.push(`</template>`);
 

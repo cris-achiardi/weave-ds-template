@@ -279,7 +279,8 @@ export function emitComponent(name, contract, binding, prefix, { declareTagTypes
       (x) => !allParts.some((p) => (x.part ? p.key === x.part : p.key === x.name)),
     );
     for (const o of orphaned) tpl.push(`      <slot name="${o.name}"></slot>`);
-    if (takesChildren && !childrenPart) tpl.push(`      <slot></slot>`);
+    if (takesChildren && (!childrenPart || childrenPart === root.part))
+      tpl.push(`      <slot></slot>`);
     tpl.push(`    </${el}>`);
   }
 
