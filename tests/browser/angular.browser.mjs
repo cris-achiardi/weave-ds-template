@@ -40,3 +40,6 @@ tablistOwnershipRegressions('angular');
 
 import { relationRegressions } from './relations.mjs';
 relationRegressions();
+
+import { frameworkFormRegressions } from './framework-forms.mjs';
+frameworkFormRegressions();

@@ -3,7 +3,7 @@
 //
 // Collects a single line of text from a person. It is the control itself, where Field is the plumbing around a control — the two compose, and neither does the other's job.
 
-import { forwardRef, useState, useCallback } from 'react';
+import { forwardRef, useState, useCallback, useEffect, useRef } from 'react';
 import type { InputHTMLAttributes, ChangeEvent } from 'react';
 import './TextField.structure.css';
 import './TextField.theme.css';
@@ -58,10 +58,71 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
     [valueControlled, onValueChange],
   );
 
+  // ---- form lifecycle (contract.form). See packages/wc/forms.md.
+  const formControl = useRef<HTMLInputElement | null>(null);
+  // The answer a reset restores: captured once, at mount, never re-captured from props.
+  const formAnswer = useRef(valueValue);
+  // Read by the reset listener, which is installed once and must see current props.
+  const formLatest = useRef({ valueValue, valueControlled, onValueChange });
+  formLatest.current = { valueValue, valueControlled, onValueChange };
+  const setFormControl = useCallback(
+    (node: HTMLInputElement | null) => {
+      formControl.current = node;
+      if (typeof ref === 'function') ref(node);
+      else if (ref) ref.current = node;
+    },
+    [ref],
+  );
+  useEffect(() => {
+    const control = formControl.current;
+    if (!control) return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    // Listened for on the document, and matched against the CURRENT owner when it fires,
+    // so a `form` attribute, an owner change or a move needs no re-subscription.
+    const onReset = (event: Event) => {
+      if (event.target !== control.form) return;
+      // A TASK, not a microtask: a reset button dispatches from native code, so a microtask
+      // would run before later listeners could cancel and before the platform resets.
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        if (event.defaultPrevented) return;
+        const answer = formAnswer.current;
+        const latest = formLatest.current;
+        // A controlled model is told only when it differs. No DOM event is dispatched:
+        // this is lifecycle synchronisation, not a user edit.
+        if (latest.valueControlled) {
+          if (latest.valueValue !== answer) latest.onValueChange?.(answer);
+        } else setValueInternal(answer);
+      });
+    };
+    const doc = control.ownerDocument;
+    doc.addEventListener('reset', onReset, true);
+    return () => {
+      doc.removeEventListener('reset', onReset, true);
+      clearTimeout(timer);
+    };
+  }, [setValueInternal]);
+  // Authored `invalid` is a custom validity error the component OWNS. A message the
+  // consumer set through the element's own setCustomValidity() is never replaced or
+  // cleared by it.
+  const formOwnsError = useRef(false);
+  useEffect(() => {
+    const control = formControl.current;
+    if (!control) return;
+    if (invalid) {
+      if (control.validity.customError) return;
+      control.setCustomValidity('Invalid value.');
+      formOwnsError.current = true;
+    } else if (formOwnsError.current) {
+      formOwnsError.current = false;
+      if (control.validationMessage === 'Invalid value.') control.setCustomValidity('');
+    }
+  }, [invalid]);
+
   return (
     <input
       {...rest}
-      ref={ref}
+      ref={setFormControl}
       disabled={disabled || undefined}
       aria-readonly={readOnly || undefined}
       aria-invalid={invalid || undefined}

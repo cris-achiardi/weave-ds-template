@@ -2,7 +2,7 @@ import { Component, signal } from '@angular/core';
 import { bootstrapApplication } from '@angular/platform-browser';
 import { TextField as Live } from './components/TextField';
 import { CommittedTextField as Committed } from './browser-generated/CommittedTextField/CommittedTextField';
-const template = `<input dsTextField aria-label="Edit probe" [value]="value()" [invalid]="invalid()" (valueChange)="changed($event)" />
+const template = `<input dsTextField aria-label="Edit probe" name="draft" [value]="value()" [invalid]="invalid()" (valueChange)="changed($event)" />
 <output data-testid="value">{{value()}}</output><output data-testid="count">{{count()}}</output><output data-testid="tick">{{tick()}}</output>
 <button (mousedown)="$event.preventDefault()" (click)="rerender()">Rerender</button>
 <button (mousedown)="$event.preventDefault()" (click)="value.set('external')">Set external</button><button>Finish</button>`;
@@ -28,6 +28,7 @@ class LiveFixture extends State {}
   template: `<input
       dsCommittedTextField
       aria-label="Edit probe"
+      name="draft"
       [value]="value()"
       [invalid]="invalid()"
       (valueChange)="changed($event)"

@@ -3,7 +3,17 @@
 //
 // Collects a single line of text from a person. It is the control itself, where Field is the plumbing around a control — the two compose, and neither does the other's job.
 
-import { Component, ViewEncapsulation, input, model } from '@angular/core';
+import {
+  Component,
+  DestroyRef,
+  ElementRef,
+  ViewEncapsulation,
+  afterNextRender,
+  effect,
+  inject,
+  input,
+  model,
+} from '@angular/core';
 
 @Component({
   // The binding's `element` becomes a SELECTOR, because an Angular component attaches
@@ -43,6 +53,57 @@ export class TextField {
   readonly size = input<'s' | 'm' | 'l'>('m');
   /** The text itself. Free-form: not a boolean, and not one of a fixed set — which is what makes this the first state in the library that `values` cannot describe. Two-way: `[(value)]`. */
   readonly value = model<string>('');
+
+  private readonly formHost = inject<ElementRef<HTMLInputElement>>(ElementRef);
+
+  constructor() {
+    // ---- form lifecycle (contract.form). See packages/wc/forms.md.
+    const control = this.formHost.nativeElement;
+    // The answer a reset restores: captured once, at first render — after the consumer's
+    // bindings have arrived — and never re-captured.
+    let formAnswer: string | undefined;
+    let formTimer: ReturnType<typeof setTimeout> | undefined;
+    // Matched against the CURRENT owner when it fires, so a `form` attribute, an owner
+    // change or a move needs no re-subscription.
+    const onFormReset = (event: Event) => {
+      if (formAnswer === undefined || event.target !== control.form) return;
+      const answer = formAnswer;
+      // A TASK, not a microtask: a reset button dispatches from native code, so a
+      // microtask would run before later listeners could cancel and before the reset.
+      clearTimeout(formTimer);
+      formTimer = setTimeout(() => {
+        if (event.defaultPrevented) return;
+        // The model hears only a real difference, and no DOM event is dispatched: this
+        // is lifecycle synchronisation, not a user edit.
+        if (this.value() !== answer) this.value.set(answer);
+        // The binding writes only on change; the platform has already rewritten the
+        // element, so make it show what the model holds.
+        control.value = this.value();
+      });
+    };
+    afterNextRender(() => {
+      formAnswer = this.value();
+      control.ownerDocument.addEventListener('reset', onFormReset, true);
+    });
+    inject(DestroyRef).onDestroy(() => {
+      control.ownerDocument.removeEventListener('reset', onFormReset, true);
+      clearTimeout(formTimer);
+    });
+    // Authored `invalid` is a custom validity error the component OWNS. A message the
+    // consumer set through the element's own setCustomValidity() is never replaced or
+    // cleared by it.
+    let formOwnsError = false;
+    effect(() => {
+      if (this.invalid()) {
+        if (control.validity.customError) return;
+        control.setCustomValidity('Invalid value.');
+        formOwnsError = true;
+      } else if (formOwnsError) {
+        formOwnsError = false;
+        if (control.validationMessage === 'Invalid value.') control.setCustomValidity('');
+      }
+    });
+  }
 
   protected handleInput(event: Event): void {
     const next = (event.target as HTMLInputElement).value;

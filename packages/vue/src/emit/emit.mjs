@@ -62,7 +62,9 @@ import {
   readJson,
   referencedByASibling,
   suppliedRelations,
+  formFor,
 } from '@ds/emit-web';
+import { FORM_IMPORTS, emitNativeFormLifecycle } from './form.mjs';
 
 import { camel, pascal, slotsFrom, surfaceFrom } from './surface.mjs';
 
@@ -325,6 +327,9 @@ export function emitSfc(name, contract, binding, prefix) {
   );
   const nativelyEdited = editable && valueState;
   const commitEditing = nativelyEdited && contract.states[valueState.from].editing === 'commit';
+  // A native control whose contract declares a form answer: the platform submits it, and the
+  // generated code adds the model half of the lifecycle — reset sync and authored validity.
+  const nativeForm = nativelyEdited ? formFor(contract) : null;
   if (range) {
     assume(
       'how a pointer becomes a number',
@@ -492,6 +497,7 @@ export function emitSfc(name, contract, binding, prefix) {
   const s = [];
   const vueImports = new Set(['computed', 'useAttrs']);
   if (commitEditing) for (const i of ['ref', 'watch']) vueImports.add(i);
+  if (nativeForm) for (const i of FORM_IMPORTS) vueImports.add(i);
   if (needsIds && !member) vueImports.add('useId');
   if (collection) vueImports.add('provide');
   if (member) vueImports.add('inject');
@@ -864,6 +870,16 @@ export function emitSfc(name, contract, binding, prefix) {
     if (commitEditing) s.push(`  editingDraft.value = ${v}.value;`);
     s.push(`}`);
     s.push(``);
+    if (nativeForm) {
+      s.push(
+        ...emitNativeFormLifecycle({
+          v,
+          elType: 'HTMLInputElement',
+          commitEditing,
+          hasInvalid: Boolean(contract.states?.invalid),
+        }),
+      );
+    }
   }
 
   // -------------------------------------------------------------------------------------
@@ -873,6 +889,7 @@ export function emitSfc(name, contract, binding, prefix) {
   rootAttrs.push(`v-bind="fallthrough"`);
   if (platformModal) rootAttrs.push(`ref="dialogEl"`);
   else if (registers) rootAttrs.push(`ref="rootEl"`);
+  else if (nativeForm) rootAttrs.push(`ref="formControl"`);
   if (submitsByDefault(el, WEB)) rootAttrs.push(`type="button"`);
   if (rootRole && implicitRole(el, WEB) !== rootRole) rootAttrs.push(`role="${rootRole}"`);
   if (needsIds) rootAttrs.push(`:id="baseId"`);
