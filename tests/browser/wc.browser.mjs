@@ -245,3 +245,6 @@ tabRelationRegressions();
 
 import { tabRelationReviewRegressions } from './tab-relations.mjs';
 tabRelationReviewRegressions();
+
+import { tabSpaceCancellationRegressions } from './tab-relations.mjs';
+tabSpaceCancellationRegressions();

@@ -58,8 +58,9 @@ export class TabItem extends HTMLElement {
     // Queue click activation so the consumer can cancel it before state changes.
     this.addEventListener('click', (event) => this.#queueActivation(event as MouseEvent));
     this.addEventListener('keydown', (event) => this.#keyActivation(event as KeyboardEvent));
+    this.addEventListener('keypress', (event) => this.#keyActivation(event as KeyboardEvent));
     this.addEventListener('keyup', (event) => this.#keyActivation(event as KeyboardEvent));
-    this.addEventListener('blur', () => (this.#space = 'idle'));
+    this.addEventListener('blur', () => (this.#spaceDown = null));
   }
 
   /**
@@ -86,7 +87,6 @@ export class TabItem extends HTMLElement {
       );
     }
     this.#collection.addEventListener(TABS_CHANGE, this.#onCollectionChange);
-    window.addEventListener('keydown', this.#settleSpace);
     this.#update();
     // Joining changes who this member's siblings pair with (ADR 0008).
     this.#collection.relink();
@@ -95,8 +95,7 @@ export class TabItem extends HTMLElement {
   disconnectedCallback(): void {
     for (const timer of this.#pendingActivations) window.clearTimeout(timer);
     this.#pendingActivations.clear();
-    window.removeEventListener('keydown', this.#settleSpace);
-    this.#space = 'idle';
+    this.#spaceDown = null;
     const collection = this.#collection;
     this.#collection = null;
     collection?.removeEventListener(TABS_CHANGE, this.#onCollectionChange);
@@ -176,23 +175,33 @@ export class TabItem extends HTMLElement {
 
   /**
    * What a native button did for free, now that the host is the control (ADR 0008):
-   * Enter clicks on keydown, Space on keyup, and Space does not scroll the page.
-   * The click is DISPATCHED, so it reaches #queueActivation and every consumer click
-   * listener exactly like a pointer click — and it waits a task, so a consumer
-   * keydown/keyup listener that calls preventDefault() still cancels it. A Space
-   * press whose KEYDOWN was cancelled does not activate, as on a native button.
+   * Enter clicks on keydown, Space on keyup. The click is DISPATCHED, so it reaches
+   * #queueActivation and every consumer click listener like a pointer click, and it
+   * waits a task so a cancelled Enter keydown or Space keyup still cancels it.
+   *
+   * Space, as on a native button, activates only if its KEYDOWN was not cancelled.
+   * That keydown is kept and read at keyup, when its dispatch is long complete, so every
+   * listener in every order — window listeners, stopPropagation included — has had its
+   * say. The page scroll a Space press causes is prevented on KEYPRESS, which leaves the
+   * keydown's defaultPrevented the consumer's alone. Measured in Chromium, Firefox and
+   * WebKit: the scroll is the keypress default action, and a cancelled keydown fires no
+   * keypress. keypress is deprecated; an engine that stopped firing it would scroll the
+   * page on Space, which is visible, rather than mis-activate.
    */
   #keyActivation(event: KeyboardEvent): void {
     if (event.target !== this || event.altKey || event.ctrlKey || event.metaKey) return;
     if (event.key === ' ') {
-      if (event.type === 'keydown') {
-        // Settled by #settleSpace once every consumer listener has seen the keydown.
-        this.#space = event.defaultPrevented ? 'canceled' : 'pending';
+      if (event.type === 'keypress') {
+        event.preventDefault();
         return;
       }
-      const armed = this.#space === 'armed' || this.#space === 'pending';
-      this.#space = 'idle';
-      if (!armed) return;
+      if (event.type === 'keydown') {
+        this.#spaceDown = event;
+        return;
+      }
+      const down = this.#spaceDown;
+      this.#spaceDown = null;
+      if (!down || down.defaultPrevented) return;
     } else if (!(event.type === 'keydown' && event.key === 'Enter')) return;
     const timer = window.setTimeout(() => {
       this.#pendingActivations.delete(timer);
@@ -201,32 +210,8 @@ export class TabItem extends HTMLElement {
     this.#pendingActivations.add(timer);
   }
 
-  /**
-   * The current Space press. ARMED by an uncancelled keydown (settled in #settleSpace);
-   * disarmed by a cancelled keydown or by focus leaving the host. Keyup clicks only
-   * while armed — or still 'pending', when the keydown's propagation was stopped
-   * before #settleSpace could see it, which does not cancel a native button either.
-   */
-  #space: 'idle' | 'pending' | 'armed' | 'canceled' = 'idle';
-
-  /**
-   * The LAST listener a Space keydown on this host meets — a bubbling one on window,
-   * added while connected — so every consumer listener has already run and
-   * `defaultPrevented` says whether one cancelled. Only then does it prevent the page
-   * scroll, which this component must do itself and which would otherwise hide a
-   * consumer's cancellation. A consumer that stops propagation instead never reaches
-   * here: the press still activates (that does not cancel a native button either),
-   * but the page may scroll.
-   */
-  readonly #settleSpace = (event: KeyboardEvent): void => {
-    if (event.key !== ' ' || this.#space !== 'pending' || event.composedPath()[0] !== this) return;
-    if (event.defaultPrevented) {
-      this.#space = 'canceled';
-      return;
-    }
-    this.#space = 'armed';
-    event.preventDefault();
-  };
+  /** The Space press in progress: its keydown, until keyup or focus leaving the host. */
+  #spaceDown: KeyboardEvent | null = null;
 
   #updating = false;
 

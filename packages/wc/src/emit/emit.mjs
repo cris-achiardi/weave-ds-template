@@ -597,9 +597,10 @@ export function emitComponent(name, contract, binding, prefix, { declareTagTypes
     // The host is the control, so it supplies the keyboard activation a native button gave.
     if (target === 'host') {
       listeners.push(['host', 'keydown', 'this.#keyActivation(event as KeyboardEvent)']);
+      listeners.push(['host', 'keypress', 'this.#keyActivation(event as KeyboardEvent)']);
       listeners.push(['host', 'keyup', 'this.#keyActivation(event as KeyboardEvent)']);
       // Focus leaving disarms a Space press, as it does on a native button.
-      listeners.push(['host', 'blur', "this.#space = 'idle'"]);
+      listeners.push(['host', 'blur', 'this.#spaceDown = null']);
     }
   }
   if (range) {
@@ -713,8 +714,6 @@ export function emitComponent(name, contract, binding, prefix, { declareTagTypes
     s.push(`      this.#onCollectionChange,`);
     s.push(`    );`);
   }
-  if (hasActivation && hostRoot && !(activator && activator.key !== ROOT_KEY))
-    s.push(`    window.addEventListener('keydown', this.#settleSpace);`);
   s.push(`    this.#update();`);
   if (linked.length || (hostRoot && member)) {
     s.push(`    // Joining changes who this member's siblings pair with (ADR 0008).`);
@@ -730,8 +729,7 @@ export function emitComponent(name, contract, binding, prefix, { declareTagTypes
       s.push(`    this.#pendingActivations.clear();`);
     }
     if (hasActivation && hostRoot && !(activator && activator.key !== ROOT_KEY)) {
-      s.push(`    window.removeEventListener('keydown', this.#settleSpace);`);
-      s.push(`    this.#space = 'idle';`);
+      s.push(`    this.#spaceDown = null;`);
     }
     if (member && hostRoot) {
       // DETACH FIRST. Releasing the host writes attributes this element observes (`id`), and a
@@ -1023,25 +1021,47 @@ export function emitComponent(name, contract, binding, prefix, { declareTagTypes
   if (hasActivation && hostRoot && !(activator && activator.key !== ROOT_KEY)) {
     s.push(`  /**`);
     s.push(`   * What a native button did for free, now that the host is the control (ADR 0008):`);
-    s.push(`   * Enter clicks on keydown, Space on keyup, and Space does not scroll the page.`);
-    s.push(`   * The click is DISPATCHED, so it reaches #queueActivation and every consumer click`);
-    s.push(`   * listener exactly like a pointer click — and it waits a task, so a consumer`);
-    s.push(`   * keydown/keyup listener that calls preventDefault() still cancels it. A Space`);
-    s.push(`   * press whose KEYDOWN was cancelled does not activate, as on a native button.`);
+    s.push(`   * Enter clicks on keydown, Space on keyup. The click is DISPATCHED, so it reaches`);
+    s.push(`   * #queueActivation and every consumer click listener like a pointer click, and it`);
+    s.push(`   * waits a task so a cancelled Enter keydown or Space keyup still cancels it.`);
+    s.push(`   *`);
+    s.push(`   * Space, as on a native button, activates only if its KEYDOWN was not cancelled.`);
+    s.push(
+      `   * That keydown is kept and read at keyup, when its dispatch is long complete, so every`,
+    );
+    s.push(
+      `   * listener in every order — window listeners, stopPropagation included — has had its`,
+    );
+    s.push(
+      `   * say. The page scroll a Space press causes is prevented on KEYPRESS, which leaves the`,
+    );
+    s.push(
+      `   * keydown's defaultPrevented the consumer's alone. Measured in Chromium, Firefox and`,
+    );
+    s.push(
+      `   * WebKit: the scroll is the keypress default action, and a cancelled keydown fires no`,
+    );
+    s.push(
+      `   * keypress. keypress is deprecated; an engine that stopped firing it would scroll the`,
+    );
+    s.push(`   * page on Space, which is visible, rather than mis-activate.`);
     s.push(`   */`);
     s.push(`  #keyActivation(event: KeyboardEvent): void {`);
     s.push(
       `    if (event.target !== this || event.altKey || event.ctrlKey || event.metaKey) return;`,
     );
     s.push(`    if (event.key === ' ') {`);
-    s.push(`      if (event.type === 'keydown') {`);
-    s.push(`        // Settled by #settleSpace once every consumer listener has seen the keydown.`);
-    s.push(`        this.#space = event.defaultPrevented ? 'canceled' : 'pending';`);
+    s.push(`      if (event.type === 'keypress') {`);
+    s.push(`        event.preventDefault();`);
     s.push(`        return;`);
     s.push(`      }`);
-    s.push(`      const armed = this.#space === 'armed' || this.#space === 'pending';`);
-    s.push(`      this.#space = 'idle';`);
-    s.push(`      if (!armed) return;`);
+    s.push(`      if (event.type === 'keydown') {`);
+    s.push(`        this.#spaceDown = event;`);
+    s.push(`        return;`);
+    s.push(`      }`);
+    s.push(`      const down = this.#spaceDown;`);
+    s.push(`      this.#spaceDown = null;`);
+    s.push(`      if (!down || down.defaultPrevented) return;`);
     s.push(`    } else if (!(event.type === 'keydown' && event.key === 'Enter')) return;`);
     s.push(`    const timer = window.setTimeout(() => {`);
     s.push(`      this.#pendingActivations.delete(timer);`);
@@ -1050,38 +1070,10 @@ export function emitComponent(name, contract, binding, prefix, { declareTagTypes
     s.push(`    this.#pendingActivations.add(timer);`);
     s.push(`  }`);
     s.push(``);
-    s.push(`  /**`);
     s.push(
-      `   * The current Space press. ARMED by an uncancelled keydown (settled in #settleSpace);`,
+      `  /** The Space press in progress: its keydown, until keyup or focus leaving the host. */`,
     );
-    s.push(`   * disarmed by a cancelled keydown or by focus leaving the host. Keyup clicks only`);
-    s.push(`   * while armed — or still 'pending', when the keydown's propagation was stopped`);
-    s.push(`   * before #settleSpace could see it, which does not cancel a native button either.`);
-    s.push(`   */`);
-    s.push(`  #space: 'idle' | 'pending' | 'armed' | 'canceled' = 'idle';`);
-    s.push(``);
-    s.push(`  /**`);
-    s.push(`   * The LAST listener a Space keydown on this host meets — a bubbling one on window,`);
-    s.push(`   * added while connected — so every consumer listener has already run and`);
-    s.push(
-      `   * \`defaultPrevented\` says whether one cancelled. Only then does it prevent the page`,
-    );
-    s.push(`   * scroll, which this component must do itself and which would otherwise hide a`);
-    s.push(`   * consumer's cancellation. A consumer that stops propagation instead never reaches`);
-    s.push(`   * here: the press still activates (that does not cancel a native button either),`);
-    s.push(`   * but the page may scroll.`);
-    s.push(`   */`);
-    s.push(`  readonly #settleSpace = (event: KeyboardEvent): void => {`);
-    s.push(
-      `    if (event.key !== ' ' || this.#space !== 'pending' || event.composedPath()[0] !== this) return;`,
-    );
-    s.push(`    if (event.defaultPrevented) {`);
-    s.push(`      this.#space = 'canceled';`);
-    s.push(`      return;`);
-    s.push(`    }`);
-    s.push(`    this.#space = 'armed';`);
-    s.push(`    event.preventDefault();`);
-    s.push(`  };`);
+    s.push(`  #spaceDown: KeyboardEvent | null = null;`);
     s.push(``);
   }
 

@@ -402,3 +402,71 @@ export function tabRelationReviewRegressions() {
     await expect(page.locator('#rel').getByRole('tabpanel', { name: 'Alpha' })).toHaveCount(1);
   });
 }
+
+// PR #56 re-review: Space cancellation must hold whatever order the consumer's listeners run in.
+// Each repro runs on the tab AND on a native <button> with the same listener, as the control that
+// says what the platform does. Both failed on c145204 (Space on Beta still selected b).
+export function tabSpaceCancellationRegressions() {
+  // mode 'window': one keydown listener on window, added after connection (after the tab's own).
+  // mode 'stop': on each of the tab and the native button, a keydown listener that cancels and
+  // stops propagation. mode '': no consumer listener.
+  async function setup(page, mode) {
+    await fixture(
+      page,
+      `${TWO}<button id="native" type="button">Native</button>
+       <div style="block-size: 5000px"></div>`,
+    );
+    await page.evaluate((mode) => {
+      window.nativeClicks = 0;
+      const native = document.querySelector('#native');
+      native.addEventListener('click', () => window.nativeClicks++);
+      const beta = document.querySelector('#rel ds-tab-item[value="b"]');
+      if (mode === 'window')
+        window.addEventListener('keydown', (e) => e.key === ' ' && e.preventDefault());
+      if (mode === 'stop')
+        for (const target of [beta, native])
+          target.addEventListener('keydown', (e) => {
+            if (e.key !== ' ') return;
+            e.preventDefault();
+            e.stopPropagation();
+          });
+    }, mode);
+    return page.locator('#rel ds-tabs');
+  }
+  const settle = (page) => page.evaluate(() => new Promise((r) => setTimeout(r, 50)));
+  const pressSpaceOn = async (page, selector) => {
+    await page.locator(selector).focus();
+    await page.keyboard.press(' ');
+    await settle(page);
+  };
+
+  test('#56 re-review: a window keydown listener added after connection cancels Space', async ({
+    page,
+  }) => {
+    const tabs = await setup(page, 'window');
+    await pressSpaceOn(page, '#native');
+    expect(await page.evaluate(() => window.nativeClicks)).toBe(0);
+    await pressSpaceOn(page, '#rel ds-tab-item[value="b"]');
+    await expect(tabs).toHaveJSProperty('value', 'a');
+  });
+
+  test('#56 re-review: a host listener that cancels and stops propagation cancels Space', async ({
+    page,
+  }) => {
+    const tabs = await setup(page, 'stop');
+    await pressSpaceOn(page, '#native');
+    expect(await page.evaluate(() => window.nativeClicks)).toBe(0);
+    await pressSpaceOn(page, '#rel ds-tab-item[value="b"]');
+    await expect(tabs).toHaveJSProperty('value', 'a');
+  });
+
+  test('#56 re-review: Space on a tab activates it and does not scroll the page', async ({
+    page,
+  }) => {
+    const tabs = await setup(page, '');
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await pressSpaceOn(page, '#rel ds-tab-item[value="b"]');
+    await expect(tabs).toHaveJSProperty('value', 'b');
+    expect(await page.evaluate(() => window.scrollY)).toBe(0);
+  });
+}
