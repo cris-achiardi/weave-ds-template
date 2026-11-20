@@ -69,27 +69,39 @@ export function emitNativeFormLifecycle({ v, commitEditing, hasInvalid }) {
   c.push(`      control.ownerDocument.removeEventListener('reset', onFormReset, true);`);
   c.push(`      clearTimeout(formTimer);`);
   c.push(`    });`);
-  if (hasInvalid) {
-    c.push(
-      `    // Authored \`invalid\` is a custom validity error the component OWNS. A message the`,
-    );
-    c.push(
-      `    // consumer set through the element's own setCustomValidity() is never replaced or`,
-    );
-    c.push(`    // cleared by it.`);
-    c.push(`    let formOwnsError = false;`);
-    c.push(`    effect(() => {`);
-    c.push(`      if (this.invalid()) {`);
-    c.push(`        if (control.validity.customError) return;`);
-    c.push(`        control.setCustomValidity(${JSON.stringify(INVALID_MESSAGE)});`);
-    c.push(`        formOwnsError = true;`);
-    c.push(`      } else if (formOwnsError) {`);
-    c.push(`        formOwnsError = false;`);
-    c.push(
-      `        if (control.validationMessage === ${JSON.stringify(INVALID_MESSAGE)}) control.setCustomValidity('');`,
-    );
-    c.push(`      }`);
-    c.push(`    });`);
-  }
+  if (hasInvalid) c.push(...emitOwnedValidity('control'));
   return c;
+}
+
+/**
+ * Custom validity has TWO writers, tracked by writer rather than inferred from the message text:
+ * the consumer, through the element's own setCustomValidity() — intercepted on the instance — and
+ * authored `invalid`. The effective error is the consumer's message if any, else the default one
+ * while `invalid` holds (the same precedence as WC). Clearing `invalid` therefore never clears a
+ * consumer error, even one with identical text, and never depends on validationMessage — which
+ * reads '' while the element is barred from validation (read-only, disabled).
+ *
+ * Constructor statements; `element` names a local holding the HTMLInputElement.
+ */
+export function emitOwnedValidity(element) {
+  const msg = JSON.stringify(INVALID_MESSAGE);
+  return [
+    `    // Custom validity has two writers, tracked by WRITER, not by message text: the consumer,`,
+    `    // through the element's own setCustomValidity(), and authored \`invalid\`. The consumer's`,
+    `    // message wins, as in WC; clearing \`invalid\` never clears it.`,
+    `    const formValidity = { consumer: '', invalid: false };`,
+    `    const formApplyValidity = () => {`,
+    `      const { consumer, invalid } = formValidity;`,
+    `      HTMLInputElement.prototype.setCustomValidity.call(${element}, consumer || (invalid ? ${msg} : ''));`,
+    `    };`,
+    `    ${element}.setCustomValidity = (message: string) => {`,
+    `      formValidity.consumer = String(message);`,
+    `      formApplyValidity();`,
+    `    };`,
+    `    inject(DestroyRef).onDestroy(() => Reflect.deleteProperty(${element}, 'setCustomValidity'));`,
+    `    effect(() => {`,
+    `      formValidity.invalid = this.invalid();`,
+    `      formApplyValidity();`,
+    `    });`,
+  ];
 }

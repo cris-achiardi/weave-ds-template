@@ -68,8 +68,19 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
   const setFormControl = useCallback(
     (node: HTMLInputElement | null) => {
       formControl.current = node;
-      if (typeof ref === 'function') ref(node);
-      else if (ref) ref.current = node;
+      if (typeof ref === 'function') {
+        const cleanup = (ref as (instance: HTMLInputElement | null) => unknown)(node);
+        return () => {
+          formControl.current = null;
+          if (typeof cleanup === 'function') cleanup();
+          else ref(null);
+        };
+      }
+      if (ref) ref.current = node;
+      return () => {
+        formControl.current = null;
+        if (ref) ref.current = null;
+      };
     },
     [ref],
   );
@@ -102,22 +113,37 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
       clearTimeout(timer);
     };
   }, [setValueInternal]);
-  // Authored `invalid` is a custom validity error the component OWNS. A message the
-  // consumer set through the element's own setCustomValidity() is never replaced or
-  // cleared by it.
-  const formOwnsError = useRef(false);
+  // Custom validity has two writers, tracked by WRITER, not by message text: the consumer,
+  // through the element's own setCustomValidity(), and authored `invalid`. The consumer's
+  // message wins, as in WC; clearing `invalid` never clears it.
+  const formValidity = useRef({ consumer: '', invalid: false });
+  const formApplyValidity = useCallback(() => {
+    const element = formControl.current;
+    if (!element) return;
+    const { consumer, invalid } = formValidity.current;
+    HTMLInputElement.prototype.setCustomValidity.call(
+      element,
+      consumer || (invalid ? 'Invalid value.' : ''),
+    );
+  }, []);
   useEffect(() => {
-    const control = formControl.current;
-    if (!control) return;
-    if (invalid) {
-      if (control.validity.customError) return;
-      control.setCustomValidity('Invalid value.');
-      formOwnsError.current = true;
-    } else if (formOwnsError.current) {
-      formOwnsError.current = false;
-      if (control.validationMessage === 'Invalid value.') control.setCustomValidity('');
-    }
-  }, [invalid]);
+    const element = formControl.current;
+    if (!element) return;
+    const state = formValidity.current;
+    // A message set before this ran (a consumer ref callback runs first) is the consumer's.
+    if (element.validity.customError && !state.invalid) state.consumer = element.validationMessage;
+    element.setCustomValidity = (message: string) => {
+      state.consumer = String(message);
+      formApplyValidity();
+    };
+    return () => {
+      Reflect.deleteProperty(element, 'setCustomValidity');
+    };
+  }, [formApplyValidity]);
+  useEffect(() => {
+    formValidity.current.invalid = Boolean(invalid);
+    formApplyValidity();
+  }, [invalid, formApplyValidity]);
 
   return (
     <input

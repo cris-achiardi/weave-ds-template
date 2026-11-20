@@ -15,6 +15,7 @@ import { TextField } from './components/TextField';
           name="controlled"
           [value]="model()"
           [invalid]="invalid()"
+          [readOnly]="readOnly()"
           (valueChange)="changed($event)"
         />
         <input dsTextField aria-label="Uncontrolled" name="uncontrolled" />
@@ -46,6 +47,9 @@ import { TextField } from './components/TextField';
     </button>
     <button (mousedown)="$event.preventDefault()" (click)="showOutside.set(false)">
       Remove outside
+    </button>
+    <button (mousedown)="$event.preventDefault()" (click)="readOnly.set(!readOnly())">
+      Toggle read-only
     </button>`,
 })
 class FormFixture {
@@ -55,6 +59,7 @@ class FormFixture {
   readonly tick = signal(0);
   readonly invalid = signal(false);
   readonly showOutside = signal(true);
+  readonly readOnly = signal(false);
   changed(next: string) {
     this.model.set(next);
     this.count.update((n) => n + 1);

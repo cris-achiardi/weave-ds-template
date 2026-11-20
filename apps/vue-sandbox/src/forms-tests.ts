@@ -10,7 +10,8 @@ createApp({
       count = ref(0),
       tick = ref(0),
       invalid = ref(false),
-      showOutside = ref(true);
+      showOutside = ref(true),
+      readOnly = ref(false);
     const keep = (event: MouseEvent) => event.preventDefault();
     return () => [
       h(
@@ -29,6 +30,7 @@ createApp({
               name: 'controlled',
               value: model.value,
               invalid: invalid.value,
+              readOnly: readOnly.value,
               'onUpdate:value': (next: string) => {
                 model.value = next;
                 count.value++;
@@ -67,6 +69,11 @@ createApp({
         'button',
         { onMousedown: keep, onClick: () => (showOutside.value = false) },
         'Remove outside',
+      ),
+      h(
+        'button',
+        { onMousedown: keep, onClick: () => (readOnly.value = !readOnly.value) },
+        'Toggle read-only',
       ),
     ];
   },

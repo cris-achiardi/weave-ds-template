@@ -74,22 +74,35 @@ onBeforeUnmount(() => {
   formDocument?.removeEventListener('reset', onFormReset, true);
   clearTimeout(formTimer);
 });
-// Authored `invalid` is a custom validity error the component OWNS. A message the
-// consumer set through the element's own setCustomValidity() is never replaced or
-// cleared by it.
-let formOwnsError = false;
+// Custom validity has two writers, tracked by WRITER, not by message text: the consumer,
+// through the element's own setCustomValidity(), and authored `invalid`. The consumer's
+// message wins, as in WC; clearing `invalid` never clears it.
+const formValidity = { consumer: '', invalid: false };
+function formApplyValidity() {
+  const element = formControl.value;
+  if (!element) return;
+  const { consumer, invalid } = formValidity;
+  HTMLInputElement.prototype.setCustomValidity.call(
+    element,
+    consumer || (invalid ? 'Invalid value.' : ''),
+  );
+}
+onMounted(() => {
+  const element = formControl.value;
+  if (!element) return;
+  element.setCustomValidity = (message: string) => {
+    formValidity.consumer = String(message);
+    formApplyValidity();
+  };
+});
+onBeforeUnmount(() => {
+  if (formControl.value) Reflect.deleteProperty(formControl.value, 'setCustomValidity');
+});
 watch(
   () => [props.invalid, formControl.value] as const,
-  ([invalid, control]) => {
-    if (!control) return;
-    if (invalid) {
-      if (control.validity.customError) return;
-      control.setCustomValidity('Invalid value.');
-      formOwnsError = true;
-    } else if (formOwnsError) {
-      formOwnsError = false;
-      if (control.validationMessage === 'Invalid value.') control.setCustomValidity('');
-    }
+  ([invalid]) => {
+    formValidity.invalid = Boolean(invalid);
+    formApplyValidity();
   },
   { immediate: true, flush: 'post' },
 );

@@ -33,14 +33,7 @@ export function emitNativeFormLifecycle({ v, Pascal, elType, commitEditing, hasI
   s.push(`  // Read by the reset listener, which is installed once and must see current props.`);
   s.push(`  const formLatest = useRef({ ${v}Value, ${v}Controlled, on${Pascal}Change });`);
   s.push(`  formLatest.current = { ${v}Value, ${v}Controlled, on${Pascal}Change };`);
-  s.push(`  const setFormControl = useCallback(`);
-  s.push(`    (node: ${elType} | null) => {`);
-  s.push(`      formControl.current = node;`);
-  s.push(`      if (typeof ref === 'function') ref(node);`);
-  s.push(`      else if (ref) ref.current = node;`);
-  s.push(`    },`);
-  s.push(`    [ref],`);
-  s.push(`  );`);
+  s.push(...emitComposedRef('setFormControl', 'formControl', elType));
   s.push(`  useEffect(() => {`);
   s.push(`    const control = formControl.current;`);
   s.push(`    if (!control) return;`);
@@ -75,28 +68,79 @@ export function emitNativeFormLifecycle({ v, Pascal, elType, commitEditing, hasI
   s.push(`      clearTimeout(timer);`);
   s.push(`    };`);
   s.push(`  }, [set${Pascal}Internal${commitEditing ? ', setEditingDraft' : ''}]);`);
-  if (hasInvalid) {
-    s.push(
-      `  // Authored \`invalid\` is a custom validity error the component OWNS. A message the`,
-    );
-    s.push(`  // consumer set through the element's own setCustomValidity() is never replaced or`);
-    s.push(`  // cleared by it.`);
-    s.push(`  const formOwnsError = useRef(false);`);
-    s.push(`  useEffect(() => {`);
-    s.push(`    const control = formControl.current;`);
-    s.push(`    if (!control) return;`);
-    s.push(`    if (invalid) {`);
-    s.push(`      if (control.validity.customError) return;`);
-    s.push(`      control.setCustomValidity(${JSON.stringify(INVALID_MESSAGE)});`);
-    s.push(`      formOwnsError.current = true;`);
-    s.push(`    } else if (formOwnsError.current) {`);
-    s.push(`      formOwnsError.current = false;`);
-    s.push(
-      `      if (control.validationMessage === ${JSON.stringify(INVALID_MESSAGE)}) control.setCustomValidity('');`,
-    );
-    s.push(`    }`);
-    s.push(`  }, [invalid]);`);
-  }
+  if (hasInvalid) s.push(...emitOwnedValidity('formControl'));
   s.push(``);
   return s;
+}
+
+/**
+ * A ref callback that records the element AND forwards it to the consumer's ref, preserving React
+ * 19's callback-ref contract: a consumer callback that returns a cleanup gets that cleanup called
+ * instead of being called with null; one that returns nothing is called with null; an object ref is
+ * cleared. Returning a cleanup ourselves is what tells React not to call this callback with null.
+ */
+export function emitComposedRef(name, local, elType) {
+  return [
+    `  const ${name} = useCallback(`,
+    `    (node: ${elType} | null) => {`,
+    `      ${local}.current = node;`,
+    `      if (typeof ref === 'function') {`,
+    `        const cleanup = (ref as (instance: ${elType} | null) => unknown)(node);`,
+    `        return () => {`,
+    `          ${local}.current = null;`,
+    `          if (typeof cleanup === 'function') cleanup();`,
+    `          else ref(null);`,
+    `        };`,
+    `      }`,
+    `      if (ref) ref.current = node;`,
+    `      return () => {`,
+    `        ${local}.current = null;`,
+    `        if (ref) ref.current = null;`,
+    `      };`,
+    `    },`,
+    `    [ref],`,
+    `  );`,
+  ];
+}
+
+/**
+ * Custom validity has TWO writers, tracked by writer rather than inferred from the message text:
+ * the consumer, through the element's own setCustomValidity() — intercepted on the instance — and
+ * authored `invalid`. The effective error is the consumer's message if any, else the default one
+ * while `invalid` holds (the same precedence as WC). Clearing `invalid` therefore never clears a
+ * consumer error, even one with identical text, and never depends on validationMessage — which
+ * reads '' while the element is barred from validation (read-only, disabled).
+ */
+export function emitOwnedValidity(local) {
+  const msg = JSON.stringify(INVALID_MESSAGE);
+  return [
+    `  // Custom validity has two writers, tracked by WRITER, not by message text: the consumer,`,
+    `  // through the element's own setCustomValidity(), and authored \`invalid\`. The consumer's`,
+    `  // message wins, as in WC; clearing \`invalid\` never clears it.`,
+    `  const formValidity = useRef({ consumer: '', invalid: false });`,
+    `  const formApplyValidity = useCallback(() => {`,
+    `    const element = ${local}.current;`,
+    `    if (!element) return;`,
+    `    const { consumer, invalid } = formValidity.current;`,
+    `    HTMLInputElement.prototype.setCustomValidity.call(element, consumer || (invalid ? ${msg} : ''));`,
+    `  }, []);`,
+    `  useEffect(() => {`,
+    `    const element = ${local}.current;`,
+    `    if (!element) return;`,
+    `    const state = formValidity.current;`,
+    `    // A message set before this ran (a consumer ref callback runs first) is the consumer's.`,
+    `    if (element.validity.customError && !state.invalid) state.consumer = element.validationMessage;`,
+    `    element.setCustomValidity = (message: string) => {`,
+    `      state.consumer = String(message);`,
+    `      formApplyValidity();`,
+    `    };`,
+    `    return () => {`,
+    `      Reflect.deleteProperty(element, 'setCustomValidity');`,
+    `    };`,
+    `  }, [formApplyValidity]);`,
+    `  useEffect(() => {`,
+    `    formValidity.current.invalid = Boolean(invalid);`,
+    `    formApplyValidity();`,
+    `  }, [invalid, formApplyValidity]);`,
+  ];
 }

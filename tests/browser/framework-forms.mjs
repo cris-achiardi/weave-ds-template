@@ -9,6 +9,7 @@ async function entries(page) {
   return page.locator('#form').evaluate((form) => [...new FormData(form).entries()]);
 }
 const field = (page, name) => page.getByRole('textbox', { name, exact: true });
+const act = (page, name) => page.getByRole('button', { name, exact: true }).click();
 const INITIAL = [
   ['controlled', 'initial'],
   ['uncontrolled', ''],
@@ -115,6 +116,50 @@ export function frameworkFormRegressions() {
     ).toBe(false);
   });
 
+  test('clearing authored invalid clears its error even while validation is barred', async ({
+    page,
+  }) => {
+    await page.goto('/forms-tests.html');
+    const controlled = field(page, 'Controlled');
+    const valid = () => controlled.evaluate((input) => input.checkValidity());
+    // Read-only: barred from validation, so validationMessage reads '' in between.
+    await act(page, 'Toggle invalid');
+    await expect.poll(valid).toBe(false);
+    await act(page, 'Toggle read-only');
+    await expect(controlled).toHaveJSProperty('readOnly', true);
+    await act(page, 'Toggle invalid');
+    await act(page, 'Toggle read-only');
+    await expect(controlled).toHaveJSProperty('readOnly', false);
+    await expect.poll(valid).toBe(true);
+    expect(await controlled.evaluate((input) => input.validity.customError)).toBe(false);
+    // Disabled by its fieldset: barred the same way.
+    await act(page, 'Toggle invalid');
+    await expect.poll(valid).toBe(false);
+    await page.locator('#form-fields').evaluate((fieldset) => {
+      fieldset.disabled = true;
+    });
+    await act(page, 'Toggle invalid');
+    await page.locator('#form-fields').evaluate((fieldset) => {
+      fieldset.disabled = false;
+    });
+    await expect.poll(valid).toBe(true);
+  });
+
+  test('a consumer error is tracked by writer, not by message text', async ({ page }) => {
+    await page.goto('/forms-tests.html');
+    const controlled = field(page, 'Controlled');
+    await act(page, 'Toggle invalid');
+    await expect.poll(() => controlled.evaluate((input) => input.validity.customError)).toBe(true);
+    // The consumer writes the very same text the component uses. It is still theirs.
+    await controlled.evaluate((input) => input.setCustomValidity('Invalid value.'));
+    await act(page, 'Toggle invalid');
+    await expect(controlled).not.toHaveAttribute('aria-invalid', 'true');
+    expect(await controlled.evaluate((input) => input.validity.customError)).toBe(true);
+    await expect(controlled).toHaveJSProperty('validationMessage', 'Invalid value.');
+    await controlled.evaluate((input) => input.setCustomValidity(''));
+    expect(await controlled.evaluate((input) => input.checkValidity())).toBe(true);
+  });
+
   test('disabled fieldsets and explicit form owners keep native behavior', async ({ page }) => {
     await page.goto('/forms-tests.html');
     await page.locator('#form-fields').evaluate((fieldset) => {
@@ -146,10 +191,14 @@ export function frameworkFormRegressions() {
       window.__resetListeners = () => live.size;
     });
     await page.goto('/forms-tests.html');
-    await expect.poll(() => page.evaluate(() => window.__resetListeners())).toBe(4);
+    // At least the four named fields; React's fixture also mounts ref probes.
+    await expect
+      .poll(() => page.evaluate(() => window.__resetListeners()))
+      .toBeGreaterThanOrEqual(4);
+    const mounted = await page.evaluate(() => window.__resetListeners());
     await page.getByRole('button', { name: 'Remove outside' }).click();
     await expect(field(page, 'Outside')).toHaveCount(0);
-    await expect.poll(() => page.evaluate(() => window.__resetListeners())).toBe(3);
+    await expect.poll(() => page.evaluate(() => window.__resetListeners())).toBe(mounted - 1);
     await page.locator('#form').evaluate((form) => form.reset());
     expect(await entries(page)).toEqual(INITIAL.slice(0, 3));
   });
@@ -173,5 +222,22 @@ export function frameworkFormRegressions() {
     await input.blur();
     await expect(page.getByTestId('value')).toHaveText('');
     await expect(page.getByTestId('count')).toHaveText('0');
+  });
+}
+
+// React only: the generated component composes its own ref with the consumer's. React 19 calls a
+// callback ref's returned cleanup INSTEAD of calling it with null, so the composition must return
+// the consumer's cleanup when there is one and fall back to ref(null) when there is not.
+export function reactRefRegressions() {
+  test('composed refs preserve React 19 callback-ref cleanup', async ({ page }) => {
+    await page.goto('/forms-tests.html');
+    await expect(field(page, 'Cleanup probe')).toBeVisible();
+    await act(page, 'Remove probes');
+    await expect(field(page, 'Cleanup probe')).toHaveCount(0);
+    expect(await page.evaluate(() => window.__refCounts)).toEqual({
+      cleanup: 1,
+      cleanupNull: 0,
+      nullCalls: 1,
+    });
   });
 }

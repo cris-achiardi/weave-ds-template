@@ -59,8 +59,14 @@ lives in the framework model:
   channel only when it differs from the snapshot. No DOM `input`/`change` event is dispatched: reset
   is lifecycle synchronisation, not a user edit. Commit mode discards the uncommitted draft.
 - Authored `invalid` sets a custom validity error, `Invalid value.`, so the form refuses to submit.
-  The component owns only that error: a message the consumer set with the element's own
-  `setCustomValidity()` is neither replaced while `invalid` is true nor cleared when it turns false.
+  Custom validity has two writers, tracked by writer rather than inferred from the message: the
+  consumer, through the element's own `setCustomValidity()` (intercepted on that element), and
+  authored `invalid`. The consumer's message takes precedence, as on the WC host, and clearing
+  `invalid` never clears it — even when its text is identical. Neither depends on
+  `validationMessage`, which reads empty while the element is barred from validation (read-only,
+  disabled), so leaving such a state cannot strand a stale error.
+- React composes its own ref with the consumer's and keeps React 19's callback-ref contract: a
+  returned cleanup is called instead of `ref(null)`; without one, `ref(null)` is called.
 
 Known gaps, reported as non-conforming rather than omitted (ADR 0005):
 

@@ -89,19 +89,25 @@ export class TextField {
       control.ownerDocument.removeEventListener('reset', onFormReset, true);
       clearTimeout(formTimer);
     });
-    // Authored `invalid` is a custom validity error the component OWNS. A message the
-    // consumer set through the element's own setCustomValidity() is never replaced or
-    // cleared by it.
-    let formOwnsError = false;
+    // Custom validity has two writers, tracked by WRITER, not by message text: the consumer,
+    // through the element's own setCustomValidity(), and authored `invalid`. The consumer's
+    // message wins, as in WC; clearing `invalid` never clears it.
+    const formValidity = { consumer: '', invalid: false };
+    const formApplyValidity = () => {
+      const { consumer, invalid } = formValidity;
+      HTMLInputElement.prototype.setCustomValidity.call(
+        control,
+        consumer || (invalid ? 'Invalid value.' : ''),
+      );
+    };
+    control.setCustomValidity = (message: string) => {
+      formValidity.consumer = String(message);
+      formApplyValidity();
+    };
+    inject(DestroyRef).onDestroy(() => Reflect.deleteProperty(control, 'setCustomValidity'));
     effect(() => {
-      if (this.invalid()) {
-        if (control.validity.customError) return;
-        control.setCustomValidity('Invalid value.');
-        formOwnsError = true;
-      } else if (formOwnsError) {
-        formOwnsError = false;
-        if (control.validationMessage === 'Invalid value.') control.setCustomValidity('');
-      }
+      formValidity.invalid = this.invalid();
+      formApplyValidity();
     });
   }
 
