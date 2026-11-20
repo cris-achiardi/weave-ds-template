@@ -113,14 +113,18 @@ deliberately not `type="hidden"`, which is barred from constraint validation and
   restoring a proxy value the model does not hold.
 - Required is native: a required Checkbox needs `checked` (mixed is insufficient), a required
   RadioGroup needs a selection, and Slider is never missing. Read-only Switch and RadioGroup keep
-  contributing but drop out of validation (`readonly` on the text proxy; `required` withdrawn on
-  the checkbox proxy, where `readonly` does not apply). Authored `invalid` (Checkbox) uses the same
+  contributing but are barred from validation. The RadioGroup text proxy takes `readonly`. On a
+  checkbox `readonly` has no effect, so a read-only Switch's proxy becomes `type="hidden"` —
+  barred from validation (a consumer custom error included), still submitted — and drops its name
+  while off, because a hidden input always submits. Authored `invalid` (Checkbox) uses the same
   writer-tracked custom validity — the same `ownValidity` owner, bound to the proxy, with the same
   unsupported prototype path; consumers reach the proxy through `form.elements[name]`.
 - **Effective disabled** is the consumer's `disabled` or a disabled ancestor `<fieldset>`. A
-  fieldset fires no event, so each control watches `disabled` attribute changes in its document
-  (one `MutationObserver`, disconnected on unmount) and asks the proxy, which the platform disables
-  with the fieldset. Interaction guards, ARIA, tab order and a collection's members all read the
+  fieldset fires no event, so each control watches its document for `disabled` attribute changes
+  and for moves (child-list changes, so a control carried into or out of a disabled fieldset is
+  re-evaluated) — one `MutationObserver`, disconnected on unmount — and asks the proxy, which the
+  platform disables with the fieldset. The cost is a cheap re-check on every DOM insertion or
+  removal in the document; the state only changes when the answer does. Interaction guards, ARIA, tab order and a collection's members all read the
   effective value; the consumer's prop is never written.
 - Interactive validation focuses the first invalid control; the proxy hands focus to the root (or
   to a collection's current tab stop).

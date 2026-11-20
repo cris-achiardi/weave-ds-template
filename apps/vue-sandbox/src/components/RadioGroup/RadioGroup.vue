@@ -165,6 +165,9 @@ onMounted(() => {
   formObserver.observe(formDocument.documentElement, {
     attributes: true,
     attributeFilter: ['disabled'],
+    // Moves too: a control carried into or out of a disabled fieldset fires no
+    // attribute change, only a childList one.
+    childList: true,
     subtree: true,
   });
   formDocument.addEventListener('reset', onFormReset, true);

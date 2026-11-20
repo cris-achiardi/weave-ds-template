@@ -209,6 +209,47 @@ export function frameworkControlRegressions() {
     ).toBe(true);
   });
 
+  test('moving a control into or out of a disabled fieldset refreshes effective disabled', async ({
+    page,
+  }) => {
+    await page.goto('/controls-tests.html');
+    const choice = page.getByRole('radiogroup', { name: 'Choice' });
+    // A disabled fieldset already in the form; the mounted controls are moved into it.
+    await page.locator('#form').evaluate((form) => {
+      const parked = document.createElement('fieldset');
+      parked.id = 'parked';
+      parked.disabled = true;
+      form.append(parked);
+    });
+    await slider(page).evaluate((root) => document.querySelector('#parked').append(root));
+    await choice.evaluate((root) => document.querySelector('#parked').append(root));
+    await expect(slider(page)).toHaveAttribute('aria-disabled', 'true');
+    await slider(page).dispatchEvent('keydown', { key: 'ArrowRight' });
+    await expect(slider(page)).toHaveAttribute('aria-valuenow', '25');
+    await radio(page, 'Alpha').dispatchEvent('click');
+    await expect(radio(page, 'Beta')).toHaveAttribute('aria-checked', 'true');
+    expect((await entries(page)).some(([k]) => k === 'amount' || k === 'choice')).toBe(false);
+    // And back out: re-enabled, interactive, contributing.
+    await slider(page).evaluate((root) => document.querySelector('#form-fields').append(root));
+    await expect(slider(page)).not.toHaveAttribute('aria-disabled', 'true');
+    await slider(page).press('ArrowRight');
+    await expect(slider(page)).toHaveAttribute('aria-valuenow', '26');
+    await expect.poll(() => entries(page)).toContainEqual(['amount', '26']);
+  });
+
+  test('a read-only switch keeps submitting but is barred from validation', async ({ page }) => {
+    await page.goto('/controls-tests.html');
+    const form = page.locator('#form');
+    await form.evaluate((f) => f.elements.namedItem('setting').setCustomValidity('Nope'));
+    expect(await form.evaluate((f) => f.checkValidity())).toBe(false);
+    await act(page, 'Toggle read-only setting');
+    await expect.poll(() => form.evaluate((f) => f.checkValidity())).toBe(true);
+    expect(await form.evaluate((f) => f.elements.namedItem('setting').willValidate)).toBe(false);
+    expect(await entries(page)).toContainEqual(['setting', 'on']);
+    await act(page, 'Toggle read-only setting');
+    await expect.poll(() => form.evaluate((f) => f.checkValidity())).toBe(false);
+  });
+
   test('unmounting removes the reset listener and the fieldset observer', async ({ page }) => {
     await page.addInitScript(spyOnLifecycle);
     await page.goto('/controls-tests.html');

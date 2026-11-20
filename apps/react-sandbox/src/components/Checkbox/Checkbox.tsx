@@ -165,6 +165,9 @@ export const Checkbox = forwardRef<HTMLButtonElement, CheckboxProps>(function Ch
     observer.observe(doc.documentElement, {
       attributes: true,
       attributeFilter: ['disabled'],
+      // Moves too: a control carried into or out of a disabled fieldset fires no
+      // attribute change, only a childList one.
+      childList: true,
       subtree: true,
     });
     let timer: ReturnType<typeof setTimeout> | undefined;

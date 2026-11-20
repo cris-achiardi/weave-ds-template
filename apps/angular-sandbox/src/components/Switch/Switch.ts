@@ -50,8 +50,8 @@ import {
     <div data-ds-part="thumb"></div>
     <input
       #formProxy
-      type="checkbox"
-      [attr.name]="name() || null"
+      [type]="readOnly() ? 'hidden' : 'checkbox'"
+      [attr.name]="readOnly() && !(checked() === true) ? null : name() || null"
       [attr.form]="form() || null"
       [required]="required() && !readOnly()"
       [disabled]="disabled()"
@@ -153,6 +153,9 @@ export class Switch {
       formObserver.observe(formDocument.documentElement, {
         attributes: true,
         attributeFilter: ['disabled'],
+        // Moves too: a control carried into or out of a disabled fieldset fires no
+        // attribute change, only a childList one.
+        childList: true,
         subtree: true,
       });
       formDocument.addEventListener('reset', onFormReset, true);

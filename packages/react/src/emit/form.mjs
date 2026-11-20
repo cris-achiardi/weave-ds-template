@@ -217,6 +217,9 @@ export function emitCustomFormLifecycle({ form, names, hasInvalid }) {
   s.push(`    observer.observe(doc.documentElement, {`);
   s.push(`      attributes: true,`);
   s.push(`      attributeFilter: ['disabled'],`);
+  s.push(`      // Moves too: a control carried into or out of a disabled fieldset fires no`);
+  s.push(`      // attribute change, only a childList one.`);
+  s.push(`      childList: true,`);
   s.push(`      subtree: true,`);
   s.push(`    });`);
   s.push(`    let timer: ReturnType<typeof setTimeout> | undefined;`);
@@ -255,13 +258,24 @@ export function emitCustomFormLifecycle({ form, names, hasInvalid }) {
 }
 
 /** The proxy element, as JSX lines at the given indent. */
-export function emitFormProxy({ form, range, hasReadOnly, indent }) {
+export function emitFormProxy({ form, range, hasReadOnly, answer, indent }) {
   const pad = ' '.repeat(indent);
   const type = proxyTypeFor(form);
   const a = [];
   a.push(`ref={formProxy}`);
-  a.push(`type="${type}"`);
-  a.push(`name={name || undefined}`);
+  const hiddenWhenReadOnly = hasReadOnly && type === 'checkbox';
+  const on = `${answer} === ${JSON.stringify(form.checkedValue)}`;
+  // A read-only answer still submits but is barred from validation, as in HTML. `readonly` does not
+  // apply to checkbox or range. A read-only CHECKBOX proxy therefore becomes `type="hidden"` — barred
+  // from validation, still submitted — and drops its name while unchecked, since a hidden input
+  // always submits. Withdrawing `required` alone left a consumer custom error in force.
+  if (hiddenWhenReadOnly) {
+    a.push(`type={readOnly ? 'hidden' : '${type}'}`);
+    a.push(`name={(readOnly && !(${on})) ? undefined : name || undefined}`);
+  } else {
+    a.push(`type="${type}"`);
+    a.push(`name={name || undefined}`);
+  }
   a.push(`form={form || undefined}`);
   // A read-only answer still submits but is barred from validation, as in HTML. `readonly` does not
   // apply to checkbox or range, so `required` is withdrawn instead.

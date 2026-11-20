@@ -20,7 +20,8 @@ createApp({
       accepted = ref(false),
       amountName = ref('amount'),
       consentDisabled = ref(false),
-      showRemote = ref(true);
+      showRemote = ref(true),
+      settingReadOnly = ref(false);
     const keep = (event: MouseEvent) => event.preventDefault();
     const act = (label: string, run: () => void) =>
       h('button', { onMousedown: keep, onClick: run }, label);
@@ -53,7 +54,12 @@ createApp({
               },
               label('Consent'),
             ),
-            h(Switch, { 'aria-label': 'Setting', name: 'setting', checked: true }),
+            h(Switch, {
+              'aria-label': 'Setting',
+              name: 'setting',
+              checked: true,
+              readOnly: settingReadOnly.value,
+            }),
             h(Slider, { 'aria-label': 'Amount', name: amountName.value, value: 25 }),
             h(RadioGroup, { 'aria-label': 'Choice', name: 'choice', value: 'b' }, () => [
               h(RadioItem, { value: 'a' }, label('Alpha')),
@@ -90,6 +96,7 @@ createApp({
       act('Clear amount name', () => (amountName.value = '')),
       act('Disable consent', () => (consentDisabled.value = true)),
       act('Remove remote', () => (showRemote.value = false)),
+      act('Toggle read-only setting', () => (settingReadOnly.value = !settingReadOnly.value)),
     ];
   },
 }).mount('#fixtures');

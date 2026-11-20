@@ -28,7 +28,13 @@ type Check = 'unchecked' | 'checked' | 'mixed';
         >
           <span slot="label">Consent</span>
         </button>
-        <button dsSwitch aria-label="Setting" name="setting" [checked]="true"></button>
+        <button
+          dsSwitch
+          aria-label="Setting"
+          name="setting"
+          [checked]="true"
+          [readOnly]="settingReadOnly()"
+        ></button>
         <div dsSlider aria-label="Amount" [name]="amountName()" [value]="25"></div>
         <div dsRadioGroup aria-label="Choice" name="choice" value="b">
           <div dsRadioItem value="a"><span slot="label">Alpha</span></div>
@@ -74,6 +80,9 @@ type Check = 'unchecked' | 'checked' | 'mixed';
     </button>
     <button (mousedown)="$event.preventDefault()" (click)="showRemote.set(false)">
       Remove remote
+    </button>
+    <button (mousedown)="$event.preventDefault()" (click)="settingReadOnly.set(!settingReadOnly())">
+      Toggle read-only setting
     </button>`,
 })
 class ControlsFixture {
@@ -86,6 +95,7 @@ class ControlsFixture {
   readonly amountName = signal('amount');
   readonly consentDisabled = signal(false);
   readonly showRemote = signal(true);
+  readonly settingReadOnly = signal(false);
   changed(next: Check) {
     this.consent.set(next);
     this.count.update((n) => n + 1);

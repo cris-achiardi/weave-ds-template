@@ -1340,6 +1340,7 @@ export function emitTsx(name, contract, binding, prefix) {
         form: customForm,
         range: answerState?.valueType === 'number' ? answerState : null,
         hasReadOnly: consumerProps.some((p) => p.name === 'readOnly'),
+        answer: answerNames(customForm, camel, pascal).value,
         indent: 6,
       }),
     );

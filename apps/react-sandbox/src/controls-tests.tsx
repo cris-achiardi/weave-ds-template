@@ -21,6 +21,7 @@ function Fixture() {
   const [amountName, setAmountName] = useState('amount');
   const [consentDisabled, setConsentDisabled] = useState(false);
   const [showRemote, setShowRemote] = useState(true);
+  const [settingReadOnly, setSettingReadOnly] = useState(false);
   const keep = (event: { preventDefault(): void }) => event.preventDefault();
   const act = (label: string, run: () => void) => (
     <button onMouseDown={keep} onClick={run}>
@@ -50,7 +51,7 @@ function Fixture() {
               setCount((n) => n + 1);
             }}
           />
-          <Switch aria-label="Setting" name="setting" defaultChecked />
+          <Switch aria-label="Setting" name="setting" defaultChecked readOnly={settingReadOnly} />
           <Slider aria-label="Amount" name={amountName} defaultValue={25} />
           <RadioGroup aria-label="Choice" name="choice" defaultValue="b">
             <RadioItem value="a" label="Alpha" />
@@ -81,6 +82,7 @@ function Fixture() {
       {act('Clear amount name', () => setAmountName(''))}
       {act('Disable consent', () => setConsentDisabled(true))}
       {act('Remove remote', () => setShowRemote(false))}
+      {act('Toggle read-only setting', () => setSettingReadOnly(!settingReadOnly))}
     </>
   );
 }

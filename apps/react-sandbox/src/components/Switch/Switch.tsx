@@ -122,6 +122,9 @@ export const Switch = forwardRef<HTMLButtonElement, SwitchProps>(function Switch
     observer.observe(doc.documentElement, {
       attributes: true,
       attributeFilter: ['disabled'],
+      // Moves too: a control carried into or out of a disabled fieldset fires no
+      // attribute change, only a childList one.
+      childList: true,
       subtree: true,
     });
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -173,8 +176,8 @@ export const Switch = forwardRef<HTMLButtonElement, SwitchProps>(function Switch
       <div data-ds-part="thumb" />
       <input
         ref={formProxy}
-        type="checkbox"
-        name={name || undefined}
+        type={readOnly ? 'hidden' : 'checkbox'}
+        name={readOnly && !(checkedValue === true) ? undefined : name || undefined}
         form={form || undefined}
         required={required && !readOnly}
         disabled={disabledProp}

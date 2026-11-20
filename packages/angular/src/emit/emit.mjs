@@ -904,6 +904,7 @@ export function emitComponent(name, contract, binding, prefix) {
           form: customForm,
           range: answerState?.valueType === 'number' ? answerState : null,
           hasReadOnly,
+          answer: `${customForm.property}()`,
         }),
       );
     }
