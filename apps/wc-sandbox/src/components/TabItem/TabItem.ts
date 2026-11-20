@@ -3,6 +3,8 @@
 //
 // One tab: a label that reveals its panel when chosen. It carries its own identity and its own disabled state, and nothing else.
 
+import { supplyRelations } from '@ds/wc/behavior';
+import type {} from '@ds/wc/behavior';
 import { TABS_CHANGE, type Tabs } from '../Tabs/Tabs';
 
 // THE ONE BUNDLER-SPECIFIC TOKEN IN THIS FILE. `?inline` asks Vite for the stylesheet as
@@ -21,13 +23,13 @@ SHEET.replaceSync(structureCss + '\n' + themeCss);
 // every part always exists, and `visibleWhen` hides rather than removes.
 const TEMPLATE = document.createElement('template');
 TEMPLATE.innerHTML = `
-    <button part="root" type="button" role="tab">
+    <div part="root">
       <div part="label">
         <slot name="label"></slot>
       </div>
       <div part="indicator"></div>
       <slot></slot>
-    </button>
+    </div>
 `;
 
 // A counter, because the platform has no useId. It matters less here than anywhere:
@@ -36,9 +38,9 @@ let nextId = 0;
 
 export class TabItem extends HTMLElement {
   static readonly tagName = 'ds-tab-item';
-  static readonly observedAttributes = ['disabled', 'value', 'aria-label'];
+  static readonly observedAttributes = ['disabled', 'value', 'id'];
 
-  readonly #root: HTMLElement;
+  readonly #host = supplyRelations('TabItem');
   readonly #baseId = 'ds-tab-item-' + nextId++;
   #collection: Tabs | null = null;
   #registeredValue: string | null = null;
@@ -49,18 +51,16 @@ export class TabItem extends HTMLElement {
     const shadow = this.attachShadow({ mode: 'open', delegatesFocus: false });
     shadow.adoptedStyleSheets = [SHEET];
     shadow.append(TEMPLATE.content.cloneNode(true));
-    this.#root = shadow.querySelector('[part="root"]')!;
 
     this.#watchSlots(shadow);
 
     // Listeners are additive, but internal listeners run before host bubbling listeners.
     // Queue click activation so the consumer can cancel it before state changes.
-    this.#root.addEventListener('click', (event) => this.#queueActivation(event as MouseEvent));
-  }
-
-  /** Roving members focus the semantic root directly, including tabindex=-1 targets. */
-  override focus(options?: FocusOptions): void {
-    this.#root.focus(options);
+    this.addEventListener('click', (event) => this.#queueActivation(event as MouseEvent));
+    this.addEventListener('keydown', (event) => this.#keyActivation(event as KeyboardEvent));
+    this.addEventListener('keypress', (event) => this.#keyActivation(event as KeyboardEvent));
+    this.addEventListener('keyup', (event) => this.#keyActivation(event as KeyboardEvent));
+    this.addEventListener('blur', () => (this.#spaceDown = null));
   }
 
   /**
@@ -88,16 +88,24 @@ export class TabItem extends HTMLElement {
     }
     this.#collection.addEventListener(TABS_CHANGE, this.#onCollectionChange);
     this.#update();
+    // Joining changes who this member's siblings pair with (ADR 0008).
+    this.#collection.relink();
   }
 
   disconnectedCallback(): void {
     for (const timer of this.#pendingActivations) window.clearTimeout(timer);
     this.#pendingActivations.clear();
-    this.#collection?.removeEventListener(TABS_CHANGE, this.#onCollectionChange);
+    this.#spaceDown = null;
+    const collection = this.#collection;
+    this.#collection = null;
+    collection?.removeEventListener(TABS_CHANGE, this.#onCollectionChange);
     const previous = this.#registeredValue;
     this.#registeredValue = null;
-    if (previous !== null) this.#collection?.unregister(previous);
-    this.#collection = null;
+    if (previous !== null) collection?.unregister(previous);
+    // Leaving: give the consumer's host back exactly what it had before this component
+    // wrote to it, and let the siblings re-pair without this member.
+    this.#host.release();
+    collection?.relink();
   }
 
   readonly #onCollectionChange = () => this.#update();
@@ -106,6 +114,8 @@ export class TabItem extends HTMLElement {
     // Cheap on purpose: every change re-writes every derived attribute. There is no
     // diffing here and none is wanted — the work is a handful of setAttribute calls.
     this.#update();
+    // An identity change re-pairs this member and its siblings (ADR 0008).
+    this.#collection?.relink();
   }
 
   /** Set by the prop or inherited from the strip. Skipped by arrow-key movement. */
@@ -163,6 +173,46 @@ export class TabItem extends HTMLElement {
     this.#collection?.toggle(this.value);
   }
 
+  /**
+   * What a native button did for free, now that the host is the control (ADR 0008):
+   * Enter clicks on keydown, Space on keyup. The click is DISPATCHED, so it reaches
+   * #queueActivation and every consumer click listener like a pointer click, and it
+   * waits a task so a cancelled Enter keydown or Space keyup still cancels it.
+   *
+   * Space, as on a native button, activates only if its KEYDOWN was not cancelled.
+   * That keydown is kept and read at keyup, when its dispatch is long complete, so every
+   * listener in every order — window listeners, stopPropagation included — has had its
+   * say. The page scroll a Space press causes is prevented on KEYPRESS, which leaves the
+   * keydown's defaultPrevented the consumer's alone. Measured in Chromium, Firefox and
+   * WebKit: the scroll is the keypress default action, and a cancelled keydown fires no
+   * keypress. keypress is deprecated; an engine that stopped firing it would scroll the
+   * page on Space, which is visible, rather than mis-activate.
+   */
+  #keyActivation(event: KeyboardEvent): void {
+    if (event.target !== this || event.altKey || event.ctrlKey || event.metaKey) return;
+    if (event.key === ' ') {
+      if (event.type === 'keypress') {
+        event.preventDefault();
+        return;
+      }
+      if (event.type === 'keydown') {
+        this.#spaceDown = event;
+        return;
+      }
+      const down = this.#spaceDown;
+      this.#spaceDown = null;
+      if (!down || down.defaultPrevented) return;
+    } else if (!(event.type === 'keydown' && event.key === 'Enter')) return;
+    const timer = window.setTimeout(() => {
+      this.#pendingActivations.delete(timer);
+      if (this.isConnected && !event.defaultPrevented) this.click();
+    }, 0);
+    this.#pendingActivations.add(timer);
+  }
+
+  /** The Space press in progress: its keydown, until keyup or focus leaving the host. */
+  #spaceDown: KeyboardEvent | null = null;
+
   #updating = false;
 
   #update(): void {
@@ -179,18 +229,15 @@ export class TabItem extends HTMLElement {
   }
 
   #write(): void {
-    const root = this.#root;
-    // The semantic control is inside the shadow root; naming only the host misses it.
-    const label = this.getAttribute('aria-label');
-    if (label === null) root.removeAttribute('aria-label');
-    else root.setAttribute('aria-label', label);
-    if (this.#isDisabled) root.setAttribute('aria-disabled', 'true');
-    else root.removeAttribute('aria-disabled');
-    root.setAttribute('aria-selected', String(this.#selected));
+    // The host IS this component's root: its role and states are attributes ON THE HOST,
+    // collected here and written at the end under the supplied-relations ownership policy.
+    const owned: Record<string, string | null> = { role: 'tab' };
+    owned['aria-disabled'] = this.#isDisabled ? 'true' : null;
+    owned['aria-selected'] = String(this.#selected);
     // The host carries it too, because CSS cannot select inside a shadow root from
     // outside and cannot append an attribute selector to ::part(). One fact, two
     // places — forced by the boundary, not chosen.
-    this.toggleAttribute('selected', this.#selected);
+    owned['selected'] = this.#selected ? '' : null;
     if (this.#collection) {
       const value = this.value;
       const previous = this.#registeredValue;
@@ -199,9 +246,26 @@ export class TabItem extends HTMLElement {
       if (previous !== null && previous !== value) this.#collection.unregister(previous);
       this.#collection.register(value, { element: this, disabled: this.#isDisabled });
     }
-    root.setAttribute('tabindex', this.#collection?.isTabStop(this.value) ? '0' : '-1');
-    root?.setAttribute('id', this.#baseId);
+    owned['tabindex'] = this.#collection?.isTabStop(this.value) ? '0' : '-1';
+    // Cross-member relations, as IDREFs between HOSTS in one tree. The collection pairs
+    // this member with the sibling of the same identity; a missing sibling, or a duplicate
+    // identity after the first, links nothing rather than something wrong. The sibling's
+    // id is whatever it carries — the consumer's own, or the fallback it assigned itself.
+    const controlsPair = this.#collection?.pairOf(this, 'ds-tab-panel') ?? null;
     this.#part('indicator')?.toggleAttribute('hidden', !this.#selected);
+    // Nothing is written onto the consumer's host while it is detached: wiring happens on
+    // connect, and disconnectedCallback takes back exactly what was written.
+    if (this.isConnected)
+      this.#host.write([
+        [
+          this,
+          {
+            id: this.#baseId,
+            controls: [controlsPair?.getAttribute('id')],
+            attributes: owned,
+          },
+        ],
+      ]);
   }
 
   #part(name: string): HTMLElement | null {

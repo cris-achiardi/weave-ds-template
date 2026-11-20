@@ -164,3 +164,59 @@ describe('relationWriter', () => {
     expect(second.attrs.size).toBe(0);
   });
 });
+
+// #36: a WC member that realizes its root on its host writes role, state and the tab -> panel
+// relation onto that consumer-owned host. Same ownership rules as the supplied-control case.
+describe('owned attributes and aria-controls (#36)', () => {
+  it('writes aria-controls like the other IDREF lists, keeping consumer tokens first', () => {
+    const el = fake({ 'aria-controls': 'theirs' });
+    const done = applyRelations(el, { controls: ['panel-1'] });
+    expect(el.attrs.get('aria-controls')).toBe('theirs panel-1');
+    const moved = applyRelations(el, { controls: ['panel-2'] }, done);
+    expect(el.attrs.get('aria-controls')).toBe('theirs panel-2');
+    releaseRelations(el, moved);
+    expect(el.attrs.get('aria-controls')).toBe('theirs');
+  });
+
+  it('writes owned attributes and removes on release only what it added', () => {
+    const el = fake();
+    const done = applyRelations(el, {
+      attributes: { role: 'tab', 'aria-selected': 'false', tabindex: '-1' },
+    });
+    expect(Object.fromEntries(el.attrs)).toEqual({
+      role: 'tab',
+      'aria-selected': 'false',
+      tabindex: '-1',
+    });
+    const next = applyRelations(
+      el,
+      { attributes: { role: 'tab', 'aria-selected': 'true', tabindex: '0' } },
+      done,
+    );
+    expect(el.attrs.get('aria-selected')).toBe('true');
+    releaseRelations(el, next);
+    expect(el.attrs.size).toBe(0);
+  });
+
+  it("restores a consumer's value it overwrote, and drops an attribute no longer wanted", () => {
+    const el = fake({ tabindex: '3', 'aria-disabled': 'false' });
+    const done = applyRelations(el, { attributes: { tabindex: '0', 'aria-disabled': 'true' } });
+    expect(el.attrs.get('tabindex')).toBe('0');
+    const enabled = applyRelations(
+      el,
+      { attributes: { tabindex: '0', 'aria-disabled': null } },
+      done,
+    );
+    expect(el.attrs.get('aria-disabled')).toBe('false');
+    releaseRelations(el, enabled);
+    expect(el.attrs.get('tabindex')).toBe('3');
+  });
+
+  it('leaves a value the consumer set after the component wrote its own', () => {
+    const el = fake();
+    const done = applyRelations(el, { attributes: { role: 'tab' } });
+    el.setAttribute('role', 'presentation');
+    releaseRelations(el, done);
+    expect(el.attrs.get('role')).toBe('presentation');
+  });
+});

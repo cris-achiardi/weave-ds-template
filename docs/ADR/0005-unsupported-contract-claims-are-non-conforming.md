@@ -69,8 +69,9 @@ follow-up #52.
 ## Consequences
 
 Field and Tooltip are no longer reported as wrapper gaps in React, Vue or Angular (status
-`not-evaluated`). WC Field and Tooltip report `supplied-shadow-host`. WC TabItem and TabPanel still
-report omitted cross-shadow references. Local references and literal labels are distinct and
+`not-evaluated`). WC Field and Tooltip report `supplied-shadow-host`. WC TabItem and TabPanel reported
+omitted cross-shadow references until #36, which realizes both roots on their hosts and links the
+hosts by IDREF ([ADR 0008](./0008-a-wc-member-referenced-across-members-realizes-its-root-on-its-host.md)). Local references and literal labels are distinct and
 continue working. This decision does not claim that unsupported accessibility behavior has been
 implemented: browser tests demonstrate the computed name, description, `aria-invalid`, label
 activation and replacement behaviour for native supplied elements only.

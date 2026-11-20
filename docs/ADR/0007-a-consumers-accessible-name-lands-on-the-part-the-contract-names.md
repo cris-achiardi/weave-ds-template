@@ -38,8 +38,11 @@ from inside that shadow root.
    throws on a violation rather than guessing.
 3. Every backend routes the name to that part and removes it from the root, so the generic wrapper
    is not named as well. A backend that cannot deliver part of the claim forwards what it can and
-   reports the rest as non-conforming under ADR 0005: web components forward `aria-label` and
-   report `aria-labelledby` as an omitted cross-shadow reference.
+   reports the rest as non-conforming under ADR 0005. Web components forward `aria-label` onto the
+   shadow-internal part, and resolve `aria-labelledby`'s ids in the host's own tree into element
+   references on that part (element reflection keeps a target in a shadow-including ancestor
+   tree). Updated in place for #36; until then `aria-labelledby` was reported as an omitted
+   cross-shadow reference.
 4. The flag is agnostic: it names the region, not the attribute. Web backends read it as
    `aria-label` and `aria-labelledby`.
 
@@ -50,10 +53,11 @@ from inside that shadow root.
 | The field                       | `packages/contracts/schema/component.schema.json` (`$defs.part.namedByConsumer`)        |
 | Rules the schema cannot express | `packages/emit-web/contract.mjs` (`consumerNamedPart`)                                  |
 | Routing per backend             | `packages/{react,vue,angular,wc}/src/emit/emit.mjs`                                     |
-| Reported gap (web components)   | `scripts/relationship-conformance.mjs` (`pnpm verify:parity`)                           |
+| Gap classifier (web components) | `scripts/relationship-conformance.mjs` (`pnpm verify:parity`)                           |
 | First use                       | `packages/contracts/components/Tabs/Tabs.contract.json` (`anatomy.root.parts.list`)     |
 | Authoring guidance              | `packages/contracts/components/README.md`, `packages/contracts/schema/README.md`        |
 | Enforcement                     | `tests/tablist-ownership.test.mjs` (`pnpm test`), `tests/browser/tablist.mjs` (browser) |
+| WC `aria-labelledby` (#36)      | `tests/browser/tab-relations.mjs` (browser)                                             |
 
 ## Consequences
 
@@ -66,9 +70,13 @@ from inside that shadow root.
 
 **Negative / trade-offs**
 
-- Web components cannot honour `aria-labelledby` on a shadow-internal part. The gap is reported,
-  not fixed; the WC host also keeps its `aria-label` attribute because it is the input the
-  component reads.
+- Web components honour `aria-labelledby` on a shadow-internal part only by element reference,
+  resolved when the attribute changes or the element connects: a label element inserted LATER is
+  not picked up until one of those happens. Element references are invisible to DOM-based tooling
+  (Playwright's role engine, Testing Library), so that link is asserted through the browser's own
+  accessibility tree in Chromium and as API state in Firefox and WebKit, whose trees were not
+  observed. The WC host also keeps its `aria-label` / `aria-labelledby` attributes, because they
+  are the input the component reads.
 - Only `aria-label` and `aria-labelledby` move. `aria-describedby` and other consumer ARIA still
   land on the root; a component that needs them elsewhere needs a further decision.
 - Fails quietly when a contract with an inner role omits the flag: the name lands on the root,

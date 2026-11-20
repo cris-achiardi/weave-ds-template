@@ -66,6 +66,13 @@ export const pseudoClassFor = (state, profile) => profile.states[state]?.pseudo 
 
 export const relationAttribute = (relation, profile) => profile.relations[relation] ?? null;
 
+/** The element-reference property for a relation (`ariaControlsElements`), or null. */
+export const relationElementsProperty = (relation, profile) =>
+  profile.relationElements?.[relation] ?? null;
+
+/** The UA stylesheet's display for an element, or null when the profile does not record it. */
+export const uaDisplayOf = (element, profile) => profile.uaDisplay?.[element] ?? null;
+
 /** A value word the profile does not map passes through unchanged rather than being dropped. */
 export const ariaValueFor = (word, profile) => profile.valueWords[word] ?? word;
 

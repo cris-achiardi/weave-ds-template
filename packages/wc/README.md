@@ -63,10 +63,13 @@ and change notifications are committed. See the [event rules](./src/emit/README.
 Literal `aria-label` values are forwarded to semantic inner roots, including changes and removal.
 Local relationships within a single shadow root (such as a Dialog title) resolve normally.
 
-Cross-member object references are **omitted**, so WC TabItem and TabPanel are non-conforming
-for those claims. ARIA element-reference reflection also has tree-scope restrictions: it cannot
-reference a semantic part inside a sibling shadow root. Referencing that component's host is a
-different target and is not treated as satisfying the current contract.
+A cross-member relation from a member's root to a sibling member's root (TabItem `controls` its
+TabPanel, the panel is `namedBy` its tab) is delivered by realizing BOTH roots on their hosts:
+role, states, `tabindex` and focus are host attributes, and the hosts reference each other by
+IDREF in one tree ([ADR 0008](../../docs/ADR/0008-a-wc-member-referenced-across-members-realizes-its-root-on-its-host.md)).
+Writes onto the consumer-owned host follow the supplied-relations ownership policy. A cross-member
+reference to a NON-root part is still omitted and reported: IDREFs cannot cross a shadow boundary,
+and element reflection cannot reference a semantic part inside a sibling shadow root.
 
 Field's and Tooltip's relations are written on the **slotted** control, pointing at the slotted
 label/description/error/content elements in the same tree (ADR 0005). A slotted control that is

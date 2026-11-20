@@ -113,7 +113,8 @@ export function activationRegressions() {
       document.body.append(removed);
       const tabs = document.querySelector('ds-tabs');
       const member = tabs.lastElementChild;
-      member.shadowRoot.querySelector('button').click();
+      // The tab's host IS its control since #36 (ADR 0008): there is no inner <button> to click.
+      member.click();
       member.value = 'replaced';
       await new Promise((resolve) => setTimeout(resolve, 0));
       return {

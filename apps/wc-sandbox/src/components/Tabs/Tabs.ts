@@ -48,7 +48,7 @@ export const TABS_CHANGE = 'ds-tabs-internal-change';
 
 export class Tabs extends HTMLElement {
   static readonly tagName = 'ds-tabs';
-  static readonly observedAttributes = ['disabled', 'value', 'aria-label'];
+  static readonly observedAttributes = ['disabled', 'value', 'aria-label', 'aria-labelledby'];
 
   readonly #root: HTMLElement;
   readonly #baseId = 'ds-tabs-' + nextId++;
@@ -148,6 +148,30 @@ export class Tabs extends HTMLElement {
     return this.#nav.isTabStop(value);
   }
 
+  /**
+   * The sibling member of kind `kind` that `member` is paired with, by identity
+   * (ADR 0008). Only the FIRST member of each kind with a given identity pairs, in
+   * document order: a duplicate identity, or no sibling of that identity, pairs with
+   * nothing — a missing relation rather than one naming the wrong element. Members of a
+   * nested collection belong to it, not to this one.
+   */
+  pairOf(member: HTMLElement, kind: string): HTMLElement | null {
+    const identity = member.getAttribute('value') ?? '';
+    const ofKind = (selector: string) =>
+      [...this.querySelectorAll<HTMLElement>(selector)].filter(
+        (el) =>
+          el.closest<HTMLElement>('ds-tabs') === this &&
+          (el.getAttribute('value') ?? '') === identity,
+      );
+    if (ofKind(member.localName)[0] !== member) return null;
+    return ofKind(kind)[0] ?? null;
+  }
+
+  /** A member joined, left or changed identity: every member re-reads its pairing. */
+  relink(): void {
+    this.#announce();
+  }
+
   /** Tell every member to re-read us. The DOM's answer to a re-render. */
   #announce(): void {
     this.dispatchEvent(new Event(TABS_CHANGE));
@@ -185,6 +209,20 @@ export class Tabs extends HTMLElement {
     const label = this.getAttribute('aria-label');
     if (label === null) this.#part('list')!.removeAttribute('aria-label');
     else this.#part('list')!.setAttribute('aria-label', label);
+    // aria-labelledby names ids in the consumer's tree, which no IDREF can reach from
+    // inside this shadow root. They are resolved HERE, in the host's own tree, and the
+    // elements are linked instead. Resolved when the attribute changes or the element
+    // connects: a label element inserted later is not picked up until one of those.
+    // Detached, the root node is this element itself, which has no getElementById: link
+    // nothing then — connectedCallback writes again and resolves in the real tree.
+    const scope = this.getRootNode();
+    const tree = scope instanceof Document || scope instanceof ShadowRoot ? scope : null;
+    const labels = (tree ? (this.getAttribute('aria-labelledby') ?? '') : '')
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((id) => tree!.getElementById(id))
+      .filter((el): el is HTMLElement => el !== null);
+    this.#part('list')!.ariaLabelledByElements = labels.length ? labels : null;
     if (this.disabled) root.setAttribute('aria-disabled', 'true');
     else root.removeAttribute('aria-disabled');
     this.#part('list')?.setAttribute('id', this.#baseId + '-list');

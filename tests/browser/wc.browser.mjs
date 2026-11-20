@@ -127,10 +127,10 @@ test('known relationship gaps remain explicitly non-conforming (ADR 0005)', asyn
     'aria-labelledby',
     /label/,
   );
-  await expect(page.locator('#tabs').getByRole('tab').first()).not.toHaveAttribute('aria-controls');
-  await expect(page.locator('#relationship-panel').getByRole('tabpanel')).toHaveAccessibleName('');
+  // The tab <-> panel gap this test used to characterize is closed (#36): see tab-relations.mjs.
 
-  // Even element reflection rejects a sibling's internal semantic element.
+  // The platform fact that forced the host-root design, kept as a characterization: element
+  // reflection rejects a target inside a SIBLING's shadow root and keeps one on its host.
   const scope = await page.evaluate(() => {
     const tabHost = document.querySelector('#tabs ds-tab-item');
     const panelHost = document.querySelector('#relationship-panel');
@@ -239,3 +239,12 @@ browserConformance();
 
 import { tablistOwnershipRegressions } from './tablist.mjs';
 tablistOwnershipRegressions('wc');
+
+import { tabRelationRegressions } from './tab-relations.mjs';
+tabRelationRegressions();
+
+import { tabRelationReviewRegressions } from './tab-relations.mjs';
+tabRelationReviewRegressions();
+
+import { tabSpaceCancellationRegressions } from './tab-relations.mjs';
+tabSpaceCancellationRegressions();

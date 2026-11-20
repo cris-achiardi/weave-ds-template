@@ -28,7 +28,8 @@
 // consumer's reach from outside is `::part()` and custom properties, and nothing else.
 
 import { kebab, partsOf } from '@ds/emit-web';
-import { pseudoClassFor } from '@ds/platform-web';
+import { elementFor, loadProfile, pseudoClassFor, uaDisplayOf } from '@ds/platform-web';
+import { realizesRootOnHost } from './host-root.mjs';
 
 /**
  * The selector for one state, inside the shadow root.
@@ -73,6 +74,15 @@ export function emitStructureShadow(name, contract, prefix, assume) {
   const navigationScope = Boolean(contract.collection?.navigation);
   const kids = Object.values(root.parts ?? {});
   const hides = JSON.stringify(contract.anatomy).includes('"visibleWhen"');
+  // A host that carries the root's role and takes focus must generate a box: a display: contents
+  // host cannot be focused in Chromium, Firefox or WebKit. It takes the box of the element it
+  // stands in for, from the UA stylesheet — platform data, not a layout guess.
+  const hostRoot = realizesRootOnHost(name, contract);
+  const hostDisplay = hostRoot ? uaDisplayOf(elementFor(name), loadProfile()) : null;
+  if (hostRoot && !hostDisplay)
+    throw new Error(
+      `${name} realizes its root on the host, but @ds/platform-web records no UA display for <${elementFor(name)}>.`,
+    );
 
   assume(
     'structural CSS',
@@ -81,12 +91,16 @@ export function emitStructureShadow(name, contract, prefix, assume) {
   );
   assume(
     'what the host box is',
-    navigationScope
-      ? '`display: block` preserves a navigable collection scope in Firefox'
-      : '`display: contents` — the host generates no box, and the theme paints `[part=root]`',
-    navigationScope
-      ? 'A real host box prevents Firefox from cycling Tab inside nested display:contents shadow hosts. The semantic root still owns paint; the collection host adds a structural block container.'
-      : "THIS WAS THE SECOND ANSWER AND THE FIRST ONE WAS WRONG. A custom element is `display: inline` until a stylesheet says otherwise, so the first version left `:host { /* display: ; */ }` as an obligation for the consumer — a genuinely new one, since a <div> root is already block and a <button> root already inline-block. But handing it over was solving the wrong problem. The contract's `anatomy.root` describes the component's outermost VISUAL box, and in a shadow build that is the element the binding names, not the host wrapping it; painting `:host` put the background on a wrapper and left the real control unstyled. `display: contents` is the one answer here that is not a guess about layout, and with root paints on `[part=root]` the translated stylesheet produces computed styles IDENTICAL to the light-DOM backends'.",
+    hostRoot
+      ? `"display: ${hostDisplay}" — the host IS the root (ADR 0008), with the UA box of <${elementFor(name)}>`
+      : navigationScope
+        ? '`display: block` preserves a navigable collection scope in Firefox'
+        : '`display: contents` — the host generates no box, and the theme paints `[part=root]`',
+    hostRoot
+      ? 'This member carries its root role, state and focus on the host so a sibling member can reference it (ADR 0008). A display: contents host cannot be focused in Chromium, Firefox or WebKit, so the host generates the box the replaced element would have. [part=root] stays inside it as a presentational wrapper and keeps every paint.'
+      : navigationScope
+        ? 'A real host box prevents Firefox from cycling Tab inside nested display:contents shadow hosts. The semantic root still owns paint; the collection host adds a structural block container.'
+        : "THIS WAS THE SECOND ANSWER AND THE FIRST ONE WAS WRONG. A custom element is `display: inline` until a stylesheet says otherwise, so the first version left `:host { /* display: ; */ }` as an obligation for the consumer — a genuinely new one, since a <div> root is already block and a <button> root already inline-block. But handing it over was solving the wrong problem. The contract's `anatomy.root` describes the component's outermost VISUAL box, and in a shadow build that is the element the binding names, not the host wrapping it; painting `:host` put the background on a wrapper and left the real control unstyled. `display: contents` is the one answer here that is not a guess about layout, and with root paints on `[part=root]` the translated stylesheet produces computed styles IDENTICAL to the light-DOM backends'.",
   );
   assume(
     'no scoping attribute, no part attribute, no axis attribute',
@@ -105,7 +119,17 @@ export function emitStructureShadow(name, contract, prefix, assume) {
   L.push(` * there is nothing to derive from. The emitter will not guess: an inferred layout that`);
   L.push(` * renders is harder to catch than one that does not.`);
   L.push(` *`);
-  if (navigationScope) {
+  if (hostRoot) {
+    L.push(
+      ` * THE HOST IS THE ROOT. This member carries its role, state and focus on the host so a`,
+    );
+    L.push(
+      ` * sibling member can reference it (ADR 0008), and a focusable host needs a box: it gets`,
+    );
+    L.push(
+      ` * the UA box of <${elementFor(name)}>. Paint still belongs to [part='root'], inside it.`,
+    );
+  } else if (navigationScope) {
     L.push(` * A navigation collection keeps a host box. Nested display:contents shadow hosts`);
     L.push(` * can trap Tab on the first member in Firefox. Paint still belongs to [part=root].`);
   } else {
@@ -126,7 +150,7 @@ export function emitStructureShadow(name, contract, prefix, assume) {
   L.push(` */`);
   L.push(``);
   L.push(`:host {`);
-  L.push(`  display: ${navigationScope ? 'block' : 'contents'};`);
+  L.push(`  display: ${hostDisplay ?? (navigationScope ? 'block' : 'contents')};`);
   L.push(`}`);
   L.push(``);
   L.push(`/* A hidden host stays hidden, and outranks the rule above. */`);
