@@ -68,8 +68,10 @@ for those claims. ARIA element-reference reflection also has tree-scope restrict
 reference a semantic part inside a sibling shadow root. Referencing that component's host is a
 different target and is not treated as satisfying the current contract.
 
-Field has a separate defect in **all four backends**: its references are emitted on the wrapper,
-not the supplied control. The IDs may resolve while the input remains unnamed.
+Field's and Tooltip's relations are written on the **slotted** control, pointing at the slotted
+label/description/error/content elements in the same tree (ADR 0005). A slotted control that is
+itself a shadow host — `ds-switch`, `ds-text-field` — receives them on its host only, so its inner
+element stays unnamed: reported as `supplied-shadow-host` (#52).
 
 [ADR 0005](../../docs/ADR/0005-unsupported-contract-claims-are-non-conforming.md) records the decision.
 `pnpm contract Field --pretty` and `pnpm verify:parity` report these known gaps explicitly.

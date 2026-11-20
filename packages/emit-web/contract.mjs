@@ -7,7 +7,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import Ajv from 'ajv/dist/2020.js';
-import { elementFor } from '@ds/platform-web';
+import { ariaAttributeFor, elementFor, loadProfile } from '@ds/platform-web';
 
 export const readJson = (p) => JSON.parse(readFileSync(p, 'utf8'));
 
@@ -208,4 +208,62 @@ export function consumerNamedPart(contract) {
     );
   }
   return hit.key === ROOT_KEY ? null : hit.key;
+}
+
+/**
+ * Parts whose relations belong on the element a CONSUMER supplies, not on the part's own box.
+ *
+ * The rule (issues #35, #46): a part filled by a slot (`composition.slots.<slot>.part`) that
+ * declares `namedBy` or `describedBy` carries those relations on the slotted element. ARIA names
+ * and descriptions are not inherited, so writing them on the wrapper — what every emitter did —
+ * leaves the focusable element the consumer supplied unnamed. A part that declares its own `role`
+ * is excluded: it is the semantic element, not a box around one. The wrapper keeps its part
+ * attribute for layout and theming; the relation moves.
+ *
+ * Returns key -> { slot, namedBy, describedBy, invalidWhen }, where `slot` is the composition
+ * slot's key and `invalidWhen` is the state that marks the supplied element `aria-invalid`: a
+ * described part shown only while a state holds (`visibleWhen`) whose platform attribute is
+ * `aria-invalid`. That is Field's "marks the control invalid at the same moment the error becomes
+ * visible" — derived from the contract, not from a component name.
+ * `controls` is not moved: no slot-filled part declares one, and moving it unasked would be a
+ * guess. Object-valued (cross-member) targets are left out for the same reason.
+ */
+export function suppliedRelations(contract) {
+  const slots = contract.composition?.slots ?? {};
+  const out = new Map();
+  for (const { key, node } of partsOf(contract.anatomy.root)) {
+    const slot = Object.entries(slots).find(([k, s]) => (s.part ?? k) === key);
+    // A part with its own role IS the semantic element (AccordionItem's `panel` is the labelled
+    // region, its slot is the region's content), so its relations stay where they are.
+    if (!slot || node.role) continue;
+    const namedBy = typeof node.namedBy === 'string' ? node.namedBy : null;
+    const describedBy = (node.describedBy ?? []).filter((d) => typeof d === 'string');
+    if (!namedBy && !describedBy.length) continue;
+    const parts = Object.fromEntries(partsOf(contract.anatomy.root).map((p) => [p.key, p.node]));
+    const invalidWhen =
+      describedBy
+        .map((d) => parts[d]?.visibleWhen)
+        .find(
+          (state) =>
+            state &&
+            !state.includes('=') &&
+            ariaAttributeFor(state, loadProfile()) === 'aria-invalid',
+        ) ?? null;
+    out.set(key, { slot: slot[0], namedBy, describedBy, invalidWhen });
+  }
+  return out;
+}
+
+/**
+ * Parts that NAME a supplied element: label part key -> the supplied part key it names.
+ *
+ * In a light-DOM backend these render as a native `<label for>` pointing at the supplied
+ * element's id, which is what makes clicking the label focus (or toggle) the control — a thing
+ * `aria-labelledby` alone does not do.
+ */
+export function labelsForSupplied(contract) {
+  const out = new Map();
+  for (const [key, rel] of suppliedRelations(contract))
+    if (rel.namedBy && !out.has(rel.namedBy)) out.set(rel.namedBy, key);
+  return out;
 }

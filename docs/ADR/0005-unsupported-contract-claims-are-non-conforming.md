@@ -5,6 +5,7 @@
 - **Deciders:** cris (implementation delegated)
 - **Tags:** components, a11y, governance
 - **Related:** [ADR 0002](./0002-agnostic-contracts-live-in-their-own-package.md)
+- **Amended:** 2026-11-20, in place (pre-v0) — relations on a supplied element (#35, #46)
 
 ## Context
 
@@ -33,9 +34,53 @@ checks keep the current evidence reproducible; when an implementation is fixed, 
 its evidence and classification together. Full accessibility conformance requires a
 separate evaluation of every claimed behavior.
 
+### Relations on a supplied element (amendment, #35 and #46)
+
+A part filled by a composition slot that declares `namedBy` or `describedBy`, and has no `role` of
+its own, carries those relations on the element the consumer **supplies** to that slot, not on the
+part's wrapper. ARIA names and descriptions are not inherited, so a wrapper's relation names
+nothing. This covers Field `control` and Tooltip `trigger`. A described part shown only while a
+state holds (`visibleWhen`) is referenced only while it holds; when that state maps to
+`aria-invalid`, the supplied element is marked invalid at the same moment.
+
+Ownership: a consumer's `id` is never replaced; consumer IDREF tokens are kept and come first; the
+component removes only tokens, ids and `aria-invalid` values it wrote, so a state change or a
+replaced element hands the old element back exactly as it was. Content that is not exactly one
+element cannot carry a relation; it is left unwired with a diagnostic naming the slot.
+
+Light-DOM backends point the supplied element at the part ids themselves, and render a part that
+names it as a native `<label for>`, so clicking it reaches the control.
+
+**WC mapping.** The slotted element is in the consumer's tree and the parts are in the component's
+shadow root, so neither an IDREF nor element reflection can connect them. The slotted CONTENT of
+each target part (the label, description, error, tooltip content) is in the same tree as the
+slotted element, so WC writes plain IDREFs to that content. The relation therefore targets the
+slotted content of the part the contract names rather than the shadow part element. While those
+parts contain nothing but their slot the computed name and description are identical, and this
+mapping **counts as conforming**. A target part no slot fills cannot be mapped and is an emitter
+error. Clicking the label part focuses the slotted control (focus only — a checkable control is
+not toggled as a native label would toggle it).
+
+**Residual WC gap.** When the slotted element is itself a shadow host (this system's own `Switch`,
+`TextField`, or any custom element a slot without an `accepts` list admits), the relations land on
+its host and its focusable element does not receive them. Reported as `supplied-shadow-host`;
+follow-up #52.
+
 ## Consequences
 
-Field is reported across all four backends. WC TabItem and TabPanel additionally report
-omitted cross-shadow references. Local references and literal labels are distinct and
-continue working. Fixing those implementations requires an explicit composition design;
-this decision does not claim that unsupported accessibility behavior has been implemented.
+Field and Tooltip are no longer reported as wrapper gaps in React, Vue or Angular (status
+`not-evaluated`). WC Field and Tooltip report `supplied-shadow-host`. WC TabItem and TabPanel still
+report omitted cross-shadow references. Local references and literal labels are distinct and
+continue working. This decision does not claim that unsupported accessibility behavior has been
+implemented: browser tests demonstrate the computed name, description, `aria-invalid`, label
+activation and replacement behaviour for native supplied elements only.
+
+## Contract
+
+| Concern                                           | Where                                                                          |
+| ------------------------------------------------- | ------------------------------------------------------------------------------ |
+| Which parts carry relations on a supplied element | `packages/emit-web/contract.mjs` — `suppliedRelations`, `labelsForSupplied`    |
+| Ownership policy (one copy)                       | `packages/behavior/src/supplied-relations.ts`                                  |
+| Per-backend binding                               | `packages/{react,vue,angular,wc}/src/behavior/supplyRelations.ts`              |
+| Gap classification                                | `scripts/relationship-conformance.mjs` (`pnpm contract`, `pnpm verify:parity`) |
+| Browser evidence                                  | `tests/browser/relations.mjs`, `tests/browser/wc.browser.mjs`                  |

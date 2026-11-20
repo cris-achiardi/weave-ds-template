@@ -45,6 +45,7 @@ import {
   ROOT_KEY,
   readJson,
   referencedByASibling,
+  suppliedRelations,
 } from '@ds/emit-web';
 import { emitStructureShadow, emitThemeShadow } from './css-shadow.mjs';
 import { camel, kebab, pascal, slotsFrom, surfaceFrom, tagFor } from './surface.mjs';
@@ -262,6 +263,28 @@ export function emitComponent(name, contract, binding, prefix, { declareTagTypes
     );
   }
 
+  // Relations a slot-filled part declares go on the SLOTTED element (#35, #46). It is light DOM, so
+  // its IDREFs can only resolve to other light-DOM elements: the slotted CONTENT of each target
+  // part. A target part with no slot has no content in the consumer's tree to point at.
+  const supplied = suppliedRelations(contract);
+  const slotOfPart = (key) =>
+    Object.entries(contract.composition?.slots ?? {}).find(([k, x]) => (x.part ?? k) === key)?.[0];
+  for (const [key, rel] of supplied) {
+    const targets = [...(rel.namedBy ? [rel.namedBy] : []), ...rel.describedBy];
+    const unslotted = targets.filter((t) => !slotOfPart(t));
+    if (unslotted.length)
+      throw new Error(
+        `${name}.${key} relates a supplied element to ${unslotted.join(', ')}, which no slot fills. ` +
+          'Its content lives only in the shadow root, which an IDREF from light DOM cannot reach.',
+      );
+  }
+  if (supplied.size)
+    assume(
+      'relations on a slotted element',
+      'IDREFs from the slotted element to the slotted CONTENT of each target part',
+      'An IDREF cannot cross a shadow boundary, and element reflection cannot point from light DOM into this shadow root (ADR 0005). The slotted control and the slotted label/description/error content are in the same tree, so plain IDREFs resolve in every engine. The relation therefore targets the slotted content of the part the contract names; ADR 0005 records that mapping. A slotted element that is itself a shadow host (ds-switch, ds-text-field) receives the relations on its host, not on its inner focusable element: a recorded gap.',
+    );
+
   const ctx = {
     slots: namedSlots,
     contract,
@@ -306,8 +329,10 @@ export function emitComponent(name, contract, binding, prefix, { declareTagTypes
   if (range) behaviorImports.push('snap', 'useRangeControl');
   if (dismissCauses.length) behaviorImports.push('useDismissal');
   if (navigation) behaviorImports.push('useLinearNavigation');
+  if (supplied.size) behaviorImports.push('suppliedId', 'supplyRelations');
   if (behaviorImports.length) {
     const types = [];
+    if (supplied.size) types.push('SuppliedRelations');
     if (range) types.push('RangeOptions');
     if (dismissCauses.length) types.push('DismissalOptions');
     if (navigation) types.push('NavigationOptions');
@@ -349,7 +374,12 @@ export function emitComponent(name, contract, binding, prefix, { declareTagTypes
   s.push(``);
   if (needsIds) {
     s.push(`// A counter, because the platform has no useId. It matters less here than anywhere:`);
-    s.push(`// every id below is scoped to this element's own shadow root.`);
+    if (supplied.size) {
+      s.push(
+        `// most ids below are scoped to this element's own shadow root. The exception is an id`,
+      );
+      s.push(`// given to a SLOTTED element that has none, which lives in the consumer's tree.`);
+    } else s.push(`// every id below is scoped to this element's own shadow root.`);
     s.push(`let nextId = 0;`);
     s.push(``);
   }
@@ -423,6 +453,7 @@ export function emitComponent(name, contract, binding, prefix, { declareTagTypes
   if (registers) s.push(`  #registeredValue: string | null = null;`);
   if (hasActivation) s.push(`  readonly #pendingActivations = new Set<number>();`);
   if (dismissCauses.length) s.push(`  readonly #dismissal;`);
+  if (supplied.size) s.push(`  readonly #supplied = supplyRelations('${name}');`);
   if (range) s.push(`  readonly #range;`);
   if (navigation) s.push(`  readonly #nav;`);
   s.push(``);
@@ -483,6 +514,28 @@ export function emitComponent(name, contract, binding, prefix, { declareTagTypes
   // --- event wiring. NOTHING TO COMPOSE, and the reason is the DOM.
   if (namedSlots.length) {
     s.push(`    this.#watchSlots(shadow);`);
+    s.push(``);
+  }
+  if (supplied.size) {
+    s.push(
+      `    // A replaced or removed slotted element is re-wired, and the old one handed back clean.`,
+    );
+    s.push(`    shadow.addEventListener('slotchange', () => this.#wireSupplied());`);
+    for (const [key, rel] of supplied) {
+      if (!rel.namedBy) continue;
+      const labelPart = contract.anatomy.root.parts?.[rel.namedBy]?.part ?? rel.namedBy;
+      s.push(
+        `    // A native <label for> cannot reach across the shadow boundary, so clicking the`,
+      );
+      s.push(
+        `    // ${rel.namedBy} part focuses the slotted ${key} directly. Focus only: a checkable`,
+      );
+      s.push(`    // control is not toggled the way a native label would toggle it.`);
+      s.push(`    this.#part('${labelPart}')?.addEventListener('click', () => {`);
+      s.push(`      const control = this.#supplied.single(this.#slot('${rel.slot}'));`);
+      s.push(`      if (control instanceof HTMLElement) control.focus();`);
+      s.push(`    });`);
+    }
     s.push(``);
   }
   s.push(
@@ -609,8 +662,9 @@ export function emitComponent(name, contract, binding, prefix, { declareTagTypes
   s.push(`    this.#update();`);
   s.push(`  }`);
   s.push(``);
-  if (member || platformModal || hasActivation) {
+  if (member || platformModal || hasActivation || supplied.size) {
     s.push(`  disconnectedCallback(): void {`);
+    if (supplied.size) s.push(`    this.#supplied.release();`);
     if (hasActivation) {
       s.push(`    for (const timer of this.#pendingActivations) window.clearTimeout(timer);`);
       s.push(`    this.#pendingActivations.clear();`);
@@ -1047,7 +1101,8 @@ export function emitComponent(name, contract, binding, prefix, { declareTagTypes
   }
   if (needsIds) {
     for (const p of allParts) {
-      if (!(p.node.role || refsOf(p.node).length || referenced.has(p.key))) continue;
+      const relates = refsOf(p.node).length && !supplied.has(p.key);
+      if (!(p.node.role || relates || referenced.has(p.key))) continue;
       const target = p.key === 'root' ? 'root' : `this.#part('${p.node.part}')`;
       const id = p.key === 'root' ? `this.#baseId` : `this.#baseId + '-${p.key}'`;
       s.push(`    ${target}?.setAttribute('id', ${id});`);
@@ -1067,6 +1122,7 @@ export function emitComponent(name, contract, binding, prefix, { declareTagTypes
           );
         }
       }
+      if (supplied.has(p.key)) continue;
       if (typeof node.namedBy === 'string') {
         s.push(
           `    ${target}?.setAttribute('${relationAttribute('namedBy', WEB)}', ${idOf(node.namedBy)});`,
@@ -1100,6 +1156,7 @@ export function emitComponent(name, contract, binding, prefix, { declareTagTypes
       }
     }
   }
+  if (supplied.size) s.push(`    this.#wireSupplied();`);
   if (form) {
     if (!contract.semantics?.focusable) s.push(`    root.setAttribute('tabindex', '-1');`);
     s.push(`    this.#syncForm();`);
@@ -1133,6 +1190,64 @@ export function emitComponent(name, contract, binding, prefix, { declareTagTypes
         hasActivation,
       }),
     );
+  if (supplied.size) {
+    s.push(`  /**`);
+    s.push(
+      `   * Write each slot-filled part's relations onto the element the consumer slotted in.`,
+    );
+    s.push(`   *`);
+    s.push(
+      `   * IDREFs between LIGHT-DOM elements: the slotted control points at the slotted content of`,
+    );
+    s.push(
+      `   * each target part, giving that content an id if it has none. Consumer ids and tokens`,
+    );
+    s.push(`   * are never removed; an element that left its slot gets back exactly what it had.`);
+    s.push(`   */`);
+    s.push(`  #wireSupplied(): void {`);
+    s.push(`    const entries: [Element, SuppliedRelations][] = [];`);
+    s.push(`    const content = (slot: string, key: string): string[] =>`);
+    s.push(`      (this.#slot(slot)?.assignedElements({ flatten: true }) ?? []).map((el, i) => {`);
+    s.push(`        const id = suppliedId(el, this.#baseId + '-' + key + '-' + i);`);
+    s.push(`        entries.push([el, { id }]);`);
+    s.push(`        return id;`);
+    s.push(`      });`);
+    const parts = Object.fromEntries(allParts.map((p) => [p.key, p.node]));
+    for (const [, rel] of supplied) {
+      const v = camel(rel.slot);
+      s.push(`    const ${v} = this.#supplied.single(this.#slot('${rel.slot}'));`);
+      s.push(`    if (${v}) {`);
+      const fields = [];
+      if (rel.namedBy)
+        fields.push(`labelledBy: content('${slotOfPart(rel.namedBy)}', '${rel.namedBy}')`);
+      if (rel.describedBy.length) {
+        const pieces = rel.describedBy.map((d) => {
+          const read = `content('${slotOfPart(d)}', '${d}')`;
+          return parts[d]?.visibleWhen
+            ? `...(${stateRead(parts[d].visibleWhen, member)} ? ${read} : [])`
+            : `...${read}`;
+        });
+        fields.push(`describedBy: [${pieces.join(', ')}]`);
+      }
+      if (rel.invalidWhen) fields.push(`invalid: ${stateRead(rel.invalidWhen, member)}`);
+      s.push(`      entries.push([`);
+      s.push(`        ${v},`);
+      // No id on the slotted element itself: nothing in its tree points AT it. The label part
+      // cannot use <label for> across the boundary, which is why it focuses by click instead.
+      s.push(`        { ${fields.join(', ')} },`);
+      s.push(`      ]);`);
+      s.push(`    }`);
+    }
+    s.push(`    this.#supplied.write(entries);`);
+    s.push(`  }`);
+    s.push(``);
+    s.push(`  #slot(name: string): HTMLSlotElement | null {`);
+    s.push(
+      `    return this.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="' + name + '"]');`,
+    );
+    s.push(`  }`);
+    s.push(``);
+  }
   // Emitted only when something calls it: `noUnusedLocals` treats an unused private member as
   // an error, so a helper written unconditionally would fail the typecheck on half the library.
   if (s.some((l) => l.includes('this.#part('))) {

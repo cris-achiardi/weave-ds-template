@@ -3,6 +3,9 @@
 //
 // Wires a form control to its label, its help text and its error message, so the three are announced together and the control's validity has one place to live. It is the plumbing around an input, never the input.
 
+import { suppliedId, supplyRelations } from '@ds/wc/behavior';
+import type { SuppliedRelations } from '@ds/wc/behavior';
+
 // THE ONE BUNDLER-SPECIFIC TOKEN IN THIS FILE. `?inline` asks Vite for the stylesheet as
 // a string so it can be adopted into the shadow root rather than injected into the page —
 // which is what a plain CSS import would do, and would put these rules where they can
@@ -37,7 +40,8 @@ TEMPLATE.innerHTML = `
 `;
 
 // A counter, because the platform has no useId. It matters less here than anywhere:
-// every id below is scoped to this element's own shadow root.
+// most ids below are scoped to this element's own shadow root. The exception is an id
+// given to a SLOTTED element that has none, which lives in the consumer's tree.
 let nextId = 0;
 
 export class Field extends HTMLElement {
@@ -46,6 +50,7 @@ export class Field extends HTMLElement {
 
   readonly #root: HTMLElement;
   readonly #baseId = 'ds-field-' + nextId++;
+  readonly #supplied = supplyRelations('Field');
 
   constructor() {
     super();
@@ -55,6 +60,16 @@ export class Field extends HTMLElement {
     this.#root = shadow.querySelector('[part="root"]')!;
 
     this.#watchSlots(shadow);
+
+    // A replaced or removed slotted element is re-wired, and the old one handed back clean.
+    shadow.addEventListener('slotchange', () => this.#wireSupplied());
+    // A native <label for> cannot reach across the shadow boundary, so clicking the
+    // label part focuses the slotted control directly. Focus only: a checkable
+    // control is not toggled the way a native label would toggle it.
+    this.#part('label')?.addEventListener('click', () => {
+      const control = this.#supplied.single(this.#slot('control'));
+      if (control instanceof HTMLElement) control.focus();
+    });
 
     // Listeners are additive, but internal listeners run before host bubbling listeners.
   }
@@ -77,6 +92,10 @@ export class Field extends HTMLElement {
 
   connectedCallback(): void {
     this.#update();
+  }
+
+  disconnectedCallback(): void {
+    this.#supplied.release();
   }
 
   attributeChangedCallback(): void {
@@ -137,17 +156,46 @@ export class Field extends HTMLElement {
     if (this.disabled) root.setAttribute('aria-disabled', 'true');
     else root.removeAttribute('aria-disabled');
     this.#part('label')?.setAttribute('id', this.#baseId + '-label');
-    this.#part('control')?.setAttribute('id', this.#baseId + '-control');
     this.#part('description')?.setAttribute('id', this.#baseId + '-description');
     this.#part('error')?.setAttribute('id', this.#baseId + '-error');
-    this.#part('control')?.setAttribute('aria-labelledby', this.#baseId + '-label');
-    this.#part('control')?.setAttribute(
-      'aria-describedby',
-      [this.#baseId + '-description', this.invalid ? this.#baseId + '-error' : '']
-        .filter(Boolean)
-        .join(' '),
-    );
     this.#part('error')?.toggleAttribute('hidden', !this.invalid);
+    this.#wireSupplied();
+  }
+
+  /**
+   * Write each slot-filled part's relations onto the element the consumer slotted in.
+   *
+   * IDREFs between LIGHT-DOM elements: the slotted control points at the slotted content of
+   * each target part, giving that content an id if it has none. Consumer ids and tokens
+   * are never removed; an element that left its slot gets back exactly what it had.
+   */
+  #wireSupplied(): void {
+    const entries: [Element, SuppliedRelations][] = [];
+    const content = (slot: string, key: string): string[] =>
+      (this.#slot(slot)?.assignedElements({ flatten: true }) ?? []).map((el, i) => {
+        const id = suppliedId(el, this.#baseId + '-' + key + '-' + i);
+        entries.push([el, { id }]);
+        return id;
+      });
+    const control = this.#supplied.single(this.#slot('control'));
+    if (control) {
+      entries.push([
+        control,
+        {
+          labelledBy: content('label', 'label'),
+          describedBy: [
+            ...content('description', 'description'),
+            ...(this.invalid ? content('error', 'error') : []),
+          ],
+          invalid: this.invalid,
+        },
+      ]);
+    }
+    this.#supplied.write(entries);
+  }
+
+  #slot(name: string): HTMLSlotElement | null {
+    return this.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="' + name + '"]');
   }
 
   #part(name: string): HTMLElement | null {

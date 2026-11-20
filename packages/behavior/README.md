@@ -4,7 +4,10 @@
 
 Three modules — what Escape means, which member an arrow key moves to, where a number lands when you
 step it — plus the conformance suites that execute them against
-[`@ds/contracts/conformance/`](../contracts/conformance/README.md).
+[`@ds/contracts/conformance/`](../contracts/conformance/README.md). A fourth, `supplied-relations`,
+is the ownership policy for relations written on an element a consumer supplies (ADR 0005): which
+`id`, IDREF tokens and `aria-invalid` value the component may write, and how it takes back exactly
+those. It touches attributes only through a three-method interface, so it stays DOM-free.
 
 ## Why it exists, and why it did not exist sooner
 
@@ -42,6 +45,7 @@ So: a third thing, between the specification and any platform.
 src/dismissal.ts            closing a region with a key or a press that is not activation
 src/linear-navigation.ts    moving between the members of a collection
 src/range-stepping.ts       moving a number within a bounded, stepped range
+src/supplied-relations.ts   relations written on a consumer-supplied element, and who owns which token
 src/*.test.ts               the conformance suites — ONE copy, not three
 src/index.ts                the barrel, with the two `intentFor`s disambiguated
 ```

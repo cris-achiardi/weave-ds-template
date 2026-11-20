@@ -37,3 +37,6 @@ browserConformance();
 
 import { tablistOwnershipRegressions } from './tablist.mjs';
 tablistOwnershipRegressions('angular');
+
+import { relationRegressions } from './relations.mjs';
+relationRegressions();

@@ -1,6 +1,8 @@
 # 0006 — The shadow boundary
 
 > Update (2026-09-15): [ADR 0005](../ADR/0005-unsupported-contract-claims-are-non-conforming.md) corrects the historical IDREF findings below and defines explicit non-conformance reporting.
+>
+> Update (2026-11-20): §4's Field case has a same-tree answer — the slotted control and the slotted label/description/error content are both light DOM, so IDREFs between them resolve. ADR 0005's amendment records it; a slotted shadow host remains a gap (#52).
 
 - **Date:** 2026-09-13
 - **Author:** cris

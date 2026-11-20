@@ -18,7 +18,7 @@ export interface TooltipProps {
 
 <script setup lang="ts">
 import { computed, useAttrs, useId } from 'vue';
-import { useDismissal } from '@ds/vue/behavior';
+import { supplyRelations, useDismissal } from '@ds/vue/behavior';
 import type { DismissalOptions } from '@ds/vue/behavior';
 import './Tooltip.structure.css';
 import './Tooltip.theme.css';
@@ -83,12 +83,16 @@ function onRootKeydown(event: KeyboardEvent) {
     data-ds-part="root"
     @keydown="onRootKeydown"
   >
-    <div
-      :id="`${baseId}-trigger`"
-      :aria-describedby="[open ? `${baseId}-popup` : null].filter(Boolean).join(' ') || undefined"
-      data-ds-part="trigger"
-    >
-      <slot name="trigger" />
+    <div data-ds-part="trigger">
+      <component
+        :is="
+          supplyRelations(
+            $slots.trigger?.(),
+            { describedBy: [open ? `${baseId}-popup` : null] },
+            'Tooltip.trigger',
+          )
+        "
+      />
     </div>
     <div role="tooltip" :id="`${baseId}-popup`" :hidden="!open" data-ds-part="popup">
       <slot name="content" />

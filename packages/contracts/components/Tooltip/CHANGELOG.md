@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Changed
+
+- The `trigger` part's `describedBy: [popup]` is now generated onto the element supplied to the
+  `trigger` slot, not the part's wrapper, in all four backends (#46, ADR 0005), merged after any
+  `aria-describedby` the consumer put on it. No contract field changed.
+- Known gap: in WC, a slotted trigger that is itself a shadow host receives the description on its
+  host only (#52).
+
 ### Added
 
 - Initial contract. `status.level` is `experimental`.

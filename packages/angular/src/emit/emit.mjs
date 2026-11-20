@@ -53,12 +53,14 @@ import {
   emitStructure,
   emitTheme,
   kebab,
+  labelsForSupplied,
   loadPair,
   memberFacts,
   partsOf,
   ROOT_KEY,
   readJson,
   referencedByASibling,
+  suppliedRelations,
 } from '@ds/emit-web';
 
 import { camel, pascal, selectorFor, slotsFrom, surfaceFrom } from './surface.mjs';
@@ -84,6 +86,29 @@ function stateExpr(spec, ctx) {
   return value === null ? base : `${base} === '${value}'`;
 }
 
+// The class field holding a supplied part's wiring: slot `control` -> `controlRelations`.
+const suppliedField = (rel) => `${camel(rel.slot)}Relations`;
+
+// The relations getter handed to supplyRelations, written in CLASS scope (`this.`), in the order
+// the contract lists them. A described part shown only while a state holds is referenced only
+// while it holds. Every read is a signal call, so the wiring re-runs when any of them changes.
+function suppliedRelationsExpr(key, rel, ctx) {
+  const parts = Object.fromEntries(partsOf(ctx.contract.anatomy.root).map((p) => [p.key, p.node]));
+  const id = (k) => `this.${ctx.idFor(k)}`;
+  const state = (spec) => `this.${stateExpr(spec, ctx)}`;
+  const fields = [];
+  if (ctx.labelled.has(key)) fields.push(`id: ${id(key)}`);
+  if (rel.namedBy) fields.push(`labelledBy: [${id(rel.namedBy)}]`);
+  if (rel.describedBy.length) {
+    const ids = rel.describedBy.map((d) =>
+      parts[d]?.visibleWhen ? `${state(parts[d].visibleWhen)} ? ${id(d)} : null` : id(d),
+    );
+    fields.push(`describedBy: [${ids.join(', ')}]`);
+  }
+  if (rel.invalidWhen) fields.push(`invalid: ${state(rel.invalidWhen)}`);
+  return `{ ${fields.join(', ')} }`;
+}
+
 // ---------------------------------------------------------------------------------------
 // the template: one anatomy part and everything under it
 // ---------------------------------------------------------------------------------------
@@ -93,25 +118,32 @@ function renderPart(key, node, ctx, depth) {
   const slot = slots.find((x) => (x.part ? x.part === key : x.name === key));
   const takesChildrenHere = ctx.childrenPart === key;
   const attrs = [];
+  // A part a slot fills carries its relations on the SUPPLIED element, not on this box (#35, #46).
+  // They are written by `supplyRelations` in the class, because projection has no props channel.
+  const supplied = ctx.supplied.get(key);
+  // A part that names a supplied element is a native <label for>, so clicking it reaches the control.
+  const labels = ctx.labelFor.get(key);
 
-  const nodeEl = defaultElement(node.activates?.toggles ? 'activatable' : 'container', WEB);
+  const nodeEl = labels
+    ? 'label'
+    : defaultElement(node.activates?.toggles ? 'activatable' : 'container', WEB);
   if (node.role && implicitRole(nodeEl, WEB) !== node.role) attrs.push(`role="${node.role}"`);
   if (
     node.role ||
     node.controls ||
-    node.namedBy ||
-    (node.describedBy ?? []).length ||
+    (!supplied && (node.namedBy || (node.describedBy ?? []).length)) ||
     ctx.referenced.has(key)
   ) {
     attrs.push(`[attr.id]="${idFor(key)}"`);
   }
+  if (labels) attrs.push(`[attr.for]="${suppliedField(ctx.supplied.get(labels))}.id()"`);
   if (node.controls) {
     attrs.push(`[attr.${relationAttribute('controls', WEB)}]="${refId(node.controls)}"`);
   }
-  if (node.namedBy) {
+  if (node.namedBy && !supplied) {
     attrs.push(`[attr.${relationAttribute('namedBy', WEB)}]="${refId(node.namedBy)}"`);
   }
-  if ((node.describedBy ?? []).length) {
+  if ((node.describedBy ?? []).length && !supplied) {
     const live = node.describedBy.filter((d) => {
       const target = Object.entries(contract.anatomy.root.parts ?? {}).find(([k]) => k === d);
       return !target || !target[1].visibleWhen;
@@ -388,8 +420,13 @@ export function emitComponent(name, contract, binding, prefix) {
 
   const needsIdsHelper = { value: false };
 
+  const supplied = suppliedRelations(contract);
+  const labelFor = labelsForSupplied(contract);
   const ctx = {
     prefix,
+    supplied,
+    labelFor,
+    labelled: new Set(labelFor.values()),
     needsIdsHelper,
     slots: namedSlots,
     contract,
@@ -643,6 +680,7 @@ export function emitComponent(name, contract, binding, prefix) {
     behaviorTypes.push('NavigationOptions');
   }
   if (collection && navigation) behaviorTypes.push('MemberRegistration');
+  if (supplied.size) behaviorValues.push('supplyRelations');
   if (behaviorValues.length) {
     s.push(`import { ${behaviorValues.sort().join(', ')} } from '@ds/angular/behavior';`);
   }
@@ -860,6 +898,17 @@ export function emitComponent(name, contract, binding, prefix) {
 
   if (needsIds && !member) {
     s.push(`  readonly baseId = '${prefix}-${kebab(name)}-' + nextId++;`);
+    s.push(``);
+  }
+
+  for (const [key, rel] of supplied) {
+    s.push(`  // Written onto the element the consumer projects with slot="${rel.slot}", not onto`);
+    s.push(`  // the ${key} part's box: a name or description on a wrapper is not inherited.`);
+    s.push(`  protected readonly ${suppliedField(rel)} = supplyRelations(`);
+    s.push(`    '${rel.slot}',`);
+    s.push(`    () => (${suppliedRelationsExpr(key, rel, ctx)}),`);
+    s.push(`    '${name}.${rel.slot}',`);
+    s.push(`  );`);
     s.push(``);
   }
 

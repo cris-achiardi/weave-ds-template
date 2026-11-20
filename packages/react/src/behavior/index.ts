@@ -52,3 +52,9 @@ export type {
   RangeOptions,
   RangeOrientation,
 } from './useRangeControl.js';
+
+// --- supplied relations: name/description/invalid on the element a consumer supplies to a slot
+// The one primitive not declared by a behaviour block: a slot-filled part's `namedBy`/`describedBy`
+// declare it, and its authority is the accessible name and description computation (ADR 0005).
+export { suppliedId, supplyRelations } from './supplyRelations.js';
+export type { SuppliedRelations } from './supplyRelations.js';

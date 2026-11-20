@@ -32,6 +32,10 @@ export default defineConfig({
         replacement: resolve(__dirname, '../../packages/behavior/src/range-stepping.ts'),
       },
       {
+        find: '@ds/behavior/supplied-relations',
+        replacement: resolve(__dirname, '../../packages/behavior/src/supplied-relations.ts'),
+      },
+      {
         find: '@ds/angular/behavior',
         replacement: resolve(__dirname, '../../packages/angular/src/behavior/index.ts'),
       },

@@ -59,11 +59,13 @@ import {
   emitTheme,
   kebab,
   loadPair,
+  labelsForSupplied,
   memberFacts,
   partsOf,
   ROOT_KEY,
   readJson,
   referencedByASibling,
+  suppliedRelations,
 } from '@ds/emit-web';
 
 // The prop surface a contract implies. Shared with the contract tooling, which needs the same
@@ -91,8 +93,14 @@ function renderPart(key, node, ctx, depth) {
   const slot = slots.find((x) => (x.part ? x.part === key : camel(x.from) === key));
   const takesChildrenHere = ctx.childrenPart === key;
   const attrs = [];
+  // A part a slot fills carries its relations on the SUPPLIED element, not on this box (#35, #46).
+  const supplied = ctx.supplied.get(key);
+  // A part that names a supplied element is a native <label for>, so clicking it reaches the control.
+  const labels = ctx.labelFor.get(key);
 
-  const nodeEl = defaultElement(node.activates?.toggles ? 'activatable' : 'container', WEB);
+  const nodeEl = labels
+    ? 'label'
+    : defaultElement(node.activates?.toggles ? 'activatable' : 'container', WEB);
   // Unified with the ROOT path, which asks the same question two hundred lines below. Equivalent
   // to the old inline check by cases: a container has no implicit role so it never suppresses,
   // and an activatable suppresses exactly when the declared role is the one it already carries.
@@ -102,15 +110,16 @@ function renderPart(key, node, ctx, depth) {
   if (
     node.role ||
     node.controls ||
-    node.namedBy ||
-    (node.describedBy ?? []).length ||
+    (!supplied && (node.namedBy || (node.describedBy ?? []).length)) ||
     ctx.referenced.has(key)
   ) {
     attrs.push(`id={${idFor(key)}}`);
   }
+  if (labels) attrs.push(`htmlFor={${suppliedIdVar(ctx.supplied.get(labels))}}`);
   if (node.controls) attrs.push(`${relationAttribute('controls', WEB)}={${refId(node.controls)}}`);
-  if (node.namedBy) attrs.push(`${relationAttribute('namedBy', WEB)}={${refId(node.namedBy)}}`);
-  if ((node.describedBy ?? []).length) {
+  if (node.namedBy && !supplied)
+    attrs.push(`${relationAttribute('namedBy', WEB)}={${refId(node.namedBy)}}`);
+  if ((node.describedBy ?? []).length && !supplied) {
     const live = node.describedBy.filter((d) => {
       const target = Object.entries(contract.anatomy.root.parts ?? {}).find(([k]) => k === d);
       return !target || !target[1].visibleWhen;
@@ -165,11 +174,40 @@ function renderPart(key, node, ctx, depth) {
     return out;
   }
   out.push(pad + open);
-  if (slot) out.push(`${pad}  {${slot.name}}`);
+  if (slot && supplied) {
+    out.push(`${pad}  {supplyRelations(`);
+    out.push(`${pad}    ${slot.name},`);
+    out.push(`${pad}    ${suppliedRelationsExpr(key, supplied, ctx)},`);
+    out.push(`${pad}    '${ctx.name}.${slot.name}',`);
+    out.push(`${pad}  )}`);
+  } else if (slot) out.push(`${pad}  {${slot.name}}`);
   if (takesChildrenHere) out.push(`${pad}  {children}`);
   for (const [k, child] of kids) out.push(...renderPart(k, child, ctx, depth + 1));
   out.push(pad + close);
   return out;
+}
+
+// The variable holding a supplied element's resolved id: `control` -> `controlId`.
+const suppliedIdVar = (rel) => `${camel(rel.slot)}Id`;
+
+// The relations object handed to supplyRelations, in the order the contract lists them. A described
+// part shown only while a state holds is referenced only while it holds — the same rule the wrapper
+// used — so a hidden error never becomes part of the description.
+function suppliedRelationsExpr(key, rel, ctx) {
+  const parts = Object.fromEntries(partsOf(ctx.contract.anatomy.root).map((p) => [p.key, p.node]));
+  const fields = [];
+  if (ctx.labelled.has(key)) fields.push(`id: ${suppliedIdVar(rel)}`);
+  if (rel.namedBy) fields.push(`labelledBy: [${ctx.idFor(rel.namedBy)}]`);
+  if (rel.describedBy.length) {
+    const ids = rel.describedBy.map((d) =>
+      parts[d]?.visibleWhen
+        ? `${stateExpr(parts[d].visibleWhen, ctx)} ? ${ctx.idFor(d)} : null`
+        : ctx.idFor(d),
+    );
+    fields.push(`describedBy: [${ids.join(', ')}]`);
+  }
+  if (rel.invalidWhen) fields.push(`invalid: ${stateExpr(rel.invalidWhen, ctx)}`);
+  return `{ ${fields.join(', ')} }`;
 }
 
 // How a state name evaluates inside the generated component.
@@ -428,10 +466,16 @@ export function emitTsx(name, contract, binding, prefix) {
   const referencedBySibling = referencedByASibling(name, member, CONTRACTS);
   const needsIds = Boolean(collection) || referencesParts || referencedBySibling;
 
+  const supplied = suppliedRelations(contract);
+  const labelFor = labelsForSupplied(contract);
   const ctx = {
+    name,
     prefix,
     slots,
     contract,
+    supplied,
+    labelFor,
+    labelled: new Set(labelFor.values()),
     idFor,
     childrenPart,
     namedPart,
@@ -470,6 +514,11 @@ export function emitTsx(name, contract, binding, prefix) {
   }
   if (dismissCauses.length) {
     s.push(`import { useDismissal, type DismissalOptions } from '@ds/react/behavior';`);
+  }
+  if (supplied.size) {
+    // The relations a slot-filled part declares are written on the element the consumer supplies.
+    const fns = labelFor.size ? 'suppliedId, supplyRelations' : 'supplyRelations';
+    s.push(`import { ${fns} } from '@ds/react/behavior';`);
   }
   if (navigation) {
     // A real package import, not copied code. What you can see you own; what must be correct you
@@ -660,6 +709,9 @@ export function emitTsx(name, contract, binding, prefix) {
     s.push(``);
   } else if (needsIds) {
     s.push(`  const baseId = useId();`);
+    for (const [key, rel] of supplied)
+      if (ctx.labelled.has(key))
+        s.push(`  const ${suppliedIdVar(rel)} = suppliedId(${camel(rel.slot)}, ${idFor(key)});`);
     s.push(``);
   }
 

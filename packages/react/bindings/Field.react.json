@@ -7,6 +7,6 @@
   "classNamePassthrough": "root",
   "notes": [
     "Renders a plain `<div>`. Field is plumbing: it owns no interactive element of its own, and every keyboard interaction belongs to the control passed into it.",
-    "The label/control/description/error relationships are wired with generated ids and `aria-describedby`. The contract records those relationships only as prose in `intent.behaviour`, so this binding is currently the only place they are stated at all — and it states them in prose too."
+    "The label/description/error relationships are declared on the `control` part (`namedBy`, `describedBy`) and written onto the element the consumer passes as `control` — `cloneElement` via `supplyRelations` from @ds/react/behavior — not onto the part's wrapper, whose relations would name nothing (ADR 0005, #35). The label part renders as a native `<label htmlFor>` pointing at that element's id. A component passed as `control` must forward `id` and `aria-*` to its focusable element."
   ]
 }

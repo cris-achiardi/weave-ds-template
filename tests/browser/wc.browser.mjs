@@ -111,8 +111,11 @@ test('known relationship gaps remain explicitly non-conforming (ADR 0005)', asyn
   await page.evaluate(() => {
     const field = document.createElement('ds-field');
     field.id = 'relationship-field';
+    // A native control is wired now (tests/browser/relations.mjs). What remains is a supplied
+    // control that is ITSELF a shadow host: the relations land on ds-text-field's host, and its
+    // focusable <input> is inside its own shadow root, out of reach of an IDREF.
     field.innerHTML =
-      '<span slot="label">Account</span><input slot="control"><span slot="description">Help</span>';
+      '<span slot="label">Account</span><ds-text-field slot="control"></ds-text-field><span slot="description">Help</span>';
     document.body.append(field);
     const panel = document.createElement('ds-tab-panel');
     panel.value = 'a';
@@ -120,7 +123,7 @@ test('known relationship gaps remain explicitly non-conforming (ADR 0005)', asyn
     document.querySelector('#tabs').append(panel);
   });
   await expect(page.locator('#relationship-field').getByRole('textbox')).toHaveAccessibleName('');
-  await expect(page.locator('#relationship-field [part="control"]')).toHaveAttribute(
+  await expect(page.locator('#relationship-field ds-text-field')).toHaveAttribute(
     'aria-labelledby',
     /label/,
   );
@@ -144,6 +147,19 @@ test('known relationship gaps remain explicitly non-conforming (ADR 0005)', asyn
   });
   if (scope.supported) expect(scope).toEqual({ supported: true, siblingCount: 0, hostCount: 1 });
 });
+
+test('a replaced slotted control is handed back clean', async ({ page }) => {
+  await page.goto('/relations-tests.html');
+  await page.getByRole('button', { name: 'Toggle invalid' }).click();
+  await page.getByRole('button', { name: 'Swap control' }).click();
+  const leftovers = await page.evaluate(() =>
+    window.replaced.getAttributeNames().filter((n) => n !== 'slot'),
+  );
+  expect(leftovers).toEqual([]);
+});
+
+import { relationRegressions } from './relations.mjs';
+relationRegressions();
 
 import { formRegressions } from './forms.mjs';
 formRegressions();

@@ -142,10 +142,18 @@ this backend would need a real render model and the other three would not notice
 one tree. A tab and its panel are in different shadow roots; a Field's control is slotted in from the
 page. The reference names an element that, from where it is written, does not exist.
 
-The emitter **writes it anyway and records the assumption**, rather than working around it: moving
-the reference to light DOM, duplicating the panel, or dropping the relationship all change what the
-contract says. The platform answer is the ARIA reflection API (`ariaControlsElements` — element
-references rather than ids), which ships in Chrome and Safari and not yet in Firefox.
+For **cross-member** references (a tab and its panel) the emitter omits the relationship and
+reports it as non-conforming: moving the reference, duplicating the panel or pointing at the other
+component's host all change what the contract says, and element reflection cannot target a sibling
+shadow root's internals either.
+
+For a **supplied element** (Field `control`, Tooltip `trigger`) there is a same-tree answer, and the
+emitter uses it: the slotted element and the slotted content of the label, description, error and
+tooltip content are all light DOM, so `#wireSupplied()` writes plain IDREFs between them — the
+relation targets the slotted content of the part the contract names. ADR 0005 records that mapping
+as conforming. Clicking the label part focuses the slotted control, because `<label for>` cannot
+cross the boundary. A slotted element that is itself a shadow host (`ds-switch`, `ds-text-field`)
+receives the relations on its host only — reported as `supplied-shadow-host`, follow-up #52.
 
 ## The one bundler-specific token in the output
 
