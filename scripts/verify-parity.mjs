@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { formFor } from '../packages/emit-web/contract.mjs';
+import { contractRuleFailures } from './contract-rules.mjs';
 /**
  * `pnpm verify:parity` — the many-backends gate.
  *
@@ -19,6 +19,9 @@ import { formFor } from '../packages/emit-web/contract.mjs';
  *   element   a root element map is missing or a binding overrides shared ELEMENT data. Which element carries a role is
  *             web-platform knowledge, so the two cannot both be right — one backend would render a
  *             <div> where another renders a <button>, with every ARIA consequence that follows.
+ *   contract  a contract breaks a rule the schema cannot express (a form source, `namedByConsumer`).
+ *             The shared readers every emitter calls would throw on it, but only when something is
+ *             emitted; this runs them over every contract. See scripts/contract-rules.mjs.
  *
  * REPORTS, and does not fail
  *   coverage  a contract with a binding in one framework and not another. A backend is allowed to
@@ -167,6 +170,10 @@ for (const backend of BACKENDS) {
   }
 }
 
+// Rules the schema cannot express (form sources, namedByConsumer), over EVERY contract rather than
+// only the bound ones — see scripts/contract-rules.mjs.
+failures.push(...contractRuleFailures());
+
 for (const component of everyComponent) {
   const present = BACKENDS.filter((b) => byBackend.get(b.framework).has(component));
   const missing = BACKENDS.filter((b) => !byBackend.get(b.framework).has(component));
@@ -179,11 +186,6 @@ for (const component of everyComponent) {
   const contract = readJson(
     join(REPO_ROOT, 'packages/contracts/components', component, `${component}.contract.json`),
   );
-  try {
-    formFor(contract);
-  } catch (error) {
-    failures.push(error.message);
-  }
   for (const backend of present) {
     const formResult = formConformance(contract, backend.framework);
     if (formResult.status === 'non-conforming')
