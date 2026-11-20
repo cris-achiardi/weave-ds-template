@@ -104,6 +104,9 @@ export function frameworkFormRegressions() {
     await page.getByRole('button', { name: 'Toggle invalid' }).click();
     await page.getByRole('button', { name: 'Toggle invalid' }).click();
     await expect(controlled).toHaveJSProperty('validationMessage', 'Already taken');
+    // Authored invalid is off again before the consumer clears theirs (Angular applies it in an
+    // effect, after the click returns).
+    await expect(controlled).not.toHaveAttribute('aria-invalid', 'true');
     await controlled.evaluate((input) => input.setCustomValidity(''));
     expect(await controlled.evaluate((input) => input.checkValidity())).toBe(true);
     // Read-only answers still submit but are barred from validation, as in HTML.
