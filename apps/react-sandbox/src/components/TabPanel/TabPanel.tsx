@@ -40,6 +40,8 @@ export const TabPanel = forwardRef<HTMLDivElement, TabPanelProps>(function TabPa
       data-ds-component="TabPanel"
       data-ds-part="root"
       className={className}
-    ></div>
+    >
+      {children}
+    </div>
   );
 });

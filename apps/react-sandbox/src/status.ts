@@ -103,7 +103,7 @@ export const STATUS: ComponentStatus[] = [
     component: 'TabPanel',
     verdict: 'works',
     supplies:
-      'Named by its tab across the same boundary. Not in the arrow path, derived from the contract.',
+      'Named by its tab across the same boundary. Not in the arrow path, derived from the contract. Consumer content renders inside the `role="tabpanel"` root (`composition.children`).',
     remaining: [],
   },
   {

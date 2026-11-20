@@ -22,6 +22,7 @@ SHEET.replaceSync(structureCss + '\n' + themeCss);
 const TEMPLATE = document.createElement('template');
 TEMPLATE.innerHTML = `
     <div part="root" role="tabpanel">
+      <slot></slot>
     </div>
 `;
 

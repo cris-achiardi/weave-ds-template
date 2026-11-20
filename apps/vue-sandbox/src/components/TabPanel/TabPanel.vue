@@ -56,5 +56,7 @@ const fallthrough = computed(() => ({ ...attrs }));
     :aria-labelledby="`${collection.baseId}-TabItem-${props.value}`"
     data-ds-component="TabPanel"
     data-ds-part="root"
-  ></div>
+  >
+    <slot />
+  </div>
 </template>
