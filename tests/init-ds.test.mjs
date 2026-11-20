@@ -548,7 +548,7 @@ describe('state-independent documentation', () => {
   const rules = buildRules(generic, 'renamed', componentTags(REPO_ROOT));
 
   it.each([
-    [join(REPO_ROOT, 'CLAUDE.md'), 'Brand it before anything else', 2],
+    [join(REPO_ROOT, 'AGENTS.md'), 'Brand it before anything else', 2],
     [join(REPO_ROOT, 'README.md'), 'Quick start', 2],
     [join(REPO_ROOT, 'scripts/README.md'), '`init-ds` is different, and runs once', 2],
     [

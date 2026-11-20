@@ -26,7 +26,7 @@
  *
  * "Covered" is deliberately generous, because the rule is that a reader can FIND the layer, not
  * that every folder carries a file. A directory is covered when it holds its own entry doc
- * (README.md, CLAUDE.md or SKILL.md), or when the nearest entry doc above it names it. That is why
+ * (README.md, AGENTS.md, CLAUDE.md or SKILL.md), or when the nearest entry doc above it names it. That is why
  * a skill's `references/` does not appear here: its SKILL.md routes to it explicitly.
  */
 
@@ -141,7 +141,7 @@ for (const file of mdFiles) {
 }
 
 // ---- report: layers no entry doc covers -------------------------------------------------
-const ENTRY_DOCS = ['README.md', 'CLAUDE.md', 'SKILL.md'];
+const ENTRY_DOCS = ['README.md', 'AGENTS.md', 'CLAUDE.md', 'SKILL.md'];
 const CONTENT_EXT = /\.(md|mjs|cjs|js|ts|tsx|css|json|yml|yaml)$/;
 
 const hasEntryDoc = (dir) => ENTRY_DOCS.some((n) => existsSync(join(dir, n)));
