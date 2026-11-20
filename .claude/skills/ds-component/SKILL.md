@@ -1,6 +1,10 @@
 ---
 name: ds-component
 description: Author or update a component contract against a governing ADR or proposal, then generate a selected React, Vue, Angular, or Web Component implementation into a consumer directory. Use for creating a design-system component or implementing a component decision.
+metadata:
+  status: active
+  summary: "Authors or updates a component contract against a governing ADR or proposal, adds the backend binding, then runs that backend's emitter into a consumer directory."
+  writes-to: '`packages/contracts/components/`, `packages/<backend>/bindings/`, the consumer directory'
 ---
 
 # Contract-first component authoring

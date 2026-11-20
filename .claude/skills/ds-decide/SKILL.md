@@ -1,6 +1,10 @@
 ---
 name: ds-decide
 description: Turn a research report in docs/research/ into one or more Architecture Decision Records in docs/ADR/. Use when asked to "write the ADR", "record this decision", "decide the token architecture", "turn the report into decisions", or once a report in docs/research/ has open questions in it. Writes records and updates the index; never writes code.
+metadata:
+  status: active
+  summary: "Turns a research report's open questions into Architecture Decision Records. Writes records, never code."
+  writes-to: '`docs/ADR/`'
 ---
 
 # ds-decide

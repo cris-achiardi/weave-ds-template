@@ -1,6 +1,10 @@
 ---
 name: ds-figma-component
 description: Generate a Figma component set from an agnostic component contract, with contract axes and anatomy and an explicit unbound paint report. Use when asked to generate or update a design-system component in Figma; optional consumer theme mappings supply variable bindings.
+metadata:
+  status: active
+  summary: 'Generates contract anatomy and axes as a Figma set; paint stays unbound unless a consumer mapping is supplied.'
+  writes-to: 'Figma, `.figma/maps/components.json`'
 ---
 
 # Generate a Figma component from its contract

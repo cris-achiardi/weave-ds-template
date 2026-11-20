@@ -96,13 +96,14 @@ pnpm contract --coverage # who is contracted
 pnpm prop-map            # regenerate the prop glossary
 pnpm adr-index           # regenerate the ADR index from the records — never edit it by hand
 pnpm design-index        # regenerate the design-record index — never edit it by hand
+pnpm skills-index        # regenerate the skills index from SKILL.md frontmatter — never edit it by hand
 pnpm verify:docs         # every link, path and command in the docs resolves
 pnpm verify:parity       # the four backends have not drifted apart
 pnpm report:paints       # token policy vs stylesheet — a REPORT, never a gate
 ```
 
 `pnpm verify` chains: `format:check → lint → typecheck → verify:contract → prop-map:check →
-adr-index:check → design-index:check → verify:docs → verify:figma → verify:parity → build → test`.
+adr-index:check → design-index:check → skills-index:check → verify:docs → verify:figma → verify:parity → build → test`.
 All of it is green on a fresh clone with zero components — that is the template's acceptance test.
 
 ## Governance lives in the ADRs — consult the one your task touches

@@ -1,6 +1,10 @@
 ---
 name: ds-figma-document
 description: Lay out and document a component's page in the Figma design source — title and written description, the component set with its labelled cell grid, and extension tables of locked instances for states and properties that are not variant axes. Use when asked to "document the Button page", "add the description and grid", "show the states", "reorganise the component pages", or when a component set exists in Figma and needs the surrounding explanation. Works on ANY component set, including ones this repo did not generate.
+metadata:
+  status: active
+  summary: 'Lays out the **page around** a component set — title, description, labelled cell grid, extension tables. Works on sets this repo never generated.'
+  writes-to: 'Figma, `.figma/maps/components.json`'
 ---
 
 # ds-figma-document
@@ -32,10 +36,11 @@ admits the gap.
 This skill was ported from a mature design system into a **starter template**. Two things it leans
 on do not exist yet:
 
-- **No components.** `packages/contracts/components/` is empty by design, and
-  `.figma/maps/components.json` has no entries. There is also no working skill that builds one —
-  `ds-component` is superseded — so this skill can only document sets that already exist in the
-  Figma file on their own terms.
+- **No reconciled Figma sets.** `packages/contracts/components/` holds contracts, but
+  `.figma/maps/components.json` has no entries, so no Figma set is joined to a contract yet.
+  `ds-component` builds code from a contract and `ds-figma-component` generates a set from one;
+  until a set has been generated or reconciled, this skill documents sets that exist in the Figma
+  file on their own terms.
 - **No theme axis.** `.figma/manifest.json` → `identity.themes` records `modes: ["dark"]` with
   `decided: false` — dark-only, and not yet decided to be dark-only. **The mode-flip verification in
   step 5 is the strongest check on this page and it cannot run.** Report that it did not run. Do not
