@@ -6,6 +6,16 @@ differently.
 
 ## Unreleased
 
+### Changed
+
+- The `control` part's `namedBy`/`describedBy` are now generated onto the element supplied to the
+  `control` slot, not the part's wrapper, in all four backends (#35, ADR 0005). The supplied
+  element is also marked `aria-invalid` while `invalid` holds, because the described `error` part is
+  `visibleWhen: invalid`. The `label` part renders as a native `<label for>` in React, Vue and
+  Angular; in WC clicking it focuses the slotted control. No contract field changed.
+- Known gap: in WC, a slotted control that is itself a shadow host (`ds-switch`, `ds-text-field`)
+  receives the relations on its host only (#52).
+
 ### Added
 
 - Initial contract. `status.level` is `experimental`.

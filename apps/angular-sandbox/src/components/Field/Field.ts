@@ -4,6 +4,7 @@
 // Wires a form control to its label, its help text and its error message, so the three are announced together and the control's validity has one place to live. It is the plumbing around an input, never the input.
 
 import { Component, ViewEncapsulation, input, model } from '@angular/core';
+import { supplyRelations } from '@ds/angular/behavior';
 
 // Angular has no useId. React does and Vue 3.5 does; this counter is the emitter's
 // own invention, and it is wrong under server rendering with hydration — which
@@ -33,15 +34,10 @@ let nextId = 0;
     'data-ds-part': 'root',
   },
   template: `
-    <div [attr.id]="baseId + '-label'" data-ds-part="label">
+    <label [attr.id]="baseId + '-label'" [attr.for]="controlRelations.id()" data-ds-part="label">
       <ng-content select="[slot=label]" />
-    </div>
-    <div
-      [attr.id]="baseId + '-control'"
-      [attr.aria-labelledby]="baseId + '-label'"
-      [attr.aria-describedby]="ids(baseId + '-description', invalid() ? baseId + '-error' : null)"
-      data-ds-part="control"
-    >
+    </label>
+    <div data-ds-part="control">
       <ng-content select="[slot=control]" />
     </div>
     <div [attr.id]="baseId + '-description'" data-ds-part="description">
@@ -65,16 +61,16 @@ export class Field {
 
   readonly baseId = 'ds-field-' + nextId++;
 
-  /**
-   * Join the ids that are present, or null.
-   *
-   * A METHOD, because the inline form the other two emitters write —
-   * `[a, b].filter(Boolean).join(' ') || null` — cannot work in an Angular template.
-   * Template expressions see only members of this class, so `Boolean` is undefined and
-   * `.filter(undefined)` throws DURING CHANGE DETECTION, which aborts the whole pass:
-   * every other component on the page stops updating and nothing says why.
-   */
-  protected ids(...parts: (string | null)[]): string | null {
-    return parts.filter(Boolean).join(' ') || null;
-  }
+  // Written onto the element the consumer projects with slot="control", not onto
+  // the control part's box: a name or description on a wrapper is not inherited.
+  protected readonly controlRelations = supplyRelations(
+    'control',
+    () => ({
+      id: this.baseId + '-control',
+      labelledBy: [this.baseId + '-label'],
+      describedBy: [this.baseId + '-description', this.invalid() ? this.baseId + '-error' : null],
+      invalid: this.invalid(),
+    }),
+    'Field.control',
+  );
 }

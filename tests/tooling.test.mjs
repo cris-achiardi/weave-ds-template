@@ -52,16 +52,27 @@ describe('repository contract readers', () => {
 });
 
 describe('relationship conformance is separate from binding coverage', () => {
-  it('reports the actual-control gap in every Field backend', () => {
-    for (const info of Object.values(composeComponent('Field').backends)) {
-      expect(info.binding).not.toBeNull();
-      expect(info.relationshipConformance.status).toBe('non-conforming');
-      expect(info.relationshipConformance.gaps.map((gap) => gap.reason)).toEqual([
-        'wrapper-not-control',
-        'wrapper-not-control',
-        'wrapper-not-control',
-      ]);
+  it('reports no wrapper gap once relations land on the supplied control (#35, #46)', () => {
+    for (const name of ['Field', 'Tooltip']) {
+      const backends = composeComponent(name).backends;
+      for (const framework of ['react', 'vue', 'angular']) {
+        expect(backends[framework].binding).not.toBeNull();
+        expect(backends[framework].relationshipConformance).toMatchObject({
+          status: 'not-evaluated',
+          gaps: [],
+        });
+      }
     }
+  });
+  it('reports the slotted shadow-host gap for WC Field AND Tooltip', () => {
+    // Tooltip was invisible to the classifier before: its `trigger` slot has no `accepts` list,
+    // and the old rule recognised a supplied control only by `input|select|textarea|Switch`.
+    expect(
+      composeComponent('Field').backends.wc.relationshipConformance.gaps.map((g) => g.reason),
+    ).toEqual(['supplied-shadow-host', 'supplied-shadow-host', 'supplied-shadow-host']);
+    expect(composeComponent('Tooltip').backends.wc.relationshipConformance.gaps).toMatchObject([
+      { path: 'root.trigger.describedBy', target: 'popup', reason: 'supplied-shadow-host' },
+    ]);
   });
   it('distinguishes omitted cross-shadow references from unevaluated claims', () => {
     const tabs = composeComponent('TabItem').backends;

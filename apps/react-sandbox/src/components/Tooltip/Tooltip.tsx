@@ -6,6 +6,7 @@
 import { forwardRef, useId, useState, useCallback } from 'react';
 import type { HTMLAttributes, ReactNode } from 'react';
 import { useDismissal, type DismissalOptions } from '@ds/react/behavior';
+import { supplyRelations } from '@ds/react/behavior';
 import './Tooltip.structure.css';
 import './Tooltip.theme.css';
 
@@ -80,14 +81,12 @@ export const Tooltip = forwardRef<HTMLDivElement, TooltipProps>(function Tooltip
       data-ds-part="root"
       className={className}
     >
-      <div
-        id={`${baseId}-trigger`}
-        aria-describedby={
-          [openValue ? `${baseId}-popup` : null].filter(Boolean).join(' ') || undefined
-        }
-        data-ds-part="trigger"
-      >
-        {trigger}
+      <div data-ds-part="trigger">
+        {supplyRelations(
+          trigger,
+          { describedBy: [openValue ? `${baseId}-popup` : null] },
+          'Tooltip.trigger',
+        )}
       </div>
       <div role="tooltip" id={`${baseId}-popup`} hidden={!openValue} data-ds-part="popup">
         {content}

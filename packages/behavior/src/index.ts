@@ -52,3 +52,19 @@ export type {
 // --- range stepping: moving a number within a bounded, stepped range
 export { apply, fractionOf, intentFor as rangeIntentFor, snap, valueAt } from './range-stepping.js';
 export type { RangeIntent, RangeOptions, RangeOrientation } from './range-stepping.js';
+
+// --- supplied relations: name/description/invalid written on a consumer-supplied element
+export {
+  applyRelations,
+  mergeTokens,
+  RELATION_ATTRIBUTES,
+  relationWriter,
+  releaseRelations,
+  resolvedId,
+} from './supplied-relations.js';
+export type {
+  AppliedRelations,
+  AttributeTarget,
+  RelationWriter,
+  SuppliedRelations,
+} from './supplied-relations.js';

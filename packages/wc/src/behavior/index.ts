@@ -1,6 +1,6 @@
 // Public barrel for @ds/wc/behavior — the interaction primitives emitted components import.
 //
-// THE SAME THREE PRIMITIVES AS EVERY OTHER BACKEND, WITH THE SAME NAMES, wrapping the same shared
+// THE SAME FOUR PRIMITIVES AS EVERY OTHER BACKEND, WITH THE SAME NAMES, wrapping the same shared
 // decision logic in @ds/behavior. `pnpm verify:parity` asserts this list matches the others, because
 // a barrel that drifts makes an emitted component compile against one backend and not another.
 //
@@ -48,3 +48,9 @@ export type {
   RangeOptions,
   RangeOrientation,
 } from './useRangeControl.js';
+
+// --- supplied relations: name/description/invalid on the element a consumer supplies to a slot
+// The one primitive not declared by a behaviour block: a slot-filled part's `namedBy`/`describedBy`
+// declare it, and its authority is the accessible name and description computation (ADR 0005).
+export { suppliedId, supplyRelations } from './supplyRelations.js';
+export type { SuppliedRelations } from './supplyRelations.js';

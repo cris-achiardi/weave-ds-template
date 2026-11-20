@@ -15,6 +15,7 @@ export interface FieldProps {
 
 <script setup lang="ts">
 import { computed, useAttrs, useId } from 'vue';
+import { suppliedId, supplyRelations } from '@ds/vue/behavior';
 import './Field.structure.css';
 import './Field.theme.css';
 
@@ -63,19 +64,28 @@ const fallthrough = computed(() => ({ ...attrs }));
     data-ds-component="Field"
     data-ds-part="root"
   >
-    <div :id="`${baseId}-label`" data-ds-part="label">
-      <slot name="label" />
-    </div>
-    <div
-      :id="`${baseId}-control`"
-      :aria-labelledby="`${baseId}-label`"
-      :aria-describedby="
-        [`${baseId}-description`, invalid ? `${baseId}-error` : null].filter(Boolean).join(' ') ||
-        undefined
-      "
-      data-ds-part="control"
+    <label
+      :id="`${baseId}-label`"
+      :for="suppliedId($slots.control?.(), `${baseId}-control`)"
+      data-ds-part="label"
     >
-      <slot name="control" />
+      <slot name="label" />
+    </label>
+    <div data-ds-part="control">
+      <component
+        :is="
+          supplyRelations(
+            $slots.control?.(),
+            {
+              id: suppliedId($slots.control?.(), `${baseId}-control`),
+              labelledBy: [`${baseId}-label`],
+              describedBy: [`${baseId}-description`, invalid ? `${baseId}-error` : null],
+              invalid: invalid,
+            },
+            'Field.control',
+          )
+        "
+      />
     </div>
     <div :id="`${baseId}-description`" data-ds-part="description">
       <slot name="description" />

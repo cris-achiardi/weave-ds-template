@@ -3,8 +3,8 @@
 //
 // Shows a short label for a control whose own presentation cannot carry it — an icon button, a truncated name — on hover and on focus, without taking focus itself.
 
-import { useDismissal } from '@ds/wc/behavior';
-import type { DismissalOptions } from '@ds/wc/behavior';
+import { suppliedId, supplyRelations, useDismissal } from '@ds/wc/behavior';
+import type { DismissalOptions, SuppliedRelations } from '@ds/wc/behavior';
 
 // THE ONE BUNDLER-SPECIFIC TOKEN IN THIS FILE. `?inline` asks Vite for the stylesheet as
 // a string so it can be adopted into the shadow root rather than injected into the page —
@@ -34,7 +34,8 @@ TEMPLATE.innerHTML = `
 `;
 
 // A counter, because the platform has no useId. It matters less here than anywhere:
-// every id below is scoped to this element's own shadow root.
+// most ids below are scoped to this element's own shadow root. The exception is an id
+// given to a SLOTTED element that has none, which lives in the consumer's tree.
 let nextId = 0;
 
 // Transcribed from Tooltip.contract.json > dismisses. Cases in
@@ -48,6 +49,7 @@ export class Tooltip extends HTMLElement {
   readonly #root: HTMLElement;
   readonly #baseId = 'ds-tooltip-' + nextId++;
   readonly #dismissal;
+  readonly #supplied = supplyRelations('Tooltip');
 
   constructor() {
     super();
@@ -66,6 +68,9 @@ export class Tooltip extends HTMLElement {
     );
 
     this.#watchSlots(shadow);
+
+    // A replaced or removed slotted element is re-wired, and the old one handed back clean.
+    shadow.addEventListener('slotchange', () => this.#wireSupplied());
 
     // Listeners are additive, but internal listeners run before host bubbling listeners.
     this.#root.addEventListener('keydown', (event) =>
@@ -91,6 +96,10 @@ export class Tooltip extends HTMLElement {
 
   connectedCallback(): void {
     this.#update();
+  }
+
+  disconnectedCallback(): void {
+    this.#supplied.release();
   }
 
   attributeChangedCallback(): void {
@@ -164,13 +173,39 @@ export class Tooltip extends HTMLElement {
 
     if (this.disabled) root.setAttribute('aria-disabled', 'true');
     else root.removeAttribute('aria-disabled');
-    this.#part('trigger')?.setAttribute('id', this.#baseId + '-trigger');
     this.#part('popup')?.setAttribute('id', this.#baseId + '-popup');
-    this.#part('trigger')?.setAttribute(
-      'aria-describedby',
-      [this.open ? this.#baseId + '-popup' : ''].filter(Boolean).join(' '),
-    );
     this.#part('popup')?.toggleAttribute('hidden', !this.open);
+    this.#wireSupplied();
+  }
+
+  /**
+   * Write each slot-filled part's relations onto the element the consumer slotted in.
+   *
+   * IDREFs between LIGHT-DOM elements: the slotted control points at the slotted content of
+   * each target part, giving that content an id if it has none. Consumer ids and tokens
+   * are never removed; an element that left its slot gets back exactly what it had.
+   */
+  #wireSupplied(): void {
+    // A slotchange queued before a disconnect still fires after it, and an attribute can
+    // change while detached. Wiring then would re-take what disconnectedCallback just
+    // handed back, on elements nobody will release again. connectedCallback re-wires.
+    if (!this.isConnected) return;
+    const entries: [Element, SuppliedRelations][] = [];
+    const content = (slot: string, key: string): string[] =>
+      (this.#slot(slot)?.assignedElements({ flatten: true }) ?? []).map((el, i) => {
+        const id = suppliedId(el, this.#baseId + '-' + key + '-' + i);
+        entries.push([el, { id }]);
+        return id;
+      });
+    const trigger = this.#supplied.single(this.#slot('trigger'));
+    if (trigger) {
+      entries.push([trigger, { describedBy: [...(this.open ? content('content', 'popup') : [])] }]);
+    }
+    this.#supplied.write(entries);
+  }
+
+  #slot(name: string): HTMLSlotElement | null {
+    return this.shadowRoot!.querySelector<HTMLSlotElement>('slot[name="' + name + '"]');
   }
 
   #part(name: string): HTMLElement | null {

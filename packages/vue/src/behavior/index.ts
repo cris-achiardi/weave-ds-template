@@ -4,7 +4,7 @@
 // generated component" rule bends. In short: what you can see, you own — markup, structure, theme.
 // What must be correct, you depend on — focus, keyboard, selection.
 //
-// THE SAME THREE PRIMITIVES AS @ds/react/behavior, WITH THE SAME NAMES, and that is not a
+// THE SAME FOUR PRIMITIVES AS @ds/react/behavior, WITH THE SAME NAMES, and that is not a
 // coincidence worth admiring: the names come from the contract's behaviour vocabulary, and each maps
 // to a behaviour the W3C ARIA APG defines normatively. The decision logic underneath is literally
 // the same code (see the banner on dismissal.ts), and both packages run it against the same
@@ -54,3 +54,9 @@ export type {
   RangeOptions,
   RangeOrientation,
 } from './useRangeControl.js';
+
+// --- supplied relations: name/description/invalid on the element a consumer supplies to a slot
+// The one primitive not declared by a behaviour block: a slot-filled part's `namedBy`/`describedBy`
+// declare it, and its authority is the accessible name and description computation (ADR 0005).
+export { suppliedId, supplyRelations } from './supplyRelations.js';
+export type { SuppliedRelations } from './supplyRelations.js';

@@ -137,7 +137,7 @@ export const STATUS: ComponentStatus[] = [
     component: 'Field',
     verdict: 'partial',
     supplies:
-      'Slots filled by another contract’s output, and ARIA wiring that now resolves — the control is named by its label and described by its help text and error, in order.',
+      'Slots filled by another contract’s output, and ARIA wiring on the SUPPLIED control itself — named by its label, described by its help text and then its error while invalid, marked aria-invalid at the same moment; the label is a native <label for>.',
     remaining: [
       '`invalid`, `touched` and `dirty` are shared states with no declared cause. They work controlled; uncontrolled they cannot move.',
       '`focused`, `valid` and `filled` are declared `control: internal` and reach the DOM through NO channel — no attribute, no pseudo-class. The theme has a rule for `focused` that can never match, because nothing ever emits the attribute it selects.',
@@ -155,7 +155,7 @@ export const STATUS: ComponentStatus[] = [
     component: 'Tooltip',
     verdict: 'partial',
     supplies:
-      'Correct structure: role=tooltip, the trigger described by the popup only while open. Escape dismisses it — but only while focus is inside the wrapper, since the handler sits on the root and the tooltip never takes focus itself.',
+      'Correct structure: role=tooltip, and the SUPPLIED trigger element (not its wrapper) described by the popup only while open, merged after any description of its own. Escape dismisses it — but only while focus is inside the wrapper, since the handler sits on the root and the tooltip never takes focus itself.',
     remaining: [
       'Nothing opens it. The contract says hover-after-a-delay and focus, in prose; `activates` covers clicks only, and a delay has nowhere to live — the schema has no concept of time.',
       'No positioning: no anchor, no side, no collision handling. The `placement` axis it declares is read by nothing.',

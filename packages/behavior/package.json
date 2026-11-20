@@ -8,7 +8,8 @@
     ".": "./src/index.ts",
     "./dismissal": "./src/dismissal.ts",
     "./linear-navigation": "./src/linear-navigation.ts",
-    "./range-stepping": "./src/range-stepping.ts"
+    "./range-stepping": "./src/range-stepping.ts",
+    "./supplied-relations": "./src/supplied-relations.ts"
   },
   "files": [
     "src"

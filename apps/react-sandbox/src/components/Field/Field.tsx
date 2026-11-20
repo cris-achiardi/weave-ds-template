@@ -5,6 +5,7 @@
 
 import { forwardRef, useId, useState } from 'react';
 import type { HTMLAttributes, ReactNode } from 'react';
+import { suppliedId, supplyRelations } from '@ds/react/behavior';
 import './Field.structure.css';
 import './Field.theme.css';
 
@@ -78,6 +79,7 @@ export const Field = forwardRef<HTMLDivElement, FieldProps>(function Field(
   ref,
 ) {
   const baseId = useId();
+  const controlId = suppliedId(control, `${baseId}-control`);
 
   const invalidControlled = invalid !== undefined;
   const [invalidInternal, setInvalidInternal] = useState(defaultInvalid);
@@ -111,20 +113,20 @@ export const Field = forwardRef<HTMLDivElement, FieldProps>(function Field(
       data-ds-part="root"
       className={className}
     >
-      <div id={`${baseId}-label`} data-ds-part="label">
+      <label id={`${baseId}-label`} htmlFor={controlId} data-ds-part="label">
         {label}
-      </div>
-      <div
-        id={`${baseId}-control`}
-        aria-labelledby={`${baseId}-label`}
-        aria-describedby={
-          [`${baseId}-description`, invalidValue ? `${baseId}-error` : null]
-            .filter(Boolean)
-            .join(' ') || undefined
-        }
-        data-ds-part="control"
-      >
-        {control}
+      </label>
+      <div data-ds-part="control">
+        {supplyRelations(
+          control,
+          {
+            id: controlId,
+            labelledBy: [`${baseId}-label`],
+            describedBy: [`${baseId}-description`, invalidValue ? `${baseId}-error` : null],
+            invalid: invalidValue,
+          },
+          'Field.control',
+        )}
       </div>
       <div id={`${baseId}-description`} data-ds-part="description">
         {description}

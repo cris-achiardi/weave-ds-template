@@ -37,7 +37,11 @@ Fixtures import generated components. They remain separate from specimen pages. 
 regressions cover styling, editing drafts, ARIA references, collection identity, modal lifecycle,
 activation cancellation, and form contribution/validation/reset/disabled behavior. Form state
 restoration invokes the platform callback directly; history/autofill scheduling is not asserted.
-Known relationship gaps are characterized and reported as non-conforming under ADR 0005.
+`relations.mjs` (fixtures: `relations-tests.html` in each sandbox) asserts the computed accessible
+name and description of the element supplied to Field's `control` and Tooltip's `trigger`, its
+`aria-invalid`, label activation, a replaced control and preserved consumer tokens. Known
+relationship gaps — including a slotted shadow-host control in WC (#52) — are characterized and
+reported as non-conforming under ADR 0005.
 
 The matrix also guards WC roving focus without host delegation: negative-tabindex arrow targets
 and forward/reverse Tab traversal must work in every engine.

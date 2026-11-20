@@ -13,3 +13,6 @@ browserConformance();
 
 import { tablistOwnershipRegressions } from './tablist.mjs';
 tablistOwnershipRegressions('vue');
+
+import { relationRegressions } from './relations.mjs';
+relationRegressions();

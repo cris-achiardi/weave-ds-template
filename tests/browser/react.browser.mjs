@@ -9,3 +9,6 @@ browserConformance();
 
 import { tablistOwnershipRegressions } from './tablist.mjs';
 tablistOwnershipRegressions('react');
+
+import { relationRegressions } from './relations.mjs';
+relationRegressions();

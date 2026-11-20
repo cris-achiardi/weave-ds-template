@@ -4,6 +4,6 @@
   "contract": "../../contracts/components/Field/Field.contract.json",
   "framework": "wc",
   "notes": [
-    "A pure composition wrapper. Its ARIA relationships point at ids INSIDE its own shadow root, which is the only place they can resolve — see packages/wc/src/emit/README.md on what that costs."
+    "A pure composition wrapper. Its ARIA relationships are written on the SLOTTED control and point at the slotted label/description/error content, all in the consumer's tree, because an IDREF cannot reach into this shadow root — ADR 0005 records the mapping, and a slotted control that is itself a shadow host is a recorded gap (#52). See packages/wc/src/emit/README.md."
   ]
 }

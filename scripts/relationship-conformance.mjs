@@ -1,8 +1,22 @@
-/** Known structural gaps only. An empty list is not an accessibility certification. */
+import { suppliedRelations } from '../packages/emit-web/contract.mjs';
+
+/**
+ * Known structural gaps only. An empty list is not an accessibility certification.
+ *
+ * Relations a slot-filled part declares (Field `control`, Tooltip `trigger`) are written on the
+ * element the consumer supplies, in every backend — the same rule the emitters read
+ * (`suppliedRelations` in @ds/emit-web), so the classifier cannot drift from what is generated.
+ * The light-DOM backends then have no structural gap left for them. WC has one: an element slotted
+ * into such a part that is itself a shadow host (this system's own `Switch`, or any custom element
+ * a slot without an `accepts` list admits) receives the IDREFs on its host, and its focusable
+ * element is inside its own shadow root. That is reported as `supplied-shadow-host`.
+ */
 export function relationshipConformance(contract, backend) {
   const gaps = [];
   const slots = contract.composition?.slots ?? {};
-  function visit(node, path) {
+  const supplied = suppliedRelations(contract);
+  function visit(node, path, key) {
+    const rel = supplied.get(key);
     for (const relation of ['controls', 'namedBy', 'describedBy']) {
       const values =
         node[relation] === undefined
@@ -11,21 +25,19 @@ export function relationshipConformance(contract, backend) {
             ? node[relation]
             : [node[relation]];
       for (const target of values) {
-        const slot = Object.entries(slots).find(
-          ([key, value]) => (value.part ?? key) === path.split('.').at(-1),
-        );
-        const passedControl = slot?.[1].accepts?.some((kind) =>
-          ['input', 'select', 'textarea', 'Switch'].includes(kind),
-        );
-        if (passedControl)
-          gaps.push({
-            path: `${path}.${relation}`,
-            target,
-            reason: 'wrapper-not-control',
-            detail:
-              'The relationship is emitted on the containing region, not the supplied control.',
-          });
-        else if (backend === 'wc' && typeof target === 'object')
+        if (rel && relation !== 'controls' && typeof target === 'string') {
+          const accepts = slots[rel.slot]?.accepts;
+          // A component name (capitalised) is one of this system's controls; no list admits any.
+          const admitsHost = !accepts || accepts.some((kind) => /^[A-Z]/.test(kind));
+          if (backend === 'wc' && admitsHost)
+            gaps.push({
+              path: `${path}.${relation}`,
+              target,
+              reason: 'supplied-shadow-host',
+              detail:
+                'The relationship is written on the slotted element. When that element is itself a shadow host, its focusable element is inside its own shadow root and does not receive it.',
+            });
+        } else if (backend === 'wc' && typeof target === 'object')
           gaps.push({
             path: `${path}.${relation}`,
             target,
@@ -45,9 +57,9 @@ export function relationshipConformance(contract, backend) {
         detail:
           "The consumer's aria-label is forwarded to this part; aria-labelledby is omitted because its ids cannot resolve inside the shadow root.",
       });
-    for (const [key, child] of Object.entries(node.parts ?? {})) visit(child, `${path}.${key}`);
+    for (const [k, child] of Object.entries(node.parts ?? {})) visit(child, `${path}.${k}`, k);
   }
-  visit(contract.anatomy.root, 'root');
+  visit(contract.anatomy.root, 'root', 'root');
   return {
     status: gaps.length ? 'non-conforming' : 'not-evaluated',
     scope: 'anatomy relationships',

@@ -4,7 +4,7 @@
 // Shows a short label for a control whose own presentation cannot carry it — an icon button, a truncated name — on hover and on focus, without taking focus itself.
 
 import { Component, ViewEncapsulation, input, model } from '@angular/core';
-import { useDismissal } from '@ds/angular/behavior';
+import { supplyRelations, useDismissal } from '@ds/angular/behavior';
 import type { DismissalOptions } from '@ds/angular/behavior';
 
 // Transcribed from Tooltip.contract.json > dismisses. The cases this commits us to
@@ -41,11 +41,7 @@ let nextId = 0;
     '(keydown)': 'dismissal.onKeyDown($event)',
   },
   template: `
-    <div
-      [attr.id]="baseId + '-trigger'"
-      [attr.aria-describedby]="ids(open() ? baseId + '-popup' : null)"
-      data-ds-part="trigger"
-    >
+    <div data-ds-part="trigger">
       <ng-content select="[slot=trigger]" />
     </div>
     <div
@@ -71,22 +67,17 @@ export class Tooltip {
 
   readonly baseId = 'ds-tooltip-' + nextId++;
 
+  // Written onto the element the consumer projects with slot="trigger", not onto
+  // the trigger part's box: a name or description on a wrapper is not inherited.
+  protected readonly triggerRelations = supplyRelations(
+    'trigger',
+    () => ({ describedBy: [this.open() ? this.baseId + '-popup' : null] }),
+    'Tooltip.trigger',
+  );
+
   protected readonly dismissal = useDismissal(
     DISMISSAL,
     () => this.open(),
     () => this.open.set(false),
   );
-
-  /**
-   * Join the ids that are present, or null.
-   *
-   * A METHOD, because the inline form the other two emitters write —
-   * `[a, b].filter(Boolean).join(' ') || null` — cannot work in an Angular template.
-   * Template expressions see only members of this class, so `Boolean` is undefined and
-   * `.filter(undefined)` throws DURING CHANGE DETECTION, which aborts the whole pass:
-   * every other component on the page stops updating and nothing says why.
-   */
-  protected ids(...parts: (string | null)[]): string | null {
-    return parts.filter(Boolean).join(' ') || null;
-  }
 }

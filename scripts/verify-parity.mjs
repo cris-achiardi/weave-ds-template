@@ -46,7 +46,12 @@ import Ajv from 'ajv/dist/2020.js';
 import { loadComponents, loadProfile } from '../packages/platform-web/resolve.mjs';
 
 /** The framework-free decision logic. It lives in ONE place and must stay there. */
-const SHARED_CORES = ['dismissal.ts', 'linear-navigation.ts', 'range-stepping.ts'];
+const SHARED_CORES = [
+  'dismissal.ts',
+  'linear-navigation.ts',
+  'range-stepping.ts',
+  'supplied-relations.ts',
+];
 
 const failures = [];
 const reports = [];
