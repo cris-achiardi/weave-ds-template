@@ -12,6 +12,7 @@ function Fixture() {
     <>
       <Field
         aria-label="Edit probe"
+        name="draft"
         value={value}
         invalid={invalid}
         onValueChange={(next) => {

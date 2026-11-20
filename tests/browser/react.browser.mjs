@@ -12,3 +12,7 @@ tablistOwnershipRegressions('react');
 
 import { relationRegressions } from './relations.mjs';
 relationRegressions();
+
+import { frameworkFormRegressions, reactRefRegressions } from './framework-forms.mjs';
+frameworkFormRegressions();
+reactRefRegressions();

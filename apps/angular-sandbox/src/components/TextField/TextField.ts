@@ -3,7 +3,17 @@
 //
 // Collects a single line of text from a person. It is the control itself, where Field is the plumbing around a control — the two compose, and neither does the other's job.
 
-import { Component, ViewEncapsulation, input, model } from '@angular/core';
+import {
+  Component,
+  DestroyRef,
+  ElementRef,
+  ViewEncapsulation,
+  afterNextRender,
+  effect,
+  inject,
+  input,
+  model,
+} from '@angular/core';
 
 @Component({
   // The binding's `element` becomes a SELECTOR, because an Angular component attaches
@@ -43,6 +53,83 @@ export class TextField {
   readonly size = input<'s' | 'm' | 'l'>('m');
   /** The text itself. Free-form: not a boolean, and not one of a fixed set — which is what makes this the first state in the library that `values` cannot describe. Two-way: `[(value)]`. */
   readonly value = model<string>('');
+
+  private readonly formHost = inject<ElementRef<HTMLInputElement>>(ElementRef);
+
+  constructor() {
+    // ---- form lifecycle (contract.form). See packages/wc/forms.md.
+    const control = this.formHost.nativeElement;
+    // The answer a reset restores: captured once, at first render — after the consumer's
+    // bindings have arrived — and never re-captured.
+    let formAnswer: string | undefined;
+    let formTimer: ReturnType<typeof setTimeout> | undefined;
+    // Matched against the CURRENT owner when it fires, so a `form` attribute, an owner
+    // change or a move needs no re-subscription.
+    const onFormReset = (event: Event) => {
+      if (formAnswer === undefined || event.target !== control.form) return;
+      const answer = formAnswer;
+      // A TASK, not a microtask: a reset button dispatches from native code, so a
+      // microtask would run before later listeners could cancel and before the reset.
+      clearTimeout(formTimer);
+      formTimer = setTimeout(() => {
+        if (event.defaultPrevented) return;
+        // The model hears only a real difference, and no DOM event is dispatched: this
+        // is lifecycle synchronisation, not a user edit.
+        if (this.value() !== answer) this.value.set(answer);
+        // The binding writes only on change; the platform has already rewritten the
+        // element, so make it show what the model holds.
+        control.value = this.value();
+      });
+    };
+    afterNextRender(() => {
+      formAnswer = this.value();
+      control.ownerDocument.addEventListener('reset', onFormReset, true);
+    });
+    inject(DestroyRef).onDestroy(() => {
+      control.ownerDocument.removeEventListener('reset', onFormReset, true);
+      clearTimeout(formTimer);
+    });
+    // Custom validity has two writers, tracked by WRITER, not by message text: the consumer,
+    // through the element's own setCustomValidity() method, and authored `invalid`. The
+    // consumer's message wins, as in WC. Generated from packages/emit-web/validity.mjs, which also
+    // records the one unsupported path (calling the prototype method directly).
+    function ownValidity(element: HTMLInputElement) {
+      const prior = Object.getOwnPropertyDescriptor(element, 'setCustomValidity');
+      const write: (message: string) => void =
+        typeof prior?.value === 'function'
+          ? prior.value.bind(element)
+          : HTMLInputElement.prototype.setCustomValidity.bind(element);
+      // An error already present is the consumer's. While the element is barred from validation
+      // its text reads '', so `null` records "present but unreadable": left exactly as it is.
+      let consumer: string | null = element.validity.customError
+        ? element.validationMessage || null
+        : '';
+      let invalid = false;
+      const apply = () => {
+        if (consumer !== null) write(consumer || (invalid ? 'Invalid value.' : ''));
+      };
+      const intercept = (message: string) => {
+        consumer = String(message);
+        apply();
+      };
+      element.setCustomValidity = intercept;
+      return {
+        setInvalid(next: boolean) {
+          invalid = next;
+          apply();
+        },
+        release() {
+          // A newer override is the consumer's: leave it.
+          if (element.setCustomValidity !== intercept) return;
+          if (prior) Object.defineProperty(element, 'setCustomValidity', prior);
+          else Reflect.deleteProperty(element, 'setCustomValidity');
+        },
+      };
+    }
+    const formValidity = ownValidity(control);
+    inject(DestroyRef).onDestroy(() => formValidity.release());
+    effect(() => formValidity.setInvalid(this.invalid()));
+  }
 
   protected handleInput(event: Event): void {
     const next = (event.target as HTMLInputElement).value;

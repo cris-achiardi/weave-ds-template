@@ -66,7 +66,10 @@ import {
   readJson,
   referencedByASibling,
   suppliedRelations,
+  formFor,
+  ownValidityFunction,
 } from '@ds/emit-web';
+import { emitNativeFormLifecycle } from './form.mjs';
 
 // The prop surface a contract implies. Shared with the contract tooling, which needs the same
 // answer and cannot import this file — see the CLI guard at the bottom.
@@ -362,6 +365,9 @@ export function emitTsx(name, contract, binding, prefix) {
   );
   const nativelyEdited = editable && valueState;
   const commitEditing = nativelyEdited && contract.states[valueState.from].editing === 'commit';
+  // A native control whose contract declares a form answer: the platform submits it, and the
+  // generated code adds the React half of the lifecycle — reset sync and authored validity.
+  const nativeForm = nativelyEdited ? formFor(contract) : null;
   if (range) {
     assume(
       'how a pointer becomes a number',
@@ -502,6 +508,7 @@ export function emitTsx(name, contract, binding, prefix) {
   if (range) hooks.push('useCallback');
   if (dismissCauses.length) hooks.push('useCallback');
   if (platformModal) hooks.push('useCallback', 'useEffect', 'useRef');
+  if (nativeForm) hooks.push('useCallback', 'useEffect', 'useRef');
   if (collection) hooks.push('createContext', 'useMemo');
   if (member) hooks.push('useContext');
   s.push(`import { ${[...new Set(hooks)].join(', ')} } from 'react';`);
@@ -538,6 +545,7 @@ export function emitTsx(name, contract, binding, prefix) {
   }
   s.push(`import './${name}.structure.css';`);
   s.push(`import './${name}.theme.css';`);
+  if (nativeForm && contract.states?.invalid) s.push(``, ...ownValidityFunction(0));
   s.push(``);
 
   // ---- what closes this, module-level so its identity is stable across renders
@@ -993,6 +1001,17 @@ export function emitTsx(name, contract, binding, prefix) {
       );
     }
     s.push(``);
+    if (nativeForm) {
+      s.push(
+        ...emitNativeFormLifecycle({
+          v,
+          Pascal: pascal(st),
+          elType,
+          commitEditing,
+          hasInvalid: Boolean(contract.states?.invalid),
+        }),
+      );
+    }
   }
 
   s.push(`  return (`);
@@ -1020,7 +1039,15 @@ export function emitTsx(name, contract, binding, prefix) {
   const handlers = {};
   const onEvent = (name, expr, takesEvent = true) =>
     (handlers[name] ??= []).push({ expr, takesEvent });
-  rootAttrs.push(platformModal ? `ref={setDialogRef}` : registers ? `ref={rootRef}` : `ref={ref}`);
+  rootAttrs.push(
+    platformModal
+      ? `ref={setDialogRef}`
+      : registers
+        ? `ref={rootRef}`
+        : nativeForm
+          ? `ref={setFormControl}`
+          : `ref={ref}`,
+  );
   if (submitsByDefault(el, WEB)) rootAttrs.push(`type="button"`);
   // A <button> already IS role=button; restating it is noise the linters flag.
   if (rootRole && implicitRole(el, WEB) !== rootRole) {

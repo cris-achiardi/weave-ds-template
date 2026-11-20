@@ -61,7 +61,9 @@ import {
   readJson,
   referencedByASibling,
   suppliedRelations,
+  formFor,
 } from '@ds/emit-web';
+import { FORM_IMPORTS, emitNativeFormField, emitNativeFormLifecycle } from './form.mjs';
 
 import { camel, pascal, selectorFor, slotsFrom, surfaceFrom } from './surface.mjs';
 
@@ -337,6 +339,9 @@ export function emitComponent(name, contract, binding, prefix) {
   );
   const nativelyEdited = editable && valueState;
   const commitEditing = nativelyEdited && contract.states[valueState.from].editing === 'commit';
+  // A native control whose contract declares a form answer: the platform submits it, and the
+  // generated code adds the model half of the lifecycle — reset sync and authored validity.
+  const nativeForm = nativelyEdited ? formFor(contract) : null;
   if (range) {
     assume(
       'how a pointer becomes a number',
@@ -653,6 +658,7 @@ export function emitComponent(name, contract, binding, prefix) {
   need(registers, 'DestroyRef', 'ElementRef', 'effect', 'inject');
   need(platformModal, 'DestroyRef', 'ElementRef', 'afterNextRender', 'effect', 'inject');
   need(range, 'viewChild', 'ElementRef');
+  need(nativeForm, ...FORM_IMPORTS);
   // The context interface a collection exports is typed with `Signal`, whether or not the
   // collection declares a keyboard model. A MEMBER references no Angular type at all.
   need(collection, 'Signal');
@@ -931,6 +937,11 @@ export function emitComponent(name, contract, binding, prefix) {
     s.push(``);
   }
 
+  if (nativeForm) {
+    s.push(...emitNativeFormField('HTMLInputElement'));
+    s.push(``);
+  }
+
   if (registers || platformModal || range) {
     if (registers || platformModal) {
       s.push(
@@ -1027,6 +1038,15 @@ export function emitComponent(name, contract, binding, prefix) {
   const ctor = [];
   if (commitEditing)
     ctor.push(`    effect(() => this.editingDraft.set(this.${camel(valueState.from)}()));`);
+  if (nativeForm) {
+    ctor.push(
+      ...emitNativeFormLifecycle({
+        v: camel(valueState.from),
+        commitEditing,
+        hasInvalid: Boolean(contract.states?.invalid),
+      }),
+    );
+  }
   if (registers) {
     ctor.push(`    // The collection moves focus between its members, so each one announces its`);
     ctor.push(

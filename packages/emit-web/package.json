@@ -7,12 +7,14 @@
   "exports": {
     ".": "./index.mjs",
     "./contract": "./contract.mjs",
-    "./css": "./css.mjs"
+    "./css": "./css.mjs",
+    "./validity": "./validity.mjs"
   },
   "files": [
     "index.mjs",
     "contract.mjs",
-    "css.mjs"
+    "css.mjs",
+    "validity.mjs"
   ],
   "dependencies": {
     "@ds/platform-web": "workspace:*"

@@ -12,6 +12,7 @@ createApp({
     return () => [
       h(Field, {
         'aria-label': 'Edit probe',
+        name: 'draft',
         value: value.value,
         invalid: invalid.value,
         'onUpdate:value': (next: string) => {

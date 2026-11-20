@@ -43,5 +43,9 @@ name and description of the element supplied to Field's `control` and Tooltip's 
 relationship gaps — including a slotted shadow-host control in WC (#52) — are characterized and
 reported as non-conforming under ADR 0005.
 
+`framework-forms.mjs` drives `forms-tests.html` in the React, Vue and Angular sandboxes: TextField
+reset (button and script, cancelled, controlled and uncontrolled, commit drafts), authored-invalid
+constraint validity and the native fieldset/owner behaviour those backends keep.
+
 The matrix also guards WC roving focus without host delegation: negative-tabindex arrow targets
 and forward/reverse Tab traversal must work in every engine.

@@ -67,6 +67,12 @@ export function relationshipConformance(contract, backend) {
   };
 }
 
+// Form lifecycle coverage, per backend. A pair moves here only together with the browser
+// evidence for it (tests/browser/forms.mjs for WC, tests/browser/framework-forms.mjs for the
+// framework backends) — ADR 0005: an unsupported claim is non-conforming, never silently skipped.
+const FRAMEWORK_TEXT_SCOPE = 'named answer, required/custom validation and reset lifecycle';
+const FRAMEWORK_NATIVE_FORM = new Set(['TextField']);
+
 export function formConformance(contract, backend) {
   if (!contract.form) return { status: 'not-applicable' };
   if (backend === 'wc')
@@ -74,11 +80,16 @@ export function formConformance(contract, backend) {
       status: 'implemented',
       scope: 'named answer, required/custom validation, reset and restore lifecycle',
     };
+  if (FRAMEWORK_NATIVE_FORM.has(contract.component))
+    return {
+      status: 'non-conforming',
+      implemented: FRAMEWORK_TEXT_SCOPE,
+      gaps: ['state-restoration', 'commit-draft-submission'],
+      detail:
+        'Submission, required/authored-invalid validity and reset are implemented. Not implemented: form state restoration (history/bfcache/autofill) has no framework lifecycle callback, so the native element may restore a value the framework model then overwrites; and in commit editing mode the native input submits its visible draft, not the last committed answer.',
+    };
   return {
     status: 'non-conforming',
-    detail:
-      contract.component === 'TextField'
-        ? 'The native input submits, but the full declared reset/validation lifecycle is not implemented by this backend.'
-        : 'This backend does not emit a form contribution for this custom control.',
+    detail: 'This backend does not emit a form contribution for this custom control.',
   };
 }
