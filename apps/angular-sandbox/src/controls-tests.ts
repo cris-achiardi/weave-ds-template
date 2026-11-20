@@ -16,31 +16,33 @@ type Check = 'unchecked' | 'checked' | 'mixed';
   imports: [Button, Checkbox, RadioGroup, RadioItem, Slider, Switch],
   template: `<form id="form" (submit)="submitted($event)">
       <fieldset id="form-fields">
-        <button
-          dsCheckbox
-          name="consent"
-          [checked]="consent()"
-          [invalid]="invalid()"
-          [required]="required()"
-          [disabled]="consentDisabled()"
-          [value]="accepted() ? 'accepted' : 'on'"
-          (checkedChange)="changed($event)"
-        >
-          <span slot="label">Consent</span>
-        </button>
-        <button
-          dsSwitch
-          aria-label="Setting"
-          name="setting"
-          [checked]="true"
-          [readOnly]="settingReadOnly()"
-        ></button>
-        <div dsSlider aria-label="Amount" [name]="amountName()" [value]="25"></div>
-        <div dsRadioGroup aria-label="Choice" name="choice" value="b">
-          <div dsRadioItem value="a"><span slot="label">Alpha</span></div>
-          <div dsRadioItem value="b"><span slot="label">Beta</span></div>
-        </div>
-        <button dsButton>Action</button>
+        @if (showFields()) {
+          <button
+            dsCheckbox
+            name="consent"
+            [checked]="consent()"
+            [invalid]="invalid()"
+            [required]="required()"
+            [disabled]="consentDisabled()"
+            [value]="accepted() ? 'accepted' : 'on'"
+            (checkedChange)="changed($event)"
+          >
+            <span slot="label">Consent</span>
+          </button>
+          <button
+            dsSwitch
+            aria-label="Setting"
+            [name]="settingName()"
+            [checked]="true"
+            [readOnly]="settingReadOnly()"
+          ></button>
+          <div dsSlider aria-label="Amount" [name]="amountName()" [value]="25"></div>
+          <div dsRadioGroup aria-label="Choice" name="choice" value="b">
+            <div dsRadioItem value="a"><span slot="label">Alpha</span></div>
+            <div dsRadioItem value="b"><span slot="label">Beta</span></div>
+          </div>
+          <button dsButton>Action</button>
+        }
       </fieldset>
       <button type="submit">Submit answers</button>
       <button type="reset">Reset answers</button>
@@ -83,6 +85,12 @@ type Check = 'unchecked' | 'checked' | 'mixed';
     </button>
     <button (mousedown)="$event.preventDefault()" (click)="settingReadOnly.set(!settingReadOnly())">
       Toggle read-only setting
+    </button>
+    <button (mousedown)="$event.preventDefault()" (click)="showFields.set(false)">
+      Unmount controls
+    </button>
+    <button (mousedown)="$event.preventDefault()" (click)="settingName.set('_charset_')">
+      Name setting _charset_
     </button>`,
 })
 class ControlsFixture {
@@ -96,6 +104,8 @@ class ControlsFixture {
   readonly consentDisabled = signal(false);
   readonly showRemote = signal(true);
   readonly settingReadOnly = signal(false);
+  readonly showFields = signal(true);
+  readonly settingName = signal('setting');
   changed(next: Check) {
     this.consent.set(next);
     this.count.update((n) => n + 1);

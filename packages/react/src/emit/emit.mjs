@@ -68,6 +68,7 @@ import {
   suppliedRelations,
   formFor,
   ownValidityFunction,
+  watchFormDisabledFunction,
 } from '@ds/emit-web';
 import {
   FORM_PROXY_STYLE_DECL,
@@ -558,6 +559,7 @@ export function emitTsx(name, contract, binding, prefix) {
   if (customForm) {
     s.push(``);
     s.push(...FORM_PROXY_STYLE_DECL.slice(0, -1));
+    s.push(``, ...watchFormDisabledFunction(prefix, 0));
   }
   s.push(``);
 

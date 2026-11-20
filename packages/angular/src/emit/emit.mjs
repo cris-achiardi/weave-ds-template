@@ -1113,6 +1113,7 @@ export function emitComponent(name, contract, binding, prefix) {
         model: customForm.property,
         type: m.type,
         hasInvalid: Boolean(contract.states?.invalid),
+        prefix,
       }),
     );
   }

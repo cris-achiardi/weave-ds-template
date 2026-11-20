@@ -22,6 +22,8 @@ function Fixture() {
   const [consentDisabled, setConsentDisabled] = useState(false);
   const [showRemote, setShowRemote] = useState(true);
   const [settingReadOnly, setSettingReadOnly] = useState(false);
+  const [showFields, setShowFields] = useState(true);
+  const [settingName, setSettingName] = useState('setting');
   const keep = (event: { preventDefault(): void }) => event.preventDefault();
   const act = (label: string, run: () => void) => (
     <button onMouseDown={keep} onClick={run}>
@@ -38,26 +40,35 @@ function Fixture() {
         }}
       >
         <fieldset id="form-fields">
-          <Checkbox
-            label="Consent"
-            name="consent"
-            checked={consent}
-            invalid={invalid}
-            required={required}
-            disabled={consentDisabled}
-            value={accepted ? 'accepted' : undefined}
-            onCheckedChange={(next) => {
-              setConsent(next);
-              setCount((n) => n + 1);
-            }}
-          />
-          <Switch aria-label="Setting" name="setting" defaultChecked readOnly={settingReadOnly} />
-          <Slider aria-label="Amount" name={amountName} defaultValue={25} />
-          <RadioGroup aria-label="Choice" name="choice" defaultValue="b">
-            <RadioItem value="a" label="Alpha" />
-            <RadioItem value="b" label="Beta" />
-          </RadioGroup>
-          <Button>Action</Button>
+          {showFields && (
+            <>
+              <Checkbox
+                label="Consent"
+                name="consent"
+                checked={consent}
+                invalid={invalid}
+                required={required}
+                disabled={consentDisabled}
+                value={accepted ? 'accepted' : undefined}
+                onCheckedChange={(next) => {
+                  setConsent(next);
+                  setCount((n) => n + 1);
+                }}
+              />
+              <Switch
+                aria-label="Setting"
+                name={settingName}
+                defaultChecked
+                readOnly={settingReadOnly}
+              />
+              <Slider aria-label="Amount" name={amountName} defaultValue={25} />
+              <RadioGroup aria-label="Choice" name="choice" defaultValue="b">
+                <RadioItem value="a" label="Alpha" />
+                <RadioItem value="b" label="Beta" />
+              </RadioGroup>
+              <Button>Action</Button>
+            </>
+          )}
         </fieldset>
         <button type="submit">Submit answers</button>
         <button type="reset">Reset answers</button>
@@ -83,6 +94,8 @@ function Fixture() {
       {act('Disable consent', () => setConsentDisabled(true))}
       {act('Remove remote', () => setShowRemote(false))}
       {act('Toggle read-only setting', () => setSettingReadOnly(!settingReadOnly))}
+      {act('Unmount controls', () => setShowFields(false))}
+      {act('Name setting _charset_', () => setSettingName('_charset_'))}
     </>
   );
 }

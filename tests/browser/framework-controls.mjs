@@ -250,21 +250,50 @@ export function frameworkControlRegressions() {
     await expect.poll(() => form.evaluate((f) => f.checkValidity())).toBe(false);
   });
 
-  test('unmounting removes the reset listener and the fieldset observer', async ({ page }) => {
+  test('a read-only switch named _charset_ still submits its own value', async ({ page }) => {
+    await page.goto('/controls-tests.html');
+    await act(page, 'Name setting _charset_');
+    await expect.poll(() => entries(page)).toContainEqual(['_charset_', 'on']);
+    await act(page, 'Toggle read-only setting');
+    // Wait for read-only to land (Angular applies it after the click returns).
+    await expect(page.getByRole('switch', { name: 'Setting' })).toHaveAttribute(
+      'aria-readonly',
+      'true',
+    );
+    expect(await entries(page)).toContainEqual(['_charset_', 'on']);
+    expect((await entries(page)).some(([, v]) => v === 'UTF-8')).toBe(false);
+  });
+
+  test('unmounting releases the reset listener and the shared fieldset observer', async ({
+    page,
+  }) => {
     await page.addInitScript(spyOnLifecycle);
     await page.goto('/controls-tests.html');
-    // Five form controls: Consent, Setting, Amount, Choice, Remote. Other code may observe too,
-    // so the assertion is the difference unmounting one control makes.
+    // Five form controls: Consent, Setting, Amount, Choice, Remote — ONE shared observer.
+    const watchers = () =>
+      page.evaluate(() => document[Symbol.for('ds.form-disabled')]?.watchers.size ?? 0);
+    await expect.poll(watchers).toBe(5);
     await expect.poll(async () => (await page.evaluate(() => window.__lifecycle())).resets).toBe(5);
     const mounted = await page.evaluate(() => window.__lifecycle());
-    expect(mounted.observers).toBeGreaterThanOrEqual(5);
     await act(page, 'Remove remote');
     await expect(page.getByRole('checkbox', { name: 'Remote' })).toHaveCount(0);
+    // One subscription and one listener fewer; the shared observer stays connected.
+    await expect.poll(watchers).toBe(4);
+    await expect
+      .poll(() => page.evaluate(() => window.__lifecycle()))
+      .toEqual({
+        observers: mounted.observers,
+        resets: 4,
+      });
+    // The last subscriber disconnects it and removes the registry.
+    await act(page, 'Unmount controls');
+    await expect(slider(page)).toHaveCount(0);
     await expect
       .poll(() => page.evaluate(() => window.__lifecycle()))
       .toEqual({
         observers: mounted.observers - 1,
-        resets: 4,
+        resets: 0,
       });
+    expect(await page.evaluate(() => Symbol.for('ds.form-disabled') in document)).toBe(false);
   });
 }

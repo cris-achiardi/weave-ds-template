@@ -207,21 +207,16 @@ export function emitCustomFormLifecycle({ form, names, hasInvalid }) {
   s.push(`    const proxy = formProxy.current;`);
   s.push(`    if (!proxy) return;`);
   s.push(`    const doc = proxy.ownerDocument;`);
-  s.push(`    // A disabled <fieldset> fires no event. Watch \`disabled\` attributes and ask the`);
-  s.push(`    // proxy, which the platform disables along with every other control inside it.`);
+  s.push(
+    `    // A disabled <fieldset> fires no event. The shared document watcher calls back on a`,
+  );
+  s.push(`    // fieldset \`disabled\` change or a move that can affect this control; the proxy,`);
+  s.push(`    // which the platform disables with its fieldset, gives the answer.`);
   s.push(
     `    const syncDisabled = () => setFormDisabled(proxy.matches(':disabled') && !proxy.disabled);`,
   );
   s.push(`    syncDisabled();`);
-  s.push(`    const observer = new MutationObserver(syncDisabled);`);
-  s.push(`    observer.observe(doc.documentElement, {`);
-  s.push(`      attributes: true,`);
-  s.push(`      attributeFilter: ['disabled'],`);
-  s.push(`      // Moves too: a control carried into or out of a disabled fieldset fires no`);
-  s.push(`      // attribute change, only a childList one.`);
-  s.push(`      childList: true,`);
-  s.push(`      subtree: true,`);
-  s.push(`    });`);
+  s.push(`    const unwatch = watchFormDisabled(proxy, syncDisabled);`);
   s.push(`    let timer: ReturnType<typeof setTimeout> | undefined;`);
   s.push(
     `    // Matched against the CURRENT owner when it fires, so a \`form\` prop, an owner change`,
@@ -247,7 +242,7 @@ export function emitCustomFormLifecycle({ form, names, hasInvalid }) {
   s.push(`    };`);
   s.push(`    doc.addEventListener('reset', onReset, true);`);
   s.push(`    return () => {`);
-  s.push(`      observer.disconnect();`);
+  s.push(`      unwatch();`);
   s.push(`      doc.removeEventListener('reset', onReset, true);`);
   s.push(`      clearTimeout(timer);`);
   s.push(`    };`);
@@ -263,14 +258,16 @@ export function emitFormProxy({ form, range, hasReadOnly, answer, indent }) {
   const type = proxyTypeFor(form);
   const a = [];
   a.push(`ref={formProxy}`);
-  const hiddenWhenReadOnly = hasReadOnly && type === 'checkbox';
+  const barredWhenReadOnly = hasReadOnly && type === 'checkbox';
   const on = `${answer} === ${JSON.stringify(form.checkedValue)}`;
   // A read-only answer still submits but is barred from validation, as in HTML. `readonly` does not
-  // apply to checkbox or range. A read-only CHECKBOX proxy therefore becomes `type="hidden"` — barred
-  // from validation, still submitted — and drops its name while unchecked, since a hidden input
-  // always submits. Withdrawing `required` alone left a consumer custom error in force.
-  if (hiddenWhenReadOnly) {
-    a.push(`type={readOnly ? 'hidden' : '${type}'}`);
+  // apply to checkbox or range, so a read-only CHECKBOX proxy becomes a read-only `type="text"` —
+  // barred from validation, its value submitted as-is — and drops its name while unchecked, since
+  // a text input always submits. Same element, only its type changes. Not `type="hidden"`: a hidden
+  // input named `_charset_` submits the document encoding instead of its value. And withdrawing
+  // `required` alone left a consumer custom error in force.
+  if (barredWhenReadOnly) {
+    a.push(`type={readOnly ? 'text' : '${type}'}`);
     a.push(`name={(readOnly && !(${on})) ? undefined : name || undefined}`);
   } else {
     a.push(`type="${type}"`);
@@ -280,7 +277,7 @@ export function emitFormProxy({ form, range, hasReadOnly, answer, indent }) {
   // A read-only answer still submits but is barred from validation, as in HTML. `readonly` does not
   // apply to checkbox or range, so `required` is withdrawn instead.
   a.push(`required={${hasReadOnly ? 'required && !readOnly' : 'required'}}`);
-  if (hasReadOnly && type === 'text') a.push(`readOnly={readOnly}`);
+  if (hasReadOnly && (type === 'text' || barredWhenReadOnly)) a.push(`readOnly={readOnly}`);
   a.push(`disabled={disabledProp}`);
   if (form.encoding === 'checked') a.push(`value={value}`);
   if (type === 'range' && range) {

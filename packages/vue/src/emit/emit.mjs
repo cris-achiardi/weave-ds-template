@@ -917,6 +917,7 @@ export function emitSfc(name, contract, binding, prefix) {
         form: customForm,
         model: customForm.property,
         hasInvalid: Boolean(contract.states?.invalid),
+        prefix,
       }),
     );
   }

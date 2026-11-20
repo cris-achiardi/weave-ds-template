@@ -114,17 +114,22 @@ deliberately not `type="hidden"`, which is barred from constraint validation and
 - Required is native: a required Checkbox needs `checked` (mixed is insufficient), a required
   RadioGroup needs a selection, and Slider is never missing. Read-only Switch and RadioGroup keep
   contributing but are barred from validation. The RadioGroup text proxy takes `readonly`. On a
-  checkbox `readonly` has no effect, so a read-only Switch's proxy becomes `type="hidden"` —
-  barred from validation (a consumer custom error included), still submitted — and drops its name
-  while off, because a hidden input always submits. Authored `invalid` (Checkbox) uses the same
+  checkbox `readonly` has no effect, so a read-only Switch's proxy becomes a read-only
+  `type="text"` — the same element, barred from validation (a consumer custom error included),
+  its value submitted as-is — and drops its name while off, because a text input always submits.
+  Not `type="hidden"`: a hidden input named `_charset_` submits the document encoding instead. Authored `invalid` (Checkbox) uses the same
   writer-tracked custom validity — the same `ownValidity` owner, bound to the proxy, with the same
   unsupported prototype path; consumers reach the proxy through `form.elements[name]`.
 - **Effective disabled** is the consumer's `disabled` or a disabled ancestor `<fieldset>`. A
-  fieldset fires no event, so each control watches its document for `disabled` attribute changes
-  and for moves (child-list changes, so a control carried into or out of a disabled fieldset is
-  re-evaluated) — one `MutationObserver`, disconnected on unmount — and asks the proxy, which the
-  platform disables with the fieldset. The cost is a cheap re-check on every DOM insertion or
-  removal in the document; the state only changes when the answer does. Interaction guards, ARIA, tab order and a collection's members all read the
+  fieldset fires no event, so the controls share ONE `MutationObserver` per document
+  (`watchFormDisabled`, generated from `packages/emit-web/form-disabled.mjs`), watching `disabled`
+  attributes and moves (child-list changes, so a control carried into or out of a disabled fieldset
+  is re-evaluated). Subscriptions are counted: the observer disconnects, and its registry on the
+  document is removed, when the last control unmounts. Each record is tested cheaply first — a
+  `disabled` change matters only on a fieldset, an insertion only if it holds an `<input>` — and only
+  the controls it can affect re-ask their proxy, which the platform disables with the fieldset.
+  Measured with 200 React Sliders and 1000 unrelated append/remove pairs in Chromium: about 0.8 ms
+  over a 4.7 ms harness floor, against about 17 ms for one observer per control. Interaction guards, ARIA, tab order and a collection's members all read the
   effective value; the consumer's prop is never written.
 - Interactive validation focuses the first invalid control; the proxy hands focus to the root (or
   to a collection's current tab stop).

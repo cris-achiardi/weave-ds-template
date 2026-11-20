@@ -3,11 +3,12 @@
 **What every backend that emits components into an HTML document shares, and nothing that assumes a
 framework.** Two halves, and they answer different questions:
 
-| Subpath                                   | Holds                                                                                                   |
-| ----------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| [`@ds/emit-web/contract`](./contract.mjs) | reading a contract: `loadPair`, `partsOf`, `memberFacts`, `suppliedRelations`, `camel`/`pascal`/`kebab` |
-| [`@ds/emit-web/css`](./css.mjs)           | writing the two stylesheets: `emitStructure`, `emitTheme`, `stateSelector`                              |
-| [`@ds/emit-web/validity`](./validity.mjs) | the generated custom-validity owner (`ownValidityFunction`) React, Vue and Angular emit verbatim        |
+| Subpath                                             | Holds                                                                                                     |
+| --------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| [`@ds/emit-web/contract`](./contract.mjs)           | reading a contract: `loadPair`, `partsOf`, `memberFacts`, `suppliedRelations`, `camel`/`pascal`/`kebab`   |
+| [`@ds/emit-web/css`](./css.mjs)                     | writing the two stylesheets: `emitStructure`, `emitTheme`, `stateSelector`                                |
+| [`@ds/emit-web/form-disabled`](./form-disabled.mjs) | the generated shared, refcounted fieldset observer (`watchFormDisabledFunction`) for custom form controls |
+| [`@ds/emit-web/validity`](./validity.mjs)           | the generated custom-validity owner (`ownValidityFunction`) React, Vue and Angular emit verbatim          |
 
 ## Why it exists
 

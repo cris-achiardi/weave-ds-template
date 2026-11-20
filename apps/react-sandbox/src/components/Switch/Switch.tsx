@@ -22,6 +22,63 @@ const FORM_PROXY_STYLE = {
   pointerEvents: 'none',
 } as const;
 
+// One observer per DOCUMENT, shared by every generated control on it and refcounted, notifying
+// only the controls a record can affect. Generated from packages/emit-web/form-disabled.mjs.
+function watchFormDisabled(proxy: HTMLInputElement, sync: () => void): () => void {
+  type Watcher = { proxy: HTMLInputElement; sync: () => void };
+  type Registry = { observer: MutationObserver; watchers: Set<Watcher> };
+  const doc = proxy.ownerDocument;
+  const key = Symbol.for('ds.form-disabled');
+  const host = doc as unknown as Record<symbol, Registry | undefined>;
+  let registry = host[key];
+  if (!registry) {
+    const watchers = new Set<Watcher>();
+    // ONE pass over the records, each tested cheaply before any subscriber is: a `disabled`
+    // change matters only on a fieldset, and an insertion only if it holds an <input>, since
+    // every proxy is one. Unrelated mutations cost a type check or a tag lookup, not a walk.
+    const observer = new MutationObserver((records) => {
+      const due = new Set<Watcher>();
+      const collect = (root: Node) => {
+        for (const watcher of watchers) if (root.contains(watcher.proxy)) due.add(watcher);
+      };
+      for (const record of records) {
+        if (record.type === 'attributes') {
+          if (record.target.nodeName === 'FIELDSET') collect(record.target);
+          continue;
+        }
+        const added = record.addedNodes;
+        for (let i = 0; i < added.length; i++) {
+          const node = added[i] as Element;
+          if (node.nodeType !== 1) continue;
+          if (node.nodeName !== 'INPUT') {
+            if (!node.firstElementChild || !node.getElementsByTagName('input').length) continue;
+          }
+          collect(node);
+        }
+      }
+      for (const watcher of due) watcher.sync();
+    });
+    observer.observe(doc.documentElement, {
+      attributes: true,
+      attributeFilter: ['disabled'],
+      childList: true,
+      subtree: true,
+    });
+    registry = { observer, watchers };
+    host[key] = registry;
+  }
+  const watcher: Watcher = { proxy, sync };
+  registry.watchers.add(watcher);
+  return () => {
+    const current = host[key];
+    if (!current) return;
+    current.watchers.delete(watcher);
+    if (current.watchers.size) return;
+    current.observer.disconnect();
+    delete host[key];
+  };
+}
+
 export interface SwitchProps extends Omit<
   ButtonHTMLAttributes<HTMLButtonElement>,
   | 'checked'
@@ -114,19 +171,12 @@ export const Switch = forwardRef<HTMLButtonElement, SwitchProps>(function Switch
     const proxy = formProxy.current;
     if (!proxy) return;
     const doc = proxy.ownerDocument;
-    // A disabled <fieldset> fires no event. Watch `disabled` attributes and ask the
-    // proxy, which the platform disables along with every other control inside it.
+    // A disabled <fieldset> fires no event. The shared document watcher calls back on a
+    // fieldset `disabled` change or a move that can affect this control; the proxy,
+    // which the platform disables with its fieldset, gives the answer.
     const syncDisabled = () => setFormDisabled(proxy.matches(':disabled') && !proxy.disabled);
     syncDisabled();
-    const observer = new MutationObserver(syncDisabled);
-    observer.observe(doc.documentElement, {
-      attributes: true,
-      attributeFilter: ['disabled'],
-      // Moves too: a control carried into or out of a disabled fieldset fires no
-      // attribute change, only a childList one.
-      childList: true,
-      subtree: true,
-    });
+    const unwatch = watchFormDisabled(proxy, syncDisabled);
     let timer: ReturnType<typeof setTimeout> | undefined;
     // Matched against the CURRENT owner when it fires, so a `form` prop, an owner change
     // or a move needs no re-subscription.
@@ -150,7 +200,7 @@ export const Switch = forwardRef<HTMLButtonElement, SwitchProps>(function Switch
     };
     doc.addEventListener('reset', onReset, true);
     return () => {
-      observer.disconnect();
+      unwatch();
       doc.removeEventListener('reset', onReset, true);
       clearTimeout(timer);
     };
@@ -176,10 +226,11 @@ export const Switch = forwardRef<HTMLButtonElement, SwitchProps>(function Switch
       <div data-ds-part="thumb" />
       <input
         ref={formProxy}
-        type={readOnly ? 'hidden' : 'checkbox'}
+        type={readOnly ? 'text' : 'checkbox'}
         name={readOnly && !(checkedValue === true) ? undefined : name || undefined}
         form={form || undefined}
         required={required && !readOnly}
+        readOnly={readOnly}
         disabled={disabledProp}
         value={value}
         aria-hidden="true"

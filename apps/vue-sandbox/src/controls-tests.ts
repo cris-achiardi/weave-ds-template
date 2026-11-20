@@ -21,7 +21,9 @@ createApp({
       amountName = ref('amount'),
       consentDisabled = ref(false),
       showRemote = ref(true),
-      settingReadOnly = ref(false);
+      settingReadOnly = ref(false),
+      showFields = ref(true),
+      settingName = ref('setting');
     const keep = (event: MouseEvent) => event.preventDefault();
     const act = (label: string, run: () => void) =>
       h('button', { onMousedown: keep, onClick: run }, label);
@@ -37,36 +39,42 @@ createApp({
           },
         },
         [
-          h('fieldset', { id: 'form-fields' }, [
-            h(
-              Checkbox,
-              {
-                name: 'consent',
-                checked: consent.value,
-                invalid: invalid.value,
-                required: required.value,
-                disabled: consentDisabled.value,
-                value: accepted.value ? 'accepted' : undefined,
-                'onUpdate:checked': (next: Check) => {
-                  consent.value = next;
-                  count.value++;
-                },
-              },
-              label('Consent'),
-            ),
-            h(Switch, {
-              'aria-label': 'Setting',
-              name: 'setting',
-              checked: true,
-              readOnly: settingReadOnly.value,
-            }),
-            h(Slider, { 'aria-label': 'Amount', name: amountName.value, value: 25 }),
-            h(RadioGroup, { 'aria-label': 'Choice', name: 'choice', value: 'b' }, () => [
-              h(RadioItem, { value: 'a' }, label('Alpha')),
-              h(RadioItem, { value: 'b' }, label('Beta')),
-            ]),
-            h(Button, null, () => 'Action'),
-          ]),
+          h(
+            'fieldset',
+            { id: 'form-fields' },
+            !showFields.value
+              ? []
+              : [
+                  h(
+                    Checkbox,
+                    {
+                      name: 'consent',
+                      checked: consent.value,
+                      invalid: invalid.value,
+                      required: required.value,
+                      disabled: consentDisabled.value,
+                      value: accepted.value ? 'accepted' : undefined,
+                      'onUpdate:checked': (next: Check) => {
+                        consent.value = next;
+                        count.value++;
+                      },
+                    },
+                    label('Consent'),
+                  ),
+                  h(Switch, {
+                    'aria-label': 'Setting',
+                    name: settingName.value,
+                    checked: true,
+                    readOnly: settingReadOnly.value,
+                  }),
+                  h(Slider, { 'aria-label': 'Amount', name: amountName.value, value: 25 }),
+                  h(RadioGroup, { 'aria-label': 'Choice', name: 'choice', value: 'b' }, () => [
+                    h(RadioItem, { value: 'a' }, label('Alpha')),
+                    h(RadioItem, { value: 'b' }, label('Beta')),
+                  ]),
+                  h(Button, null, () => 'Action'),
+                ],
+          ),
           h('button', { type: 'submit' }, 'Submit answers'),
           h('button', { type: 'reset' }, 'Reset answers'),
         ],
@@ -97,6 +105,8 @@ createApp({
       act('Disable consent', () => (consentDisabled.value = true)),
       act('Remove remote', () => (showRemote.value = false)),
       act('Toggle read-only setting', () => (settingReadOnly.value = !settingReadOnly.value)),
+      act('Unmount controls', () => (showFields.value = false)),
+      act('Name setting _charset_', () => (settingName.value = '_charset_')),
     ];
   },
 }).mount('#fixtures');
