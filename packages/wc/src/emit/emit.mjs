@@ -28,6 +28,7 @@ import {
   isVoid,
   loadProfile,
   relationAttribute,
+  relationElementsProperty,
   rendersFalse,
   submitsByDefault,
   visibilityOf,
@@ -48,6 +49,7 @@ import {
   suppliedRelations,
 } from '@ds/emit-web';
 import { emitStructureShadow, emitThemeShadow } from './css-shadow.mjs';
+import { crossMemberRelations, realizesRootOnHost } from './host-root.mjs';
 import { camel, kebab, pascal, slotsFrom, surfaceFrom, tagFor } from './surface.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -112,7 +114,12 @@ export function emitComponent(name, contract, binding, prefix, { declareTagTypes
   // so naming only the host misses it.
   const namedKey = consumerNamedPart(contract);
   const namedPartName = namedKey ? partsOf(root).find((p) => p.key === namedKey).part : null;
-  const acceptsLabel = Boolean(namedKey || rootRole || implicitRole(el, WEB));
+  // ADR 0008: a member whose root is the source or target of a cross-member relation carries the
+  // root's role, state and focus on the HOST, so both ends of the relation are hosts in one tree.
+  const hostRoot = realizesRootOnHost(name, contract, CONTRACTS);
+  // A host-root component is its own semantic element, so the consumer's name already lands where
+  // assistive technology reads it — there is nothing inside to forward it to.
+  const acceptsLabel = !hostRoot && Boolean(namedKey || rootRole || implicitRole(el, WEB));
   const tag = tagFor(name, prefix);
   // THE CLASS IS NOT PREFIXED, and only the TAG is. A custom element name is required to contain a
   // hyphen, which is the platform reserving every single-word tag for itself — so `<ds-button>` has
@@ -212,11 +219,12 @@ export function emitComponent(name, contract, binding, prefix, { declareTagTypes
   const commitEditing = nativelyEdited && contract.states[valueState.from].editing === 'commit';
 
   // --- assumptions unique to this backend -----------------------------------------------
-  assume(
-    'the element the contract names lives INSIDE the shadow root',
-    `<${tag}> hosts a <${el} part="root">`,
-    'A custom element carries no implicit role, no native focus, no native `disabled` and no form participation — @ds/platform-web records all four as facts about the element the contract names, and a host that replaced it would be compiling a different component. So the host is the API and the element is inside it. THE COST IS A SPLIT: the ARIA attribute has to go on the inner element, where assistive technology reads it, AND the same state has to be reflected onto the host, where CSS can select it. One fact, two places — which is exactly the duplication packages/react/src/emit/README.md §2 warns about, forced by the shadow boundary rather than chosen.',
-  );
+  if (!hostRoot)
+    assume(
+      'the element the contract names lives INSIDE the shadow root',
+      `<${tag}> hosts a <${el} part="root">`,
+      'A custom element carries no implicit role, no native focus, no native `disabled` and no form participation — @ds/platform-web records all four as facts about the element the contract names, and a host that replaced it would be compiling a different component. So the host is the API and the element is inside it. THE COST IS A SPLIT: the ARIA attribute has to go on the inner element, where assistive technology reads it, AND the same state has to be reflected onto the host, where CSS can select it. One fact, two places — which is exactly the duplication packages/react/src/emit/README.md §2 warns about, forced by the shadow boundary rather than chosen.',
+    );
   assume(
     'a `shared` state needs three mechanisms',
     'an attribute, a property, and a `<prefix>-<name>-change` event',
@@ -254,7 +262,28 @@ export function emitComponent(name, contract, binding, prefix, { declareTagTypes
   );
   const refBySibling = referencedByASibling(name, member, CONTRACTS);
   const needsIds = Boolean(collection) || referencesParts || refBySibling;
-  const crossShadow = allParts.some((p) => refsOf(p.node).some((r) => typeof r !== 'string'));
+  // Cross-member relations this backend CAN deliver: on a host-root member, from the root to a
+  // sibling member's root. Both ends are hosts in one tree, linked by IDREFs between them.
+  const linked = hostRoot
+    ? crossMemberRelations(contract).filter(({ target }) => target.part === ROOT_KEY)
+    : [];
+  if (hostRoot && !rootRole) {
+    throw new Error(
+      `${name} realizes its root on the host (ADR 0008) but its root declares no role.`,
+    );
+  }
+  if (hostRoot) {
+    assume(
+      'the root part is realized on the HOST',
+      `<${tag}> carries role="${rootRole}", its states and its focus as HOST ATTRIBUTES; [part=root] is a presentational <div>`,
+      'A sibling member references this root, or this root references a sibling (ADR 0008). An IDREF cannot cross a shadow boundary and element reflection rejects a target inside a sibling shadow root, so the semantic element has to be the host. The cost is what a native element gave for free: focusability, Enter/Space activation and a box, which the host now supplies itself.',
+    );
+  }
+  const crossShadow = allParts.some((p) =>
+    refsOf(p.node).some(
+      (r) => typeof r !== 'string' && !(p.key === ROOT_KEY && linked.some((l) => l.target === r)),
+    ),
+  );
   if (crossShadow) {
     assume(
       'non-conforming cross-member relationships',
@@ -293,15 +322,19 @@ export function emitComponent(name, contract, binding, prefix, { declareTagTypes
   };
 
   // --- the template ----------------------------------------------------------------------
+  // A host-root member's [part=root] is presentational: the host carries the role, so the inner
+  // element is the platform's neutral container — never a second interactive or semantic element.
+  const rootEl = hostRoot ? defaultElement('container', WEB) : el;
   const rootAttrs = [`part="${root.part}"`];
-  if (submitsByDefault(el, WEB)) rootAttrs.push(`type="button"`);
-  if (rootRole && implicitRole(el, WEB) !== rootRole) rootAttrs.push(`role="${rootRole}"`);
+  if (!hostRoot && submitsByDefault(el, WEB)) rootAttrs.push(`type="button"`);
+  if (!hostRoot && rootRole && implicitRole(el, WEB) !== rootRole)
+    rootAttrs.push(`role="${rootRole}"`);
 
   const tpl = [];
-  if (isVoid(el, WEB)) {
-    tpl.push(`    <${el} ${rootAttrs.join(' ')} />`);
+  if (isVoid(rootEl, WEB)) {
+    tpl.push(`    <${rootEl} ${rootAttrs.join(' ')} />`);
   } else {
-    tpl.push(`    <${el} ${rootAttrs.join(' ')}>`);
+    tpl.push(`    <${rootEl} ${rootAttrs.join(' ')}>`);
     for (const [k, node] of Object.entries(root.parts ?? {})) {
       tpl.push(...renderPart(k, node, ctx, 1));
     }
@@ -314,7 +347,7 @@ export function emitComponent(name, contract, binding, prefix, { declareTagTypes
     // a sub-part may be keyed the same as the root's styling name.
     if (takesChildren && (!childrenPart || childrenPart === ROOT_KEY))
       tpl.push(`      <slot></slot>`);
-    tpl.push(`    </${el}>`);
+    tpl.push(`    </${rootEl}>`);
   }
 
   // --- the file --------------------------------------------------------------------------
@@ -330,6 +363,7 @@ export function emitComponent(name, contract, binding, prefix, { declareTagTypes
   if (dismissCauses.length) behaviorImports.push('useDismissal');
   if (navigation) behaviorImports.push('useLinearNavigation');
   if (supplied.size) behaviorImports.push('suppliedId', 'supplyRelations');
+  if (hostRoot) behaviorImports.push('supplyRelations');
   if (behaviorImports.length) {
     const types = [];
     if (supplied.size) types.push('SuppliedRelations');
@@ -428,6 +462,7 @@ export function emitComponent(name, contract, binding, prefix, { declareTagTypes
     (p) => p.attribute,
   );
   if (acceptsLabel) observed.push('aria-label');
+  if (namedPartName) observed.push('aria-labelledby');
   s.push(`export class ${className} extends HTMLElement {`);
   s.push(`  static readonly tagName = '${tag}';`);
   if (form) s.push(`  static readonly formAssociated = true;`);
@@ -439,8 +474,11 @@ export function emitComponent(name, contract, binding, prefix, { declareTagTypes
     s.push(`  #editingDraft = '';`);
     s.push(`  #draftSource: string | undefined;`);
   }
+  if (form) s.push(`  readonly #internals = this.attachInternals();`);
+  // ADR 0008: everything a host-root member writes onto its consumer-owned host goes
+  // through the supplied-relations ownership policy, so consumer values survive and only ours leave.
+  if (hostRoot) s.push(`  readonly #host = supplyRelations('${name}');`);
   if (form) {
-    s.push(`  readonly #internals = this.attachInternals();`);
     s.push(`  #formDisabled = false;`);
     s.push(`  #customValidity = '';`);
     s.push(`  #initialFormValue: ${formModel.type} | undefined;`);
@@ -461,10 +499,11 @@ export function emitComponent(name, contract, binding, prefix, { declareTagTypes
   s.push(`  constructor() {`);
   s.push(`    super();`);
   // `delegatesFocus` — a platform feature where React needed `refTarget` to stand in for one.
-  const delegates = registers
-    ? false
-    : (binding.delegatesFocus ??
-      Boolean(contract.semantics?.focusable || rootToggles || activator));
+  const delegates =
+    registers || hostRoot
+      ? false
+      : (binding.delegatesFocus ??
+        Boolean(contract.semantics?.focusable || rootToggles || activator));
   s.push(`    const shadow = this.attachShadow({ mode: 'open', delegatesFocus: ${delegates} });`);
   s.push(`    shadow.adoptedStyleSheets = [SHEET];`);
   s.push(`    shadow.append(TEMPLATE.content.cloneNode(true));`);
@@ -546,8 +585,18 @@ export function emitComponent(name, contract, binding, prefix, { declareTagTypes
   }
   const listeners = [];
   if (rootToggles || activator) {
-    const target = activator && activator.key !== 'root' ? `[part="${activator.node.part}"]` : null;
+    const target =
+      activator && activator.key !== 'root'
+        ? `[part="${activator.node.part}"]`
+        : hostRoot
+          ? 'host'
+          : null;
     listeners.push([target, 'click', 'this.#queueActivation(event as MouseEvent)']);
+    // The host is the control, so it supplies the keyboard activation a native button gave.
+    if (target === 'host') {
+      listeners.push(['host', 'keydown', 'this.#keyActivation(event as KeyboardEvent)']);
+      listeners.push(['host', 'keyup', 'this.#keyActivation(event as KeyboardEvent)']);
+    }
   }
   if (range) {
     listeners.push([null, 'keydown', 'this.#range.onKeyDown(event as KeyboardEvent)']);
@@ -578,7 +627,8 @@ export function emitComponent(name, contract, binding, prefix, { declareTagTypes
   }
 
   for (const [target, event, call] of listeners) {
-    const on = target ? `shadow.querySelector('${target}')!` : `this.#root`;
+    const on =
+      target === 'host' ? 'this' : target ? `shadow.querySelector('${target}')!` : `this.#root`;
     // `() =>` when the call ignores the event. `noUnusedParameters` is on, and a declared-and-unused
     // parameter is an error rather than a style note.
     const arg = call.includes('event') ? '(event)' : '()';
@@ -606,7 +656,7 @@ export function emitComponent(name, contract, binding, prefix, { declareTagTypes
   s.push(`  }`);
   s.push(``);
 
-  if (registers) {
+  if (registers && !hostRoot) {
     s.push(
       `  /** Roving members focus the semantic root directly, including tabindex=-1 targets. */`,
     );
@@ -660,6 +710,10 @@ export function emitComponent(name, contract, binding, prefix, { declareTagTypes
     s.push(`    );`);
   }
   s.push(`    this.#update();`);
+  if (linked.length || (hostRoot && member)) {
+    s.push(`    // Joining changes who this member's siblings pair with (ADR 0008).`);
+    s.push(`    this.#collection.relink();`);
+  }
   s.push(`  }`);
   s.push(``);
   if (member || platformModal || hasActivation || supplied.size) {
@@ -679,6 +733,14 @@ export function emitComponent(name, contract, binding, prefix, { declareTagTypes
         s.push(`    this.#registeredValue = null;`);
         s.push(`    if (previous !== null) this.#collection?.unregister(previous);`);
       }
+      if (hostRoot) {
+        s.push(
+          `    // Leaving: give the consumer's host back exactly what it had before this component`,
+        );
+        s.push(`    // wrote to it, and let the siblings re-pair without this member.`);
+        s.push(`    this.#host.release();`);
+        s.push(`    this.#collection?.relink();`);
+      }
       s.push(`    this.#collection = null;`);
     }
     if (platformModal) {
@@ -697,6 +759,10 @@ export function emitComponent(name, contract, binding, prefix, { declareTagTypes
   s.push(`    // diffing here and none is wanted — the work is a handful of setAttribute calls.`);
   s.push(`    this.#update();`);
   if (collection) s.push(`    this.#announce();`);
+  if (hostRoot && member) {
+    s.push(`    // An identity change re-pairs this member and its siblings (ADR 0008).`);
+    s.push(`    this.#collection?.relink();`);
+  }
   s.push(`  }`);
   s.push(``);
 
@@ -827,6 +893,50 @@ export function emitComponent(name, contract, binding, prefix, { declareTagTypes
       s.push(`  }`);
       s.push(``);
     }
+    const pairsHosts = [collection.items]
+      .flat()
+      .some((item) =>
+        realizesRootOnHost(
+          item,
+          readJson(join(CONTRACTS, 'components', item, `${item}.contract.json`)),
+          CONTRACTS,
+        ),
+      );
+    if (pairsHosts) {
+      const idAttr = kebab(collection.identity);
+      s.push(`  /**`);
+      s.push(
+        `   * The sibling member of kind \`kind\` that \`member\` is paired with, by identity`,
+      );
+      s.push(`   * (ADR 0008). Only the FIRST member of each kind with a given identity pairs, in`);
+      s.push(
+        `   * document order: a duplicate identity, or no sibling of that identity, pairs with`,
+      );
+      s.push(
+        `   * nothing — a missing relation rather than one naming the wrong element. Members of a`,
+      );
+      s.push(`   * nested collection belong to it, not to this one.`);
+      s.push(`   */`);
+      s.push(`  pairOf(member: HTMLElement, kind: string): HTMLElement | null {`);
+      s.push(`    const identity = member.getAttribute('${idAttr}') ?? '';`);
+      s.push(`    const ofKind = (selector: string) =>`);
+      s.push(`      [...this.querySelectorAll<HTMLElement>(selector)].filter(`);
+      s.push(
+        `        (el) => el.closest<HTMLElement>('${tag}') === this && (el.getAttribute('${idAttr}') ?? '') === identity,`,
+      );
+      s.push(`      );`);
+      s.push(`    if (ofKind(member.localName)[0] !== member) return null;`);
+      s.push(`    return ofKind(kind)[0] ?? null;`);
+      s.push(`  }`);
+      s.push(``);
+      s.push(
+        `  /** A member joined, left or changed identity: every member re-reads its pairing. */`,
+      );
+      s.push(`  relink(): void {`);
+      s.push(`    this.#announce();`);
+      s.push(`  }`);
+      s.push(``);
+    }
     s.push(`  /** Tell every member to re-read us. The DOM's answer to a re-render. */`);
     s.push(`  #announce(): void {`);
     s.push(`    this.dispatchEvent(new Event(${name.toUpperCase()}_CHANGE));`);
@@ -886,6 +996,30 @@ export function emitComponent(name, contract, binding, prefix, { declareTagTypes
       }
       s.push(`    this.#emit('${kebab(what)}-change', this.${v});`);
     }
+    s.push(`  }`);
+    s.push(``);
+  }
+  if (hasActivation && hostRoot && !(activator && activator.key !== ROOT_KEY)) {
+    s.push(`  /**`);
+    s.push(`   * What a native button did for free, now that the host is the control (ADR 0008):`);
+    s.push(`   * Enter clicks on keydown, Space on keyup, and Space does not scroll the page.`);
+    s.push(`   * The click is DISPATCHED, so it reaches #queueActivation and every consumer click`);
+    s.push(`   * listener exactly like a pointer click — and it waits a task, so a consumer`);
+    s.push(`   * keydown/keyup listener that calls preventDefault() still cancels it.`);
+    s.push(`   */`);
+    s.push(`  #keyActivation(event: KeyboardEvent): void {`);
+    s.push(
+      `    if (event.target !== this || event.altKey || event.ctrlKey || event.metaKey) return;`,
+    );
+    s.push(`    const enter = event.type === 'keydown' && event.key === 'Enter';`);
+    s.push(`    const space = event.key === ' ';`);
+    s.push(`    if (space && event.type === 'keydown') event.preventDefault();`);
+    s.push(`    if (!enter && !(space && event.type === 'keyup')) return;`);
+    s.push(`    const timer = window.setTimeout(() => {`);
+    s.push(`      this.#pendingActivations.delete(timer);`);
+    s.push(`      if (this.isConnected && !event.defaultPrevented) this.click();`);
+    s.push(`    }, 0);`);
+    s.push(`    this.#pendingActivations.add(timer);`);
     s.push(`  }`);
     s.push(``);
   }
@@ -950,16 +1084,49 @@ export function emitComponent(name, contract, binding, prefix, { declareTagTypes
   s.push(``);
   s.push(`  #write(): void {`);
   s.push(`    const root = this.#root;`);
+  if (hostRoot) {
+    s.push(
+      `    // The host IS this component's root: its role and states are attributes ON THE HOST,`,
+    );
+    s.push(
+      `    // collected here and written at the end under the supplied-relations ownership policy.`,
+    );
+    s.push(`    const owned: Record<string, string | null> = { role: '${rootRole}' };`);
+  }
   if (acceptsLabel) {
     s.push(
       `    // The semantic control is inside the shadow root; naming only the host misses it.`,
     );
-    // aria-labelledby is NOT forwarded: its ids live in the consumer's tree and an IDREF cannot
-    // resolve from inside this shadow root. Reported as non-conforming by relationshipConformance.
     const target = namedPartName ? `this.#part('${namedPartName}')!` : 'root';
     s.push(`    const label = this.getAttribute('aria-label');`);
     s.push(`    if (label === null) ${target}.removeAttribute('aria-label');`);
     s.push(`    else ${target}.setAttribute('aria-label', label);`);
+    if (namedPartName) {
+      // ADR 0007 + 0008: aria-labelledby names ids in the CONSUMER's tree, which an IDREF cannot
+      // reach from inside this shadow root. Resolve them in the host's own tree and link the
+      // elements instead: element reflection keeps a target in a shadow-including ancestor tree.
+      s.push(
+        `    // aria-labelledby names ids in the consumer's tree, which no IDREF can reach from`,
+      );
+      s.push(
+        `    // inside this shadow root. They are resolved HERE, in the host's own tree, and the`,
+      );
+      s.push(
+        `    // elements are linked instead. Resolved when the attribute changes or the element`,
+      );
+      s.push(
+        `    // connects: a label element inserted later is not picked up until one of those.`,
+      );
+      s.push(`    const scope = this.getRootNode() as Document | ShadowRoot;`);
+      s.push(`    const labels = (this.getAttribute('aria-labelledby') ?? '')`);
+      s.push(`      .split(/\\s+/)`);
+      s.push(`      .filter(Boolean)`);
+      s.push(`      .map((id) => scope.getElementById(id))`);
+      s.push(`      .filter((el): el is HTMLElement => el !== null);`);
+      s.push(
+        `    ${target}.${relationElementsProperty('namedBy', WEB)} = labels.length ? labels : null;`,
+      );
+    }
   }
   if (reflected.length) {
     assume(
@@ -994,7 +1161,7 @@ export function emitComponent(name, contract, binding, prefix, { declareTagTypes
     const decision = channelFor(
       {
         state: st,
-        element: el,
+        element: hostRoot ? rootEl : el,
         role: rootRole ?? null,
         hasValues: Boolean(def.values),
         hasValueType: Boolean(def.valueType),
@@ -1010,10 +1177,19 @@ export function emitComponent(name, contract, binding, prefix, { declareTagTypes
       // is the same defect as above wearing a ternary.
       s.push(`    {`);
       s.push(`      const next = ${map} : null;`);
-      s.push(`      if (next === null) root.removeAttribute('${decision.attribute}');`);
-      s.push(`      else root.setAttribute('${decision.attribute}', next);`);
+      if (hostRoot) {
+        s.push(`      owned['${decision.attribute}'] = next;`);
+      } else {
+        s.push(`      if (next === null) root.removeAttribute('${decision.attribute}');`);
+        s.push(`      else root.setAttribute('${decision.attribute}', next);`);
+      }
       s.push(`    }`);
       continue;
+    }
+    if (decision.channel === 'native' && hostRoot) {
+      throw new Error(
+        `${name}: state "${st}" resolves to the native "${decision.attribute}" attribute, which a host-root component (ADR 0008) does not have.`,
+      );
     }
     if (decision.channel === 'native') {
       // `toggleAttribute` is RIGHT here and only here: a native boolean attribute is presence-only,
@@ -1028,7 +1204,14 @@ export function emitComponent(name, contract, binding, prefix, { declareTagTypes
       // The other three backends never had it: React's `aria-invalid={x || undefined}`, Vue's
       // `:aria-invalid="x || undefined"` and Angular's `[attr.aria-invalid]="x() || null"` all
       // stringify a `true` on the way out. This backend writes the DOM by hand, so it had to say so.
-      if (decision.rendersFalse) {
+      if (hostRoot) {
+        // Host-root: the state goes where the role is — on the host, as an owned attribute.
+        s.push(
+          decision.rendersFalse
+            ? `    owned['${decision.attribute}'] = String(${expr});`
+            : `    owned['${decision.attribute}'] = ${expr} ? 'true' : null;`,
+        );
+      } else if (decision.rendersFalse) {
         s.push(`    root.setAttribute('${decision.attribute}', String(${expr}));`);
       } else {
         s.push(`    if (${expr}) root.setAttribute('${decision.attribute}', 'true');`);
@@ -1043,7 +1226,13 @@ export function emitComponent(name, contract, binding, prefix, { declareTagTypes
     const attr = declared && ariaFitsRole(declared, rootRole ?? null, WEB) ? declared : null;
     if (attr) {
       // Same rule as above: the true value is the string "true", never an empty attribute.
-      if (rendersFalse(attr, WEB)) {
+      if (hostRoot) {
+        s.push(
+          rendersFalse(attr, WEB)
+            ? `    owned['${attr}'] = String(this.#selected);`
+            : `    owned['${attr}'] = this.#selected ? 'true' : null;`,
+        );
+      } else if (rendersFalse(attr, WEB)) {
         s.push(`    root.setAttribute('${attr}', String(this.#selected));`);
       } else {
         s.push(`    if (this.#selected) root.setAttribute('${attr}', 'true');`);
@@ -1067,10 +1256,37 @@ export function emitComponent(name, contract, binding, prefix, { declareTagTypes
         `      this.#collection.register(value, { element: this, disabled: this.#isDisabled });`,
       );
       s.push(`    }`);
-      s.push(`    root.setAttribute(`);
-      s.push(`      'tabindex',`);
-      s.push(`      this.#collection?.isTabStop(this.${identity.name}) ? '0' : '-1',`);
-      s.push(`    );`);
+      if (hostRoot) {
+        s.push(
+          `    owned['tabindex'] = this.#collection?.isTabStop(this.${identity.name}) ? '0' : '-1';`,
+        );
+      } else {
+        s.push(`    root.setAttribute(`);
+        s.push(`      'tabindex',`);
+        s.push(`      this.#collection?.isTabStop(this.${identity.name}) ? '0' : '-1',`);
+        s.push(`    );`);
+      }
+    }
+  }
+  // The supplied-relations key each contract relation is written under.
+  const RELATION_KEY = { controls: 'controls', namedBy: 'labelledBy', describedBy: 'describedBy' };
+  if (linked.length) {
+    s.push(
+      `    // Cross-member relations, as IDREFs between HOSTS in one tree. The collection pairs`,
+    );
+    s.push(
+      `    // this member with the sibling of the same identity; a missing sibling, or a duplicate`,
+    );
+    s.push(
+      `    // identity after the first, links nothing rather than something wrong. The sibling's`,
+    );
+    s.push(
+      `    // id is whatever it carries — the consumer's own, or the fallback it assigned itself.`,
+    );
+    for (const { relation, target } of linked) {
+      s.push(
+        `    const ${RELATION_KEY[relation]}Pair = this.#collection?.pairOf(this, '${tagFor(target.member, prefix)}') ?? null;`,
+      );
     }
   }
   if (range) {
@@ -1081,6 +1297,10 @@ export function emitComponent(name, contract, binding, prefix, { declareTagTypes
     );
     s.push(`    root.style.setProperty('--${prefix}-fraction', String(this.#range.fraction));`);
     s.push(`    this.toggleAttribute('dragging', this.#range.dragging);`);
+  }
+  if (hostRoot && contract.semantics?.focusable && !registers) {
+    s.push(`    // Focusable by contract, and the host is the element that takes focus.`);
+    s.push(`    owned['tabindex'] = '0';`);
   }
   if (!member && contract.semantics?.focusable && !registers && !isNativelyFocusable(el, WEB)) {
     s.push(
@@ -1103,6 +1323,8 @@ export function emitComponent(name, contract, binding, prefix, { declareTagTypes
     for (const p of allParts) {
       const relates = refsOf(p.node).length && !supplied.has(p.key);
       if (!(p.node.role || relates || referenced.has(p.key))) continue;
+      // A host-root member is referenced through its host, not an inner id (ADR 0008).
+      if (hostRoot && p.key === ROOT_KEY) continue;
       const target = p.key === 'root' ? 'root' : `this.#part('${p.node.part}')`;
       const id = p.key === 'root' ? `this.#baseId` : `this.#baseId + '-${p.key}'`;
       s.push(`    ${target}?.setAttribute('id', ${id});`);
@@ -1163,6 +1385,25 @@ export function emitComponent(name, contract, binding, prefix, { declareTagTypes
   }
   if (root.visibleWhen && !platformModal) {
     s.push(`    this.toggleAttribute('hidden', !(${stateRead(root.visibleWhen, member)}));`);
+  }
+  if (hostRoot) {
+    const keyed = Object.fromEntries(linked.map(({ relation }) => [RELATION_KEY[relation], true]));
+    s.push(
+      `    // Nothing is written onto the consumer's host while it is detached: wiring happens on`,
+    );
+    s.push(`    // connect, and disconnectedCallback takes back exactly what was written.`);
+    s.push(`    if (this.isConnected)`);
+    s.push(`      this.#host.write([`);
+    s.push(`        [`);
+    s.push(`          this,`);
+    s.push(`          {`);
+    s.push(`            id: this.#baseId,`);
+    for (const key of ['labelledBy', 'describedBy', 'controls'])
+      if (keyed[key]) s.push(`            ${key}: [${key}Pair?.getAttribute('id')],`);
+    s.push(`            attributes: owned,`);
+    s.push(`          },`);
+    s.push(`        ],`);
+    s.push(`      ]);`);
   }
   if (platformModal) {
     const vis = visibilityOf(el, WEB);
@@ -1283,6 +1524,31 @@ export function emitComponent(name, contract, binding, prefix, { declareTagTypes
   }
 
   void attrLit;
+  // A host-root member (ADR 0008) can leave the inner root, its local alias in #write, and the id
+  // root with no reader. `noUnusedLocals` makes each an error, so each is emitted only when read —
+  // the same rule `#part` follows.
+  const reads = (needle, skip) => s.filter((l, i) => !skip.includes(i) && l.includes(needle));
+  const drop = (indexes) => indexes.sort((a, b) => b - a).forEach((i) => s.splice(i, 1));
+  const aliasAt = s.indexOf(`    const root = this.#root;`);
+  // A read of the LOCAL `root`: `root.x`, `root?.x`, `root as T`, or `root` as an argument.
+  const localRoot = /(^|[^#\w'"-])root(\.|\?\.|\s+as\b|\s*[,)])/;
+  const code = (l) => !/^\s*(\/\/|\*|\/\*)/.test(l);
+  if (aliasAt !== -1 && !s.some((l, i) => i !== aliasAt && code(l) && localRoot.test(l)))
+    drop([aliasAt]);
+  const rootDecl = s.indexOf(`  readonly #root: HTMLElement;`);
+  const rootInit = s.findIndex((l) => l.startsWith(`    this.#root = shadow.querySelector(`));
+  if (rootDecl !== -1 && !reads('this.#root', [rootDecl, rootInit]).length)
+    drop([rootDecl, rootInit]);
+  const idDecl = s.findIndex((l) => l.startsWith(`  readonly #baseId = `));
+  if (idDecl !== -1 && !reads('this.#baseId', [idDecl]).length) drop([idDecl]);
+  // The module-level counter feeds only #baseId; with no id root it goes too, with its comment.
+  const counter = s.indexOf(`let nextId = 0;`);
+  if (counter !== -1 && !reads('nextId++', []).length) {
+    let first = counter;
+    while (first > 0 && s[first - 1].startsWith('// ')) first--;
+    const blankAfter = s[counter + 1] === '' ? [counter + 1] : [];
+    drop([...Array.from({ length: counter - first + 1 }, (_, k) => first + k), ...blankAfter]);
+  }
   return s.join('\n');
 }
 

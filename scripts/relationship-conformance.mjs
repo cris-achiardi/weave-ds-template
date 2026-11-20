@@ -1,4 +1,5 @@
 import { suppliedRelations } from '../packages/emit-web/contract.mjs';
+import { realizesRootOnHost } from '../packages/wc/src/emit/host-root.mjs';
 
 /**
  * Known structural gaps only. An empty list is not an accessibility certification.
@@ -13,6 +14,10 @@ import { suppliedRelations } from '../packages/emit-web/contract.mjs';
  */
 export function relationshipConformance(contract, backend) {
   const gaps = [];
+  // WC delivers a cross-member relation from a member's ROOT to a sibling's ROOT by realizing both
+  // roots on their hosts and linking the hosts by IDREF (ADR 0008). Anything else that
+  // crosses a shadow boundary is still omitted.
+  const wcLinksRoot = backend === 'wc' && realizesRootOnHost(contract.component, contract);
   const slots = contract.composition?.slots ?? {};
   const supplied = suppliedRelations(contract);
   function visit(node, path, key) {
@@ -37,7 +42,11 @@ export function relationshipConformance(contract, backend) {
               detail:
                 'The relationship is written on the slotted element. When that element is itself a shadow host, its focusable element is inside its own shadow root and does not receive it.',
             });
-        } else if (backend === 'wc' && typeof target === 'object')
+        } else if (
+          backend === 'wc' &&
+          typeof target === 'object' &&
+          !(wcLinksRoot && path === 'root' && target.part === 'root')
+        )
           gaps.push({
             path: `${path}.${relation}`,
             target,
@@ -47,16 +56,8 @@ export function relationshipConformance(contract, backend) {
           });
       }
     }
-    // A consumer's `aria-labelledby` names ids in the consumer's own tree. Routed onto a part inside
-    // a shadow root it cannot resolve, so the WC emitter forwards `aria-label` only.
-    if (backend === 'wc' && node.namedByConsumer && path !== 'root')
-      gaps.push({
-        path: `${path}.namedByConsumer`,
-        target: 'aria-labelledby',
-        reason: 'omitted-cross-shadow-reference',
-        detail:
-          "The consumer's aria-label is forwarded to this part; aria-labelledby is omitted because its ids cannot resolve inside the shadow root.",
-      });
+    // namedByConsumer on a shadow-internal part: WC forwards aria-label, and resolves aria-labelledby's
+    // ids in the host's tree into element references (ADR 0007), so there is no gap to report.
     for (const [k, child] of Object.entries(node.parts ?? {})) visit(child, `${path}.${k}`, k);
   }
   visit(contract.anatomy.root, 'root', 'root');

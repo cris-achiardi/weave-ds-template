@@ -179,14 +179,9 @@ describe('namedByConsumer is validated once, for every backend', () => {
     expect(() => consumerNamedPart(clash)).toThrow(/two name sources/);
   });
 
-  it('reports the WC aria-labelledby gap instead of claiming it', () => {
-    const wc = relationshipConformance(base(), 'wc');
-    expect(wc.gaps).toContainEqual(
-      expect.objectContaining({
-        path: 'root.list.namedByConsumer',
-        reason: 'omitted-cross-shadow-reference',
-      }),
-    );
+  it('reports no WC aria-labelledby gap since #36 resolves it by element reference', () => {
+    // ADR 0007, updated in place: the browser evidence is tests/browser/tab-relations.mjs.
+    expect(relationshipConformance(base(), 'wc').gaps).toEqual([]);
     expect(relationshipConformance(base(), 'react').gaps).toEqual([]);
   });
 });

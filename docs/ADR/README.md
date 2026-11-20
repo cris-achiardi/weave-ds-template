@@ -61,6 +61,7 @@ it, not here:
 | [0005](./0005-unsupported-contract-claims-are-non-conforming.md)                       | Unsupported contract claims are non-conforming                                                  | Accepted |
 | [0006](./0006-design-guidelines-live-in-docs-design-as-principles-agents-can-check.md) | Design guidelines live in `docs/design` as principles an agent can check, not recipes it copies | Draft    |
 | [0007](./0007-a-consumers-accessible-name-lands-on-the-part-the-contract-names.md)     | A consumer's accessible name lands on the part the contract names, not always on the root       | Draft    |
+| [0008](./0008-a-wc-member-referenced-across-members-realizes-its-root-on-its-host.md)  | A WC member referenced across members realizes its root on its host, as host attributes         | Draft    |
 
 <!-- adr-index:end -->
 

@@ -16,6 +16,14 @@
 //                      change, a replaced control or a release never strips a consumer token.
 //   - aria-invalid     written as "true" while invalid. While not invalid the consumer's own value
 //                      (if any) stands; a value the component wrote is removed.
+//   - aria-controls    an IDREF list like the two above (#36: a WC tab host points at its panel
+//                      host). Same rules: consumer tokens first and kept.
+//   - attributes       single-valued attributes the component OWNS while wired — a WC host that
+//                      realizes its root (role, aria-selected, aria-disabled, tabindex; ADR
+//                      0008). The aria-invalid rule, generalized: the consumer's prior value
+//                      is remembered at the first write and restored when the component stops
+//                      wanting the attribute, but only while the attribute still holds what the
+//                      component wrote — a value the consumer set since is newer and stays.
 //
 // No framework and no DOM: `AttributeTarget` is the three methods this needs, which a DOM Element
 // satisfies structurally and a test fake satisfies in four lines. The declarative backends (React,
@@ -29,7 +37,10 @@ export interface SuppliedRelations {
   id?: string | null;
   labelledBy?: readonly (string | null | undefined | false)[];
   describedBy?: readonly (string | null | undefined | false)[];
+  controls?: readonly (string | null | undefined | false)[];
   invalid?: boolean;
+  /** Owned single-valued attributes; `null` means "not wanted now". */
+  attributes?: Readonly<Record<string, string | null>>;
 }
 
 /** The part of a DOM Element this needs. */
@@ -44,6 +55,9 @@ export interface AppliedRelations {
   id: string | null;
   labelledBy: readonly string[];
   describedBy: readonly string[];
+  controls: readonly string[];
+  /** Per owned attribute: the value written, and the consumer's value it replaced. */
+  attributes: Readonly<Record<string, { value: string; prior: string | null }>>;
   /** True when the component wrote aria-invalid; `invalidPrior` is what to restore then. */
   wroteInvalid: boolean;
   invalidPrior: string | null;
@@ -52,6 +66,7 @@ export interface AppliedRelations {
 export const RELATION_ATTRIBUTES = {
   labelledBy: 'aria-labelledby',
   describedBy: 'aria-describedby',
+  controls: 'aria-controls',
 } as const;
 
 const tokensOf = (value: string | null | undefined): string[] =>
@@ -120,6 +135,27 @@ export function applyRelations(
   };
   const labelledBy = write('labelledBy');
   const describedBy = write('describedBy');
+  const controls = write('controls');
+
+  // Owned single-valued attributes: the aria-invalid rule below, for any attribute.
+  const attributes: Record<string, { value: string; prior: string | null }> = {};
+  const names = new Set([
+    ...Object.keys(relations.attributes ?? {}),
+    ...Object.keys(previous?.attributes ?? {}),
+  ]);
+  for (const name of names) {
+    const wanted = relations.attributes?.[name] ?? null;
+    const before = previous?.attributes?.[name];
+    const current = target.getAttribute(name);
+    const ours = Boolean(before) && current === before!.value;
+    if (wanted !== null) {
+      attributes[name] = { value: wanted, prior: ours ? before!.prior : current };
+      if (current !== wanted) target.setAttribute(name, wanted);
+    } else if (ours) {
+      if (before!.prior === null) target.removeAttribute(name);
+      else target.setAttribute(name, before!.prior);
+    }
+  }
 
   // aria-invalid: remember the consumer's own value when we overwrite it, and put it back when the
   // field stops being invalid — but ONLY while the attribute still holds the value we wrote. If the
@@ -136,7 +172,7 @@ export function applyRelations(
     if (previous!.invalidPrior === null) target.removeAttribute('aria-invalid');
     else target.setAttribute('aria-invalid', previous!.invalidPrior);
   }
-  return { id, labelledBy, describedBy, wroteInvalid, invalidPrior };
+  return { id, labelledBy, describedBy, controls, attributes, wroteInvalid, invalidPrior };
 }
 
 /** Take back everything `applyRelations` wrote. Consumer values are left exactly as they were. */

@@ -177,6 +177,17 @@
     "namedBy": "aria-labelledby",
     "describedBy": "aria-describedby"
   },
+  "relationElements": {
+    "_doc": "The element-reference property that carries each relation, on Element and on ElementInternals (ARIA 1.3 ARIAMixin; HTML 'reflect' for element-list attributes). Used where an IDREF cannot reach its target — across a shadow boundary — so a backend links elements rather than ids. A reference is only retained when its target is in the element's own tree or a shadow-including ancestor tree.",
+    "controls": "ariaControlsElements",
+    "namedBy": "ariaLabelledByElements",
+    "describedBy": "ariaDescribedByElements"
+  },
+  "uaDisplay": {
+    "_doc": "The display value the user-agent stylesheet gives an element (HTML 'Rendering'). Read by a backend that realizes an element's semantics on a custom-element host and must give the host the same box: a host with display: contents cannot take focus in Chromium, Firefox or WebKit (measured for #36). Only elements a backend has needed are listed; a missing entry is an emitter error, never a guess.",
+    "button": "inline-block",
+    "div": "block"
+  },
   "range": {
     "_doc": "A numeric state's facets, and the ARIA attributes that announce them.",
     "min": "aria-valuemin",

@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { composeComponent, coverage } from '../scripts/contract.mjs';
 import { reportPaints } from '../scripts/report-paints.mjs';
-import { readJson, REPO_ROOT } from '../scripts/contract-lib.mjs';
+import { contractPaths, readJson, REPO_ROOT } from '../scripts/contract-lib.mjs';
+import { relationshipConformance } from '../scripts/relationship-conformance.mjs';
 import { join } from 'node:path';
 
 describe('repository contract readers', () => {
@@ -75,11 +76,16 @@ describe('relationship conformance is separate from binding coverage', () => {
     ]);
   });
   it('distinguishes omitted cross-shadow references from unevaluated claims', () => {
-    const tabs = composeComponent('TabItem').backends;
-    expect(tabs.wc.relationshipConformance.gaps[0]).toMatchObject({
+    // #36 closed the WC tab <-> panel gap: both roots are realized on their hosts (ADR 0008).
+    for (const name of ['TabItem', 'TabPanel'])
+      expect(composeComponent(name).backends.wc.relationshipConformance.gaps).toEqual([]);
+    // A cross-member reference to a NON-root part is still something WC cannot deliver.
+    const tab = structuredClone(readJson(contractPaths('TabItem').contract));
+    tab.anatomy.root.controls = { member: 'TabPanel', part: 'label' };
+    expect(relationshipConformance(tab, 'wc').gaps[0]).toMatchObject({
       reason: 'omitted-cross-shadow-reference',
     });
-    expect(tabs.react.relationshipConformance.status).toBe('not-evaluated');
+    expect(relationshipConformance(tab, 'react').status).toBe('not-evaluated');
     expect(composeComponent('Dialog').backends.wc.relationshipConformance.gaps).toEqual([]);
   });
 });
