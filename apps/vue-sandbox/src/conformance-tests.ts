@@ -40,7 +40,11 @@ createApp({
                   count.value++;
                 },
               },
-              () => ['a', 'b', 'c'].map((id) => h(item, { value: id }, { label: () => id })),
+              // Tabs takes its members in the `tabs` slot (#44); RadioGroup in the default one.
+              {
+                [collection === Tabs ? 'tabs' : 'default']: () =>
+                  ['a', 'b', 'c'].map((id) => h(item, { value: id }, { label: () => id })),
+              },
             ),
             h('button', { id: 'after' }, 'After'),
             h('output', { 'data-testid': 'selected' }, value.value),

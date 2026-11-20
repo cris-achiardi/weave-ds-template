@@ -35,6 +35,16 @@ export function relationshipConformance(contract, backend) {
           });
       }
     }
+    // A consumer's `aria-labelledby` names ids in the consumer's own tree. Routed onto a part inside
+    // a shadow root it cannot resolve, so the WC emitter forwards `aria-label` only.
+    if (backend === 'wc' && node.namedByConsumer && path !== 'root')
+      gaps.push({
+        path: `${path}.namedByConsumer`,
+        target: 'aria-labelledby',
+        reason: 'omitted-cross-shadow-reference',
+        detail:
+          "The consumer's aria-label is forwarded to this part; aria-labelledby is omitted because its ids cannot resolve inside the shadow root.",
+      });
     for (const [key, child] of Object.entries(node.parts ?? {})) visit(child, `${path}.${key}`);
   }
   visit(contract.anatomy.root, 'root');

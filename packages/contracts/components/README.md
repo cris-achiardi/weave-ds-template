@@ -123,6 +123,24 @@ and mechanized: `$defs.tokenPolicy` permits `null`. A named policy stays legal, 
 own wiring needs to express one — but a contract this library ships does not name one, and **nothing
 enforces that.** It is a convention here, not a gate.
 
+### Where content and the consumer's name land
+
+A part with a role only has meaning if the right things are inside it. Two fields say so, and
+leaving either out produces a component that renders, passes every gate, and is wrong:
+
+- **Content.** `composition.children.part` and `composition.slots.<name>.part` name the anatomy
+  part a consumer's content fills. Children with no `part` render in the root, after its
+  sub-parts. When one container admits two kinds of member that belong in DIFFERENT parts, they
+  need two outlets: `Tabs` takes its tabs in a `tabs` slot filling `list` (the tablist) and its
+  panels as children, after the list. One shared outlet rendered an empty tablist beside its own
+  tabs — see #44.
+- **The consumer's name.** By default the `aria-label` / `aria-labelledby` a consumer passes lands
+  on the root. When the role that needs the name sits on an inner part, mark that part
+  `namedByConsumer: true`: at most one part, it must declare a `role`, and it may not also declare
+  `namedBy`. Every backend routes the name there; web components forward `aria-label` only and
+  report the `aria-labelledby` gap. See
+  [ADR 0007](../../../docs/ADR/0007-a-consumers-accessible-name-lands-on-the-part-the-contract-names.md).
+
 ### What a consumer can actually target
 
 Class names are hashed and are not a public surface. Generated components expose three stable

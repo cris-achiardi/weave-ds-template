@@ -54,6 +54,7 @@ const WEB = loadProfile();
 // contract, and the two light-DOM stylesheets. See packages/emit-web/README.md, which is also
 // explicit that the CSS half stops at the shadow boundary.
 import {
+  consumerNamedPart,
   emitStructure,
   emitTheme,
   kebab,
@@ -127,6 +128,10 @@ function renderPart(key, node, ctx, depth) {
       `${relationAttribute('describedBy', WEB)}={[${pieces.join(', ')}].filter(Boolean).join(' ') || undefined}`,
     );
   }
+  // The consumer's name, routed off the root by `namedByConsumer` — see consumerNamedPart.
+  if (ctx.namedPart === key) {
+    attrs.push(`aria-label={ariaLabel}`, `aria-labelledby={ariaLabelledby}`);
+  }
   if (node.activates?.toggles) attrs.push(`onClick={activate}`);
   if (node.activates?.toggles && node.role === 'button') attrs.push(`type="button"`);
   if (node.visibleWhen)
@@ -191,6 +196,7 @@ export function emitTsx(name, contract, binding, prefix) {
   const slots = props.filter((p) => p.role === 'slot');
   const takesChildren = (contract.composition?.children?.max ?? 1) !== 0;
   const childrenPart = contract.composition?.children?.part;
+  const namedPart = consumerNamedPart(contract);
 
   const collection = contract.collection;
   const selShared = collection?.selection?.control === 'shared';
@@ -428,6 +434,7 @@ export function emitTsx(name, contract, binding, prefix) {
     contract,
     idFor,
     childrenPart,
+    namedPart,
     memberReflects: member?.reflects,
     rangeTrack: range && range.track !== 'root' ? range.track : null,
     referenced,
@@ -594,6 +601,8 @@ export function emitTsx(name, contract, binding, prefix) {
       return p.name;
     }),
     ...(takesChildren ? ['children'] : []),
+    // Pulled out of `rest` so the root does not ALSO carry the name the contract moved elsewhere.
+    ...(namedPart ? [`'aria-label': ariaLabel`, `'aria-labelledby': ariaLabelledby`] : []),
     'className',
     '...rest',
   ];

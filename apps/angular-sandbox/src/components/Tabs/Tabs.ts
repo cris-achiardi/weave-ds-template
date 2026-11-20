@@ -72,19 +72,33 @@ export const TABS = new InjectionToken<TabsContext>('Tabs');
   providers: [{ provide: TABS, useExisting: forwardRef(() => Tabs) }],
   host: {
     '[attr.id]': 'baseId',
+    '[attr.aria-label]': 'null',
+    '[attr.aria-labelledby]': 'null',
     '[attr.aria-disabled]': 'disabled() || null',
     'data-ds-component': 'Tabs',
     'data-ds-part': 'root',
     '(keydown)': 'nav.onKeyDown($event)',
   },
   template: `
-    <div role="tablist" [attr.id]="baseId + '-list'" data-ds-part="list"></div>
+    <div
+      role="tablist"
+      [attr.id]="baseId + '-list'"
+      [attr.aria-label]="ariaLabel()"
+      [attr.aria-labelledby]="ariaLabelledby()"
+      data-ds-part="list"
+    >
+      <ng-content select="[slot=tabs]" />
+    </div>
     <ng-content />
   `,
 })
 export class Tabs implements TabsContext {
   /** The whole strip ignores interaction. Cascades to every tab. */
   readonly disabled = input<boolean>(false);
+  /** The consumer's accessible name, routed to the "list" part (namedByConsumer). */
+  readonly ariaLabel = input<string | undefined>(undefined, { alias: 'aria-label' });
+  /** As aria-label, by reference. Routed to the same part. */
+  readonly ariaLabelledby = input<string | undefined>(undefined, { alias: 'aria-labelledby' });
   /** The current selection, by member identity. Two-way: `[(value)]`. */
   readonly value = model<string>('');
 

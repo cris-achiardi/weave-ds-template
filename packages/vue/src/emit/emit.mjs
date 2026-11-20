@@ -50,6 +50,7 @@ const WEB = loadProfile();
 // contract, and the two light-DOM stylesheets. See packages/emit-web/README.md, which is also
 // explicit that the CSS half stops at the shadow boundary.
 import {
+  consumerNamedPart,
   emitStructure,
   emitTheme,
   kebab,
@@ -130,6 +131,8 @@ function renderPart(key, node, ctx, depth) {
       `:${relationAttribute('describedBy', WEB)}="[${pieces.join(', ')}].filter(Boolean).join(' ') || undefined"`,
     );
   }
+  // The consumer's name, routed off the root by `namedByConsumer` — see consumerNamedPart.
+  if (ctx.namedPart === key) attrs.push(`v-bind="consumerName"`);
   if (node.activates?.toggles) attrs.push(`@click="activate"`);
   if (node.activates?.toggles && node.role === 'button') attrs.push(`type="button"`);
   if (node.visibleWhen)
@@ -181,6 +184,7 @@ export function emitSfc(name, contract, binding, prefix) {
   const namedSlots = slots.filter((s) => s.name !== 'default');
   const takesChildren = slots.some((s) => s.name === 'default');
   const childrenPart = contract.composition?.children?.part;
+  const namedPart = consumerNamedPart(contract);
 
   const collection = contract.collection;
   const selShared = collection?.selection?.control === 'shared';
@@ -354,6 +358,7 @@ export function emitSfc(name, contract, binding, prefix) {
     contract,
     idFor,
     childrenPart,
+    namedPart,
     memberReflects: member?.reflects,
     rangeTrack: range && range.track !== 'root' ? range.track : null,
     referenced,
@@ -989,6 +994,7 @@ export function emitSfc(name, contract, binding, prefix) {
   };
   const excluded = [...composedEvents].sort().map(attrKeyFor);
   if (range) excluded.push('style');
+  if (namedPart) excluded.push('aria-label', 'aria-labelledby');
   s.push(`const attrs = useAttrs();`);
   if (excluded.length) {
     s.push(`// Everything a consumer passed that this component does not compose by hand. The`);
@@ -1001,6 +1007,15 @@ export function emitSfc(name, contract, binding, prefix) {
     s.push(`});`);
   } else {
     s.push(`const fallthrough = computed(() => ({ ...attrs }));`);
+  }
+  if (namedPart) {
+    s.push(``);
+    s.push(`// The contract routes the consumer's accessible name to the "${namedPart}" part`);
+    s.push(`// (namedByConsumer), so it is lifted out of the fallthrough and bound there instead.`);
+    s.push(`const consumerName = computed(() => ({`);
+    s.push(`  'aria-label': attrs['aria-label'] as string | undefined,`);
+    s.push(`  'aria-labelledby': attrs['aria-labelledby'] as string | undefined,`);
+    s.push(`}));`);
   }
   if (styleComputed) {
     s.push(``);

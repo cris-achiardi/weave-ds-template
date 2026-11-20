@@ -31,7 +31,7 @@ const params = new URLSearchParams(location.search);
       } @else {
         <div dsTabs [value]="value()" (valueChange)="change($event)">
           @for (id of ids; track id) {
-            <button dsTabItem [value]="id">
+            <button dsTabItem slot="tabs" [value]="id">
               <span slot="label">{{ id }}</span>
             </button>
           }

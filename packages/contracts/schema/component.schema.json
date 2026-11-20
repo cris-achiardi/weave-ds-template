@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://example.invalid/schemas/component-contract-13.json",
+  "$id": "https://example.invalid/schemas/component-contract-14.json",
   "title": "Component contract (framework-agnostic)",
   "description": "Describes ONE component completely enough to build it, in any framework. The reasoning is in contracts/README.md.\n\nThis file lives at contracts/ rather than inside a package on purpose: it belongs to no framework. It says what the component IS — its purpose, its behaviour, the states it must be able to show, the axes it exposes, its anatomy, and which family of token paints each part. It does NOT say how any of that is expressed in React, or in React Native, or in a web component. That is a binding, and bindings live beside the implementation.\n\nBuildable means: someone handed this file, the prop map for their framework, and the code standards should be able to produce the component without asking what it is for.",
   "type": "object",
@@ -724,6 +724,10 @@
               "description": "A part of a sibling member of the same collection."
             }
           ]
+        },
+        "namedByConsumer": {
+          "type": "boolean",
+          "description": "This part, not the root, receives the accessible name the CONSUMER supplies. On the web that is `aria-label` and `aria-labelledby` passed to the component. EXPERIMENTAL.\n\nWithout it every backend puts a consumer-supplied name on the root, which is right whenever the root carries the component's role and wrong when the role sits on an inner part: a tab strip's name belongs on its `tablist`, and a name on the tabs wrapper — a generic element, which ARIA forbids naming — labels nothing. At most one part may declare it; it may not be combined with `namedBy` on the same part, and the part must declare a `role`. Omitted everywhere, the name stays on the root."
         },
         "describedBy": {
           "type": "array",

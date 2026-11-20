@@ -41,9 +41,11 @@ export function updateRoster(
     </div>
     <div data-testid="tabs" dsTabs [(value)]="tabs.value">
       @if (tabs.visible()) {
-        <button dsTabItem [value]="tabs.identity()" [disabled]="tabs.disabled()">First tabs</button>
+        <button dsTabItem slot="tabs" [value]="tabs.identity()" [disabled]="tabs.disabled()">
+          First tabs
+        </button>
       }
-      <button dsTabItem value="b">Second tabs</button>
+      <button dsTabItem slot="tabs" value="b">Second tabs</button>
     </div>
     <div data-testid="radios" dsRadioGroup [(value)]="radios.value">
       @if (radios.visible()) {

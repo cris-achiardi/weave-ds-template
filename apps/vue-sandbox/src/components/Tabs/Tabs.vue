@@ -56,8 +56,10 @@ const props = defineProps<TabsProps>();
 const value = defineModel<string>('value', { default: '' });
 
 defineSlots<{
-  /** The tabs and the panels. TabItems become the strip; TabPanels are rendered after it. */
+  /** The panels. Rendered after the strip, as its siblings: a tablist may own only tabs. */
   default?(): unknown;
+  /** The tabs. Fills the `list` part, so every tab is owned by the tablist. */
+  tabs(): unknown;
 }>();
 
 const baseId = useId();
@@ -101,8 +103,17 @@ const attrs = useAttrs();
 const fallthrough = computed(() => {
   const rest: Record<string, unknown> = { ...attrs };
   delete rest['onKeydown'];
+  delete rest['aria-label'];
+  delete rest['aria-labelledby'];
   return rest;
 });
+
+// The contract routes the consumer's accessible name to the "list" part
+// (namedByConsumer), so it is lifted out of the fallthrough and bound there instead.
+const consumerName = computed(() => ({
+  'aria-label': attrs['aria-label'] as string | undefined,
+  'aria-labelledby': attrs['aria-labelledby'] as string | undefined,
+}));
 
 function onRootKeydown(event: KeyboardEvent) {
   (attrs['onKeydown'] as ((e: KeyboardEvent) => void) | undefined)?.(event);
@@ -119,7 +130,9 @@ function onRootKeydown(event: KeyboardEvent) {
     data-ds-part="root"
     @keydown="onRootKeydown"
   >
-    <div role="tablist" :id="`${baseId}-list`" data-ds-part="list" />
+    <div role="tablist" :id="`${baseId}-list`" v-bind="consumerName" data-ds-part="list">
+      <slot name="tabs" />
+    </div>
     <slot />
   </div>
 </template>

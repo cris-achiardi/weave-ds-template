@@ -4,7 +4,7 @@
 // Holds which one of several sections is showing, in a fixed area, so a person can move between them without losing their place on the page.
 
 import { forwardRef, useId, useState, useCallback, createContext, useMemo } from 'react';
-import type { HTMLAttributes } from 'react';
+import type { HTMLAttributes, ReactNode } from 'react';
 import {
   useLinearNavigation,
   type MemberRegistration,
@@ -43,7 +43,7 @@ export const TabsContext = createContext<TabsContextValue | null>(null);
 
 export interface TabsProps extends Omit<
   HTMLAttributes<HTMLDivElement>,
-  'disabled' | 'value' | 'defaultValue' | 'onValueChange'
+  'disabled' | 'value' | 'defaultValue' | 'onValueChange' | 'tabs'
 > {
   /** The whole strip ignores interaction. Cascades to every tab. */
   disabled?: boolean;
@@ -53,10 +53,23 @@ export interface TabsProps extends Omit<
   defaultValue?: string;
   /** Called when it changes, controlled or not. */
   onValueChange?: (value: string) => void;
+  /** The tabs. Fills the `list` part, so every tab is owned by the tablist. */
+  tabs: ReactNode;
 }
 
 export const Tabs = forwardRef<HTMLDivElement, TabsProps>(function Tabs(
-  { disabled, value, defaultValue = '', onValueChange, children, className, ...rest },
+  {
+    disabled,
+    value,
+    defaultValue = '',
+    onValueChange,
+    tabs,
+    children,
+    'aria-label': ariaLabel,
+    'aria-labelledby': ariaLabelledby,
+    className,
+    ...rest
+  },
   ref,
 ) {
   const baseId = useId();
@@ -108,7 +121,15 @@ export const Tabs = forwardRef<HTMLDivElement, TabsProps>(function Tabs(
       className={className}
     >
       <TabsContext.Provider value={contextValue}>
-        <div role="tablist" id={`${baseId}-list`} data-ds-part="list" />
+        <div
+          role="tablist"
+          id={`${baseId}-list`}
+          aria-label={ariaLabel}
+          aria-labelledby={ariaLabelledby}
+          data-ds-part="list"
+        >
+          {tabs}
+        </div>
         {children}
       </TabsContext.Provider>
     </div>

@@ -23,7 +23,9 @@ SHEET.replaceSync(structureCss + '\n' + themeCss);
 const TEMPLATE = document.createElement('template');
 TEMPLATE.innerHTML = `
     <div part="root">
-      <div part="list" role="tablist"></div>
+      <div part="list" role="tablist">
+        <slot name="tabs"></slot>
+      </div>
       <slot></slot>
     </div>
 `;
@@ -46,7 +48,7 @@ export const TABS_CHANGE = 'ds-tabs-internal-change';
 
 export class Tabs extends HTMLElement {
   static readonly tagName = 'ds-tabs';
-  static readonly observedAttributes = ['disabled', 'value'];
+  static readonly observedAttributes = ['disabled', 'value', 'aria-label'];
 
   readonly #root: HTMLElement;
   readonly #baseId = 'ds-tabs-' + nextId++;
@@ -65,8 +67,26 @@ export class Tabs extends HTMLElement {
       (v: string) => this.toggle(v),
     );
 
+    this.#watchSlots(shadow);
+
     // Listeners are additive, but internal listeners run before host bubbling listeners.
     this.#root.addEventListener('keydown', (event) => this.#nav.onKeyDown(event as KeyboardEvent));
+  }
+
+  /**
+   * Reflect whether each named slot is filled.
+   *
+   * CSS cannot ask a <slot> whether anything was assigned to it, and a shadow root always
+   * contains the element whether or not it is filled — so `:empty`, which is how the
+   * light-DOM backends hide an unused icon box, never matches here.
+   */
+  #watchSlots(shadow: ShadowRoot): void {
+    for (const slot of shadow.querySelectorAll<HTMLSlotElement>('slot[name]')) {
+      const name = slot.getAttribute('name')!;
+      const sync = () => this.toggleAttribute('has-' + name, slot.assignedNodes().length > 0);
+      slot.addEventListener('slotchange', sync);
+      sync();
+    }
   }
 
   connectedCallback(): void {
@@ -161,6 +181,10 @@ export class Tabs extends HTMLElement {
 
   #write(): void {
     const root = this.#root;
+    // The semantic control is inside the shadow root; naming only the host misses it.
+    const label = this.getAttribute('aria-label');
+    if (label === null) this.#part('list')!.removeAttribute('aria-label');
+    else this.#part('list')!.setAttribute('aria-label', label);
     if (this.disabled) root.setAttribute('aria-disabled', 'true');
     else root.removeAttribute('aria-disabled');
     this.#part('list')?.setAttribute('id', this.#baseId + '-list');

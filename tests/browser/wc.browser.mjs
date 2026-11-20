@@ -150,3 +150,6 @@ formRegressions();
 
 import { browserConformance } from './conformance.mjs';
 browserConformance();
+
+import { tablistOwnershipRegressions } from './tablist.mjs';
+tablistOwnershipRegressions('wc');

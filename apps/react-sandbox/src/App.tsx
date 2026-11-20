@@ -267,10 +267,19 @@ export function App() {
         of={['Tabs', 'TabItem', 'TabPanel']}
         note="A collection whose members come in TWO kinds. collection.items had to become a list — a tab and its panel both read the same selection, and a single component name could only admit one of them. The keyboard is generated from collection.navigation: Left/Right move and select, wrapping; Home/End jump to the ends; Down and Up are deliberately left alone so the page still scrolls. The disabled tab stays focusable and refuses to be chosen, which is why it carries aria-disabled rather than the native attribute — a disabled button cannot be focused at all. Each tab now points at its panel and each panel is named by its tab, across the component boundary: controls and namedBy grew a form that names a sibling MEMBER, and the id root grew the component name because a tab and its panel share one identity."
       >
-        <Tabs value={tab} onValueChange={setTab} aria-label="Project sections">
-          <TabItem value="overview" label="Overview" />
-          <TabItem value="activity" label="Activity" />
-          <TabItem value="settings" disabled label="Settings" />
+        {/* BREAKING (#44): the tabs go in the `tabs` slot so the tablist owns them; panels stay children. */}
+        <Tabs
+          value={tab}
+          onValueChange={setTab}
+          aria-label="Project sections"
+          tabs={
+            <>
+              <TabItem value="overview" label="Overview" />
+              <TabItem value="activity" label="Activity" />
+              <TabItem value="settings" disabled label="Settings" />
+            </>
+          }
+        >
           <TabPanel value="overview">
             A collection with two kinds of member. This panel and its tab compare against the same
             value; neither holds it.
