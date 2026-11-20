@@ -74,11 +74,14 @@ This library inverts that. The contract is primary and the code is emitted from 
   check**: re-emit, compare, fail on a difference. The pattern already exists here —
   `prop-map:check` works exactly that way.
 
-The first half is done: `control` landed with ADR 0004, and `$id` is now
-`component-contract-3.json`. The second is not. `verify:contract` still runs the parity comparison
-against a `packages/react/src/components/` directory that no longer exists, which is harmless only
-because there are zero components for it to compare — and stops being harmless the day an emitter
-produces one.
+The first half is done: `control` landed with ADR 0004, and the schema `$id` has been versioned
+since — [`component.schema.json`](./component.schema.json) carries the current one. The second half
+is only partly done. `verify:contract` no longer reads TSX at all — the hand-written
+~~`packages/react/src/components/`~~ directory it compared against is gone — and now validates
+contracts and bindings against their schemas and against each other, not generated output against
+its contract. A regeneration check exists for one component: `tests/tabpanel-children.test.mjs`
+re-emits TabPanel and compares the React, Vue and Angular sandbox files to the formatted emitter
+output. Nothing yet re-emits every contract for every backend.
 
 ## Reading a schema
 
