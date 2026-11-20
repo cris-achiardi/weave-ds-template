@@ -374,6 +374,8 @@ describe('CLI', () => {
       `data-${legacy}-part`,
       `${legacy}Button`,
       `${legacy}-button-spin`,
+      `${legacy}-value-change`,
+      `new CustomEvent('${legacy}-' + type)`,
     ]) {
       write(example, text);
       const result = run(root, ['--check']);

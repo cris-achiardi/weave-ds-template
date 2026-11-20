@@ -129,8 +129,10 @@ export function componentTags(root) {
 
 /**
  * The rename rules: data attributes, package scope, custom properties, prefixed identifiers such
- * as Angular selectors, and component tags. They do not overlap — the tag rule's lookbehind is
- * what keeps it out of `data-<prefix>-button`, so the order below is for reading, not correctness.
+ * as Angular selectors, component tags, and web-component event names. They do not overlap — the
+ * shared lookbehind is what keeps the tag and event rules out of `data-<prefix>-button`, and a name
+ * both could match (`<prefix>-tabs-internal-change`) is renamed once by whichever runs first, so the
+ * order below is for reading, not correctness.
  *
  * @param {string} from - the current prefix
  * @param {string} name - the new prefix
@@ -153,6 +155,13 @@ export function buildRules(from, name, tags) {
     ...(tags.length
       ? [[new RegExp(String.raw`(?<![\w-])${from}-(?=(?:${tags.join('|')})\b)`, 'g'), `${name}-`]]
       : []),
+    // Web-component events: the WC emitter names them `<prefix>-<state>-change` and builds the
+    // name at runtime from a bare `'<prefix>-'` literal (`new CustomEvent('ds-' + type, …)`).
+    // Neither form carries a tag, so without these two rules a branded repo kept dispatching and
+    // listening for the old names while the emitter — which reads ds.config.json — produced the new
+    // ones. The same lookbehind keeps both out of `data-<prefix>-` and longer hyphenated names.
+    [new RegExp(String.raw`(?<![\w-])${from}-(?=(?:[a-z0-9]+-)+change\b)`, 'g'), `${name}-`],
+    [new RegExp(String.raw`(?<![\w-])${from}-(?=['"\x60])`, 'g'), `${name}-`],
   ];
 }
 
