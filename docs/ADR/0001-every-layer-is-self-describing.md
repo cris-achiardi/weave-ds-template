@@ -33,7 +33,7 @@ doc, and every skill routing through a "read these when you're in their territor
 than front-loading its references. **Nothing enforces any of it.**
 
 The cost of that showed up twice in a single session. A schema moved from `packages/react/` to
-`contracts/` and three documents kept pointing at the old path — including an ADR's own Contract
+contracts/ and three documents kept pointing at the old path — including an ADR's own Contract
 table, the mechanism whose entire job is to point at a decision's realizing files. Separately, a
 deleted skill left seventeen references behind, four of them instructions telling a reader to run
 it. In both cases every gate stayed green, because **a pointer that resolves to nothing produces no
@@ -60,7 +60,9 @@ restates. Context is pulled on demand, never front-loaded. Pointers are mechanic
    requires reading its own references to be useful, and no skill front-loads context it might not
    need.
 5. **Every pointer is verified mechanically.** A relative link, a `pnpm` command named in prose, or
-   a repo path in backticks must resolve. `pnpm verify:docs` fails the build when one does not.
+   a repo path in backticks — file or directory — must resolve. `pnpm verify:docs` fails the build
+   when one does not. Mention removed paths without backticks; backticked paths assert current
+   existence.
 6. **A derived index is generated, never typed.** Where an index can be computed from what it
    indexes, it is — so it cannot drift. The ADR index is generated from the records themselves.
 7. **Artifacts are classified by how drift is caught, and the classification is stated where the
@@ -109,7 +111,7 @@ entry doc that already governs that territory.
   every write.
 - **Entry-doc coverage is now a gate, which means adding a directory costs a document.** It began as
   a report naming four uncovered directories — `scripts/`, `packages/react/scripts/`, its
-  `extract/`, and `.github/workflows/`. Those were documented, the report went empty, and only then
+  extract/, and `.github/workflows/`. Those were documented, the report went empty, and only then
   was it promoted; that order is the point, because a gate that fails on everything on day one gets
   switched off. The standing cost is that a new folder of anything now reddens CI until someone
   either writes its entry doc or names it in the one above.

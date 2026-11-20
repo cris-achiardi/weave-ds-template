@@ -106,7 +106,8 @@ a node is in, and a ShadowRoot's `parentNode` is null — its `host` is how you 
 It is worth recording where these could and could not have been caught. The conformance cases execute
 against `@ds/behavior` and passed throughout — they test what an arrow key MEANS, and this was the
 binding around them. `pnpm verify` was green. `vue-tsc` and `tsc` were green. **The only thing that
-could have found it was opening the page**, which is the same lesson `docs/research/0002` drew about
+could have found it was opening the page**, which is the same lesson
+[`docs/research/0002`](../../docs/research/0002-compiling-a-contract-into-a-component.md) drew about
 generated components and is apparently one this repo has to keep relearning.
 
 ## The bundle is a quarter the size of the smallest framework build

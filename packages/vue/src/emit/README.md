@@ -59,7 +59,7 @@ to dress both.
 
 Resolved entirely by [`@ds/platform-web`](../../../platform-web/README.md). **This backend added no
 table of its own and changed nothing in the profile**, which is the single strongest result in
-`docs/research/0004`: eleven lookup tables were extracted from the React emitter on the claim that
+[`docs/research/0004`](../../../../docs/research/0004-a-second-backend-reading-the-same-contracts.md): eleven lookup tables were extracted from the React emitter on the claim that
 they were web knowledge rather than React knowledge, and the claim was untestable with one backend.
 
 ### 3. Variant axes are real axes, with declared defaults
