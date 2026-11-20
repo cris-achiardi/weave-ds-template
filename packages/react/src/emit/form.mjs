@@ -11,9 +11,6 @@
 //
 // See packages/wc/forms.md for the shared semantics and their framework boundaries.
 
-/** The default custom-validity message for authored `invalid`. Same string as WC. */
-export const INVALID_MESSAGE = 'Invalid value.';
-
 /**
  * @param {object} o
  * @param {string} o.v           the state's camel name (`value`)
@@ -86,16 +83,18 @@ export function emitComposedRef(name, local, elType) {
     `      ${local}.current = node;`,
     `      if (typeof ref === 'function') {`,
     `        const cleanup = (ref as (instance: ${elType} | null) => unknown)(node);`,
+    `        // The consumer's cleanup runs FIRST, while the element is still recorded: it may`,
+    `        // reasonably touch the node (setCustomValidity('') on the way out, say).`,
     `        return () => {`,
-    `          ${local}.current = null;`,
     `          if (typeof cleanup === 'function') cleanup();`,
     `          else ref(null);`,
+    `          ${local}.current = null;`,
     `        };`,
     `      }`,
     `      if (ref) ref.current = node;`,
     `      return () => {`,
-    `        ${local}.current = null;`,
     `        if (ref) ref.current = null;`,
+    `        ${local}.current = null;`,
     `      };`,
     `    },`,
     `    [ref],`,
@@ -104,43 +103,26 @@ export function emitComposedRef(name, local, elType) {
 }
 
 /**
- * Custom validity has TWO writers, tracked by writer rather than inferred from the message text:
- * the consumer, through the element's own setCustomValidity() — intercepted on the instance — and
- * authored `invalid`. The effective error is the consumer's message if any, else the default one
- * while `invalid` holds (the same precedence as WC). Clearing `invalid` therefore never clears a
- * consumer error, even one with identical text, and never depends on validationMessage — which
- * reads '' while the element is barred from validation (read-only, disabled).
+ * Body statements binding the shared validity owner (packages/emit-web/validity.mjs, emitted at
+ * module scope as `ownValidity`) to the element held by `local`. Installed once at mount — before
+ * the first `invalid` sync, so a message already on the element is recorded as the consumer's —
+ * and released on unmount.
  */
 export function emitOwnedValidity(local) {
-  const msg = JSON.stringify(INVALID_MESSAGE);
   return [
-    `  // Custom validity has two writers, tracked by WRITER, not by message text: the consumer,`,
-    `  // through the element's own setCustomValidity(), and authored \`invalid\`. The consumer's`,
-    `  // message wins, as in WC; clearing \`invalid\` never clears it.`,
-    `  const formValidity = useRef({ consumer: '', invalid: false });`,
-    `  const formApplyValidity = useCallback(() => {`,
+    `  const formValidity = useRef<ReturnType<typeof ownValidity> | null>(null);`,
+    `  useEffect(() => {`,
     `    const element = ${local}.current;`,
     `    if (!element) return;`,
-    `    const { consumer, invalid } = formValidity.current;`,
-    `    HTMLInputElement.prototype.setCustomValidity.call(element, consumer || (invalid ? ${msg} : ''));`,
+    `    const owner = ownValidity(element);`,
+    `    formValidity.current = owner;`,
+    `    return () => {`,
+    `      formValidity.current = null;`,
+    `      owner.release();`,
+    `    };`,
     `  }, []);`,
     `  useEffect(() => {`,
-    `    const element = ${local}.current;`,
-    `    if (!element) return;`,
-    `    const state = formValidity.current;`,
-    `    // A message set before this ran (a consumer ref callback runs first) is the consumer's.`,
-    `    if (element.validity.customError && !state.invalid) state.consumer = element.validationMessage;`,
-    `    element.setCustomValidity = (message: string) => {`,
-    `      state.consumer = String(message);`,
-    `      formApplyValidity();`,
-    `    };`,
-    `    return () => {`,
-    `      Reflect.deleteProperty(element, 'setCustomValidity');`,
-    `    };`,
-    `  }, [formApplyValidity]);`,
-    `  useEffect(() => {`,
-    `    formValidity.current.invalid = Boolean(invalid);`,
-    `    formApplyValidity();`,
-    `  }, [invalid, formApplyValidity]);`,
+    `    formValidity.current?.setInvalid(Boolean(invalid));`,
+    `  }, [invalid]);`,
   ];
 }

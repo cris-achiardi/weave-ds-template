@@ -75,36 +75,52 @@ onBeforeUnmount(() => {
   clearTimeout(formTimer);
 });
 // Custom validity has two writers, tracked by WRITER, not by message text: the consumer,
-// through the element's own setCustomValidity(), and authored `invalid`. The consumer's
-// message wins, as in WC; clearing `invalid` never clears it.
-const formValidity = { consumer: '', invalid: false };
-function formApplyValidity() {
-  const element = formControl.value;
-  if (!element) return;
-  const { consumer, invalid } = formValidity;
-  HTMLInputElement.prototype.setCustomValidity.call(
-    element,
-    consumer || (invalid ? 'Invalid value.' : ''),
-  );
-}
-onMounted(() => {
-  const element = formControl.value;
-  if (!element) return;
-  element.setCustomValidity = (message: string) => {
-    formValidity.consumer = String(message);
-    formApplyValidity();
+// through the element's own setCustomValidity() method, and authored `invalid`. The
+// consumer's message wins, as in WC. Generated from packages/emit-web/validity.mjs, which also
+// records the one unsupported path (calling the prototype method directly).
+function ownValidity(element: HTMLInputElement) {
+  const prior = Object.getOwnPropertyDescriptor(element, 'setCustomValidity');
+  const write: (message: string) => void =
+    typeof prior?.value === 'function'
+      ? prior.value.bind(element)
+      : HTMLInputElement.prototype.setCustomValidity.bind(element);
+  // An error already present is the consumer's. While the element is barred from validation
+  // its text reads '', so `null` records "present but unreadable": left exactly as it is.
+  let consumer: string | null = element.validity.customError
+    ? element.validationMessage || null
+    : '';
+  let invalid = false;
+  const apply = () => {
+    if (consumer !== null) write(consumer || (invalid ? 'Invalid value.' : ''));
   };
+  const intercept = (message: string) => {
+    consumer = String(message);
+    apply();
+  };
+  element.setCustomValidity = intercept;
+  return {
+    setInvalid(next: boolean) {
+      invalid = next;
+      apply();
+    },
+    release() {
+      // A newer override is the consumer's: leave it.
+      if (element.setCustomValidity !== intercept) return;
+      if (prior) Object.defineProperty(element, 'setCustomValidity', prior);
+      else Reflect.deleteProperty(element, 'setCustomValidity');
+    },
+  };
+}
+let formValidity: ReturnType<typeof ownValidity> | undefined;
+onMounted(() => {
+  if (!formControl.value) return;
+  formValidity = ownValidity(formControl.value);
+  formValidity.setInvalid(Boolean(props.invalid));
 });
-onBeforeUnmount(() => {
-  if (formControl.value) Reflect.deleteProperty(formControl.value, 'setCustomValidity');
-});
+onBeforeUnmount(() => formValidity?.release());
 watch(
-  () => [props.invalid, formControl.value] as const,
-  ([invalid]) => {
-    formValidity.invalid = Boolean(invalid);
-    formApplyValidity();
-  },
-  { immediate: true, flush: 'post' },
+  () => props.invalid,
+  (invalid) => formValidity?.setInvalid(Boolean(invalid)),
 );
 
 const attrs = useAttrs();

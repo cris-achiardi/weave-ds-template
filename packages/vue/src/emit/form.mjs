@@ -11,8 +11,7 @@
 //
 // Same semantics as packages/react/src/emit/form.mjs; see packages/wc/forms.md.
 
-/** The default custom-validity message for authored `invalid`. Same string as WC. */
-export const INVALID_MESSAGE = 'Invalid value.';
+import { ownValidityFunction } from '@ds/emit-web';
 
 /** Vue imports the emitted block needs. */
 export const FORM_IMPORTS = ['nextTick', 'onBeforeUnmount', 'onMounted', 'ref', 'watch'];
@@ -71,44 +70,23 @@ export function emitNativeFormLifecycle({ v, elType, commitEditing, hasInvalid }
 }
 
 /**
- * Custom validity has TWO writers, tracked by writer rather than inferred from the message text:
- * the consumer, through the element's own setCustomValidity() — intercepted on the instance — and
- * authored `invalid`. The effective error is the consumer's message if any, else the default one
- * while `invalid` holds (the same precedence as WC). Clearing `invalid` therefore never clears a
- * consumer error, even one with identical text, and never depends on validationMessage — which
- * reads '' while the element is barred from validation (read-only, disabled).
+ * Setup statements binding the shared validity owner (packages/emit-web/validity.mjs) to the
+ * element held by `local`. Installed at mount — before the first `invalid` sync, so a message
+ * already on the element is recorded as the consumer's — and released before unmount.
  */
 export function emitOwnedValidity(local) {
-  const msg = JSON.stringify(INVALID_MESSAGE);
   return [
-    `// Custom validity has two writers, tracked by WRITER, not by message text: the consumer,`,
-    `// through the element's own setCustomValidity(), and authored \`invalid\`. The consumer's`,
-    `// message wins, as in WC; clearing \`invalid\` never clears it.`,
-    `const formValidity = { consumer: '', invalid: false };`,
-    `function formApplyValidity() {`,
-    `  const element = ${local}.value;`,
-    `  if (!element) return;`,
-    `  const { consumer, invalid } = formValidity;`,
-    `  HTMLInputElement.prototype.setCustomValidity.call(element, consumer || (invalid ? ${msg} : ''));`,
-    `}`,
+    ...ownValidityFunction(0),
+    `let formValidity: ReturnType<typeof ownValidity> | undefined;`,
     `onMounted(() => {`,
-    `  const element = ${local}.value;`,
-    `  if (!element) return;`,
-    `  element.setCustomValidity = (message: string) => {`,
-    `    formValidity.consumer = String(message);`,
-    `    formApplyValidity();`,
-    `  };`,
+    `  if (!${local}.value) return;`,
+    `  formValidity = ownValidity(${local}.value);`,
+    `  formValidity.setInvalid(Boolean(props.invalid));`,
     `});`,
-    `onBeforeUnmount(() => {`,
-    `  if (${local}.value) Reflect.deleteProperty(${local}.value, 'setCustomValidity');`,
-    `});`,
+    `onBeforeUnmount(() => formValidity?.release());`,
     `watch(`,
-    `  () => [props.invalid, ${local}.value] as const,`,
-    `  ([invalid]) => {`,
-    `    formValidity.invalid = Boolean(invalid);`,
-    `    formApplyValidity();`,
-    `  },`,
-    `  { immediate: true, flush: 'post' },`,
+    `  () => props.invalid,`,
+    `  (invalid) => formValidity?.setInvalid(Boolean(invalid)),`,
     `);`,
   ];
 }

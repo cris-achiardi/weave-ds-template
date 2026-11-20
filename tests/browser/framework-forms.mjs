@@ -163,6 +163,24 @@ export function frameworkFormRegressions() {
     expect(await controlled.evaluate((input) => input.checkValidity())).toBe(true);
   });
 
+  test('releasing the validity owner leaves a newer consumer override in place', async ({
+    page,
+  }) => {
+    await page.goto('/forms-tests.html');
+    await field(page, 'Outside').evaluate((input) => {
+      const newer = function (message) {
+        HTMLInputElement.prototype.setCustomValidity.call(this, message);
+      };
+      input.setCustomValidity = newer;
+      window.__newer = { input, newer };
+    });
+    await act(page, 'Remove outside');
+    await expect(field(page, 'Outside')).toHaveCount(0);
+    expect(
+      await page.evaluate(() => window.__newer.input.setCustomValidity === window.__newer.newer),
+    ).toBe(true);
+  });
+
   test('disabled fieldsets and explicit form owners keep native behavior', async ({ page }) => {
     await page.goto('/forms-tests.html');
     await page.locator('#form-fields').evaluate((fieldset) => {
@@ -232,6 +250,42 @@ export function frameworkFormRegressions() {
 // callback ref's returned cleanup INSTEAD of calling it with null, so the composition must return
 // the consumer's cleanup when there is one and fall back to ref(null) when there is not.
 export function reactRefRegressions() {
+  test('the validity owner keeps a consumer error set before it installed, even unreadable', async ({
+    page,
+  }) => {
+    await page.goto('/forms-tests.html');
+    const preset = field(page, 'Preset probe');
+    await expect(preset).toBeVisible();
+    // Barred (read-only), so validationMessage reads '' -- the error is still the consumer's.
+    await act(page, 'Toggle invalid');
+    expect(await preset.evaluate((input) => input.validity.customError)).toBe(true);
+    expect(
+      await preset.evaluate((input) => {
+        input.readOnly = false;
+        return input.validationMessage;
+      }),
+    ).toBe('Consumer before hook');
+  });
+
+  test('release restores a prior own override', async ({ page }) => {
+    await page.goto('/forms-tests.html');
+    await expect(field(page, 'Prior probe')).toBeVisible();
+    await act(page, 'Remove probes');
+    await expect(field(page, 'Prior probe')).toHaveCount(0);
+    expect(
+      await page.evaluate(() => window.__prior.node.setCustomValidity === window.__prior.prior),
+    ).toBe(true);
+  });
+
+  test('a consumer ref cleanup can still clear its own error', async ({ page }) => {
+    await page.goto('/forms-tests.html');
+    await expect(field(page, 'Validity cleanup probe')).toBeVisible();
+    expect(await page.evaluate(() => window.__cleanupNode.validationMessage)).toBe('Probe error');
+    await act(page, 'Remove probes');
+    await expect(field(page, 'Validity cleanup probe')).toHaveCount(0);
+    expect(await page.evaluate(() => window.__cleanupNode.validity.customError)).toBe(false);
+  });
+
   test('composed refs preserve React 19 callback-ref cleanup', async ({ page }) => {
     await page.goto('/forms-tests.html');
     await expect(field(page, 'Cleanup probe')).toBeVisible();
@@ -242,5 +296,25 @@ export function reactRefRegressions() {
       cleanupNull: 0,
       nullCalls: 1,
     });
+  });
+}
+
+// Angular only: a component created on an existing host that already carries a consumer error.
+export function angularPresetRegressions() {
+  test('the validity owner keeps an error already on an existing host, even unreadable', async ({
+    page,
+  }) => {
+    await page.goto('/forms-tests.html');
+    await act(page, 'Attach preset');
+    const preset = field(page, 'Preset probe');
+    await expect(preset).toBeVisible();
+    await page.waitForTimeout(50);
+    expect(await preset.evaluate((input) => input.validity.customError)).toBe(true);
+    expect(
+      await preset.evaluate((input) => {
+        input.readOnly = false;
+        return input.validationMessage;
+      }),
+    ).toBe('Consumer before hook');
   });
 }

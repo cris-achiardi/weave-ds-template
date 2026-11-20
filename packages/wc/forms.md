@@ -60,15 +60,28 @@ lives in the framework model:
   is lifecycle synchronisation, not a user edit. Commit mode discards the uncommitted draft.
 - Authored `invalid` sets a custom validity error, `Invalid value.`, so the form refuses to submit.
   Custom validity has two writers, tracked by writer rather than inferred from the message: the
-  consumer, through the element's own `setCustomValidity()` (intercepted on that element), and
-  authored `invalid`. The consumer's message takes precedence, as on the WC host, and clearing
-  `invalid` never clears it — even when its text is identical. Neither depends on
+  consumer, through **the element's own `setCustomValidity()` method** (intercepted on that
+  element), and authored `invalid`. The consumer's message takes precedence, as on the WC host, and
+  clearing `invalid` never clears it — even when its text is identical. Neither depends on
   `validationMessage`, which reads empty while the element is barred from validation (read-only,
   disabled), so leaving such a state cannot strand a stale error.
+- An error already on the element when the component installs — set from a ref callback, or on an
+  existing host Angular attaches to — is the consumer's. If the element is barred at that moment its
+  text is unreadable; it is then kept exactly as it is, never rewritten or cleared, until the
+  consumer writes again through the method.
+- On unmount the interceptor is released only if it is still the element's method: a prior own
+  override is restored, and an override the consumer assigned afterwards is left alone. The
+  generated code is `ownValidity` from `packages/emit-web/validity.mjs`, identical in all three.
 - React composes its own ref with the consumer's and keeps React 19's callback-ref contract: a
   returned cleanup is called instead of `ref(null)`; without one, `ref(null)` is called.
 
 Known gaps, reported as non-conforming rather than omitted (ADR 0005):
+
+- **Prototype calls are unsupported.** Consumer ownership covers the element's own method only.
+  Calling the prototype directly — `HTMLInputElement.prototype.setCustomValidity.call(element, m)`
+  — bypasses the interceptor, so that message is not recorded as the consumer's and the next
+  `invalid` change overwrites it. The prototype is deliberately not patched: that would change
+  every input on the page.
 
 - **State restoration.** No framework lifecycle corresponds to `formStateRestoreCallback`. The
   browser may restore the native element's value on history navigation or autofill, and the

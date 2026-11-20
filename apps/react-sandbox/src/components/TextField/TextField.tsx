@@ -8,6 +8,44 @@ import type { InputHTMLAttributes, ChangeEvent } from 'react';
 import './TextField.structure.css';
 import './TextField.theme.css';
 
+// Custom validity has two writers, tracked by WRITER, not by message text: the consumer,
+// through the element's own setCustomValidity() method, and authored `invalid`. The
+// consumer's message wins, as in WC. Generated from packages/emit-web/validity.mjs, which also
+// records the one unsupported path (calling the prototype method directly).
+function ownValidity(element: HTMLInputElement) {
+  const prior = Object.getOwnPropertyDescriptor(element, 'setCustomValidity');
+  const write: (message: string) => void =
+    typeof prior?.value === 'function'
+      ? prior.value.bind(element)
+      : HTMLInputElement.prototype.setCustomValidity.bind(element);
+  // An error already present is the consumer's. While the element is barred from validation
+  // its text reads '', so `null` records "present but unreadable": left exactly as it is.
+  let consumer: string | null = element.validity.customError
+    ? element.validationMessage || null
+    : '';
+  let invalid = false;
+  const apply = () => {
+    if (consumer !== null) write(consumer || (invalid ? 'Invalid value.' : ''));
+  };
+  const intercept = (message: string) => {
+    consumer = String(message);
+    apply();
+  };
+  element.setCustomValidity = intercept;
+  return {
+    setInvalid(next: boolean) {
+      invalid = next;
+      apply();
+    },
+    release() {
+      // A newer override is the consumer's: leave it.
+      if (element.setCustomValidity !== intercept) return;
+      if (prior) Object.defineProperty(element, 'setCustomValidity', prior);
+      else Reflect.deleteProperty(element, 'setCustomValidity');
+    },
+  };
+}
+
 export interface TextFieldProps extends Omit<
   InputHTMLAttributes<HTMLInputElement>,
   'value' | 'defaultValue' | 'onValueChange' | 'disabled' | 'readOnly' | 'invalid' | 'size'
@@ -70,16 +108,18 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
       formControl.current = node;
       if (typeof ref === 'function') {
         const cleanup = (ref as (instance: HTMLInputElement | null) => unknown)(node);
+        // The consumer's cleanup runs FIRST, while the element is still recorded: it may
+        // reasonably touch the node (setCustomValidity('') on the way out, say).
         return () => {
-          formControl.current = null;
           if (typeof cleanup === 'function') cleanup();
           else ref(null);
+          formControl.current = null;
         };
       }
       if (ref) ref.current = node;
       return () => {
-        formControl.current = null;
         if (ref) ref.current = null;
+        formControl.current = null;
       };
     },
     [ref],
@@ -113,37 +153,20 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
       clearTimeout(timer);
     };
   }, [setValueInternal]);
-  // Custom validity has two writers, tracked by WRITER, not by message text: the consumer,
-  // through the element's own setCustomValidity(), and authored `invalid`. The consumer's
-  // message wins, as in WC; clearing `invalid` never clears it.
-  const formValidity = useRef({ consumer: '', invalid: false });
-  const formApplyValidity = useCallback(() => {
+  const formValidity = useRef<ReturnType<typeof ownValidity> | null>(null);
+  useEffect(() => {
     const element = formControl.current;
     if (!element) return;
-    const { consumer, invalid } = formValidity.current;
-    HTMLInputElement.prototype.setCustomValidity.call(
-      element,
-      consumer || (invalid ? 'Invalid value.' : ''),
-    );
+    const owner = ownValidity(element);
+    formValidity.current = owner;
+    return () => {
+      formValidity.current = null;
+      owner.release();
+    };
   }, []);
   useEffect(() => {
-    const element = formControl.current;
-    if (!element) return;
-    const state = formValidity.current;
-    // A message set before this ran (a consumer ref callback runs first) is the consumer's.
-    if (element.validity.customError && !state.invalid) state.consumer = element.validationMessage;
-    element.setCustomValidity = (message: string) => {
-      state.consumer = String(message);
-      formApplyValidity();
-    };
-    return () => {
-      Reflect.deleteProperty(element, 'setCustomValidity');
-    };
-  }, [formApplyValidity]);
-  useEffect(() => {
-    formValidity.current.invalid = Boolean(invalid);
-    formApplyValidity();
-  }, [invalid, formApplyValidity]);
+    formValidity.current?.setInvalid(Boolean(invalid));
+  }, [invalid]);
 
   return (
     <input

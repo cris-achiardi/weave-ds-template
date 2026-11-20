@@ -1,4 +1,11 @@
-import { Component, signal } from '@angular/core';
+import {
+  ApplicationRef,
+  Component,
+  EnvironmentInjector,
+  createComponent,
+  inject,
+  signal,
+} from '@angular/core';
 import { bootstrapApplication } from '@angular/platform-browser';
 import { TextField } from './components/TextField';
 
@@ -50,7 +57,8 @@ import { TextField } from './components/TextField';
     </button>
     <button (mousedown)="$event.preventDefault()" (click)="readOnly.set(!readOnly())">
       Toggle read-only
-    </button>`,
+    </button>
+    <button (mousedown)="$event.preventDefault()" (click)="attachPreset()">Attach preset</button>`,
 })
 class FormFixture {
   readonly model = signal('initial');
@@ -63,6 +71,22 @@ class FormFixture {
   changed(next: string) {
     this.model.set(next);
     this.count.update((n) => n + 1);
+  }
+  private readonly environmentInjector = inject(EnvironmentInjector);
+  private readonly appRef = inject(ApplicationRef);
+  // createComponent on an EXISTING host that already carries a consumer error, barred by readonly.
+  attachPreset() {
+    const host = document.createElement('input');
+    host.setAttribute('aria-label', 'Preset probe');
+    host.readOnly = true;
+    host.setCustomValidity('Consumer before hook');
+    document.body.append(host);
+    const ref = createComponent(TextField, {
+      environmentInjector: this.environmentInjector,
+      hostElement: host,
+    });
+    ref.setInput('readOnly', true);
+    this.appRef.attachView(ref.hostView);
   }
   submitted(event: Event) {
     event.preventDefault();

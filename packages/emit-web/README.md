@@ -7,6 +7,7 @@ framework.** Two halves, and they answer different questions:
 | ----------------------------------------- | ------------------------------------------------------------------------------------------------------- |
 | [`@ds/emit-web/contract`](./contract.mjs) | reading a contract: `loadPair`, `partsOf`, `memberFacts`, `suppliedRelations`, `camel`/`pascal`/`kebab` |
 | [`@ds/emit-web/css`](./css.mjs)           | writing the two stylesheets: `emitStructure`, `emitTheme`, `stateSelector`                              |
+| [`@ds/emit-web/validity`](./validity.mjs) | the generated custom-validity owner (`ownValidityFunction`) React, Vue and Angular emit verbatim        |
 
 ## Why it exists
 

@@ -67,6 +67,7 @@ import {
   referencedByASibling,
   suppliedRelations,
   formFor,
+  ownValidityFunction,
 } from '@ds/emit-web';
 import { emitNativeFormLifecycle } from './form.mjs';
 
@@ -544,6 +545,7 @@ export function emitTsx(name, contract, binding, prefix) {
   }
   s.push(`import './${name}.structure.css';`);
   s.push(`import './${name}.theme.css';`);
+  if (nativeForm && contract.states?.invalid) s.push(``, ...ownValidityFunction(0));
   s.push(``);
 
   // ---- what closes this, module-level so its identity is stable across renders

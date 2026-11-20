@@ -20,6 +20,34 @@ const nullProbe: Ref<HTMLInputElement> = (node) => {
   if (!node) refCounts.nullCalls++;
 };
 
+// Custom-validity ownership probes. Each sets something on the element from its ref callback,
+// which React runs BEFORE the component's effects install their validity owner.
+const probes = window as unknown as Record<string, unknown>;
+// A read-only element is barred from validation, so its message reads '' at install time.
+const presetProbe: Ref<HTMLInputElement> = (node) => {
+  if (node) HTMLInputElement.prototype.setCustomValidity.call(node, 'Consumer before hook');
+};
+// An own override already on the element, which release must restore.
+const priorProbe: Ref<HTMLInputElement> = (node) => {
+  if (!node || Object.prototype.hasOwnProperty.call(node, 'setCustomValidity')) return;
+  const prior = function (this: HTMLInputElement, message: string) {
+    HTMLInputElement.prototype.setCustomValidity.call(this, message);
+  };
+  Object.defineProperty(node, 'setCustomValidity', {
+    value: prior,
+    writable: true,
+    configurable: true,
+  });
+  probes.__prior = { node, prior };
+};
+// A cleanup that clears its own error on the way out.
+const cleanupValidityProbe: Ref<HTMLInputElement> = (node) => {
+  if (!node) return;
+  node.setCustomValidity('Probe error');
+  probes.__cleanupNode = node;
+  return () => node.setCustomValidity('');
+};
+
 // Form participation fixture. tests/browser/framework-forms.mjs drives the same page in every
 // framework backend; keep labels, names and test ids identical across the three fixtures.
 function Fixture() {
@@ -91,6 +119,9 @@ function Fixture() {
         <>
           <TextField aria-label="Cleanup probe" ref={cleanupProbe} />
           <TextField aria-label="Null probe" ref={nullProbe} />
+          <TextField aria-label="Preset probe" readOnly ref={presetProbe} />
+          <TextField aria-label="Prior probe" ref={priorProbe} />
+          <TextField aria-label="Validity cleanup probe" ref={cleanupValidityProbe} />
         </>
       )}
       <button onMouseDown={keep} onClick={() => setShowProbes(false)}>

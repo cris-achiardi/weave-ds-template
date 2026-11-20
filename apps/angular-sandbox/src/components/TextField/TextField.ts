@@ -90,25 +90,45 @@ export class TextField {
       clearTimeout(formTimer);
     });
     // Custom validity has two writers, tracked by WRITER, not by message text: the consumer,
-    // through the element's own setCustomValidity(), and authored `invalid`. The consumer's
-    // message wins, as in WC; clearing `invalid` never clears it.
-    const formValidity = { consumer: '', invalid: false };
-    const formApplyValidity = () => {
-      const { consumer, invalid } = formValidity;
-      HTMLInputElement.prototype.setCustomValidity.call(
-        control,
-        consumer || (invalid ? 'Invalid value.' : ''),
-      );
-    };
-    control.setCustomValidity = (message: string) => {
-      formValidity.consumer = String(message);
-      formApplyValidity();
-    };
-    inject(DestroyRef).onDestroy(() => Reflect.deleteProperty(control, 'setCustomValidity'));
-    effect(() => {
-      formValidity.invalid = this.invalid();
-      formApplyValidity();
-    });
+    // through the element's own setCustomValidity() method, and authored `invalid`. The
+    // consumer's message wins, as in WC. Generated from packages/emit-web/validity.mjs, which also
+    // records the one unsupported path (calling the prototype method directly).
+    function ownValidity(element: HTMLInputElement) {
+      const prior = Object.getOwnPropertyDescriptor(element, 'setCustomValidity');
+      const write: (message: string) => void =
+        typeof prior?.value === 'function'
+          ? prior.value.bind(element)
+          : HTMLInputElement.prototype.setCustomValidity.bind(element);
+      // An error already present is the consumer's. While the element is barred from validation
+      // its text reads '', so `null` records "present but unreadable": left exactly as it is.
+      let consumer: string | null = element.validity.customError
+        ? element.validationMessage || null
+        : '';
+      let invalid = false;
+      const apply = () => {
+        if (consumer !== null) write(consumer || (invalid ? 'Invalid value.' : ''));
+      };
+      const intercept = (message: string) => {
+        consumer = String(message);
+        apply();
+      };
+      element.setCustomValidity = intercept;
+      return {
+        setInvalid(next: boolean) {
+          invalid = next;
+          apply();
+        },
+        release() {
+          // A newer override is the consumer's: leave it.
+          if (element.setCustomValidity !== intercept) return;
+          if (prior) Object.defineProperty(element, 'setCustomValidity', prior);
+          else Reflect.deleteProperty(element, 'setCustomValidity');
+        },
+      };
+    }
+    const formValidity = ownValidity(control);
+    inject(DestroyRef).onDestroy(() => formValidity.release());
+    effect(() => formValidity.setInvalid(this.invalid()));
   }
 
   protected handleInput(event: Event): void {
