@@ -148,10 +148,13 @@ const invalid = computed(() => email.value.length > 0 && !email.value.includes('
       of="Tabs"
       note="A collection with two kinds of member. React publishes the selection over context; this publishes it over provide/inject, with the injection key exported from the SFC's non-setup script block because a setup block cannot export a binding. The keyboard model is transcribed field for field from collection.navigation in both."
     >
+      <!-- BREAKING (#44): the tabs go in the `tabs` slot so the tablist owns them; panels stay in the default slot. -->
       <Tabs v-model:value="tab" aria-label="Project sections">
-        <TabItem value="overview"><template #label>Overview</template></TabItem>
-        <TabItem value="activity"><template #label>Activity</template></TabItem>
-        <TabItem value="settings" disabled><template #label>Settings</template></TabItem>
+        <template #tabs>
+          <TabItem value="overview"><template #label>Overview</template></TabItem>
+          <TabItem value="activity"><template #label>Activity</template></TabItem>
+          <TabItem value="settings" disabled><template #label>Settings</template></TabItem>
+        </template>
         <TabPanel value="overview">
           A collection with two kinds of member. This panel and its tab compare against the same
           value; neither holds it.

@@ -84,16 +84,21 @@ export const STATUS: ComponentStatus[] = [
   },
   {
     component: 'Tabs',
-    verdict: 'works',
+    // Was `works` while the tablist rendered EMPTY beside its own tabs, with the consumer's name on
+    // the generic root (#44). Ownership and the name are now driven in Chromium, Firefox and WebKit
+    // by tests/browser/tablist.mjs; the verdict is `partial` for a different, measured reason below.
+    verdict: 'partial',
     supplies:
-      'Linear navigation on one axis only, so Up and Down still scroll the page. Home and End jump to the ends.',
-    remaining: [],
+      'The tablist owns every tab (the `tabs` slot fills the `list` part) and carries the consumer’s `aria-label` / `aria-labelledby`; panels render after it as siblings. Linear navigation on one axis only, so Up and Down still scroll the page. Home and End jump to the ends.',
+    remaining: [
+      '`collection.selection.initial: first-enabled` is read by nothing. Uncontrolled with no `defaultValue`, no tab is selected and no panel shows — measured by rendering the sandbox Tabs — which breaks the contract’s “there is always a visible panel”.',
+    ],
   },
   {
     component: 'TabItem',
     verdict: 'works',
     supplies:
-      'Points at its panel across the component boundary. Stays focusable while disabled, and refuses to be chosen.',
+      'Owned by the tablist when passed in the Tabs `tabs` slot. Points at its panel across the component boundary. Stays focusable while disabled, and refuses to be chosen.',
     remaining: [],
     alsoKnown: [
       'CONSUMER: its `aria-controls` is built from the shared identity, so a tab with no matching panel points at an id nothing renders. Nothing here can detect that — a panel that has not mounted and one that will never exist look identical from inside.',

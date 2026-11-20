@@ -55,7 +55,7 @@
     "contrast": "not-applicable",
     "keyboard": "Tab enters the strip on the selected tab and leaves it for the panel. Left and Right move between tabs and select as they move, wrapping at both ends; Home and End jump to the ends. Up and Down are deliberately not handled, so they still scroll the page.",
     "notes": [
-      "The tablist has no accessible name of its own. A consumer must supply one via `aria-label` or `aria-labelledby`, or assistive technology announces an unnamed set of tabs.",
+      "The tablist has no accessible name of its own. A consumer must supply one via `aria-label` or `aria-labelledby` on the component, which `namedByConsumer` routes to the tablist rather than the wrapper; without one, assistive technology announces an unnamed set of tabs.",
       "Selection follows focus. The APG marks that OPTIONAL for this pattern and recommends it wherever a panel's content is already in the document, because arrowing across a strip then costs nothing. It is the wrong default for a panel that fetches: its threshold phrase is 'noticeable latency'. This contract chooses automatic activation, and a consumer whose panels fetch on display needs a different one.",
       "Disabled tabs stay focusable rather than being skipped, which is the APG's own convention and the opposite of what this library does for radio options. Its reasoning: screen-reader users discover elements by moving focus, so a disabled tab removed from the arrow path is a tab they will never find out about.",
       "Exactly one tab is reachable with Tab. A controlled value matching no rendered tab leaves the whole strip unreachable by keyboard, and nothing here detects it.",
@@ -64,9 +64,18 @@
   },
   "composition": {
     "children": {
-      "accepts": ["TabItem", "TabPanel"],
-      "min": 2,
-      "description": "The tabs and the panels. TabItems become the strip; TabPanels are rendered after it."
+      "accepts": ["TabPanel"],
+      "min": 1,
+      "description": "The panels. Rendered after the strip, as its siblings: a tablist may own only tabs."
+    },
+    "slots": {
+      "tabs": {
+        "part": "list",
+        "accepts": ["TabItem"],
+        "required": true,
+        "min": 1,
+        "description": "The tabs. Fills the `list` part, so every tab is owned by the tablist."
+      }
     }
   },
   "anatomy": {
@@ -80,6 +89,7 @@
         "list": {
           "part": "list",
           "role": "tablist",
+          "namedByConsumer": true,
           "description": "The strip itself. Owns the arrow-key movement and the single Tab stop.",
           "paints": {
             "gap": null,

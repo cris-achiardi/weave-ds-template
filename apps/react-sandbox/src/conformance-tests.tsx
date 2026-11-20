@@ -41,11 +41,13 @@ function Fixture() {
           ))}
         </RadioGroup>
       ) : (
-        <Tabs value={value} onValueChange={change}>
-          {['a', 'b', 'c'].map((id) => (
+        <Tabs
+          value={value}
+          onValueChange={change}
+          tabs={['a', 'b', 'c'].map((id) => (
             <TabItem key={id} value={id} label={id} />
           ))}
-        </Tabs>
+        />
       )}
       <button id="after">After</button>
       <output data-testid="selected">{value}</output>

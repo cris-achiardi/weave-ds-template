@@ -34,6 +34,8 @@ for (const [kind, { collection, first, second }] of Object.entries(rosters)) {
   first.textContent = `First ${kind}`;
   second.value = 'b';
   second.textContent = `Second ${kind}`;
+  // A tab goes in the tablist's named slot (#44); a radio item has no such slot.
+  if (kind === 'tabs') first.slot = second.slot = 'tabs';
   collection.append(first, second);
   document.body.append(collection);
 }

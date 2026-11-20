@@ -37,6 +37,7 @@ const WEB = loadProfile();
 
 import { emitFormMethods } from './form.mjs';
 import {
+  consumerNamedPart,
   formFor,
   loadPair,
   memberFacts,
@@ -105,7 +106,12 @@ export function emitComponent(name, contract, binding, prefix, { declareTagTypes
   const root = contract.anatomy.root;
   const el = binding.element;
   const rootRole = root.role ?? contract.semantics?.role;
-  const acceptsLabel = Boolean(rootRole || implicitRole(el, WEB));
+  // Where the host's `aria-label` is forwarded: the part the contract names (namedByConsumer),
+  // else the root when it carries a role. The semantic element is inside the shadow root either way,
+  // so naming only the host misses it.
+  const namedKey = consumerNamedPart(contract);
+  const namedPartName = namedKey ? partsOf(root).find((p) => p.key === namedKey).part : null;
+  const acceptsLabel = Boolean(namedKey || rootRole || implicitRole(el, WEB));
   const tag = tagFor(name, prefix);
   // THE CLASS IS NOT PREFIXED, and only the TAG is. A custom element name is required to contain a
   // hyphen, which is the platform reserving every single-word tag for itself — so `<ds-button>` has
@@ -894,9 +900,12 @@ export function emitComponent(name, contract, binding, prefix, { declareTagTypes
     s.push(
       `    // The semantic control is inside the shadow root; naming only the host misses it.`,
     );
+    // aria-labelledby is NOT forwarded: its ids live in the consumer's tree and an IDREF cannot
+    // resolve from inside this shadow root. Reported as non-conforming by relationshipConformance.
+    const target = namedPartName ? `this.#part('${namedPartName}')!` : 'root';
     s.push(`    const label = this.getAttribute('aria-label');`);
-    s.push(`    if (label === null) root.removeAttribute('aria-label');`);
-    s.push(`    else root.setAttribute('aria-label', label);`);
+    s.push(`    if (label === null) ${target}.removeAttribute('aria-label');`);
+    s.push(`    else ${target}.setAttribute('aria-label', label);`);
   }
   if (reflected.length) {
     assume(

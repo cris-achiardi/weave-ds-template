@@ -17,7 +17,7 @@ Each section describes that backend only. Model events, attributes, and slots ar
 > [`prop-canon.json`](../../packages/contracts/prop-canon.json) (data) and
 > `packages/contracts/components/README.md` §2 (prose).
 
-**Coverage:** 15 components · 39 props · 2 flags.
+**Coverage:** 15 components · 40 props · 2 flags.
 
 ### How to use this
 
@@ -101,6 +101,7 @@ One spelling, one meaning. A new value is added here in the same change that int
 | `placement` | axis | top · top-start · top-end · bottom · bottom-start · bottom-end · left · right | Tooltip |
 | `readOnly` | boolean | boolean | RadioGroup, Switch, TextField |
 | `size` | axis | s · m · l | Button, Dialog, TextField |
+| `tabs` | node | ReactNode | Tabs |
 | `title` | node | ReactNode | Dialog |
 | `touched` | boolean | boolean | Field |
 | `trigger` | node | ReactNode | Tooltip |
@@ -245,6 +246,7 @@ One spelling, one meaning. A new value is added here in the same change that int
 | value | controlled | string | ? | ? |
 | defaultValue | uncontrolled | string | ? | ? |
 | onValueChange | callback | (value: string) => void | ? | ? |
+| tabs | slot | ReactNode | ? | ? |
 
 ### TextField
 

@@ -41,6 +41,8 @@ if (params.get('kind') === 'dismissal') {
   for (const id of ['a', 'b', 'c']) {
     const item = radio ? new RadioItem() : new TabItem();
     item.value = id;
+    // A tab goes in the tablist's named slot (#44); a radio item has no such slot.
+    if (!radio) item.slot = 'tabs';
     item.innerHTML = `<span slot="label">${id}</span>`;
     collection.append(item);
   }

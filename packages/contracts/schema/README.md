@@ -83,6 +83,20 @@ its contract. A regeneration check exists for one component: `tests/tabpanel-chi
 re-emits TabPanel and compares the React, Vue and Angular sandbox files to the formatted emitter
 output. Nothing yet re-emits every contract for every backend.
 
+## Where a consumer's accessible name lands
+
+`$defs.part.namedByConsumer` (optional, since `component-contract-14.json`) marks the ONE part that
+receives the accessible name a consumer passes to the component. Omitted, the name stays on the
+root — correct whenever the root carries the component's role. It exists for the case where the
+role sits on an inner part: a tab strip's `tablist` is a sub-part, and a name on the generic
+wrapper is prohibited by ARIA and labels nothing.
+
+It is agnostic: it says _which region is named by the consumer_, not which attribute carries the
+name. The web backends read it as `aria-label` and `aria-labelledby`. The rules the schema cannot
+express — at most one flagged part, a `role` on it, never together with `namedBy` — are enforced by
+`consumerNamedPart` in `@ds/emit-web`, which every emitter calls. Decision:
+[ADR 0007](../../../docs/ADR/0007-a-consumers-accessible-name-lands-on-the-part-the-contract-names.md).
+
 ## Reading a schema
 
 Both files are JSON Schema draft 2020-12 with `additionalProperties: false` at every level, so an

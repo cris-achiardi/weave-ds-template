@@ -127,10 +127,17 @@
           the four that works across a framework boundary.
         </p>
         <div class="specimen-row">
+          <!-- BREAKING (#44): each tab carries slot="tabs" so it is slotted into the tablist; panels are not. -->
           <ds-tabs value="overview" aria-label="Project sections">
-            <ds-tab-item value="overview"><span slot="label">Overview</span></ds-tab-item>
-            <ds-tab-item value="activity"><span slot="label">Activity</span></ds-tab-item>
-            <ds-tab-item value="settings" disabled><span slot="label">Settings</span></ds-tab-item>
+            <ds-tab-item slot="tabs" value="overview"
+              ><span slot="label">Overview</span></ds-tab-item
+            >
+            <ds-tab-item slot="tabs" value="activity"
+              ><span slot="label">Activity</span></ds-tab-item
+            >
+            <ds-tab-item slot="tabs" value="settings" disabled
+              ><span slot="label">Settings</span></ds-tab-item
+            >
             <ds-tab-panel value="overview">
               A collection with two kinds of member. This panel and its tab compare against the same
               value; neither holds it.

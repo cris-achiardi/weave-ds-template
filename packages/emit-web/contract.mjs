@@ -175,3 +175,37 @@ export function formFor(contract) {
   }
   return { ...form, property: selection ? 'value' : camel(form.source) };
 }
+
+/**
+ * The anatomy KEY of the part that receives the consumer's accessible name, or null when the name
+ * stays on the root.
+ *
+ * `namedByConsumer` moves the name a consumer passes to the component (`aria-label`,
+ * `aria-labelledby` on the web) off the root and onto an inner part — a tab strip's name belongs on
+ * its `tablist`, not on the generic wrapper. Every backend routes it, so the rules that make the
+ * flag meaningful are enforced here, once: at most one part, never combined with `namedBy` (the
+ * part would have two name sources), and only on a part with a role (a name on a generic part is
+ * prohibited by ARIA and labels nothing). A flagged root is the default behaviour and yields null.
+ */
+export function consumerNamedPart(contract) {
+  const flagged = partsOf(contract.anatomy.root).filter((p) => p.node.namedByConsumer);
+  if (flagged.length > 1) {
+    throw new Error(
+      `${contract.component}: namedByConsumer is declared on ${flagged.map((p) => p.key).join(', ')} — at most one part may receive the consumer's name`,
+    );
+  }
+  const [hit] = flagged;
+  if (!hit) return null;
+  if (hit.node.namedBy !== undefined) {
+    throw new Error(
+      `${contract.component}: part "${hit.key}" declares both namedBy and namedByConsumer — it would have two name sources`,
+    );
+  }
+  const role = hit.key === ROOT_KEY ? (hit.node.role ?? contract.semantics?.role) : hit.node.role;
+  if (!role) {
+    throw new Error(
+      `${contract.component}: part "${hit.key}" declares namedByConsumer but no role — a name on a generic part labels nothing`,
+    );
+  }
+  return hit.key === ROOT_KEY ? null : hit.key;
+}

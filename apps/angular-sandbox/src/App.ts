@@ -152,10 +152,11 @@ import { Field } from './components/Field';
         of="Tabs"
         note="A collection with two kinds of member. React publishes the selection over context, Vue over provide/inject, Angular over the hierarchical injector. Three protocols, one contract sentence, and the keyboard model transcribed field for field from collection.navigation in all three."
       >
+        <!-- BREAKING (#44): each tab carries slot="tabs" so it is projected into the tablist; panels are not. -->
         <div dsTabs [(value)]="tab" aria-label="Project sections">
-          <button dsTabItem value="overview"><span slot="label">Overview</span></button>
-          <button dsTabItem value="activity"><span slot="label">Activity</span></button>
-          <button dsTabItem value="settings" [disabled]="true">
+          <button dsTabItem slot="tabs" value="overview"><span slot="label">Overview</span></button>
+          <button dsTabItem slot="tabs" value="activity"><span slot="label">Activity</span></button>
+          <button dsTabItem slot="tabs" value="settings" [disabled]="true">
             <span slot="label">Settings</span>
           </button>
           <div dsTabPanel value="overview">

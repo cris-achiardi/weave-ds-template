@@ -60,6 +60,7 @@ it, not here:
 | [0004](./0004-a-state-declares-who-may-set-it-and-props-are-generated-from-that.md)    | A state declares who may set it, and prop names are generated from that                         | Draft    |
 | [0005](./0005-unsupported-contract-claims-are-non-conforming.md)                       | Unsupported contract claims are non-conforming                                                  | Accepted |
 | [0006](./0006-design-guidelines-live-in-docs-design-as-principles-agents-can-check.md) | Design guidelines live in `docs/design` as principles an agent can check, not recipes it copies | Draft    |
+| [0007](./0007-a-consumers-accessible-name-lands-on-the-part-the-contract-names.md)     | A consumer's accessible name lands on the part the contract names, not always on the root       | Draft    |
 
 <!-- adr-index:end -->
 

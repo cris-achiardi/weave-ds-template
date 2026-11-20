@@ -13,12 +13,12 @@
         "prose": "packages/contracts/components/README.md §2"
       },
       "componentCount": 15,
-      "propCount": 39,
+      "propCount": 40,
       "kindCounts": {
         "axis": 5,
         "enum": 2,
         "boolean": 11,
-        "node": 13,
+        "node": 14,
         "local": 8
       },
       "conventions": {
@@ -1157,6 +1157,27 @@
           ],
           "usedCount": 3
         },
+        "tabs": {
+          "kind": "node",
+          "axis": null,
+          "valueSets": [],
+          "typesOn": [
+            {
+              "type": "ReactNode",
+              "on": [
+                "Tabs"
+              ]
+            }
+          ],
+          "valuelessOn": [],
+          "types": [
+            "ReactNode"
+          ],
+          "usedOn": [
+            "Tabs"
+          ],
+          "usedCount": 1
+        },
         "title": {
           "kind": "node",
           "axis": null,
@@ -1353,7 +1374,7 @@
       "flagCount": 2,
       "extraction": {
         "componentsScanned": 15,
-        "propsResolved": 39,
+        "propsResolved": 40,
         "degraded": false,
         "warnings": []
       },
@@ -1940,6 +1961,16 @@
             "from": "selection",
             "origin": "selection",
             "role": "callback"
+          },
+          {
+            "name": "tabs",
+            "type": "ReactNode",
+            "from": "tabs",
+            "origin": "slot",
+            "role": "slot",
+            "part": "list",
+            "required": true,
+            "description": "The tabs. Fills the `list` part, so every tab is owned by the tablist."
           }
         ],
         "TextField": [

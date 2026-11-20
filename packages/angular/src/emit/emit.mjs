@@ -49,6 +49,7 @@ const WEB = loadProfile();
 // contract, and the two light-DOM stylesheets. See packages/emit-web/README.md, which is also
 // explicit that the CSS half stops at the shadow boundary.
 import {
+  consumerNamedPart,
   emitStructure,
   emitTheme,
   kebab,
@@ -132,6 +133,10 @@ function renderPart(key, node, ctx, depth) {
     ctx.needsIdsHelper.value = true;
     attrs.push(`[attr.${relationAttribute('describedBy', WEB)}]="ids(${pieces.join(', ')})"`);
   }
+  // The consumer's name, routed off the host by `namedByConsumer` — see consumerNamedPart.
+  if (ctx.namedPart === key) {
+    attrs.push(`[attr.aria-label]="ariaLabel()"`, `[attr.aria-labelledby]="ariaLabelledby()"`);
+  }
   if (node.activates?.toggles) attrs.push(`(click)="activate($event)"`);
   if (node.activates?.toggles && node.role === 'button') attrs.push(`type="button"`);
   if (node.visibleWhen) {
@@ -191,6 +196,7 @@ export function emitComponent(name, contract, binding, prefix) {
   const namedSlots = slots.filter((s) => s.name !== 'default');
   const takesChildren = slots.some((s) => s.name === 'default');
   const childrenPart = contract.composition?.children?.part;
+  const namedPart = consumerNamedPart(contract);
 
   const collection = contract.collection;
   const selShared = collection?.selection?.control === 'shared';
@@ -389,6 +395,7 @@ export function emitComponent(name, contract, binding, prefix) {
     contract,
     idFor,
     childrenPart,
+    namedPart,
     memberReflects: member?.reflects,
     rangeTrack: range && range.track !== 'root' ? range.track : null,
     referenced,
@@ -406,6 +413,10 @@ export function emitComponent(name, contract, binding, prefix) {
   if (submitsByDefault(el, WEB)) host.push([`type`, `'button'`, true]);
   if (rootRole && implicitRole(el, WEB) !== rootRole) host.push([`attr.role`, `'${rootRole}'`]);
   if (needsIds) host.push([`attr.id`, baseIdRead]);
+  // The consumer wrote the name on the element this component attaches to. The contract moves it
+  // to an inner part (namedByConsumer), so the host's own copy is removed: two copies would name
+  // the generic wrapper as well, which ARIA prohibits.
+  if (namedPart) host.push([`attr.aria-label`, 'null'], [`attr.aria-labelledby`, 'null']);
 
   for (const [st, def] of Object.entries(contract.states ?? {})) {
     const asModel = models.find((m) => m.from === st);
@@ -816,6 +827,16 @@ export function emitComponent(name, contract, binding, prefix) {
       `  /** ${d}${p.role === 'axis' && p.default ? ` Defaults to \`${p.default}\`.` : ''} */`,
     );
     s.push(`  readonly ${p.name} = input<${p.type}>(${dflt});`);
+  }
+  if (namedPart) {
+    s.push(
+      `  /** The consumer's accessible name, routed to the "${namedPart}" part (namedByConsumer). */`,
+    );
+    s.push(`  readonly ariaLabel = input<string | undefined>(undefined, { alias: 'aria-label' });`);
+    s.push(`  /** As aria-label, by reference. Routed to the same part. */`);
+    s.push(
+      `  readonly ariaLabelledby = input<string | undefined>(undefined, { alias: 'aria-labelledby' });`,
+    );
   }
   if (identity) {
     s.push(`  /** ${identity.description.replace(/\s+/g, ' ')} */`);

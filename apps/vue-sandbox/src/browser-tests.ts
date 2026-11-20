@@ -29,16 +29,19 @@ createApp({
               state.value = value;
             },
           },
-          () => [
-            state.visible
-              ? h(
-                  item,
-                  { key: 'first', value: state.identity, disabled: state.disabled },
-                  () => `First ${kind}`,
-                )
-              : null,
-            h(item, { key: 'second', value: 'b' }, () => `Second ${kind}`),
-          ],
+          // Tabs takes its members in the `tabs` slot (#44); RadioGroup in the default one.
+          {
+            [kind === 'tabs' ? 'tabs' : 'default']: () => [
+              state.visible
+                ? h(
+                    item,
+                    { key: 'first', value: state.identity, disabled: state.disabled },
+                    () => `First ${kind}`,
+                  )
+                : null,
+              h(item, { key: 'second', value: 'b' }, () => `Second ${kind}`),
+            ],
+          },
         );
       });
   },
