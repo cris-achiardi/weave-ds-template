@@ -272,3 +272,133 @@ export function tabRelationRegressions() {
     }
   });
 }
+
+// PR #56 review regressions: each of these failed on 0e5b3ea.
+export function tabRelationReviewRegressions() {
+  test('#56 review: selected and hidden are owned host attributes, never written while detached', async ({
+    page,
+  }) => {
+    await fixture(page, TWO);
+    const result = await page.evaluate(() => {
+      const names = ['hidden', 'selected', 'role', 'id', 'tabindex'];
+      const read = (el) => Object.fromEntries(names.map((n) => [n, el.getAttribute(n)]));
+      const detached = document.createElement('ds-tab-panel');
+      detached.value = 'a';
+      const whileDetached = read(detached);
+      const tab = document.querySelector('#rel ds-tab-item[value="a"]');
+      const panel = document.querySelector('#rel ds-tab-panel[value="a"]');
+      const hiddenPanel = document.querySelector('#rel ds-tab-panel[value="b"]');
+      const wired = { tab: read(tab).selected, hidden: read(hiddenPanel).hidden };
+      tab.remove();
+      panel.remove();
+      hiddenPanel.remove();
+      return {
+        whileDetached,
+        wired,
+        tab: read(tab),
+        panel: read(panel),
+        hiddenPanel: read(hiddenPanel),
+      };
+    });
+    const none = { hidden: null, selected: null, role: null, id: null, tabindex: null };
+    expect(result.whileDetached).toEqual(none);
+    expect(result.wired).toEqual({ tab: '', hidden: '' });
+    expect(result.tab).toEqual(none);
+    expect(result.panel).toEqual(none);
+    expect(result.hiddenPanel).toEqual(none);
+  });
+
+  // Keyboard activation on the host. Each case starts on Beta with Alpha selected; the page's
+  // tabs select on click only here, because focus() does not move the selection.
+  async function onBeta(page, cancel) {
+    await fixture(page, TWO);
+    const beta = page.locator('#rel ds-tab-item[value="b"]');
+    await beta.evaluate((el, cancel) => {
+      if (cancel) el.addEventListener('keydown', (e) => e.key === cancel && e.preventDefault());
+      el.focus();
+    }, cancel);
+    return { tabs: page.locator('#rel ds-tabs'), beta };
+  }
+  const settle = (page) => page.evaluate(() => new Promise((r) => setTimeout(r, 50)));
+
+  test('#56 review: Space activates the tab', async ({ page }) => {
+    const { tabs } = await onBeta(page, null);
+    await page.keyboard.press(' ');
+    await expect(tabs).toHaveJSProperty('value', 'b');
+  });
+
+  test('#56 review: Enter activates the tab', async ({ page }) => {
+    const { tabs } = await onBeta(page, null);
+    await page.keyboard.press('Enter');
+    await expect(tabs).toHaveJSProperty('value', 'b');
+  });
+
+  test('#56 review: a cancelled Space keydown does not activate the tab', async ({ page }) => {
+    const { tabs } = await onBeta(page, ' ');
+    await page.keyboard.press(' ');
+    await settle(page);
+    await expect(tabs).toHaveJSProperty('value', 'a');
+  });
+
+  test('#56 review: a cancelled Enter keydown does not activate the tab', async ({ page }) => {
+    const { tabs } = await onBeta(page, 'Enter');
+    await page.keyboard.press('Enter');
+    await settle(page);
+    await expect(tabs).toHaveJSProperty('value', 'a');
+  });
+
+  test('#56 review: focus leaving disarms a Space press', async ({ page }) => {
+    const { tabs, beta } = await onBeta(page, null);
+    await page.keyboard.down(' ');
+    // Focus leaves and comes back before the key is released.
+    await page.evaluate(() => {
+      const outside = document.createElement('button');
+      outside.textContent = 'outside';
+      document.querySelector('#rel').append(outside);
+      outside.focus();
+    });
+    await beta.evaluate((el) => el.focus());
+    await page.keyboard.up(' ');
+    await settle(page);
+    await expect(tabs).toHaveJSProperty('value', 'a');
+  });
+
+  test('#56 review: aria-labelledby set while detached does not throw, and resolves on connect', async ({
+    page,
+  }) => {
+    const errors = [];
+    page.on('pageerror', (error) => errors.push(error.message));
+    await fixture(page, '<span id="late-label">Late label</span>');
+    const result = await page.evaluate(() => {
+      let threw = null;
+      const tabs = document.createElement('ds-tabs');
+      try {
+        tabs.setAttribute('aria-labelledby', 'late-label');
+      } catch (error) {
+        threw = String(error);
+      }
+      const list = tabs.shadowRoot.querySelector('[part="list"]');
+      const detached = (list.ariaLabelledByElements ?? []).length;
+      document.querySelector('#rel').append(tabs);
+      return { threw, detached, connected: (list.ariaLabelledByElements ?? []).map((e) => e.id) };
+    });
+    expect(result).toEqual({ threw: null, detached: 0, connected: ['late-label'] });
+    expect(errors).toEqual([]);
+  });
+
+  test('#56 review: a consumer changing a host id relinks its sibling', async ({ page }) => {
+    await fixture(page, TWO);
+    const result = await page.evaluate(() => {
+      const tab = document.querySelector('#rel ds-tab-item[value="a"]');
+      const panel = document.querySelector('#rel ds-tab-panel[value="a"]');
+      panel.id = 'renamed-panel';
+      tab.id = 'renamed-tab';
+      return {
+        controls: tab.getAttribute('aria-controls'),
+        labelledBy: panel.getAttribute('aria-labelledby'),
+      };
+    });
+    expect(result).toEqual({ controls: 'renamed-panel', labelledBy: 'renamed-tab' });
+    await expect(page.locator('#rel').getByRole('tabpanel', { name: 'Alpha' })).toHaveCount(1);
+  });
+}

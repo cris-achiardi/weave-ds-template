@@ -242,3 +242,6 @@ tablistOwnershipRegressions('wc');
 
 import { tabRelationRegressions } from './tab-relations.mjs';
 tabRelationRegressions();
+
+import { tabRelationReviewRegressions } from './tab-relations.mjs';
+tabRelationReviewRegressions();

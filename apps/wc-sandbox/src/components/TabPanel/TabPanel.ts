@@ -34,7 +34,7 @@ let nextId = 0;
 
 export class TabPanel extends HTMLElement {
   static readonly tagName = 'ds-tab-panel';
-  static readonly observedAttributes = ['value'];
+  static readonly observedAttributes = ['value', 'id'];
 
   readonly #host = supplyRelations('TabPanel');
   readonly #baseId = 'ds-tab-panel-' + nextId++;
@@ -63,12 +63,13 @@ export class TabPanel extends HTMLElement {
   }
 
   disconnectedCallback(): void {
-    this.#collection?.removeEventListener(TABS_CHANGE, this.#onCollectionChange);
+    const collection = this.#collection;
+    this.#collection = null;
+    collection?.removeEventListener(TABS_CHANGE, this.#onCollectionChange);
     // Leaving: give the consumer's host back exactly what it had before this component
     // wrote to it, and let the siblings re-pair without this member.
     this.#host.release();
-    this.#collection?.relink();
-    this.#collection = null;
+    collection?.relink();
   }
 
   readonly #onCollectionChange = () => this.#update();
@@ -115,7 +116,7 @@ export class TabPanel extends HTMLElement {
     // The host carries it too, because CSS cannot select inside a shadow root from
     // outside and cannot append an attribute selector to ::part(). One fact, two
     // places — forced by the boundary, not chosen.
-    this.toggleAttribute('selected', this.#selected);
+    owned['selected'] = this.#selected ? '' : null;
     // Cross-member relations, as IDREFs between HOSTS in one tree. The collection pairs
     // this member with the sibling of the same identity; a missing sibling, or a duplicate
     // identity after the first, links nothing rather than something wrong. The sibling's
@@ -123,7 +124,7 @@ export class TabPanel extends HTMLElement {
     const labelledByPair = this.#collection?.pairOf(this, 'ds-tab-item') ?? null;
     // Focusable by contract, and the host is the element that takes focus.
     owned['tabindex'] = '0';
-    this.toggleAttribute('hidden', !this.#selected);
+    owned['hidden'] = !this.#selected ? '' : null;
     // Nothing is written onto the consumer's host while it is detached: wiring happens on
     // connect, and disconnectedCallback takes back exactly what was written.
     if (this.isConnected)

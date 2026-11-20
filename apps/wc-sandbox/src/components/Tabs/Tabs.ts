@@ -213,11 +213,14 @@ export class Tabs extends HTMLElement {
     // inside this shadow root. They are resolved HERE, in the host's own tree, and the
     // elements are linked instead. Resolved when the attribute changes or the element
     // connects: a label element inserted later is not picked up until one of those.
-    const scope = this.getRootNode() as Document | ShadowRoot;
-    const labels = (this.getAttribute('aria-labelledby') ?? '')
+    // Detached, the root node is this element itself, which has no getElementById: link
+    // nothing then — connectedCallback writes again and resolves in the real tree.
+    const scope = this.getRootNode();
+    const tree = scope instanceof Document || scope instanceof ShadowRoot ? scope : null;
+    const labels = (tree ? (this.getAttribute('aria-labelledby') ?? '') : '')
       .split(/\s+/)
       .filter(Boolean)
-      .map((id) => scope.getElementById(id))
+      .map((id) => tree!.getElementById(id))
       .filter((el): el is HTMLElement => el !== null);
     this.#part('list')!.ariaLabelledByElements = labels.length ? labels : null;
     if (this.disabled) root.setAttribute('aria-disabled', 'true');

@@ -463,6 +463,8 @@ export function emitComponent(name, contract, binding, prefix, { declareTagTypes
   );
   if (acceptsLabel) observed.push('aria-label');
   if (namedPartName) observed.push('aria-labelledby');
+  // A sibling references this host BY ID, so a consumer changing it must re-pair the siblings.
+  if (hostRoot && member) observed.push('id');
   s.push(`export class ${className} extends HTMLElement {`);
   s.push(`  static readonly tagName = '${tag}';`);
   if (form) s.push(`  static readonly formAssociated = true;`);
@@ -596,6 +598,8 @@ export function emitComponent(name, contract, binding, prefix, { declareTagTypes
     if (target === 'host') {
       listeners.push(['host', 'keydown', 'this.#keyActivation(event as KeyboardEvent)']);
       listeners.push(['host', 'keyup', 'this.#keyActivation(event as KeyboardEvent)']);
+      // Focus leaving disarms a Space press, as it does on a native button.
+      listeners.push(['host', 'blur', "this.#space = 'idle'"]);
     }
   }
   if (range) {
@@ -709,6 +713,8 @@ export function emitComponent(name, contract, binding, prefix, { declareTagTypes
     s.push(`      this.#onCollectionChange,`);
     s.push(`    );`);
   }
+  if (hasActivation && hostRoot && !(activator && activator.key !== ROOT_KEY))
+    s.push(`    window.addEventListener('keydown', this.#settleSpace);`);
   s.push(`    this.#update();`);
   if (linked.length || (hostRoot && member)) {
     s.push(`    // Joining changes who this member's siblings pair with (ADR 0008).`);
@@ -723,7 +729,30 @@ export function emitComponent(name, contract, binding, prefix, { declareTagTypes
       s.push(`    for (const timer of this.#pendingActivations) window.clearTimeout(timer);`);
       s.push(`    this.#pendingActivations.clear();`);
     }
-    if (member) {
+    if (hasActivation && hostRoot && !(activator && activator.key !== ROOT_KEY)) {
+      s.push(`    window.removeEventListener('keydown', this.#settleSpace);`);
+      s.push(`    this.#space = 'idle';`);
+    }
+    if (member && hostRoot) {
+      // DETACH FIRST. Releasing the host writes attributes this element observes (`id`), and a
+      // write that still saw the collection would re-register this leaving member with it.
+      s.push(`    const collection = this.#collection;`);
+      s.push(`    this.#collection = null;`);
+      s.push(
+        `    collection?.removeEventListener(${member.of.toUpperCase()}_CHANGE, this.#onCollectionChange);`,
+      );
+      if (registers) {
+        s.push(`    const previous = this.#registeredValue;`);
+        s.push(`    this.#registeredValue = null;`);
+        s.push(`    if (previous !== null) collection?.unregister(previous);`);
+      }
+      s.push(
+        `    // Leaving: give the consumer's host back exactly what it had before this component`,
+      );
+      s.push(`    // wrote to it, and let the siblings re-pair without this member.`);
+      s.push(`    this.#host.release();`);
+      s.push(`    collection?.relink();`);
+    } else if (member) {
       s.push(`    this.#collection?.removeEventListener(`);
       s.push(`      ${member.of.toUpperCase()}_CHANGE,`);
       s.push(`      this.#onCollectionChange,`);
@@ -732,14 +761,6 @@ export function emitComponent(name, contract, binding, prefix, { declareTagTypes
         s.push(`    const previous = this.#registeredValue;`);
         s.push(`    this.#registeredValue = null;`);
         s.push(`    if (previous !== null) this.#collection?.unregister(previous);`);
-      }
-      if (hostRoot) {
-        s.push(
-          `    // Leaving: give the consumer's host back exactly what it had before this component`,
-        );
-        s.push(`    // wrote to it, and let the siblings re-pair without this member.`);
-        s.push(`    this.#host.release();`);
-        s.push(`    this.#collection?.relink();`);
       }
       s.push(`    this.#collection = null;`);
     }
@@ -1005,22 +1026,62 @@ export function emitComponent(name, contract, binding, prefix, { declareTagTypes
     s.push(`   * Enter clicks on keydown, Space on keyup, and Space does not scroll the page.`);
     s.push(`   * The click is DISPATCHED, so it reaches #queueActivation and every consumer click`);
     s.push(`   * listener exactly like a pointer click — and it waits a task, so a consumer`);
-    s.push(`   * keydown/keyup listener that calls preventDefault() still cancels it.`);
+    s.push(`   * keydown/keyup listener that calls preventDefault() still cancels it. A Space`);
+    s.push(`   * press whose KEYDOWN was cancelled does not activate, as on a native button.`);
     s.push(`   */`);
     s.push(`  #keyActivation(event: KeyboardEvent): void {`);
     s.push(
       `    if (event.target !== this || event.altKey || event.ctrlKey || event.metaKey) return;`,
     );
-    s.push(`    const enter = event.type === 'keydown' && event.key === 'Enter';`);
-    s.push(`    const space = event.key === ' ';`);
-    s.push(`    if (space && event.type === 'keydown') event.preventDefault();`);
-    s.push(`    if (!enter && !(space && event.type === 'keyup')) return;`);
+    s.push(`    if (event.key === ' ') {`);
+    s.push(`      if (event.type === 'keydown') {`);
+    s.push(`        // Settled by #settleSpace once every consumer listener has seen the keydown.`);
+    s.push(`        this.#space = event.defaultPrevented ? 'canceled' : 'pending';`);
+    s.push(`        return;`);
+    s.push(`      }`);
+    s.push(`      const armed = this.#space === 'armed' || this.#space === 'pending';`);
+    s.push(`      this.#space = 'idle';`);
+    s.push(`      if (!armed) return;`);
+    s.push(`    } else if (!(event.type === 'keydown' && event.key === 'Enter')) return;`);
     s.push(`    const timer = window.setTimeout(() => {`);
     s.push(`      this.#pendingActivations.delete(timer);`);
     s.push(`      if (this.isConnected && !event.defaultPrevented) this.click();`);
     s.push(`    }, 0);`);
     s.push(`    this.#pendingActivations.add(timer);`);
     s.push(`  }`);
+    s.push(``);
+    s.push(`  /**`);
+    s.push(
+      `   * The current Space press. ARMED by an uncancelled keydown (settled in #settleSpace);`,
+    );
+    s.push(`   * disarmed by a cancelled keydown or by focus leaving the host. Keyup clicks only`);
+    s.push(`   * while armed — or still 'pending', when the keydown's propagation was stopped`);
+    s.push(`   * before #settleSpace could see it, which does not cancel a native button either.`);
+    s.push(`   */`);
+    s.push(`  #space: 'idle' | 'pending' | 'armed' | 'canceled' = 'idle';`);
+    s.push(``);
+    s.push(`  /**`);
+    s.push(`   * The LAST listener a Space keydown on this host meets — a bubbling one on window,`);
+    s.push(`   * added while connected — so every consumer listener has already run and`);
+    s.push(
+      `   * \`defaultPrevented\` says whether one cancelled. Only then does it prevent the page`,
+    );
+    s.push(`   * scroll, which this component must do itself and which would otherwise hide a`);
+    s.push(`   * consumer's cancellation. A consumer that stops propagation instead never reaches`);
+    s.push(`   * here: the press still activates (that does not cancel a native button either),`);
+    s.push(`   * but the page may scroll.`);
+    s.push(`   */`);
+    s.push(`  readonly #settleSpace = (event: KeyboardEvent): void => {`);
+    s.push(
+      `    if (event.key !== ' ' || this.#space !== 'pending' || event.composedPath()[0] !== this) return;`,
+    );
+    s.push(`    if (event.defaultPrevented) {`);
+    s.push(`      this.#space = 'canceled';`);
+    s.push(`      return;`);
+    s.push(`    }`);
+    s.push(`    this.#space = 'armed';`);
+    s.push(`    event.preventDefault();`);
+    s.push(`  };`);
     s.push(``);
   }
 
@@ -1117,11 +1178,18 @@ export function emitComponent(name, contract, binding, prefix, { declareTagTypes
       s.push(
         `    // connects: a label element inserted later is not picked up until one of those.`,
       );
-      s.push(`    const scope = this.getRootNode() as Document | ShadowRoot;`);
-      s.push(`    const labels = (this.getAttribute('aria-labelledby') ?? '')`);
+      s.push(
+        `    // Detached, the root node is this element itself, which has no getElementById: link`,
+      );
+      s.push(`    // nothing then — connectedCallback writes again and resolves in the real tree.`);
+      s.push(`    const scope = this.getRootNode();`);
+      s.push(
+        `    const tree = scope instanceof Document || scope instanceof ShadowRoot ? scope : null;`,
+      );
+      s.push(`    const labels = (tree ? (this.getAttribute('aria-labelledby') ?? '') : '')`);
       s.push(`      .split(/\\s+/)`);
       s.push(`      .filter(Boolean)`);
-      s.push(`      .map((id) => scope.getElementById(id))`);
+      s.push(`      .map((id) => tree!.getElementById(id))`);
       s.push(`      .filter((el): el is HTMLElement => el !== null);`);
       s.push(
         `    ${target}.${relationElementsProperty('namedBy', WEB)} = labels.length ? labels : null;`,
@@ -1242,7 +1310,12 @@ export function emitComponent(name, contract, binding, prefix, { declareTagTypes
     s.push(`    // The host carries it too, because CSS cannot select inside a shadow root from`);
     s.push(`    // outside and cannot append an attribute selector to ::part(). One fact, two`);
     s.push(`    // places — forced by the boundary, not chosen.`);
-    s.push(`    this.toggleAttribute('${kebab(member.reflects)}', this.#selected);`);
+    if (hostRoot) {
+      // Owned like every other host write: nothing while detached, released on disconnect.
+      s.push(`    owned['${kebab(member.reflects)}'] = this.#selected ? '' : null;`);
+    } else {
+      s.push(`    this.toggleAttribute('${kebab(member.reflects)}', this.#selected);`);
+    }
     if (registers) {
       s.push(`    if (this.#collection) {`);
       s.push(`      const value = this.${identity.name};`);
@@ -1384,7 +1457,11 @@ export function emitComponent(name, contract, binding, prefix, { declareTagTypes
     s.push(`    this.#syncForm();`);
   }
   if (root.visibleWhen && !platformModal) {
-    s.push(`    this.toggleAttribute('hidden', !(${stateRead(root.visibleWhen, member)}));`);
+    s.push(
+      hostRoot
+        ? `    owned['hidden'] = !(${stateRead(root.visibleWhen, member)}) ? '' : null;`
+        : `    this.toggleAttribute('hidden', !(${stateRead(root.visibleWhen, member)}));`,
+    );
   }
   if (hostRoot) {
     const keyed = Object.fromEntries(linked.map(({ relation }) => [RELATION_KEY[relation], true]));
