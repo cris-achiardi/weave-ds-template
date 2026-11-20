@@ -9,6 +9,7 @@ import {
   ElementRef,
   ViewEncapsulation,
   afterNextRender,
+  booleanAttribute,
   effect,
   inject,
   input,
@@ -35,6 +36,9 @@ import {
     '[attr.data-ds-size]': 'size()',
     '[value]': 'value()',
     '[attr.readonly]': 'readOnly() || null',
+    '[attr.name]': 'name() || null',
+    '[attr.required]': 'required() || null',
+    '[attr.form]': 'form() || null',
     'data-ds-component': 'TextField',
     'data-ds-part': 'root',
     '(input)': 'handleInput($event)',
@@ -49,6 +53,12 @@ export class TextField {
   readonly readOnly = input<boolean>(false);
   /** Set from outside — usually by a surrounding Field. This component does not decide it. */
   readonly invalid = input<boolean>(false);
+  /** Name of the submitted answer. An empty name contributes nothing. */
+  readonly name = input<string>('');
+  /** Whether an answer is required for form validation. */
+  readonly required = input<boolean, unknown>(false, { transform: booleanAttribute });
+  /** The id of the form that owns this answer, when it is not an ancestor form. */
+  readonly form = input<string>('');
   /** A contiguous subset of the canon's ladder. Defaults to `m`. */
   readonly size = input<'s' | 'm' | 'l'>('m');
   /** The text itself. Free-form: not a boolean, and not one of a fixed set — which is what makes this the first state in the library that `values` cannot describe. Two-way: `[(value)]`. */

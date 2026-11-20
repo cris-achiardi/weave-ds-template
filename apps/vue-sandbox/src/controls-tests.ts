@@ -1,0 +1,95 @@
+import { createApp, h, ref } from 'vue';
+import Button from './components/Button/Button.vue';
+import Checkbox from './components/Checkbox/Checkbox.vue';
+import RadioGroup from './components/RadioGroup/RadioGroup.vue';
+import RadioItem from './components/RadioItem/RadioItem.vue';
+import Slider from './components/Slider/Slider.vue';
+import Switch from './components/Switch/Switch.vue';
+
+type Check = 'unchecked' | 'checked' | 'mixed';
+
+// Form contribution fixture for the custom controls. tests/browser/framework-controls.mjs drives
+// the same page in every framework backend; keep labels, names and test ids identical.
+createApp({
+  setup() {
+    const consent = ref<Check>('checked'),
+      remote = ref<Check>('unchecked'),
+      count = ref(0),
+      invalid = ref(false),
+      required = ref(false),
+      accepted = ref(false),
+      amountName = ref('amount'),
+      consentDisabled = ref(false),
+      showRemote = ref(true);
+    const keep = (event: MouseEvent) => event.preventDefault();
+    const act = (label: string, run: () => void) =>
+      h('button', { onMousedown: keep, onClick: run }, label);
+    const label = (text: string) => ({ label: () => text });
+    return () => [
+      h(
+        'form',
+        {
+          id: 'form',
+          onSubmit: (event: SubmitEvent) => {
+            event.preventDefault();
+            (event.currentTarget as HTMLFormElement).dataset.submitted = 'true';
+          },
+        },
+        [
+          h('fieldset', { id: 'form-fields' }, [
+            h(
+              Checkbox,
+              {
+                name: 'consent',
+                checked: consent.value,
+                invalid: invalid.value,
+                required: required.value,
+                disabled: consentDisabled.value,
+                value: accepted.value ? 'accepted' : undefined,
+                'onUpdate:checked': (next: Check) => {
+                  consent.value = next;
+                  count.value++;
+                },
+              },
+              label('Consent'),
+            ),
+            h(Switch, { 'aria-label': 'Setting', name: 'setting', checked: true }),
+            h(Slider, { 'aria-label': 'Amount', name: amountName.value, value: 25 }),
+            h(RadioGroup, { 'aria-label': 'Choice', name: 'choice', value: 'b' }, () => [
+              h(RadioItem, { value: 'a' }, label('Alpha')),
+              h(RadioItem, { value: 'b' }, label('Beta')),
+            ]),
+            h(Button, null, () => 'Action'),
+          ]),
+          h('button', { type: 'submit' }, 'Submit answers'),
+          h('button', { type: 'reset' }, 'Reset answers'),
+        ],
+      ),
+      showRemote.value
+        ? h(
+            Checkbox,
+            {
+              name: 'remote',
+              form: 'form',
+              checked: remote.value,
+              'onUpdate:checked': (next: Check) => {
+                remote.value = next;
+              },
+            },
+            label('Remote'),
+          )
+        : null,
+      h('output', { 'data-testid': 'consent-model' }, consent.value),
+      h('output', { 'data-testid': 'remote-model' }, remote.value),
+      h('output', { 'data-testid': 'count' }, count.value),
+      act('Mix consent', () => (consent.value = 'mixed')),
+      act('Check consent', () => (consent.value = 'checked')),
+      act('Toggle invalid', () => (invalid.value = !invalid.value)),
+      act('Require consent', () => (required.value = true)),
+      act('Accept value', () => (accepted.value = true)),
+      act('Clear amount name', () => (amountName.value = '')),
+      act('Disable consent', () => (consentDisabled.value = true)),
+      act('Remove remote', () => (showRemote.value = false)),
+    ];
+  },
+}).mount('#fixtures');

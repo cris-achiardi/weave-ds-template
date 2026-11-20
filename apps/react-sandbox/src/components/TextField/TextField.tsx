@@ -48,7 +48,16 @@ function ownValidity(element: HTMLInputElement) {
 
 export interface TextFieldProps extends Omit<
   InputHTMLAttributes<HTMLInputElement>,
-  'value' | 'defaultValue' | 'onValueChange' | 'disabled' | 'readOnly' | 'invalid' | 'size'
+  | 'value'
+  | 'defaultValue'
+  | 'onValueChange'
+  | 'disabled'
+  | 'readOnly'
+  | 'invalid'
+  | 'size'
+  | 'name'
+  | 'required'
+  | 'form'
 > {
   /** The text itself. Free-form: not a boolean, and not one of a fixed set — which is what makes this the first state in the library that `values` cannot describe. Controlled. */
   value?: string;
@@ -64,6 +73,12 @@ export interface TextFieldProps extends Omit<
   invalid?: boolean;
   /** A contiguous subset of the canon's ladder. Defaults to `m`. */
   size?: 's' | 'm' | 'l';
+  /** Name of the submitted answer. An empty name contributes nothing. */
+  name?: string;
+  /** Whether an answer is required for form validation. */
+  required?: boolean;
+  /** The id of the form that owns this answer, when it is not an ancestor form. */
+  form?: string;
 }
 
 export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function TextField(
@@ -75,6 +90,9 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
     readOnly,
     invalid,
     size = 'm',
+    name,
+    required,
+    form,
     className,
     ...rest
   },
@@ -178,6 +196,9 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
       data-ds-size={size}
       value={valueValue}
       readOnly={readOnly}
+      name={name}
+      required={required}
+      form={form}
       onChange={(event) => {
         rest.onChange?.(event);
         handleChange(event);

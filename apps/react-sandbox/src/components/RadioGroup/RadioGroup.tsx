@@ -3,7 +3,16 @@
 //
 // Holds one choice from a small set of mutually exclusive options, all visible at once. It exists so the chosen option has exactly one home: the items compare against it rather than each holding a copy.
 
-import { forwardRef, useId, useState, useCallback, createContext, useMemo } from 'react';
+import {
+  forwardRef,
+  useId,
+  useState,
+  useCallback,
+  useEffect,
+  useRef,
+  createContext,
+  useMemo,
+} from 'react';
 import type { HTMLAttributes } from 'react';
 import {
   useLinearNavigation,
@@ -12,6 +21,20 @@ import {
 } from '@ds/react/behavior';
 import './RadioGroup.structure.css';
 import './RadioGroup.theme.css';
+
+// The form proxy: in the form, out of sight, out of the pointer's and the tab order's reach.
+const FORM_PROXY_STYLE = {
+  position: 'absolute',
+  width: 1,
+  height: 1,
+  margin: 0,
+  padding: 0,
+  border: 0,
+  opacity: 0,
+  overflow: 'hidden',
+  clipPath: 'inset(50%)',
+  pointerEvents: 'none',
+} as const;
 
 // Transcribed field for field from RadioGroup.contract.json > collection.navigation.
 // The cases this commits us to are in @ds/contracts/conformance/linear-navigation.json.
@@ -42,7 +65,14 @@ export const RadioGroupContext = createContext<RadioGroupContextValue | null>(nu
 
 export interface RadioGroupProps extends Omit<
   HTMLAttributes<HTMLDivElement>,
-  'disabled' | 'readOnly' | 'value' | 'defaultValue' | 'onValueChange'
+  | 'disabled'
+  | 'readOnly'
+  | 'value'
+  | 'defaultValue'
+  | 'onValueChange'
+  | 'name'
+  | 'required'
+  | 'form'
 > {
   /** The whole group ignores interaction. Cascades to every item. */
   disabled?: boolean;
@@ -54,12 +84,35 @@ export interface RadioGroupProps extends Omit<
   defaultValue?: string;
   /** Called when it changes, controlled or not. */
   onValueChange?: (value: string) => void;
+  /** Name of the submitted answer. An empty name contributes nothing. */
+  name?: string;
+  /** Whether an answer is required for form validation. */
+  required?: boolean;
+  /** The id of the form that owns this answer, when it is not an ancestor form. */
+  form?: string;
 }
 
 export const RadioGroup = forwardRef<HTMLDivElement, RadioGroupProps>(function RadioGroup(
-  { disabled, readOnly, value, defaultValue = '', onValueChange, children, className, ...rest },
+  {
+    disabled: disabledProp,
+    readOnly,
+    value,
+    defaultValue = '',
+    onValueChange,
+    name,
+    required,
+    form,
+    children,
+    className,
+    ...rest
+  },
   ref,
 ) {
+  // Effective disabled: the consumer's prop, or a disabled <fieldset> around the control.
+  // Everything below reads this one; the prop itself is never written.
+  const [formDisabled, setFormDisabled] = useState(false);
+  const disabled = disabledProp || formDisabled;
+
   const baseId = useId();
 
   const valueControlled = value !== undefined;
@@ -94,6 +147,64 @@ export const RadioGroup = forwardRef<HTMLDivElement, RadioGroupProps>(function R
     [selection, toggle, baseId, disabled, nav.register, nav.unregister, nav.isTabStop],
   );
 
+  // ---- form contribution (contract.form). See packages/wc/forms.md.
+  const formProxy = useRef<HTMLInputElement | null>(null);
+  // The answer a reset restores: captured once, at mount, never re-captured from props.
+  const formAnswer = useRef(selection);
+  // Read by listeners installed once, which must see current props.
+  const formLatest = useRef({ selection, valueControlled, onValueChange });
+  formLatest.current = { selection, valueControlled, onValueChange };
+  const formWrite = useCallback(() => {
+    const proxy = formProxy.current;
+    if (!proxy) return;
+    const answer = formLatest.current.selection;
+    proxy.value = answer;
+  }, []);
+  // Every render: the proxy holds exactly the answer the UI shows.
+  useEffect(formWrite);
+  useEffect(() => {
+    const proxy = formProxy.current;
+    if (!proxy) return;
+    const doc = proxy.ownerDocument;
+    // A disabled <fieldset> fires no event. Watch `disabled` attributes and ask the
+    // proxy, which the platform disables along with every other control inside it.
+    const syncDisabled = () => setFormDisabled(proxy.matches(':disabled') && !proxy.disabled);
+    syncDisabled();
+    const observer = new MutationObserver(syncDisabled);
+    observer.observe(doc.documentElement, {
+      attributes: true,
+      attributeFilter: ['disabled'],
+      subtree: true,
+    });
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    // Matched against the CURRENT owner when it fires, so a `form` prop, an owner change
+    // or a move needs no re-subscription.
+    const onReset = (event: Event) => {
+      if (event.target !== proxy.form) return;
+      // A TASK, not a microtask: a reset button dispatches from native code, so a
+      // microtask would run before later listeners could cancel and before the reset.
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        if (event.defaultPrevented) return;
+        const answer = formAnswer.current;
+        const latest = formLatest.current;
+        // A controlled model is told only when it differs. No DOM event is dispatched:
+        // this is lifecycle synchronisation, not a user edit.
+        if (latest.valueControlled) {
+          if (latest.selection !== answer) latest.onValueChange?.(answer);
+        } else setValueInternal(answer);
+        // The platform has rewritten the proxy; put back what the model holds now.
+        formWrite();
+      });
+    };
+    doc.addEventListener('reset', onReset, true);
+    return () => {
+      observer.disconnect();
+      doc.removeEventListener('reset', onReset, true);
+      clearTimeout(timer);
+    };
+  }, [setValueInternal, formWrite]);
+
   return (
     <div
       {...rest}
@@ -111,6 +222,23 @@ export const RadioGroup = forwardRef<HTMLDivElement, RadioGroupProps>(function R
       className={className}
     >
       <RadioGroupContext.Provider value={contextValue}>{children}</RadioGroupContext.Provider>
+      <input
+        ref={formProxy}
+        type="text"
+        name={name || undefined}
+        form={form || undefined}
+        required={required && !readOnly}
+        readOnly={readOnly}
+        disabled={disabledProp}
+        aria-hidden="true"
+        tabIndex={-1}
+        autoComplete="off"
+        style={FORM_PROXY_STYLE}
+        onFocus={(event) => {
+          const root = event.currentTarget.parentElement;
+          (root?.querySelector<HTMLElement>('[tabindex="0"]') ?? root)?.focus();
+        }}
+      />
     </div>
   );
 });

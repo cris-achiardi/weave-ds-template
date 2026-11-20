@@ -126,3 +126,178 @@ export function emitOwnedValidity(local) {
     `  }, [invalid]);`,
   ];
 }
+// ---------------------------------------------------------------------------------------
+// Custom controls (#37): Checkbox, Switch, Slider, RadioGroup render no native form control, so
+// they contribute through a PROXY: one real, validatable <input> of the matching type, rendered as
+// the root's last child, hidden from people and assistive technology. Not `type="hidden"`, which is
+// barred from constraint validation and would make `required` decorative.
+//
+// The proxy is driven IMPERATIVELY, never through React-controlled props: a native reset rewrites
+// it, and React would neither notice nor re-render to undo that. Every render writes the current
+// answer to it, and so does the reset sync for the case where nothing re-renders.
+//
+// DEVIATION, accepted and recorded in packages/wc/forms.md: for Checkbox and Switch the root is a
+// <button>, and an <input> inside a <button> violates the HTML content model. The generated markup
+// is NOT valid HTML there. The alternative — a sibling after the root — was rejected because Angular
+// attaches to the root and cannot render a sibling without imperative insertion.
+// ---------------------------------------------------------------------------------------
+
+/** The proxy input type for a validated `formFor` result. */
+export function proxyTypeFor(form) {
+  if (form.encoding === 'checked') return 'checkbox';
+  if (form.encoding === 'number') return 'range';
+  return 'text';
+}
+
+/**
+ * Names the generated code uses for the answer's state. A collection's selection is spelled
+ * differently from a plain shared state.
+ */
+export function answerNames(form, camel, pascal) {
+  if (form.source === 'selection')
+    return {
+      value: 'selection',
+      controlled: 'valueControlled',
+      setter: 'setValueInternal',
+      callback: 'onValueChange',
+    };
+  const v = camel(form.source);
+  const P = pascal(form.source);
+  return {
+    value: `${v}Value`,
+    controlled: `${v}Controlled`,
+    setter: `set${P}Internal`,
+    callback: `on${P}Change`,
+  };
+}
+
+/** The statement that writes the current answer to the proxy, given `proxy` and `answer`. */
+function writeProxy(form) {
+  if (form.encoding === 'checked')
+    return `proxy.checked = answer === ${JSON.stringify(form.checkedValue)};`;
+  if (form.encoding === 'number') return `proxy.value = String(snap(answer, RANGE));`;
+  return `proxy.value = answer;`;
+}
+
+/**
+ * Body statements: reset sync, fieldset observation, proxy writes, owned validity. Emitted before
+ * `return (`. Effective disabled (`formDisabled`) is declared at the top of the body by the caller.
+ */
+export function emitCustomFormLifecycle({ form, names, hasInvalid }) {
+  const { value, controlled, setter, callback } = names;
+  const s = [];
+  s.push(`  // ---- form contribution (contract.form). See packages/wc/forms.md.`);
+  s.push(`  const formProxy = useRef<HTMLInputElement | null>(null);`);
+  s.push(
+    `  // The answer a reset restores: captured once, at mount, never re-captured from props.`,
+  );
+  s.push(`  const formAnswer = useRef(${value});`);
+  s.push(`  // Read by listeners installed once, which must see current props.`);
+  s.push(`  const formLatest = useRef({ ${value}, ${controlled}, ${callback} });`);
+  s.push(`  formLatest.current = { ${value}, ${controlled}, ${callback} };`);
+  s.push(`  const formWrite = useCallback(() => {`);
+  s.push(`    const proxy = formProxy.current;`);
+  s.push(`    if (!proxy) return;`);
+  s.push(`    const answer = formLatest.current.${value};`);
+  s.push(`    ${writeProxy(form)}`);
+  s.push(`  }, []);`);
+  s.push(`  // Every render: the proxy holds exactly the answer the UI shows.`);
+  s.push(`  useEffect(formWrite);`);
+  s.push(`  useEffect(() => {`);
+  s.push(`    const proxy = formProxy.current;`);
+  s.push(`    if (!proxy) return;`);
+  s.push(`    const doc = proxy.ownerDocument;`);
+  s.push(`    // A disabled <fieldset> fires no event. Watch \`disabled\` attributes and ask the`);
+  s.push(`    // proxy, which the platform disables along with every other control inside it.`);
+  s.push(
+    `    const syncDisabled = () => setFormDisabled(proxy.matches(':disabled') && !proxy.disabled);`,
+  );
+  s.push(`    syncDisabled();`);
+  s.push(`    const observer = new MutationObserver(syncDisabled);`);
+  s.push(`    observer.observe(doc.documentElement, {`);
+  s.push(`      attributes: true,`);
+  s.push(`      attributeFilter: ['disabled'],`);
+  s.push(`      subtree: true,`);
+  s.push(`    });`);
+  s.push(`    let timer: ReturnType<typeof setTimeout> | undefined;`);
+  s.push(
+    `    // Matched against the CURRENT owner when it fires, so a \`form\` prop, an owner change`,
+  );
+  s.push(`    // or a move needs no re-subscription.`);
+  s.push(`    const onReset = (event: Event) => {`);
+  s.push(`      if (event.target !== proxy.form) return;`);
+  s.push(`      // A TASK, not a microtask: a reset button dispatches from native code, so a`);
+  s.push(`      // microtask would run before later listeners could cancel and before the reset.`);
+  s.push(`      clearTimeout(timer);`);
+  s.push(`      timer = setTimeout(() => {`);
+  s.push(`        if (event.defaultPrevented) return;`);
+  s.push(`        const answer = formAnswer.current;`);
+  s.push(`        const latest = formLatest.current;`);
+  s.push(`        // A controlled model is told only when it differs. No DOM event is dispatched:`);
+  s.push(`        // this is lifecycle synchronisation, not a user edit.`);
+  s.push(`        if (latest.${controlled}) {`);
+  s.push(`          if (latest.${value} !== answer) latest.${callback}?.(answer);`);
+  s.push(`        } else ${setter}(answer);`);
+  s.push(`        // The platform has rewritten the proxy; put back what the model holds now.`);
+  s.push(`        formWrite();`);
+  s.push(`      });`);
+  s.push(`    };`);
+  s.push(`    doc.addEventListener('reset', onReset, true);`);
+  s.push(`    return () => {`);
+  s.push(`      observer.disconnect();`);
+  s.push(`      doc.removeEventListener('reset', onReset, true);`);
+  s.push(`      clearTimeout(timer);`);
+  s.push(`    };`);
+  s.push(`  }, [${setter}, formWrite]);`);
+  if (hasInvalid) s.push(...emitOwnedValidity('formProxy'));
+  s.push(``);
+  return s;
+}
+
+/** The proxy element, as JSX lines at the given indent. */
+export function emitFormProxy({ form, range, hasReadOnly, indent }) {
+  const pad = ' '.repeat(indent);
+  const type = proxyTypeFor(form);
+  const a = [];
+  a.push(`ref={formProxy}`);
+  a.push(`type="${type}"`);
+  a.push(`name={name || undefined}`);
+  a.push(`form={form || undefined}`);
+  // A read-only answer still submits but is barred from validation, as in HTML. `readonly` does not
+  // apply to checkbox or range, so `required` is withdrawn instead.
+  a.push(`required={${hasReadOnly ? 'required && !readOnly' : 'required'}}`);
+  if (hasReadOnly && type === 'text') a.push(`readOnly={readOnly}`);
+  a.push(`disabled={disabledProp}`);
+  if (form.encoding === 'checked') a.push(`value={value}`);
+  if (type === 'range' && range) {
+    a.push(`min={${range.min}}`);
+    a.push(`max={${range.max}}`);
+    a.push(`step={${range.step}}`);
+  }
+  a.push(`aria-hidden="true"`);
+  a.push(`tabIndex={-1}`);
+  a.push(`autoComplete="off"`);
+  a.push(`style={FORM_PROXY_STYLE}`);
+  a.push(
+    `onFocus={(event) => { const root = event.currentTarget.parentElement; (root?.querySelector<HTMLElement>('[tabindex="0"]') ?? root)?.focus(); }}`,
+  );
+  return [`${pad}<input`, ...a.map((x) => `${pad}  ${x}`), `${pad}/>`];
+}
+
+/** Module-scope constant, emitted after the imports. */
+export const FORM_PROXY_STYLE_DECL = [
+  `// The form proxy: in the form, out of sight, out of the pointer's and the tab order's reach.`,
+  `const FORM_PROXY_STYLE = {`,
+  `  position: 'absolute',`,
+  `  width: 1,`,
+  `  height: 1,`,
+  `  margin: 0,`,
+  `  padding: 0,`,
+  `  border: 0,`,
+  `  opacity: 0,`,
+  `  overflow: 'hidden',`,
+  `  clipPath: 'inset(50%)',`,
+  `  pointerEvents: 'none',`,
+  `} as const;`,
+  ``,
+];

@@ -3,14 +3,75 @@
 //
 // Records a yes/no answer that is collected rather than acted on immediately, and can additionally report that a set of answers below it is partly yes.
 
-import { forwardRef, useState, useCallback } from 'react';
+import { forwardRef, useState, useCallback, useEffect, useRef } from 'react';
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import './Checkbox.structure.css';
 import './Checkbox.theme.css';
 
+// Custom validity has two writers, tracked by WRITER, not by message text: the consumer,
+// through the element's own setCustomValidity() method, and authored `invalid`. The
+// consumer's message wins, as in WC. Generated from packages/emit-web/validity.mjs, which also
+// records the one unsupported path (calling the prototype method directly).
+function ownValidity(element: HTMLInputElement) {
+  const prior = Object.getOwnPropertyDescriptor(element, 'setCustomValidity');
+  const write: (message: string) => void =
+    typeof prior?.value === 'function'
+      ? prior.value.bind(element)
+      : HTMLInputElement.prototype.setCustomValidity.bind(element);
+  // An error already present is the consumer's. While the element is barred from validation
+  // its text reads '', so `null` records "present but unreadable": left exactly as it is.
+  let consumer: string | null = element.validity.customError
+    ? element.validationMessage || null
+    : '';
+  let invalid = false;
+  const apply = () => {
+    if (consumer !== null) write(consumer || (invalid ? 'Invalid value.' : ''));
+  };
+  const intercept = (message: string) => {
+    consumer = String(message);
+    apply();
+  };
+  element.setCustomValidity = intercept;
+  return {
+    setInvalid(next: boolean) {
+      invalid = next;
+      apply();
+    },
+    release() {
+      // A newer override is the consumer's: leave it.
+      if (element.setCustomValidity !== intercept) return;
+      if (prior) Object.defineProperty(element, 'setCustomValidity', prior);
+      else Reflect.deleteProperty(element, 'setCustomValidity');
+    },
+  };
+}
+
+// The form proxy: in the form, out of sight, out of the pointer's and the tab order's reach.
+const FORM_PROXY_STYLE = {
+  position: 'absolute',
+  width: 1,
+  height: 1,
+  margin: 0,
+  padding: 0,
+  border: 0,
+  opacity: 0,
+  overflow: 'hidden',
+  clipPath: 'inset(50%)',
+  pointerEvents: 'none',
+} as const;
+
 export interface CheckboxProps extends Omit<
   ButtonHTMLAttributes<HTMLButtonElement>,
-  'checked' | 'defaultChecked' | 'onCheckedChange' | 'disabled' | 'invalid' | 'label'
+  | 'checked'
+  | 'defaultChecked'
+  | 'onCheckedChange'
+  | 'disabled'
+  | 'invalid'
+  | 'label'
+  | 'name'
+  | 'required'
+  | 'form'
+  | 'value'
 > {
   /** The answer. Three values, not two: `mixed` reports that a set of checkboxes below this one is partly checked, and is set by the implementation rather than chosen by a user. Controlled. */
   checked?: 'unchecked' | 'checked' | 'mixed';
@@ -24,6 +85,14 @@ export interface CheckboxProps extends Omit<
   invalid?: boolean;
   /** The question being answered. Fills the `label` part. */
   label: ReactNode;
+  /** Name of the submitted answer. An empty name contributes nothing. */
+  name?: string;
+  /** Whether an answer is required for form validation. */
+  required?: boolean;
+  /** The id of the form that owns this answer, when it is not an ancestor form. */
+  form?: string;
+  /** Value submitted when checked. */
+  value?: string;
 }
 
 export const Checkbox = forwardRef<HTMLButtonElement, CheckboxProps>(function Checkbox(
@@ -31,15 +100,24 @@ export const Checkbox = forwardRef<HTMLButtonElement, CheckboxProps>(function Ch
     checked,
     defaultChecked = 'unchecked',
     onCheckedChange,
-    disabled,
+    disabled: disabledProp,
     invalid,
     label,
+    name,
+    required,
+    form,
+    value = 'on',
     children,
     className,
     ...rest
   },
   ref,
 ) {
+  // Effective disabled: the consumer's prop, or a disabled <fieldset> around the control.
+  // Everything below reads this one; the prop itself is never written.
+  const [formDisabled, setFormDisabled] = useState(false);
+  const disabled = disabledProp || formDisabled;
+
   const checkedControlled = checked !== undefined;
   const [checkedInternal, setCheckedInternal] = useState(defaultChecked);
   const checkedValue = checkedControlled ? checked : checkedInternal;
@@ -59,6 +137,78 @@ export const Checkbox = forwardRef<HTMLButtonElement, CheckboxProps>(function Ch
     },
     [checkedControlled, checkedValue, onCheckedChange, disabled],
   );
+
+  // ---- form contribution (contract.form). See packages/wc/forms.md.
+  const formProxy = useRef<HTMLInputElement | null>(null);
+  // The answer a reset restores: captured once, at mount, never re-captured from props.
+  const formAnswer = useRef(checkedValue);
+  // Read by listeners installed once, which must see current props.
+  const formLatest = useRef({ checkedValue, checkedControlled, onCheckedChange });
+  formLatest.current = { checkedValue, checkedControlled, onCheckedChange };
+  const formWrite = useCallback(() => {
+    const proxy = formProxy.current;
+    if (!proxy) return;
+    const answer = formLatest.current.checkedValue;
+    proxy.checked = answer === 'checked';
+  }, []);
+  // Every render: the proxy holds exactly the answer the UI shows.
+  useEffect(formWrite);
+  useEffect(() => {
+    const proxy = formProxy.current;
+    if (!proxy) return;
+    const doc = proxy.ownerDocument;
+    // A disabled <fieldset> fires no event. Watch `disabled` attributes and ask the
+    // proxy, which the platform disables along with every other control inside it.
+    const syncDisabled = () => setFormDisabled(proxy.matches(':disabled') && !proxy.disabled);
+    syncDisabled();
+    const observer = new MutationObserver(syncDisabled);
+    observer.observe(doc.documentElement, {
+      attributes: true,
+      attributeFilter: ['disabled'],
+      subtree: true,
+    });
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    // Matched against the CURRENT owner when it fires, so a `form` prop, an owner change
+    // or a move needs no re-subscription.
+    const onReset = (event: Event) => {
+      if (event.target !== proxy.form) return;
+      // A TASK, not a microtask: a reset button dispatches from native code, so a
+      // microtask would run before later listeners could cancel and before the reset.
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        if (event.defaultPrevented) return;
+        const answer = formAnswer.current;
+        const latest = formLatest.current;
+        // A controlled model is told only when it differs. No DOM event is dispatched:
+        // this is lifecycle synchronisation, not a user edit.
+        if (latest.checkedControlled) {
+          if (latest.checkedValue !== answer) latest.onCheckedChange?.(answer);
+        } else setCheckedInternal(answer);
+        // The platform has rewritten the proxy; put back what the model holds now.
+        formWrite();
+      });
+    };
+    doc.addEventListener('reset', onReset, true);
+    return () => {
+      observer.disconnect();
+      doc.removeEventListener('reset', onReset, true);
+      clearTimeout(timer);
+    };
+  }, [setCheckedInternal, formWrite]);
+  const formValidity = useRef<ReturnType<typeof ownValidity> | null>(null);
+  useEffect(() => {
+    const element = formProxy.current;
+    if (!element) return;
+    const owner = ownValidity(element);
+    formValidity.current = owner;
+    return () => {
+      formValidity.current = null;
+      owner.release();
+    };
+  }, []);
+  useEffect(() => {
+    formValidity.current?.setInvalid(Boolean(invalid));
+  }, [invalid]);
 
   return (
     <button
@@ -91,6 +241,23 @@ export const Checkbox = forwardRef<HTMLButtonElement, CheckboxProps>(function Ch
       </div>
       <div data-ds-part="label">{label}</div>
       {children}
+      <input
+        ref={formProxy}
+        type="checkbox"
+        name={name || undefined}
+        form={form || undefined}
+        required={required}
+        disabled={disabledProp}
+        value={value}
+        aria-hidden="true"
+        tabIndex={-1}
+        autoComplete="off"
+        style={FORM_PROXY_STYLE}
+        onFocus={(event) => {
+          const root = event.currentTarget.parentElement;
+          (root?.querySelector<HTMLElement>('[tabindex="0"]') ?? root)?.focus();
+        }}
+      />
     </button>
   );
 });

@@ -17,7 +17,7 @@ Each section describes that backend only. Model events, attributes, and slots ar
 > [`prop-canon.json`](../../packages/contracts/prop-canon.json) (data) and
 > `packages/contracts/components/README.md` §2 (prose).
 
-**Coverage:** 15 components · 40 props · 2 flags.
+**Coverage:** 15 components · 43 props · 2 flags.
 
 ### How to use this
 
@@ -82,6 +82,7 @@ One spelling, one meaning. A new value is added here in the same change that int
 | `dirty` | boolean | boolean | Field |
 | `disabled` | boolean | boolean | Accordion, AccordionItem, Button, Checkbox, Field, RadioGroup, RadioItem, Slider, Switch, TabItem, Tabs, TextField, Tooltip |
 | `error` | node | ReactNode | Field |
+| `form` | local | string | Checkbox, RadioGroup, Slider, Switch, TextField |
 | `heading` | node | ReactNode | AccordionItem |
 | `hierarchy` | axis | primary · secondary · tertiary | Button |
 | `iconEnd` | node | ReactNode | Button |
@@ -89,6 +90,7 @@ One spelling, one meaning. A new value is added here in the same change that int
 | `invalid` | boolean | boolean | Checkbox, Field, TextField |
 | `label` | node | ReactNode | Checkbox, Field, RadioItem, TabItem |
 | `loading` | boolean | boolean | Button |
+| `name` | local | string | Checkbox, RadioGroup, Slider, Switch, TextField |
 | `onCheckedChange` | local | Checkbox: (checked: 'unchecked' \| 'checked' \| 'mixed') => void<br>Switch: (checked: boolean) => void | Checkbox, Switch |
 | `onDirtyChange` | local | (dirty: boolean) => void | Field |
 | `onInvalidChange` | local | (invalid: boolean) => void | Field |
@@ -100,12 +102,13 @@ One spelling, one meaning. A new value is added here in the same change that int
 | `panel` | node | ReactNode | AccordionItem |
 | `placement` | axis | top · top-start · top-end · bottom · bottom-start · bottom-end · left · right | Tooltip |
 | `readOnly` | boolean | boolean | RadioGroup, Switch, TextField |
+| `required` | boolean | boolean | Checkbox, RadioGroup, Slider, Switch, TextField |
 | `size` | axis | s · m · l | Button, Dialog, TextField |
 | `tabs` | node | ReactNode | Tabs |
 | `title` | node | ReactNode | Dialog |
 | `touched` | boolean | boolean | Field |
 | `trigger` | node | ReactNode | Tooltip |
-| `value` | local | Slider: number<br>AccordionItem, RadioGroup, RadioItem, TabItem, TabPanel, Tabs, TextField: string<br>Accordion: string[] | Accordion, AccordionItem, RadioGroup, RadioItem, Slider, TabItem, TabPanel, Tabs, TextField |
+| `value` | local | Slider: number<br>AccordionItem, Checkbox, RadioGroup, RadioItem, Switch, TabItem, TabPanel, Tabs, TextField: string<br>Accordion: string[] | Accordion, AccordionItem, Checkbox, RadioGroup, RadioItem, Slider, Switch, TabItem, TabPanel, Tabs, TextField |
 | `variant` | axis | neutral · brand · danger | Button |
 
 ### 4. Drift report
@@ -155,6 +158,10 @@ One spelling, one meaning. A new value is added here in the same change that int
 | disabled | input | boolean | ? | ? |
 | invalid | input | boolean | ? | ? |
 | label | slot | ReactNode | ? | ? |
+| name | input | string | ? | ? |
+| required | input | boolean | ? | ? |
+| form | input | string | ? | ? |
+| value | input | string | ? | ? |
 
 ### Dialog
 
@@ -196,6 +203,9 @@ One spelling, one meaning. A new value is added here in the same change that int
 | value | controlled | string | ? | ? |
 | defaultValue | uncontrolled | string | ? | ? |
 | onValueChange | callback | (value: string) => void | ? | ? |
+| name | input | string | ? | ? |
+| required | input | boolean | ? | ? |
+| form | input | string | ? | ? |
 
 ### RadioItem
 
@@ -213,6 +223,9 @@ One spelling, one meaning. A new value is added here in the same change that int
 | defaultValue | uncontrolled | number | ? | ? |
 | onValueChange | callback | (value: number) => void | ? | ? |
 | disabled | input | boolean | ? | ? |
+| name | input | string | ? | ? |
+| required | input | boolean | ? | ? |
+| form | input | string | ? | ? |
 
 ### Switch
 
@@ -223,6 +236,10 @@ One spelling, one meaning. A new value is added here in the same change that int
 | onCheckedChange | callback | (checked: boolean) => void | ? | ? |
 | disabled | input | boolean | ? | ? |
 | readOnly | input | boolean | ? | ? |
+| name | input | string | ? | ? |
+| required | input | boolean | ? | ? |
+| form | input | string | ? | ? |
+| value | input | string | ? | ? |
 
 ### TabItem
 
@@ -259,6 +276,9 @@ One spelling, one meaning. A new value is added here in the same change that int
 | readOnly | input | boolean | ? | ? |
 | invalid | input | boolean | ? | ? |
 | size | axis | 's' \| 'm' \| 'l' | ? | ? |
+| name | input | string | ? | ? |
+| required | input | boolean | ? | ? |
+| form | input | string | ? | ? |
 
 ### Tooltip
 
@@ -285,7 +305,7 @@ One spelling, one meaning. A new value is added here in the same change that int
 > [`prop-canon.json`](../../packages/contracts/prop-canon.json) (data) and
 > `packages/contracts/components/README.md` §2 (prose).
 
-**Coverage:** 15 components · 14 props · 1 flags.
+**Coverage:** 15 components · 17 props · 1 flags.
 
 ### How to use this
 
@@ -338,16 +358,19 @@ One spelling, one meaning. A new value is added here in the same change that int
 | `checked` | enum | Checkbox: unchecked · checked · mixed<br>Switch: boolean | Checkbox, Switch |
 | `dirty` | boolean | boolean | Field |
 | `disabled` | boolean | boolean | Accordion, AccordionItem, Button, Checkbox, Field, RadioGroup, RadioItem, Slider, Switch, TabItem, Tabs, TextField, Tooltip |
+| `form` | local | string | Checkbox, RadioGroup, Slider, Switch, TextField |
 | `hierarchy` | axis | primary · secondary · tertiary | Button |
 | `invalid` | boolean | boolean | Checkbox, Field, TextField |
 | `loading` | boolean | boolean | Button |
+| `name` | local | string | Checkbox, RadioGroup, Slider, Switch, TextField |
 | `open` | boolean | boolean | Dialog, Tooltip |
 | `orientation` | axis | vertical | Accordion |
 | `placement` | axis | top · top-start · top-end · bottom · bottom-start · bottom-end · left · right | Tooltip |
 | `readOnly` | boolean | boolean | RadioGroup, Switch, TextField |
+| `required` | boolean | boolean | Checkbox, RadioGroup, Slider, Switch, TextField |
 | `size` | axis | s · m · l | Button, Dialog, TextField |
 | `touched` | boolean | boolean | Field |
-| `value` | local | Slider: number<br>AccordionItem, RadioGroup, RadioItem, TabItem, TabPanel, Tabs, TextField: string<br>Accordion: string[] | Accordion, AccordionItem, RadioGroup, RadioItem, Slider, TabItem, TabPanel, Tabs, TextField |
+| `value` | local | Slider: number<br>AccordionItem, Checkbox, RadioGroup, RadioItem, Switch, TabItem, TabPanel, Tabs, TextField: string<br>Accordion: string[] | Accordion, AccordionItem, Checkbox, RadioGroup, RadioItem, Slider, Switch, TabItem, TabPanel, Tabs, TextField |
 | `variant` | axis | neutral · brand · danger | Button |
 
 ### 4. Drift report
@@ -387,6 +410,10 @@ One spelling, one meaning. A new value is added here in the same change that int
 | checked | model | 'unchecked' \| 'checked' \| 'mixed' | ? | update:checked |
 | disabled | input | boolean | ? | ? |
 | invalid | input | boolean | ? | ? |
+| name | input | string | ? | ? |
+| required | input | boolean | ? | ? |
+| form | input | string | ? | ? |
+| value | input | string | ? | ? |
 
 ### Dialog
 
@@ -411,6 +438,9 @@ One spelling, one meaning. A new value is added here in the same change that int
 | disabled | input | boolean | ? | ? |
 | readOnly | input | boolean | ? | ? |
 | value | model | string | ? | update:value |
+| name | input | string | ? | ? |
+| required | input | boolean | ? | ? |
+| form | input | string | ? | ? |
 
 ### RadioItem
 
@@ -425,6 +455,9 @@ One spelling, one meaning. A new value is added here in the same change that int
 | --- | --- | --- | --- | --- |
 | value | model | number | ? | update:value |
 | disabled | input | boolean | ? | ? |
+| name | input | string | ? | ? |
+| required | input | boolean | ? | ? |
+| form | input | string | ? | ? |
 
 ### Switch
 
@@ -433,6 +466,10 @@ One spelling, one meaning. A new value is added here in the same change that int
 | checked | model | boolean | ? | update:checked |
 | disabled | input | boolean | ? | ? |
 | readOnly | input | boolean | ? | ? |
+| name | input | string | ? | ? |
+| required | input | boolean | ? | ? |
+| form | input | string | ? | ? |
+| value | input | string | ? | ? |
 
 ### TabItem
 
@@ -463,6 +500,9 @@ One spelling, one meaning. A new value is added here in the same change that int
 | readOnly | input | boolean | ? | ? |
 | invalid | input | boolean | ? | ? |
 | size | axis | 's' \| 'm' \| 'l' | ? | ? |
+| name | input | string | ? | ? |
+| required | input | boolean | ? | ? |
+| form | input | string | ? | ? |
 
 ### Tooltip
 
@@ -485,7 +525,7 @@ One spelling, one meaning. A new value is added here in the same change that int
 > [`prop-canon.json`](../../packages/contracts/prop-canon.json) (data) and
 > `packages/contracts/components/README.md` §2 (prose).
 
-**Coverage:** 15 components · 14 props · 1 flags.
+**Coverage:** 15 components · 17 props · 1 flags.
 
 ### How to use this
 
@@ -538,16 +578,19 @@ One spelling, one meaning. A new value is added here in the same change that int
 | `checked` | enum | Checkbox: unchecked · checked · mixed<br>Switch: boolean | Checkbox, Switch |
 | `dirty` | boolean | boolean | Field |
 | `disabled` | boolean | boolean | Accordion, AccordionItem, Button, Checkbox, Field, RadioGroup, RadioItem, Slider, Switch, TabItem, Tabs, TextField, Tooltip |
+| `form` | local | string | Checkbox, RadioGroup, Slider, Switch, TextField |
 | `hierarchy` | axis | primary · secondary · tertiary | Button |
 | `invalid` | boolean | boolean | Checkbox, Field, TextField |
 | `loading` | boolean | boolean | Button |
+| `name` | local | string | Checkbox, RadioGroup, Slider, Switch, TextField |
 | `open` | boolean | boolean | Dialog, Tooltip |
 | `orientation` | axis | vertical | Accordion |
 | `placement` | axis | top · top-start · top-end · bottom · bottom-start · bottom-end · left · right | Tooltip |
 | `readOnly` | boolean | boolean | RadioGroup, Switch, TextField |
+| `required` | boolean | boolean | Checkbox, RadioGroup, Slider, Switch, TextField |
 | `size` | axis | s · m · l | Button, Dialog, TextField |
 | `touched` | boolean | boolean | Field |
-| `value` | local | Slider: number<br>AccordionItem, RadioGroup, RadioItem, TabItem, TabPanel, Tabs, TextField: string<br>Accordion: string[] | Accordion, AccordionItem, RadioGroup, RadioItem, Slider, TabItem, TabPanel, Tabs, TextField |
+| `value` | local | Slider: number<br>AccordionItem, Checkbox, RadioGroup, RadioItem, Switch, TabItem, TabPanel, Tabs, TextField: string<br>Accordion: string[] | Accordion, AccordionItem, Checkbox, RadioGroup, RadioItem, Slider, Switch, TabItem, TabPanel, Tabs, TextField |
 | `variant` | axis | neutral · brand · danger | Button |
 
 ### 4. Drift report
@@ -587,6 +630,10 @@ One spelling, one meaning. A new value is added here in the same change that int
 | checked | model | 'unchecked' \| 'checked' \| 'mixed' | ? | checkedChange |
 | disabled | input | boolean | ? | ? |
 | invalid | input | boolean | ? | ? |
+| name | input | string | ? | ? |
+| required | input | boolean | ? | ? |
+| form | input | string | ? | ? |
+| value | input | string | ? | ? |
 
 ### Dialog
 
@@ -611,6 +658,9 @@ One spelling, one meaning. A new value is added here in the same change that int
 | disabled | input | boolean | ? | ? |
 | readOnly | input | boolean | ? | ? |
 | value | model | string | ? | valueChange |
+| name | input | string | ? | ? |
+| required | input | boolean | ? | ? |
+| form | input | string | ? | ? |
 
 ### RadioItem
 
@@ -625,6 +675,9 @@ One spelling, one meaning. A new value is added here in the same change that int
 | --- | --- | --- | --- | --- |
 | value | model | number | ? | valueChange |
 | disabled | input | boolean | ? | ? |
+| name | input | string | ? | ? |
+| required | input | boolean | ? | ? |
+| form | input | string | ? | ? |
 
 ### Switch
 
@@ -633,6 +686,10 @@ One spelling, one meaning. A new value is added here in the same change that int
 | checked | model | boolean | ? | checkedChange |
 | disabled | input | boolean | ? | ? |
 | readOnly | input | boolean | ? | ? |
+| name | input | string | ? | ? |
+| required | input | boolean | ? | ? |
+| form | input | string | ? | ? |
+| value | input | string | ? | ? |
 
 ### TabItem
 
@@ -663,6 +720,9 @@ One spelling, one meaning. A new value is added here in the same change that int
 | readOnly | input | boolean | ? | ? |
 | invalid | input | boolean | ? | ? |
 | size | axis | 's' \| 'm' \| 'l' | ? | ? |
+| name | input | string | ? | ? |
+| required | input | boolean | ? | ? |
+| form | input | string | ? | ? |
 
 ### Tooltip
 

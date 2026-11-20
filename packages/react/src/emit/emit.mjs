@@ -69,7 +69,13 @@ import {
   formFor,
   ownValidityFunction,
 } from '@ds/emit-web';
-import { emitNativeFormLifecycle } from './form.mjs';
+import {
+  FORM_PROXY_STYLE_DECL,
+  answerNames,
+  emitCustomFormLifecycle,
+  emitFormProxy,
+  emitNativeFormLifecycle,
+} from './form.mjs';
 
 // The prop surface a contract implies. Shared with the contract tooling, which needs the same
 // answer and cannot import this file — see the CLI guard at the bottom.
@@ -368,6 +374,8 @@ export function emitTsx(name, contract, binding, prefix) {
   // A native control whose contract declares a form answer: the platform submits it, and the
   // generated code adds the React half of the lifecycle — reset sync and authored validity.
   const nativeForm = nativelyEdited ? formFor(contract) : null;
+  // A custom control (no native form element) contributes through a proxy input instead.
+  const customForm = nativelyEdited ? null : formFor(contract);
   if (range) {
     assume(
       'how a pointer becomes a number',
@@ -509,6 +517,7 @@ export function emitTsx(name, contract, binding, prefix) {
   if (dismissCauses.length) hooks.push('useCallback');
   if (platformModal) hooks.push('useCallback', 'useEffect', 'useRef');
   if (nativeForm) hooks.push('useCallback', 'useEffect', 'useRef');
+  if (customForm) hooks.push('useCallback', 'useEffect', 'useRef', 'useState');
   if (collection) hooks.push('createContext', 'useMemo');
   if (member) hooks.push('useContext');
   s.push(`import { ${[...new Set(hooks)].join(', ')} } from 'react';`);
@@ -545,7 +554,11 @@ export function emitTsx(name, contract, binding, prefix) {
   }
   s.push(`import './${name}.structure.css';`);
   s.push(`import './${name}.theme.css';`);
-  if (nativeForm && contract.states?.invalid) s.push(``, ...ownValidityFunction(0));
+  if ((nativeForm || customForm) && contract.states?.invalid) s.push(``, ...ownValidityFunction(0));
+  if (customForm) {
+    s.push(``);
+    s.push(...FORM_PROXY_STYLE_DECL.slice(0, -1));
+  }
   s.push(``);
 
   // ---- what closes this, module-level so its identity is stable across renders
@@ -634,7 +647,7 @@ export function emitTsx(name, contract, binding, prefix) {
       );
     if (p.role === 'uncontrolled') s.push(`  /** Initial value when uncontrolled. */`);
     if (p.role === 'callback') s.push(`  /** Called when it changes, controlled or not. */`);
-    if (p.role === 'input') s.push(`  /** ${src.description} */`);
+    if (p.role === 'input') s.push(`  /** ${p.description ?? src.description} */`);
     if (p.role === 'identity' || p.role === 'slot')
       s.push(`  /** ${p.description ?? 'Slot content.'} */`);
     if (p.role === 'axis')
@@ -655,6 +668,9 @@ export function emitTsx(name, contract, binding, prefix) {
         return `${p.name} = ${lit}`;
       }
       if (p.role === 'axis' && p.default) return `${p.name} = '${p.default}'`;
+      if (p.origin === 'form' && p.name === 'value') return `value = '${p.default}'`;
+      // The consumer's own `disabled` is never overwritten; the body derives the effective one.
+      if (customForm && p.name === 'disabled') return 'disabled: disabledProp';
       return p.name;
     }),
     ...(takesChildren ? ['children'] : []),
@@ -668,6 +684,15 @@ export function emitTsx(name, contract, binding, prefix) {
   s.push(`  { ${destructured.join(', ')} },`);
   s.push(`  ref,`);
   s.push(`) {`);
+  if (customForm) {
+    s.push(
+      `  // Effective disabled: the consumer's prop, or a disabled <fieldset> around the control.`,
+    );
+    s.push(`  // Everything below reads this one; the prop itself is never written.`);
+    s.push(`  const [formDisabled, setFormDisabled] = useState(false);`);
+    s.push(`  const disabled = disabledProp || formDisabled;`);
+    s.push(``);
+  }
 
   // ---- member: read the ancestor's selection
   if (member) {
@@ -1014,6 +1039,16 @@ export function emitTsx(name, contract, binding, prefix) {
     }
   }
 
+  if (customForm) {
+    s.push(
+      ...emitCustomFormLifecycle({
+        form: customForm,
+        names: answerNames(customForm, camel, pascal),
+        hasInvalid: Boolean(contract.states?.invalid),
+      }),
+    );
+  }
+
   s.push(`  return (`);
   const rootAttrs = [];
   rootAttrs.push(`{...rest}`);
@@ -1164,6 +1199,8 @@ export function emitTsx(name, contract, binding, prefix) {
       onEvent('onBlur', 'handleCommit');
     } else onEvent('onChange', 'handleChange');
     rootAttrs.push(`readOnly={readOnly}`);
+    // The element IS the form control, so the form vocabulary lands on it directly.
+    if (nativeForm) rootAttrs.push(`name={name}`, `required={required}`, `form={form}`);
   }
   // A slider's range is part of what it MEANS, and ARIA has attributes for exactly it.
   const ranged = Object.entries(contract.states ?? {}).find(([, d]) => d.valueType === 'number');
@@ -1296,6 +1333,17 @@ export function emitTsx(name, contract, binding, prefix) {
   // a sub-part may be keyed the same as the root's styling name.
   if (takesChildren && (!childrenPart || childrenPart === ROOT_KEY)) s.push(`      {children}`);
   if (collection) s.push(`      </${name}Context.Provider>`);
+  if (customForm) {
+    const answerState = contract.states?.[customForm.source];
+    s.push(
+      ...emitFormProxy({
+        form: customForm,
+        range: answerState?.valueType === 'number' ? answerState : null,
+        hasReadOnly: consumerProps.some((p) => p.name === 'readOnly'),
+        indent: 6,
+      }),
+    );
+  }
   s.push(`    </${el}>`);
   s.push(`  );`);
   s.push(`});`);

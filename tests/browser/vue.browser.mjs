@@ -19,3 +19,6 @@ relationRegressions();
 
 import { frameworkFormRegressions } from './framework-forms.mjs';
 frameworkFormRegressions();
+
+import { frameworkControlRegressions } from './framework-controls.mjs';
+frameworkControlRegressions();
