@@ -237,6 +237,59 @@ export function planRenames(root, rules) {
 }
 
 /**
+ * The nested checkout a write destination lies inside, if any.
+ *
+ * `walk` never enters a directory holding a `.git` entry, so the rename plan cannot reach into
+ * another checkout. Destinations named outside the plan (the prop-map files) get no such
+ * protection from traversal; this applies the same boundary to them. The repository root itself is
+ * not a boundary.
+ *
+ * @param {string} root - the repository root
+ * @param {string} path - an absolute destination under `root`
+ * @returns {string | null} the outermost directory under `root` that holds a `.git` entry and
+ *   contains `path` (or is `path`), else null
+ */
+export function nestedCheckoutBoundary(root, path) {
+  const segments = relative(resolve(root), resolve(path)).split(/[\\/]/).filter(Boolean);
+  let directory = resolve(root);
+  for (const segment of segments) {
+    directory = join(directory, segment);
+    if (existsSync(join(directory, '.git'))) return directory;
+  }
+  return null;
+}
+
+/**
+ * Split command-line arguments into batches whose joined length stays within `maxLength`.
+ *
+ * A single command line is capped by the OS — about 32 KB for a Windows process and 8 KB through
+ * cmd.exe — so passing every renamed path to one formatter invocation fails on a full repository.
+ * Order is preserved. A lone argument longer than the budget still gets its own batch rather than
+ * being dropped.
+ *
+ * @param {string[]} args
+ * @param {number} maxLength - budget per batch, counting one separator per argument
+ * @returns {string[][]}
+ */
+export function batchArguments(args, maxLength) {
+  const batches = [];
+  let batch = [];
+  let length = 0;
+  for (const arg of args) {
+    const cost = arg.length + 1;
+    if (batch.length && length + cost > maxLength) {
+      batches.push(batch);
+      batch = [];
+      length = 0;
+    }
+    batch.push(arg);
+    length += cost;
+  }
+  if (batch.length) batches.push(batch);
+  return batches;
+}
+
+/**
  * Write a plan from `planRenames` to disk.
  *
  * @param {Array<{path: string, after: string}>} changed

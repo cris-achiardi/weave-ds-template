@@ -1,6 +1,5 @@
 import { createHash } from 'node:crypto';
 import {
-  chmodSync,
   copyFileSync,
   mkdirSync,
   mkdtempSync,
@@ -18,9 +17,11 @@ import { REPO_ROOT } from '../scripts/contract-lib.mjs';
 import {
   SKIP_FILES,
   applyRules,
+  batchArguments,
   buildRules,
   componentTags,
   identityProblems,
+  nestedCheckoutBoundary,
   renameTree,
 } from '../scripts/init-ds-lib.mjs';
 
@@ -98,6 +99,38 @@ function writeGenerator(root, { failureStderr } = {}) {
       ? `console.error(${JSON.stringify(failureStderr)});\nprocess.exit(1);\n`
       : `writeFileSync(join(root, '.ai/maps/prop-map.md'), '# Generated\\n');\n`;
   write(join(root, 'scripts/build-prop-map.mjs'), writeFirstPropMap + finish);
+}
+
+/**
+ * Install a stand-in Prettier in the fixture's node_modules, where init-ds resolves it. Plain Node,
+ * so it runs on every platform. It receives `--write --log-level warn <paths...>`.
+ *
+ * @param {string} root - a fixture root
+ * @param {string} body - CommonJS source; `files` holds the paths this invocation was given
+ */
+function writePrettier(root, body) {
+  const dir = join(root, 'node_modules/prettier');
+  write(join(dir, 'package.json'), JSON.stringify({ name: 'prettier', bin: './bin/prettier.cjs' }));
+  write(join(dir, 'bin/prettier.cjs'), `const files = process.argv.slice(5);\n${body}\n`);
+}
+
+/**
+ * A stand-in Prettier that logs each invocation's paths to `log` (one JSON line per call), appends
+ * a marker to every file it is given, and exits 1 on call number `failOnCall` after formatting it.
+ *
+ * @param {string} root - a fixture root
+ * @param {string} log - absolute path outside the fixture, so inventories ignore it
+ * @param {{failOnCall?: number}} [options]
+ */
+function writeRecordingPrettier(root, log, { failOnCall } = {}) {
+  writePrettier(
+    root,
+    `const fs = require('node:fs');\n` +
+      `fs.appendFileSync(${JSON.stringify(log)}, JSON.stringify(files) + '\\n');\n` +
+      `for (const file of files) fs.appendFileSync(file, '// formatted\\n');\n` +
+      `const call = fs.readFileSync(${JSON.stringify(log)}, 'utf8').trim().split('\\n').length;\n` +
+      `if (call === ${failOnCall ?? -1}) { console.error('fixture Prettier failed on call ' + call); process.exit(1); }\n`,
+  );
 }
 
 /**
@@ -244,7 +277,7 @@ describe('repository traversal', () => {
     expect(readFileSync(join(root, 'pnpm-lock.yaml'), 'utf8')).toContain(`@${generic}/react`);
   });
 
-  it('does not write through a symlink to a target outside the repository', () => {
+  it('does not write through a symlink to a target outside the repository', (context) => {
     const root = temporaryRoot('symlinked-file');
     const outside = join(root, 'outside');
     const repository = join(root, 'repo');
@@ -252,7 +285,16 @@ describe('repository traversal', () => {
 
     write(target, `@${generic}/react`);
     mkdirSync(repository, { recursive: true });
-    symlinkSync(target, join(repository, 'component.ts'));
+    // Only the FIXTURE may skip: Windows refuses file symlinks without Developer Mode or admin
+    // rights. Any error from the code under test below still fails the test.
+    try {
+      symlinkSync(target, join(repository, 'component.ts'));
+    } catch (error) {
+      if (process.platform === 'win32' && error?.code === 'EPERM') {
+        context.skip('this Windows account cannot create file symlinks');
+      }
+      throw error;
+    }
     write(join(repository, 'real.ts'), `@${generic}/react`);
 
     const changed = renameTree(repository, buildRules(generic, 'juro', []));
@@ -260,6 +302,35 @@ describe('repository traversal', () => {
     expect(changed.map((change) => change.file)).toEqual(['real.ts']);
     expect(readFileSync(target, 'utf8')).toBe(`@${generic}/react`);
     expect(readFileSync(join(repository, 'real.ts'), 'utf8')).toBe('@juro/react');
+  });
+
+  it('finds the nested checkout a destination lies in, never the root itself', () => {
+    const root = temporaryRoot('boundary');
+    mkdirSync(join(root, '.git'), { recursive: true });
+    mkdirSync(join(root, '.ai/.git'), { recursive: true });
+    write(join(root, 'packages/wt/.git'), 'gitdir: /not/a/real/worktree\n');
+
+    expect(nestedCheckoutBoundary(root, join(root, '.ai/maps/prop-map.json'))).toBe(
+      join(root, '.ai'),
+    );
+    expect(nestedCheckoutBoundary(root, join(root, '.ai'))).toBe(join(root, '.ai'));
+    expect(nestedCheckoutBoundary(root, join(root, 'packages/wt/x.ts'))).toBe(
+      join(root, 'packages/wt'),
+    );
+    expect(nestedCheckoutBoundary(root, join(root, 'packages/x.ts'))).toBeNull();
+    expect(nestedCheckoutBoundary(root, join(root, 'ds.config.json'))).toBeNull();
+  });
+
+  it('batches arguments in order, each batch within the budget', () => {
+    const args = Array.from({ length: 50 }, (_, index) => `path/${index}`.padEnd(30, 'x'));
+    const batches = batchArguments(args, 100);
+
+    expect(batches.flat()).toEqual(args);
+    for (const batch of batches) {
+      expect(batch.reduce((total, arg) => total + arg.length + 1, 0)).toBeLessThanOrEqual(100);
+    }
+    expect(batchArguments([], 100)).toEqual([]);
+    expect(batchArguments(['x'.repeat(150), 'y'], 100)).toEqual([['x'.repeat(150)], ['y']]);
   });
 
   it('only skips files that exist in the repository', () => {
@@ -460,37 +531,32 @@ describe('CLI', () => {
     expect(inventory(root)).toEqual(before);
   });
 
-  // The fake pnpm is a POSIX shell script; CI runs this suite on Linux.
-  it.skipIf(process.platform === 'win32')(
-    'rolls back generator output and reports captured Prettier diagnostics',
-    () => {
-      const root = fixture();
-      write(join(root, 'example.md'), `Use @${generic}/react and ${generic}-button-spin.`);
-      write(join(root, '.ai/maps/prop-map.json'), JSON.stringify({ package: `@${generic}/react` }));
-      write(join(root, '.ai/maps/prop-map.md'), `Use @${generic}/react.\n`);
-      writeGenerator(root);
-      const bin = join(root, 'bin');
-      const diagnostics = Array.from(
-        { length: 23 },
-        (_, index) => `fixture Prettier failure ${index + 1}`,
-      ).join('\n');
-      write(join(bin, 'pnpm'), `#!/bin/sh\nprintf '%s\\n' '${diagnostics}' >&2\nexit 1\n`);
-      chmodSync(join(bin, 'pnpm'), 0o755);
-      const before = inventory(root);
+  it('rolls back generator output and reports captured Prettier diagnostics', () => {
+    const root = fixture();
+    write(join(root, 'example.md'), `Use @${generic}/react and ${generic}-button-spin.`);
+    write(join(root, '.ai/maps/prop-map.json'), JSON.stringify({ package: `@${generic}/react` }));
+    write(join(root, '.ai/maps/prop-map.md'), `Use @${generic}/react.\n`);
+    writeGenerator(root);
+    const diagnostics = Array.from(
+      { length: 23 },
+      (_, index) => `fixture Prettier failure ${index + 1}`,
+    ).join('\n');
+    writePrettier(root, `console.error(${JSON.stringify(diagnostics)});\nprocess.exit(1);`);
+    const before = inventory(root);
 
-      const result = run(root, ['juro'], { env: { ...process.env, PATH: bin } });
+    const result = run(root, ['juro']);
 
-      expect(result.status).toBe(1);
-      expect(result.stderr).toContain('init-ds failed while running Prettier');
-      expect(result.stderr).toContain('Prettier stderr:\n... 3 earlier line(s) omitted');
-      expect(result.stderr).not.toContain('fixture Prettier failure 1\n');
-      expect(result.stderr).toContain('fixture Prettier failure 23');
-      expect(result.stderr).toContain('All writes were rolled back');
-      expect(result.stdout).not.toContain('renamed "');
-      expect(inventory(root)).toEqual(before);
-    },
-  );
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('init-ds failed while running Prettier');
+    expect(result.stderr).toContain('Prettier stderr:\n... 3 earlier line(s) omitted');
+    expect(result.stderr).not.toContain('fixture Prettier failure 1\n');
+    expect(result.stderr).toContain('fixture Prettier failure 23');
+    expect(result.stderr).toContain('All writes were rolled back');
+    expect(result.stdout).not.toContain('renamed "');
+    expect(inventory(root)).toEqual(before);
+  });
 
+  // The fixture installs no Prettier, so resolving it fails before anything is spawned.
   it('rolls back generator output when Prettier cannot start', () => {
     const root = fixture();
     write(join(root, 'example.md'), `Use @${generic}/react and ${generic}-button-spin.`);
@@ -499,7 +565,7 @@ describe('CLI', () => {
     writeGenerator(root);
     const before = inventory(root);
 
-    const result = run(root, ['juro'], { env: { ...process.env, PATH: '' } });
+    const result = run(root, ['juro']);
 
     expect(result.status).toBe(1);
     expect(result.stderr).toContain('init-ds failed while running Prettier');
@@ -514,7 +580,7 @@ describe('CLI', () => {
     writeGenerator(root);
     const before = inventory(root);
 
-    const result = run(root, ['juro'], { env: { ...process.env, PATH: '' } });
+    const result = run(root, ['juro']);
 
     expect(result.status).toBe(1);
     expect(result.stderr).toContain('All writes were rolled back');
@@ -522,24 +588,96 @@ describe('CLI', () => {
     expect(inventory(root)).toEqual(before);
   });
 
-  // The fake pnpm is a POSIX shell script; CI runs this suite on Linux.
-  it.skipIf(process.platform === 'win32')(
-    'reports the rename only after every step has succeeded',
-    () => {
-      const root = fixture();
-      write(join(root, 'example.md'), `Use @${generic}/react.`);
-      writeGenerator(root);
-      const bin = join(root, 'bin');
-      write(join(bin, 'pnpm'), '#!/bin/sh\nexit 0\n');
-      chmodSync(join(bin, 'pnpm'), 0o755);
+  it('reports the rename only after every step has succeeded', () => {
+    const root = fixture();
+    write(join(root, 'example.md'), `Use @${generic}/react.`);
+    writeGenerator(root);
+    writePrettier(root, 'process.exit(0);');
 
-      const result = run(root, ['juro'], { env: { ...process.env, PATH: bin } });
+    const result = run(root, ['juro']);
+
+    expect(result.status, result.stderr).toBe(0);
+    expect(readFileSync(join(root, 'example.md'), 'utf8')).toBe('Use @juro/react.');
+    const summary = result.stdout.indexOf(`renamed "${generic}" -> "juro"`);
+    expect(summary).toBeGreaterThanOrEqual(0);
+    expect(summary).toBeLessThan(result.stdout.indexOf('Done. Next:'));
+  });
+
+  // A real repository renames ~300 files. Passed to one formatter command line, their paths
+  // overflowed the Windows limit and every run rolled back. 400 long paths here total well over
+  // 32,767 characters — more than any single Windows process command line can carry.
+  describe('with more renamed paths than one command line can carry', () => {
+    const many = (root) => {
+      const dir = 'packages/a-directory-name-long-enough-to-push-the-command-line-over-the-limit';
+      const files = Array.from(
+        { length: 400 },
+        (_, index) => `${dir}/component-${String(index).padStart(3, '0')}-with-a-long-file-name.ts`,
+      );
+      for (const file of files) write(join(root, file), `import '@${generic}/react';\n`);
+      return files;
+    };
+
+    it('formats every renamed file in batches that each stay under the limit', () => {
+      const root = fixture();
+      writeGenerator(root);
+      const files = many(root);
+      expect(files.join(' ').length).toBeGreaterThan(32767);
+      const log = join(temporaryRoot('prettier-log'), 'calls.jsonl');
+      writeRecordingPrettier(root, log);
+
+      const result = run(root, ['juro']);
 
       expect(result.status, result.stderr).toBe(0);
-      expect(readFileSync(join(root, 'example.md'), 'utf8')).toBe('Use @juro/react.');
-      const summary = result.stdout.indexOf(`renamed "${generic}" -> "juro"`);
-      expect(summary).toBeGreaterThanOrEqual(0);
-      expect(summary).toBeLessThan(result.stdout.indexOf('Done. Next:'));
+      const calls = readFileSync(log, 'utf8').trim().split('\n').map(JSON.parse);
+      expect(calls.length).toBeGreaterThan(1);
+      for (const call of calls) expect(call.join(' ').length).toBeLessThan(8191);
+      expect(calls.flat()).toEqual(files);
+      for (const file of files) {
+        expect(readFileSync(join(root, file), 'utf8')).toBe(
+          `import '@juro/react';\n// formatted\n`,
+        );
+      }
+    });
+
+    it('rolls back the files earlier batches formatted when a later batch fails', () => {
+      const root = fixture();
+      writeGenerator(root);
+      many(root);
+      const log = join(temporaryRoot('prettier-log'), 'calls.jsonl');
+      writeRecordingPrettier(root, log, { failOnCall: 2 });
+      const before = inventory(root);
+
+      const result = run(root, ['juro']);
+
+      expect(result.status).toBe(1);
+      expect(readFileSync(log, 'utf8').trim().split('\n')).toHaveLength(2);
+      expect(result.stderr).toContain('init-ds failed while running Prettier');
+      expect(result.stderr).toContain('fixture Prettier failed on call 2');
+      expect(result.stderr).toContain('All writes were rolled back');
+      expect(inventory(root)).toEqual(before);
+    });
+  });
+
+  // Traversal never enters a nested checkout, but the prop-map destination is named directly.
+  it.each([[['juro']], [['juro', '--dry']]])(
+    'refuses, before writing, when .ai is a nested checkout (%j)',
+    (args) => {
+      const root = fixture();
+      write(join(root, 'example.md'), `Use @${generic}/react.`);
+      mkdirSync(join(root, '.ai/.git'), { recursive: true });
+      write(join(root, '.ai/maps/prop-map.md'), `Use @${generic}/react.\n`);
+      writeGenerator(root);
+      writePrettier(root, 'process.exit(0);');
+      const before = inventory(root);
+
+      const result = run(root, args);
+
+      expect(result.status).toBe(1);
+      expect(result.stderr).toContain('init-ds would write inside a nested repository or worktree');
+      expect(result.stderr).toContain('.ai/maps/prop-map.json (inside .ai)');
+      expect(result.stderr).toContain('Nothing was written');
+      expect(result.stdout).not.toContain('rename');
+      expect(inventory(root)).toEqual(before);
     },
   );
 });

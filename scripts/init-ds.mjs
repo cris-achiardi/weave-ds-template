@@ -9,12 +9,15 @@
 
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
+import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join, relative, resolve } from 'node:path';
 import {
+  batchArguments,
   buildRules,
   componentTags,
   identityProblems,
+  nestedCheckoutBoundary,
   planRenames,
   removeCreatedDirectories,
   restoreSnapshot,
@@ -28,6 +31,32 @@ const CONFIG_PATH = join(REPO_ROOT, 'ds.config.json');
 const PROP_MAP_DIR = join(REPO_ROOT, '.ai/maps');
 const PROP_MAP_PATHS = [join(PROP_MAP_DIR, 'prop-map.json'), join(PROP_MAP_DIR, 'prop-map.md')];
 const MAX_CAPTURED_OUTPUT_LINES = 20;
+// Path characters per Prettier invocation. Far below Windows' 32,767-character process limit (and
+// cmd.exe's 8,191, though no shell is used), leaving room for the node and Prettier paths.
+const MAX_ARGUMENT_CHARACTERS = 4000;
+
+/**
+ * Locate the repository's own Prettier entry point, resolved the way Node resolves an import from
+ * the repository root. Throws when Prettier is not installed, which the caller rolls back.
+ *
+ * @returns {string} absolute path to Prettier's bin script
+ */
+function prettierBin() {
+  const require = createRequire(join(REPO_ROOT, 'package.json'));
+  const manifestPath = require.resolve('prettier/package.json');
+  const { bin } = JSON.parse(readFileSync(manifestPath, 'utf8'));
+  const entry = typeof bin === 'string' ? bin : bin?.prettier;
+  if (!entry) throw new Error(`${manifestPath} declares no prettier bin`);
+  return join(dirname(manifestPath), entry);
+}
+
+/**
+ * @param {string} path - absolute
+ * @returns {string} relative to the repository root, slash-separated
+ */
+function relativeToRoot(path) {
+  return relative(REPO_ROOT, path).split('\\').join('/');
+}
 
 /**
  * Print a message and stop. Every refusal in this script ends here, so the exit code is always
@@ -212,6 +241,25 @@ const nextIdentity = {
   dataPrefix: name,
 };
 
+// Checked before the dry-run report, so `--dry` refuses exactly what a real run would refuse.
+const intoNestedCheckouts = [
+  ...changed.map((change) => change.path),
+  CONFIG_PATH,
+  PROP_MAP_DIR,
+  ...PROP_MAP_PATHS,
+]
+  .map((path) => [path, nestedCheckoutBoundary(REPO_ROOT, path)])
+  .filter(([, boundary]) => boundary);
+if (intoNestedCheckouts.length) {
+  fatal(
+    'init-ds would write inside a nested repository or worktree, which belongs to another checkout:\n' +
+      intoNestedCheckouts
+        .map(([path, boundary]) => `  ${relativeToRoot(path)} (inside ${relativeToRoot(boundary)})`)
+        .join('\n') +
+      '\n\nNothing was written. Move that checkout out of this repository, then re-run.',
+  );
+}
+
 if (dry) {
   report(changed, from, name, true);
   console.log('\nNothing was written. Re-run without --dry to apply.');
@@ -239,22 +287,19 @@ try {
   });
   if (changed.length) {
     stage = { description: 'running Prettier', label: 'Prettier' };
-    execFileSync(
-      'pnpm',
-      [
-        'exec',
-        'prettier',
-        '--write',
-        '--log-level',
-        'warn',
-        ...changed.map((change) => change.file),
-      ],
-      {
+    // Prettier's own bin, run by this Node with no shell: nothing goes through cmd.exe, and the
+    // paths are batched so no single command line nears the OS limit. Any failing batch throws,
+    // and the snapshot restores the files earlier batches already formatted.
+    const prettier = prettierBin();
+    for (const batch of batchArguments(
+      changed.map((change) => change.file),
+      MAX_ARGUMENT_CHARACTERS,
+    )) {
+      execFileSync(process.execPath, [prettier, '--write', '--log-level', 'warn', ...batch], {
         cwd: REPO_ROOT,
         stdio: 'pipe',
-        shell: process.platform === 'win32',
-      },
-    );
+      });
+    }
   }
 } catch (error) {
   rollback(snapshot, directoryState, stage, error);
