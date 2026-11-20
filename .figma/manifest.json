@@ -56,19 +56,12 @@
   },
 
   "identity": {
-    "prefix": {
-      "_doc": "Set once in /ds.config.json via `pnpm init-ds <name>`. Repeated here only so a Figma script has one file to read; ds.config.json is authoritative and init-ds rewrites both.",
-      "name": "ds",
-      "scope": "@ds",
-      "token": "--ds",
-      "data": "data-ds"
-    },
-
     "variableNaming": {
       "_doc": "RE-MEASURED 2026-08-28 through the write bridge, correcting an earlier reading. A Figma variable carries TWO names and the previous entry conflated them: `name` is the slash path the API returns and the one you must look variables up by; `codeSyntax.WEB` is a separate author-set string that Figma emits in Dev Mode. The earlier `observed` list recorded codeSyntax values and labelled them names — which is where the phantom `weave-ds-` prefix came from. Both fields are real. All 87 variables carry both.",
       "figmaNamePattern": "{path}",
       "figmaCodeSyntaxPattern": "weave-ds-{path-flattened-to-dashes}",
       "cssPattern": "--{tokenPrefix}-{path}",
+      "_cssPatternNote": "tokenPrefix comes from /ds.config.json, the single source of truth for the repository identity.",
       "separator": "/",
       "separatorUnknown": false,
       "_separatorNote": "Confirmed by live read: group paths are slash-separated, which settles the DTCG nesting.",
@@ -107,7 +100,7 @@
         "surface/primary  -> --ds-surface-primary  -> surface.primary"
       ],
       "knownProblems": [
-        "PREFIX CONFLICT, UNDECIDED. `codeSyntax.WEB` carries a `weave-ds-` prefix while /ds.config.json declares tokenPrefix `ds`, i.e. `--ds-*`. Running `pnpm init-ds weave` would make it `--weave-*`, which still does not equal `weave-ds-*`. Three candidate prefixes, no decision. Settle which is canonical before generating tokens, and settle it in ds.config.json — never by hand-editing one side.",
+        "PREFIX CONFLICT, UNDECIDED. `codeSyntax.WEB` carries a `weave-ds-` prefix while /ds.config.json produces the CSS namespace `--<tokenPrefix>-*`. Those forms do not agree. Settle which is canonical before generating tokens, and settle it in ds.config.json — never by hand-editing one side.",
         "`space/0..9` is a numeric index while `radius/m` is a t-shirt scale — two naming systems in one file. Decide which one wins before generating; do not reproduce both.",
         "`interactive/selectedBg` is camelCase; every other token path is lowercase.",
         "`control/waveform` and `control/off` are component-specific but sit in the global namespace.",

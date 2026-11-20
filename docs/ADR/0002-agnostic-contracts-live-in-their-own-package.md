@@ -208,6 +208,6 @@ weakened: a contract inside `packages/react/` is a React artifact no matter what
 and the second backend would have to either duplicate it or reach across into a sibling package.
 
 **Name the package for the brand — `packages/weave`.** Rejected on mechanics. `pnpm init-ds` rewrites
-the `@ds/` scope, the `--ds-` token prefix and the `data-ds-` attribute prefix, but it cannot rewrite
-a directory name, and the CI straggler grep that catches a half-renamed repo would not catch it
+the package scope, custom-property prefix and data-attribute prefix, but it cannot rewrite a
+directory name, and the CI straggler check that catches a half-renamed repo would not catch it
 either. The brand arrives through the scope; the directory stays generic.
