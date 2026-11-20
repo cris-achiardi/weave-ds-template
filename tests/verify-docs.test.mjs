@@ -69,11 +69,8 @@ describe('verify:docs backticked paths', () => {
     expect(verify('Its own directory is `docs/`, and it holds `kept/`.').code).toBe(0);
   });
 
-  it('inverts on a struck-through path: removed must mean absent', () => {
-    expect(verify('~~`scripts/extract/`~~ was deleted.').code).toBe(0);
-    const r = verify('~~`docs/kept/`~~ was deleted.');
-    expect(r.code).toBe(1);
-    expect(r.out).toContain('[retired] docs/README.md:3');
+  it('does not check a removed path mentioned without backticks', () => {
+    expect(verify('scripts/extract/ held three readers; it was deleted.').code).toBe(0);
   });
 
   it('keeps the exemptions: placeholders, build output, package specifiers, link text, prose', () => {

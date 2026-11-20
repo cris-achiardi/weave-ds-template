@@ -11,7 +11,7 @@
 
 ## Context
 
-The component contract system shipped with its two schemas at the repo root, in ~~`contracts/`~~, and
+The component contract system shipped with its two schemas at the repo root, in contracts/, and
 its per-component instances inside `packages/react/src/components/<Name>/`. The root README stated
 the reason for the first half plainly:
 
@@ -42,7 +42,7 @@ agnosticism enforceable at a package boundary rather than by convention about a 
 ## Decision
 
 1. **Agnostic contracts and the schema governing them live in `packages/contracts` (`@ds/contracts`).**
-   ~~`contracts/`~~ at the repo root is removed.
+   contracts/ at the repo root is removed.
 2. **Framework-specific artifacts live in that framework's own package** — including the schema that
    governs its bindings. `react-binding.schema.json` moved to `packages/react/bindings/binding.schema.json`,
    because a schema containing `"framework": {"const": "react"}` is a React artifact.

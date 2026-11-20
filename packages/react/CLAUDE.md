@@ -9,7 +9,7 @@ Where the two disagree, this one wins for anything under `packages/react/`.
 > **Mid-migration. This file describes machinery that still works and a flow that has been
 > reversed.** Read it for how the scripts behave today; do not read it as the plan.
 >
-> This package no longer holds components — ~~`src/components/`~~ is gone, and the barrel exports
+> This package no longer holds components — src/components/ is gone, and the barrel exports
 > nothing. The library is becoming contract-driven: a contract in `packages/contracts/components/`
 > is the source, and component code is generated from it into a consumer's own repository.
 >
@@ -95,7 +95,7 @@ Everything above depends on these. They are stated with their reasons in
 
 ## Extraction is gone, and why it is not coming back
 
-~~`scripts/extract/`~~ held three readers that pulled prop types, `cva` axes and rendered parts out of
+scripts/extract/ held three readers that pulled prop types, `cva` axes and rendered parts out of
 hand-written TSX. **Deleted 2026-09-03**, along with its `react-docgen-typescript` dependency.
 
 It went because it had become unreachable rather than merely unused. Components are generated from

@@ -77,7 +77,7 @@ This library inverts that. The contract is primary and the code is emitted from 
 The first half is done: `control` landed with ADR 0004, and the schema `$id` has been versioned
 since — [`component.schema.json`](./component.schema.json) carries the current one. The second half
 is only partly done. `verify:contract` no longer reads TSX at all — the hand-written
-~~`packages/react/src/components/`~~ directory it compared against is gone — and now validates
+packages/react/src/components/ directory it compared against is gone — and now validates
 contracts and bindings against their schemas and against each other, not generated output against
 its contract. A regeneration check exists for one component: `tests/tabpanel-children.test.mjs`
 re-emits TabPanel and compares the React, Vue and Angular sandbox files to the formatted emitter

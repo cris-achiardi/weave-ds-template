@@ -16,7 +16,6 @@
  *   link       a relative markdown link that resolves to no file
  *   command    a `pnpm <script>` named in prose that no package.json defines
  *   path       a backticked repo path that does not exist
- *   retired    a backticked path struck through as removed (~~`path`~~) that DOES exist
  *   coverage   a directory holding content that no entry doc covers
  *
  * WHAT COUNTS AS A PATH. A backticked token of path characters that contains a `/` and is
@@ -35,9 +34,8 @@
  * Not paths: placeholders, build output, scoped package specifiers (`@scope/pkg/sub`), and a
  * token that is the text of a markdown link — the link's target is what the link check verifies.
  *
- * A doc that names a path in order to say it is GONE strikes it through: ~~`src/components/`~~.
- * The reader sees that it was removed, and the gate inverts — it fails if the path exists, because
- * then the sentence calling it removed has become false.
+ * A backtick asserts that the path exists NOW. A doc that names a path to say it was removed writes
+ * it without backticks, so a later reuse of the name cannot falsify the history.
  *
  * `coverage` was a report until the baseline was clean. It named four directories — `scripts/`,
  * `packages/react/scripts/`, its `extract/`, and `.github/workflows/` — all holding machinery
@@ -194,15 +192,10 @@ for (const file of mdFiles) {
     // Link text is dropped first: in [`docs/research/0004`](./docs/research/0004-....md) the
     // pointer is the link, and the link check above has already verified it.
     const prose = line.replace(/\[[^\]]*\]\([^)\s]+\)/g, '');
-    for (const m of prose.matchAll(/(~~)?`([a-zA-Z0-9_.@/-]+)`(~~)?/g)) {
-      const p = m[2];
+    for (const m of prose.matchAll(/`([a-zA-Z0-9_.@/-]+)`/g)) {
+      const p = m[1];
       if (!isPathShaped(p) || isPlaceholder(p) || isGenerated(p)) continue;
-      const exists = resolvesFrom(file, p);
-      if (m[1] && m[3]) {
-        if (exists) add('retired', file, lineNo, p, 'struck through as removed, but it exists');
-      } else if (!exists) {
-        add('path', file, lineNo, p, 'does not exist');
-      }
+      if (!resolvesFrom(file, p)) add('path', file, lineNo, p, 'does not exist');
     }
   });
 }
@@ -257,7 +250,7 @@ for (const d of uncovered) {
 // ---- output ----------------------------------------------------------------------------
 if (problems.length) {
   console.error(`verify:docs failed — ${problems.length} problem(s):\n`);
-  const order = { link: 0, command: 1, path: 2, retired: 3, coverage: 4 };
+  const order = { link: 0, command: 1, path: 2, coverage: 3 };
   for (const p of problems.sort(
     (a, b) => order[a.kind] - order[b.kind] || (a.where < b.where ? -1 : a.where > b.where ? 1 : 0),
   )) {
