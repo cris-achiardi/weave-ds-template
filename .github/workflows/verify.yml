@@ -88,6 +88,11 @@ jobs:
       # "In this system" section still renders, but can no longer be reviewed against or traced.
       - run: pnpm design-index:check
 
+      # The skills index routes agents to a skill. Retype a status into it and the row outlives the
+      # skill it describes: ds-component was marked SUPERSEDED after it was rewritten and live, so
+      # agents were told not to use the one skill that builds components. Derived, then checked.
+      - run: pnpm skills-index:check
+
       # This repo points instead of restating, so its characteristic defect is a pointer that
       # resolves to nothing: a moved schema, a deleted skill, a `pnpm` script that was never
       # added. Docs still render, the build still passes, the reader lands on nothing.

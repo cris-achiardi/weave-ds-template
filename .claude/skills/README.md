@@ -39,13 +39,21 @@ governing decision.
 
 ## Index
 
-| Skill                                         | What it does                                                                                                                                            | Writes to                            |
-| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
-| [`ds-decide`](./ds-decide/)                   | Turns a research report's open questions into Architecture Decision Records. Writes records, never code.                                                | `docs/ADR/`                          |
-| [`ds-component`](./ds-component/)             | **SUPERSEDED — do not use.** Describes the retired hand-authoring flow. No replacement exists yet; the library is moving to contract-driven generation. | —                                    |
-| [`ds-figma-component`](./ds-figma-component/) | Generates contract anatomy and axes as a Figma set; paint stays unbound unless a consumer mapping is supplied.                                          | Figma, `.figma/maps/components.json` |
-| [`ds-figma-document`](./ds-figma-document/)   | Lays out the **page around** a component set — title, description, labelled cell grid, extension tables. Works on sets this repo never generated.       | Figma, `.figma/maps/components.json` |
-| [`ds-figma-explain`](./ds-figma-explain/)     | Builds **explanatory** boards — node graphs, spec tables, annotated anatomy, flows. For things meant to be read, not instantiated.                      | Figma                                |
+The table is generated from each skill's `SKILL.md` frontmatter (`name` plus the `metadata` map:
+`status`, `summary`, `writes-to`). Edit the skill, then run `pnpm skills-index`; never edit the rows
+by hand — `pnpm skills-index:check` fails CI when they disagree with the skills.
+
+<!-- skills-index:start -->
+
+| Skill                                         | Status | What it does                                                                                                                                                       | Writes to                                                                                |
+| --------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| [`ds-component`](./ds-component/)             | active | Authors or updates a component contract against a governing ADR or proposal, adds the backend binding, then runs that backend's emitter into a consumer directory. | `packages/contracts/components/`, `packages/<backend>/bindings/`, the consumer directory |
+| [`ds-decide`](./ds-decide/)                   | active | Turns a research report's open questions into Architecture Decision Records. Writes records, never code.                                                           | `docs/ADR/`                                                                              |
+| [`ds-figma-component`](./ds-figma-component/) | active | Generates contract anatomy and axes as a Figma set; paint stays unbound unless a consumer mapping is supplied.                                                     | Figma, `.figma/maps/components.json`                                                     |
+| [`ds-figma-document`](./ds-figma-document/)   | active | Lays out the **page around** a component set — title, description, labelled cell grid, extension tables. Works on sets this repo never generated.                  | Figma, `.figma/maps/components.json`                                                     |
+| [`ds-figma-explain`](./ds-figma-explain/)     | active | Builds **explanatory** boards — node graphs, spec tables, annotated anatomy, flows. For things meant to be read, not instantiated.                                 | Figma                                                                                    |
+
+<!-- skills-index:end -->
 
 ### Picking between the three Figma skills
 

@@ -1,6 +1,10 @@
 ---
 name: ds-figma-explain
 description: Build visual explanations of this design system on a Figma canvas — node-graph diagrams with elbow connectors (component APIs, token tiers, architecture, data flow), spec and comparison tables, annotated anatomy mocks with numbered callouts, and flow diagrams. Use when asked to "explain X in Figma", "diagram this", "make a component API map", "visualise the token tiers", "put a spec table in Figma", "annotate this mock", or for a board that communicates how something works. NOT for producing library components — see ds-figma-component.
+metadata:
+  status: active
+  summary: 'Builds **explanatory** boards — node graphs, spec tables, annotated anatomy, flows. For things meant to be read, not instantiated.'
+  writes-to: 'Figma'
 ---
 
 # ds-figma-explain
