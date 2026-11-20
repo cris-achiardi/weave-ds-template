@@ -97,6 +97,54 @@ describe('applyRelations', () => {
     releaseRelations(el, applied);
     expect(el.attrs.size).toBe(0);
   });
+
+  // PR #53 review: a requested token the consumer already had was recorded as owned and stripped.
+  it('never claims a token the consumer already had', () => {
+    const el = fake({ 'aria-describedby': 'consumer shared' });
+    let applied = applyRelations(el, { describedBy: ['shared', 'f-desc'] });
+    expect(el.attrs.get('aria-describedby')).toBe('consumer shared f-desc');
+    expect(applied.describedBy).toEqual(['f-desc']);
+    applied = applyRelations(el, { describedBy: ['shared'] }, applied);
+    expect(el.attrs.get('aria-describedby')).toBe('consumer shared');
+    releaseRelations(el, applied);
+    expect(el.attrs.get('aria-describedby')).toBe('consumer shared');
+  });
+
+  it('keeps a consumer labelled-by that equals the component label id', () => {
+    const el = fake({ 'aria-labelledby': 'consumer-label' });
+    const applied = applyRelations(el, { labelledBy: ['consumer-label'] });
+    releaseRelations(el, applied);
+    expect(el.attrs.get('aria-labelledby')).toBe('consumer-label');
+  });
+
+  // PR #53 review: the saved prior was restored over a value the consumer set during attachment.
+  it('keeps a consumer aria-invalid written after the component wrote its own', () => {
+    const el = fake({ 'aria-invalid': 'grammar' });
+    let applied = applyRelations(el, { invalid: true });
+    el.setAttribute('aria-invalid', 'spelling');
+    releaseRelations(el, applied);
+    expect(el.attrs.get('aria-invalid')).toBe('spelling');
+
+    // Same while still attached: becoming valid leaves the consumer's newer value alone…
+    const other = fake({ 'aria-invalid': 'grammar' });
+    applied = applyRelations(other, { invalid: true });
+    other.setAttribute('aria-invalid', 'spelling');
+    applied = applyRelations(other, { invalid: false }, applied);
+    expect(other.attrs.get('aria-invalid')).toBe('spelling');
+    // …and re-asserting invalid saves THAT value as the one to restore.
+    applied = applyRelations(other, { invalid: true }, applied);
+    expect(other.attrs.get('aria-invalid')).toBe('true');
+    releaseRelations(other, applied);
+    expect(other.attrs.get('aria-invalid')).toBe('spelling');
+  });
+
+  it('does not remove an aria-invalid the consumer removed and re-added', () => {
+    const el = fake();
+    const applied = applyRelations(el, { invalid: true });
+    el.setAttribute('aria-invalid', 'false');
+    releaseRelations(el, applied);
+    expect(el.attrs.get('aria-invalid')).toBe('false');
+  });
 });
 
 describe('relationWriter', () => {

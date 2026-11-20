@@ -1205,6 +1205,16 @@ export function emitComponent(name, contract, binding, prefix, { declareTagTypes
     s.push(`   * are never removed; an element that left its slot gets back exactly what it had.`);
     s.push(`   */`);
     s.push(`  #wireSupplied(): void {`);
+    s.push(
+      `    // A slotchange queued before a disconnect still fires after it, and an attribute can`,
+    );
+    s.push(
+      `    // change while detached. Wiring then would re-take what disconnectedCallback just`,
+    );
+    s.push(
+      `    // handed back, on elements nobody will release again. connectedCallback re-wires.`,
+    );
+    s.push(`    if (!this.isConnected) return;`);
     s.push(`    const entries: [Element, SuppliedRelations][] = [];`);
     s.push(`    const content = (slot: string, key: string): string[] =>`);
     s.push(`      (this.#slot(slot)?.assignedElements({ flatten: true }) ?? []).map((el, i) => {`);

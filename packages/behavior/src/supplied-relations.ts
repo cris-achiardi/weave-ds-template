@@ -107,28 +107,34 @@ export function applyRelations(
 
   const write = (key: keyof typeof RELATION_ATTRIBUTES) => {
     const name = RELATION_ATTRIBUTES[key];
-    const owned = present(relations[key]);
-    const value = mergeTokens(target.getAttribute(name), owned, previous?.[key] ?? []);
+    const wanted = present(relations[key]);
+    const before = previous?.[key] ?? [];
+    // The consumer's tokens are whatever is there that we did not add. A wanted token the
+    // consumer ALREADY has is theirs, not ours: claiming it would strip it on release.
+    const consumer = tokensOf(target.getAttribute(name)).filter((t) => !before.includes(t));
+    const added = wanted.filter((t) => !consumer.includes(t));
+    const value = mergeTokens(target.getAttribute(name), wanted, before);
     if (value === null) target.removeAttribute(name);
     else if (value !== target.getAttribute(name)) target.setAttribute(name, value);
-    return owned;
+    return added;
   };
   const labelledBy = write('labelledBy');
   const describedBy = write('describedBy');
 
-  // aria-invalid: remember the consumer's own value the first time we overwrite it, and put exactly
-  // that back when the field stops being invalid — so a consumer's aria-invalid survives.
+  // aria-invalid: remember the consumer's own value when we overwrite it, and put it back when the
+  // field stops being invalid — but ONLY while the attribute still holds the value we wrote. If the
+  // consumer changed it in the meantime, theirs is newer than our saved copy and stays.
+  const current = target.getAttribute('aria-invalid');
+  const stillOurs = Boolean(previous?.wroteInvalid) && current === 'true';
   let wroteInvalid = false;
   let invalidPrior: string | null = null;
   if (relations.invalid) {
     wroteInvalid = true;
-    invalidPrior = previous?.wroteInvalid
-      ? previous.invalidPrior
-      : target.getAttribute('aria-invalid');
-    if (target.getAttribute('aria-invalid') !== 'true') target.setAttribute('aria-invalid', 'true');
-  } else if (previous?.wroteInvalid) {
-    if (previous.invalidPrior === null) target.removeAttribute('aria-invalid');
-    else target.setAttribute('aria-invalid', previous.invalidPrior);
+    invalidPrior = stillOurs ? previous!.invalidPrior : current;
+    if (current !== 'true') target.setAttribute('aria-invalid', 'true');
+  } else if (stillOurs) {
+    if (previous!.invalidPrior === null) target.removeAttribute('aria-invalid');
+    else target.setAttribute('aria-invalid', previous!.invalidPrior);
   }
   return { id, labelledBy, describedBy, wroteInvalid, invalidPrior };
 }

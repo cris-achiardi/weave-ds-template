@@ -170,6 +170,10 @@ export class Field extends HTMLElement {
    * are never removed; an element that left its slot gets back exactly what it had.
    */
   #wireSupplied(): void {
+    // A slotchange queued before a disconnect still fires after it, and an attribute can
+    // change while detached. Wiring then would re-take what disconnectedCallback just
+    // handed back, on elements nobody will release again. connectedCallback re-wires.
+    if (!this.isConnected) return;
     const entries: [Element, SuppliedRelations][] = [];
     const content = (slot: string, key: string): string[] =>
       (this.#slot(slot)?.assignedElements({ flatten: true }) ?? []).map((el, i) => {
