@@ -24,13 +24,20 @@ export const pascal = (s) => {
 export const kebab = (s) => s.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
 
 /**
+ * The key the anatomy root is declared under (`anatomy.root`). A contract references the root by
+ * this key — `composition.children.part: "root"` — never by the root's `part` name, which is a
+ * styling name and may be anything.
+ */
+export const ROOT_KEY = 'root';
+
+/**
  * Every anatomy node, depth first, with the key it is declared under.
  *
  * The key and the `part` are different strings and both matter: the key is what a contract
  * REFERENCES (`controls: "panel"`), the part is what reaches the DOM (`data-ds-part="panel"`).
  * They usually match and a contract is free to make them differ.
  */
-export function partsOf(node, out = [], key = 'root') {
+export function partsOf(node, out = [], key = ROOT_KEY) {
   out.push({ key, part: node.part, node });
   for (const [k, child] of Object.entries(node.parts ?? {})) partsOf(child, out, k);
   return out;

@@ -56,6 +56,7 @@ import {
   loadPair,
   memberFacts,
   partsOf,
+  ROOT_KEY,
   readJson,
   referencedByASibling,
 } from '@ds/emit-web';
@@ -1069,7 +1070,10 @@ export function emitSfc(name, contract, binding, prefix) {
     );
     for (const o of orphaned) t.push(`    <slot name="${o.name}" />`);
   }
-  if (takesChildren && (!childrenPart || childrenPart === root.part)) t.push(`    <slot />`);
+  // A children part keyed to the root (`anatomy.root`) is the root itself: renderPart only emits
+  // the outlet for sub-parts, so the root needs it here. Compare KEYS, not the root's `part` name —
+  // a sub-part may be keyed the same as the root's styling name.
+  if (takesChildren && (!childrenPart || childrenPart === ROOT_KEY)) t.push(`    <slot />`);
   t.push(`  </${el}>`);
   t.push(`</template>`);
 

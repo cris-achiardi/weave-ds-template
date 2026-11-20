@@ -29,7 +29,7 @@ import { TABS, type TabsContext } from '../Tabs/Tabs';
     'data-ds-component': 'TabPanel',
     'data-ds-part': 'root',
   },
-  template: ``,
+  template: ` <ng-content /> `,
 })
 export class TabPanel {
   /** Distinguishes this TabPanel from its siblings. The ancestor Tabs compares against it to decide whether this one is in the selection. */
