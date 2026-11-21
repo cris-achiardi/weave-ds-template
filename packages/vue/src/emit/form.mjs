@@ -11,7 +11,7 @@
 //
 // Same semantics as packages/react/src/emit/form.mjs; see packages/wc/forms.md.
 
-import { ownValidityFunction } from '@ds/emit-web';
+import { ownValidityFunction, watchFormDisabledFunction } from '@ds/emit-web';
 
 /** Vue imports the emitted block needs. */
 export const FORM_IMPORTS = ['nextTick', 'onBeforeUnmount', 'onMounted', 'ref', 'watch'];
@@ -89,4 +89,167 @@ export function emitOwnedValidity(local) {
     `  (invalid) => formValidity?.setInvalid(Boolean(invalid)),`,
     `);`,
   ];
+}
+// ---------------------------------------------------------------------------------------
+// Custom controls (#37): Checkbox, Switch, Slider, RadioGroup render no native form control, so
+// they contribute through a PROXY: one real, validatable <input> of the matching type, rendered as
+// the root's last child and hidden from people and assistive technology. Same design as
+// packages/react/src/emit/form.mjs, including its recorded deviation: inside a <button> root the
+// generated markup is NOT valid HTML (packages/wc/forms.md).
+// ---------------------------------------------------------------------------------------
+
+/** Vue imports the custom-control block needs. */
+export const CUSTOM_FORM_IMPORTS = ['computed', 'onBeforeUnmount', 'onMounted', 'ref', 'watch'];
+
+function proxyTypeFor(form) {
+  if (form.encoding === 'checked') return 'checkbox';
+  if (form.encoding === 'number') return 'range';
+  return 'text';
+}
+
+function writeProxy(form, model) {
+  if (form.encoding === 'checked')
+    return `proxy.checked = ${model}.value === ${JSON.stringify(form.checkedValue)};`;
+  if (form.encoding === 'number') return `proxy.value = String(snap(${model}.value, RANGE));`;
+  return `proxy.value = ${model}.value;`;
+}
+
+/**
+ * The effective-disabled declaration. Emitted right after the props, before anything reads it:
+ * the consumer's prop, or a disabled <fieldset> around the control. The prop is never written.
+ */
+export function emitEffectiveDisabled() {
+  return [
+    `// Effective disabled: the consumer's prop, or a disabled <fieldset> around the control.`,
+    `// Everything below reads this one; the prop itself is never written.`,
+    `const formDisabled = ref(false);`,
+    `const effectiveDisabled = computed(() => Boolean(props.disabled) || formDisabled.value);`,
+    ``,
+  ];
+}
+
+/** Script statements: proxy sync, fieldset observation, reset, owned validity, focus hand-off. */
+export function emitCustomFormLifecycle({ form, model, hasInvalid, prefix }) {
+  const s = [];
+  s.push(...watchFormDisabledFunction(prefix, 0));
+  s.push(`// ---- form contribution (contract.form). See packages/wc/forms.md.`);
+  s.push(
+    `// The form proxy: in the form, out of sight, out of the pointer's and the tab order's reach.`,
+  );
+  s.push(`const FORM_PROXY_STYLE = {`);
+  s.push(`  position: 'absolute',`);
+  s.push(`  width: '1px',`);
+  s.push(`  height: '1px',`);
+  s.push(`  margin: '0',`);
+  s.push(`  padding: '0',`);
+  s.push(`  border: '0',`);
+  s.push(`  opacity: '0',`);
+  s.push(`  overflow: 'hidden',`);
+  s.push(`  clipPath: 'inset(50%)',`);
+  s.push(`  pointerEvents: 'none',`);
+  s.push(`} as const;`);
+  s.push(`const formProxy = ref<HTMLInputElement | null>(null);`);
+  s.push(`// The answer a reset restores: captured once, at setup, never re-captured from props.`);
+  s.push(`const formAnswer = ${model}.value;`);
+  s.push(`// Driven imperatively: a native reset rewrites the proxy behind the renderer's back.`);
+  s.push(`function formWrite() {`);
+  s.push(`  const proxy = formProxy.value;`);
+  s.push(`  if (!proxy) return;`);
+  s.push(`  ${writeProxy(form, model)}`);
+  s.push(`}`);
+  s.push(`watch(${model}, formWrite, { flush: 'post' });`);
+  s.push(`let formDocument: Document | undefined;`);
+  s.push(`let formUnwatch: (() => void) | undefined;`);
+  s.push(`let formTimer: ReturnType<typeof setTimeout> | undefined;`);
+  s.push(
+    `// Matched against the CURRENT owner when it fires, so a \`form\` prop, an owner change or a`,
+  );
+  s.push(`// move needs no re-subscription.`);
+  s.push(`function onFormReset(event: Event) {`);
+  s.push(`  const proxy = formProxy.value;`);
+  s.push(`  if (!proxy || event.target !== proxy.form) return;`);
+  s.push(
+    `  // A TASK, not a microtask: a reset button dispatches from native code, so a microtask`,
+  );
+  s.push(`  // would run before later listeners could cancel and before the platform resets.`);
+  s.push(`  clearTimeout(formTimer);`);
+  s.push(`  formTimer = setTimeout(() => {`);
+  s.push(`    if (event.defaultPrevented) return;`);
+  s.push(`    // The model hears only a real difference, and no DOM event is dispatched: this is`);
+  s.push(`    // lifecycle synchronisation, not a user edit.`);
+  s.push(`    if (${model}.value !== formAnswer) ${model}.value = formAnswer;`);
+  s.push(`    // The platform has rewritten the proxy; put back what the model holds now.`);
+  s.push(`    formWrite();`);
+  s.push(`  });`);
+  s.push(`}`);
+  s.push(`onMounted(() => {`);
+  s.push(`  const proxy = formProxy.value;`);
+  s.push(`  if (!proxy) return;`);
+  s.push(`  formWrite();`);
+  s.push(`  formDocument = proxy.ownerDocument;`);
+  s.push(`  // A disabled <fieldset> fires no event. The shared document watcher calls back on a`);
+  s.push(
+    `  // fieldset \`disabled\` change or a move that can affect this control; the proxy, which`,
+  );
+  s.push(`  // the platform disables with its fieldset, gives the answer.`);
+  s.push(`  const syncDisabled = () => {`);
+  s.push(`    formDisabled.value = proxy.matches(':disabled') && !proxy.disabled;`);
+  s.push(`  };`);
+  s.push(`  syncDisabled();`);
+  s.push(`  formUnwatch = watchFormDisabled(proxy, syncDisabled);`);
+  s.push(`  formDocument.addEventListener('reset', onFormReset, true);`);
+  s.push(`});`);
+  s.push(`onBeforeUnmount(() => {`);
+  s.push(`  formUnwatch?.();`);
+  s.push(`  formDocument?.removeEventListener('reset', onFormReset, true);`);
+  s.push(`  clearTimeout(formTimer);`);
+  s.push(`});`);
+  s.push(`function onFormProxyFocus(event: FocusEvent) {`);
+  s.push(`  const root = (event.currentTarget as HTMLElement).parentElement;`);
+  s.push(`  (root?.querySelector<HTMLElement>('[tabindex="0"]') ?? root)?.focus();`);
+  s.push(`}`);
+  if (hasInvalid) s.push(...emitOwnedValidity('formProxy'));
+  s.push(``);
+  return s;
+}
+
+/** The proxy element, as template lines at the given indent. */
+export function emitFormProxy({ form, range, hasReadOnly, answer, indent }) {
+  const pad = ' '.repeat(indent);
+  const type = proxyTypeFor(form);
+  const a = [];
+  a.push(`ref="formProxy"`);
+  const barredWhenReadOnly = hasReadOnly && type === 'checkbox';
+  const on = `${answer} === ${JSON.stringify(form.checkedValue)}`;
+  // A read-only answer still submits but is barred from validation, as in HTML. `readonly` does not
+  // apply to checkbox or range, so a read-only CHECKBOX proxy becomes a read-only `type="text"` —
+  // barred from validation, its value submitted as-is — and drops its name while unchecked, since
+  // a text input always submits. Same element, only its type changes. Not `type="hidden"`: a hidden
+  // input named `_charset_` submits the document encoding instead of its value. And withdrawing
+  // `required` alone left a consumer custom error in force.
+  if (barredWhenReadOnly) {
+    a.push(`:type="readOnly ? 'text' : '${type}'"`);
+    a.push(`:name="readOnly && !(${on}) ? undefined : name || undefined"`);
+  } else {
+    a.push(`type="${type}"`);
+    a.push(`:name="name || undefined"`);
+  }
+  a.push(`:form="form || undefined"`);
+  // A read-only answer still submits but is barred from validation, as in HTML. `readonly` does not
+  // apply to checkbox or range, so `required` is withdrawn instead.
+  a.push(`:required="${hasReadOnly ? 'required && !readOnly' : 'required'}"`);
+  if (hasReadOnly && (type === 'text' || barredWhenReadOnly)) a.push(`:readonly="readOnly"`);
+  a.push(`:disabled="disabled"`);
+  if (form.encoding === 'checked') a.push(`:value="value"`);
+  if (type === 'range' && range) {
+    a.push(`min="${range.min}"`);
+    a.push(`max="${range.max}"`);
+    a.push(`step="${range.step}"`);
+  }
+  a.push(`aria-hidden="true"`);
+  a.push(`tabindex="-1"`);
+  a.push(`autocomplete="off"`);
+  a.push(`:style="FORM_PROXY_STYLE"`);
+  a.push(`@focus="onFormProxyFocus"`);
+  return [`${pad}<input`, ...a.map((x) => `${pad}  ${x}`), `${pad}/>`];
 }

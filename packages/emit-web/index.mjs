@@ -4,3 +4,4 @@
 export * from './contract.mjs';
 export * from './css.mjs';
 export * from './validity.mjs';
+export * from './form-disabled.mjs';

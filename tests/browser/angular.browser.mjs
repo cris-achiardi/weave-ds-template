@@ -44,3 +44,6 @@ relationRegressions();
 import { angularPresetRegressions, frameworkFormRegressions } from './framework-forms.mjs';
 frameworkFormRegressions();
 angularPresetRegressions();
+
+import { frameworkControlRegressions } from './framework-controls.mjs';
+frameworkControlRegressions();

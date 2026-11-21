@@ -14,6 +14,12 @@ export interface TextFieldProps {
   readOnly?: boolean;
   /** Set from outside — usually by a surrounding Field. This component does not decide it. */
   invalid?: boolean;
+  /** Name of the submitted answer. An empty name contributes nothing. */
+  name?: string;
+  /** Whether an answer is required for form validation. */
+  required?: boolean;
+  /** The id of the form that owns this answer, when it is not an ancestor form. */
+  form?: string;
   /** A contiguous subset of the canon's ladder. Defaults to `m`. */
   size?: 's' | 'm' | 'l';
 }
@@ -149,6 +155,9 @@ function onRootInput(event: Event) {
     :data-ds-size="size"
     :value="value"
     :readonly="readOnly"
+    :name="name"
+    :required="required"
+    :form="form"
     data-ds-component="TextField"
     data-ds-part="root"
     @input="onRootInput"

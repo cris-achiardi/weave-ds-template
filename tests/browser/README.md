@@ -46,6 +46,9 @@ reported as non-conforming under ADR 0005.
 `framework-forms.mjs` drives `forms-tests.html` in the React, Vue and Angular sandboxes: TextField
 reset (button and script, cancelled, controlled and uncontrolled, commit drafts), authored-invalid
 constraint validity and the native fieldset/owner behaviour those backends keep.
+`framework-controls.mjs` drives `controls-tests.html` there for the custom controls' proxies:
+serialization, required and authored-invalid submission blocking, focus hand-off, fieldset
+disabling, reset, and observer/listener cleanup on unmount.
 
 The matrix also guards WC roving focus without host delegation: negative-tabindex arrow targets
 and forward/reverse Tab traversal must work in every engine.

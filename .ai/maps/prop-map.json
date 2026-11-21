@@ -13,13 +13,13 @@
         "prose": "packages/contracts/components/README.md §2"
       },
       "componentCount": 15,
-      "propCount": 40,
+      "propCount": 43,
       "kindCounts": {
         "axis": 5,
         "enum": 2,
-        "boolean": 11,
+        "boolean": 12,
         "node": 14,
-        "local": 8
+        "local": 10
       },
       "conventions": {
         "propCase": "camelCase",
@@ -626,6 +626,46 @@
           ],
           "usedCount": 1
         },
+        "form": {
+          "kind": "local",
+          "axis": null,
+          "valueSets": [],
+          "typesOn": [
+            {
+              "type": "string",
+              "on": [
+                "Checkbox",
+                "RadioGroup",
+                "Slider",
+                "Switch",
+                "TextField"
+              ]
+            }
+          ],
+          "valuelessOn": [
+            {
+              "type": "string",
+              "on": [
+                "Checkbox",
+                "RadioGroup",
+                "Slider",
+                "Switch",
+                "TextField"
+              ]
+            }
+          ],
+          "types": [
+            "string"
+          ],
+          "usedOn": [
+            "Checkbox",
+            "RadioGroup",
+            "Slider",
+            "Switch",
+            "TextField"
+          ],
+          "usedCount": 5
+        },
         "heading": {
           "kind": "node",
           "axis": null,
@@ -809,6 +849,46 @@
             "Button"
           ],
           "usedCount": 1
+        },
+        "name": {
+          "kind": "local",
+          "axis": null,
+          "valueSets": [],
+          "typesOn": [
+            {
+              "type": "string",
+              "on": [
+                "Checkbox",
+                "RadioGroup",
+                "Slider",
+                "Switch",
+                "TextField"
+              ]
+            }
+          ],
+          "valuelessOn": [
+            {
+              "type": "string",
+              "on": [
+                "Checkbox",
+                "RadioGroup",
+                "Slider",
+                "Switch",
+                "TextField"
+              ]
+            }
+          ],
+          "types": [
+            "string"
+          ],
+          "usedOn": [
+            "Checkbox",
+            "RadioGroup",
+            "Slider",
+            "Switch",
+            "TextField"
+          ],
+          "usedCount": 5
         },
         "onCheckedChange": {
           "kind": "local",
@@ -1119,6 +1199,46 @@
           ],
           "usedCount": 3
         },
+        "required": {
+          "kind": "boolean",
+          "axis": null,
+          "valueSets": [],
+          "typesOn": [
+            {
+              "type": "boolean",
+              "on": [
+                "Checkbox",
+                "RadioGroup",
+                "Slider",
+                "Switch",
+                "TextField"
+              ]
+            }
+          ],
+          "valuelessOn": [
+            {
+              "type": "boolean",
+              "on": [
+                "Checkbox",
+                "RadioGroup",
+                "Slider",
+                "Switch",
+                "TextField"
+              ]
+            }
+          ],
+          "types": [
+            "boolean"
+          ],
+          "usedOn": [
+            "Checkbox",
+            "RadioGroup",
+            "Slider",
+            "Switch",
+            "TextField"
+          ],
+          "usedCount": 5
+        },
         "size": {
           "kind": "axis",
           "axis": "size",
@@ -1263,8 +1383,10 @@
               "type": "string",
               "on": [
                 "AccordionItem",
+                "Checkbox",
                 "RadioGroup",
                 "RadioItem",
+                "Switch",
                 "TabItem",
                 "TabPanel",
                 "Tabs",
@@ -1288,7 +1410,9 @@
             {
               "type": "string",
               "on": [
+                "Checkbox",
                 "RadioGroup",
+                "Switch",
                 "Tabs",
                 "TextField"
               ]
@@ -1308,15 +1432,17 @@
           "usedOn": [
             "Accordion",
             "AccordionItem",
+            "Checkbox",
             "RadioGroup",
             "RadioItem",
             "Slider",
+            "Switch",
             "TabItem",
             "TabPanel",
             "Tabs",
             "TextField"
           ],
-          "usedCount": 9
+          "usedCount": 11
         },
         "variant": {
           "kind": "axis",
@@ -1374,7 +1500,7 @@
       "flagCount": 2,
       "extraction": {
         "componentsScanned": 15,
-        "propsResolved": 40,
+        "propsResolved": 43,
         "degraded": false,
         "warnings": []
       },
@@ -1571,6 +1697,42 @@
             "part": "label",
             "required": true,
             "description": "The question being answered. Fills the `label` part."
+          },
+          {
+            "name": "name",
+            "type": "string",
+            "from": "name",
+            "origin": "form",
+            "role": "input",
+            "default": "",
+            "description": "Name of the submitted answer. An empty name contributes nothing."
+          },
+          {
+            "name": "required",
+            "type": "boolean",
+            "from": "required",
+            "origin": "form",
+            "role": "input",
+            "default": false,
+            "description": "Whether an answer is required for form validation."
+          },
+          {
+            "name": "form",
+            "type": "string",
+            "from": "form",
+            "origin": "form",
+            "role": "input",
+            "default": "",
+            "description": "The id of the form that owns this answer, when it is not an ancestor form."
+          },
+          {
+            "name": "value",
+            "type": "string",
+            "from": "value",
+            "origin": "form",
+            "role": "input",
+            "default": "on",
+            "description": "Value submitted when checked."
           }
         ],
         "Dialog": [
@@ -1789,6 +1951,33 @@
             "from": "selection",
             "origin": "selection",
             "role": "callback"
+          },
+          {
+            "name": "name",
+            "type": "string",
+            "from": "name",
+            "origin": "form",
+            "role": "input",
+            "default": "",
+            "description": "Name of the submitted answer. An empty name contributes nothing."
+          },
+          {
+            "name": "required",
+            "type": "boolean",
+            "from": "required",
+            "origin": "form",
+            "role": "input",
+            "default": false,
+            "description": "Whether an answer is required for form validation."
+          },
+          {
+            "name": "form",
+            "type": "string",
+            "from": "form",
+            "origin": "form",
+            "role": "input",
+            "default": "",
+            "description": "The id of the form that owns this answer, when it is not an ancestor form."
           }
         ],
         "RadioItem": [
@@ -1850,6 +2039,33 @@
             "origin": "state",
             "role": "input",
             "default": false
+          },
+          {
+            "name": "name",
+            "type": "string",
+            "from": "name",
+            "origin": "form",
+            "role": "input",
+            "default": "",
+            "description": "Name of the submitted answer. An empty name contributes nothing."
+          },
+          {
+            "name": "required",
+            "type": "boolean",
+            "from": "required",
+            "origin": "form",
+            "role": "input",
+            "default": false,
+            "description": "Whether an answer is required for form validation."
+          },
+          {
+            "name": "form",
+            "type": "string",
+            "from": "form",
+            "origin": "form",
+            "role": "input",
+            "default": "",
+            "description": "The id of the form that owns this answer, when it is not an ancestor form."
           }
         ],
         "Switch": [
@@ -1890,6 +2106,42 @@
             "origin": "state",
             "role": "input",
             "default": false
+          },
+          {
+            "name": "name",
+            "type": "string",
+            "from": "name",
+            "origin": "form",
+            "role": "input",
+            "default": "",
+            "description": "Name of the submitted answer. An empty name contributes nothing."
+          },
+          {
+            "name": "required",
+            "type": "boolean",
+            "from": "required",
+            "origin": "form",
+            "role": "input",
+            "default": false,
+            "description": "Whether an answer is required for form validation."
+          },
+          {
+            "name": "form",
+            "type": "string",
+            "from": "form",
+            "origin": "form",
+            "role": "input",
+            "default": "",
+            "description": "The id of the form that owns this answer, when it is not an ancestor form."
+          },
+          {
+            "name": "value",
+            "type": "string",
+            "from": "value",
+            "origin": "form",
+            "role": "input",
+            "default": "on",
+            "description": "Value submitted when checked."
           }
         ],
         "TabItem": [
@@ -2028,6 +2280,33 @@
             "role": "axis",
             "default": "m",
             "description": "A contiguous subset of the canon's ladder."
+          },
+          {
+            "name": "name",
+            "type": "string",
+            "from": "name",
+            "origin": "form",
+            "role": "input",
+            "default": "",
+            "description": "Name of the submitted answer. An empty name contributes nothing."
+          },
+          {
+            "name": "required",
+            "type": "boolean",
+            "from": "required",
+            "origin": "form",
+            "role": "input",
+            "default": false,
+            "description": "Whether an answer is required for form validation."
+          },
+          {
+            "name": "form",
+            "type": "string",
+            "from": "form",
+            "origin": "form",
+            "role": "input",
+            "default": "",
+            "description": "The id of the form that owns this answer, when it is not an ancestor form."
           }
         ],
         "Tooltip": [
@@ -2104,13 +2383,13 @@
         "prose": "packages/contracts/components/README.md §2"
       },
       "componentCount": 15,
-      "propCount": 14,
+      "propCount": 17,
       "kindCounts": {
         "axis": 5,
         "enum": 1,
-        "boolean": 7,
+        "boolean": 8,
         "node": 0,
-        "local": 1
+        "local": 3
       },
       "conventions": {
         "propCase": "camelCase",
@@ -2367,6 +2646,46 @@
           ],
           "usedCount": 13
         },
+        "form": {
+          "kind": "local",
+          "axis": null,
+          "valueSets": [],
+          "typesOn": [
+            {
+              "type": "string",
+              "on": [
+                "Checkbox",
+                "RadioGroup",
+                "Slider",
+                "Switch",
+                "TextField"
+              ]
+            }
+          ],
+          "valuelessOn": [
+            {
+              "type": "string",
+              "on": [
+                "Checkbox",
+                "RadioGroup",
+                "Slider",
+                "Switch",
+                "TextField"
+              ]
+            }
+          ],
+          "types": [
+            "string"
+          ],
+          "usedOn": [
+            "Checkbox",
+            "RadioGroup",
+            "Slider",
+            "Switch",
+            "TextField"
+          ],
+          "usedCount": 5
+        },
         "hierarchy": {
           "kind": "axis",
           "axis": "hierarchy",
@@ -2460,6 +2779,46 @@
             "Button"
           ],
           "usedCount": 1
+        },
+        "name": {
+          "kind": "local",
+          "axis": null,
+          "valueSets": [],
+          "typesOn": [
+            {
+              "type": "string",
+              "on": [
+                "Checkbox",
+                "RadioGroup",
+                "Slider",
+                "Switch",
+                "TextField"
+              ]
+            }
+          ],
+          "valuelessOn": [
+            {
+              "type": "string",
+              "on": [
+                "Checkbox",
+                "RadioGroup",
+                "Slider",
+                "Switch",
+                "TextField"
+              ]
+            }
+          ],
+          "types": [
+            "string"
+          ],
+          "usedOn": [
+            "Checkbox",
+            "RadioGroup",
+            "Slider",
+            "Switch",
+            "TextField"
+          ],
+          "usedCount": 5
         },
         "open": {
           "kind": "boolean",
@@ -2593,6 +2952,46 @@
           ],
           "usedCount": 3
         },
+        "required": {
+          "kind": "boolean",
+          "axis": null,
+          "valueSets": [],
+          "typesOn": [
+            {
+              "type": "boolean",
+              "on": [
+                "Checkbox",
+                "RadioGroup",
+                "Slider",
+                "Switch",
+                "TextField"
+              ]
+            }
+          ],
+          "valuelessOn": [
+            {
+              "type": "boolean",
+              "on": [
+                "Checkbox",
+                "RadioGroup",
+                "Slider",
+                "Switch",
+                "TextField"
+              ]
+            }
+          ],
+          "types": [
+            "boolean"
+          ],
+          "usedOn": [
+            "Checkbox",
+            "RadioGroup",
+            "Slider",
+            "Switch",
+            "TextField"
+          ],
+          "usedCount": 5
+        },
         "size": {
           "kind": "axis",
           "axis": "size",
@@ -2674,8 +3073,10 @@
               "type": "string",
               "on": [
                 "AccordionItem",
+                "Checkbox",
                 "RadioGroup",
                 "RadioItem",
+                "Switch",
                 "TabItem",
                 "TabPanel",
                 "Tabs",
@@ -2699,7 +3100,9 @@
             {
               "type": "string",
               "on": [
+                "Checkbox",
                 "RadioGroup",
+                "Switch",
                 "Tabs",
                 "TextField"
               ]
@@ -2719,15 +3122,17 @@
           "usedOn": [
             "Accordion",
             "AccordionItem",
+            "Checkbox",
             "RadioGroup",
             "RadioItem",
             "Slider",
+            "Switch",
             "TabItem",
             "TabPanel",
             "Tabs",
             "TextField"
           ],
-          "usedCount": 9
+          "usedCount": 11
         },
         "variant": {
           "kind": "axis",
@@ -2776,7 +3181,7 @@
       "flagCount": 1,
       "extraction": {
         "componentsScanned": 15,
-        "propsResolved": 14,
+        "propsResolved": 17,
         "degraded": false,
         "warnings": []
       },
@@ -2906,6 +3311,42 @@
             "role": "input",
             "default": false,
             "description": "The answer failed validation — typically a required checkbox left unchecked."
+          },
+          {
+            "name": "name",
+            "type": "string",
+            "from": "name",
+            "origin": "form",
+            "role": "input",
+            "default": "",
+            "description": "Name of the submitted answer. An empty name contributes nothing."
+          },
+          {
+            "name": "required",
+            "type": "boolean",
+            "from": "required",
+            "origin": "form",
+            "role": "input",
+            "default": false,
+            "description": "Whether an answer is required for form validation."
+          },
+          {
+            "name": "form",
+            "type": "string",
+            "from": "form",
+            "origin": "form",
+            "role": "input",
+            "default": "",
+            "description": "The id of the form that owns this answer, when it is not an ancestor form."
+          },
+          {
+            "name": "value",
+            "type": "string",
+            "from": "value",
+            "origin": "form",
+            "role": "input",
+            "default": "on",
+            "description": "Value submitted when checked."
           }
         ],
         "Dialog": [
@@ -2998,6 +3439,33 @@
             "default": "",
             "event": "update:value",
             "description": "The current selection, by member identity."
+          },
+          {
+            "name": "name",
+            "type": "string",
+            "from": "name",
+            "origin": "form",
+            "role": "input",
+            "default": "",
+            "description": "Name of the submitted answer. An empty name contributes nothing."
+          },
+          {
+            "name": "required",
+            "type": "boolean",
+            "from": "required",
+            "origin": "form",
+            "role": "input",
+            "default": false,
+            "description": "Whether an answer is required for form validation."
+          },
+          {
+            "name": "form",
+            "type": "string",
+            "from": "form",
+            "origin": "form",
+            "role": "input",
+            "default": "",
+            "description": "The id of the form that owns this answer, when it is not an ancestor form."
           }
         ],
         "RadioItem": [
@@ -3039,6 +3507,33 @@
             "role": "input",
             "default": false,
             "description": "The platform's own disabled state. Removed from the focus order and cannot be moved."
+          },
+          {
+            "name": "name",
+            "type": "string",
+            "from": "name",
+            "origin": "form",
+            "role": "input",
+            "default": "",
+            "description": "Name of the submitted answer. An empty name contributes nothing."
+          },
+          {
+            "name": "required",
+            "type": "boolean",
+            "from": "required",
+            "origin": "form",
+            "role": "input",
+            "default": false,
+            "description": "Whether an answer is required for form validation."
+          },
+          {
+            "name": "form",
+            "type": "string",
+            "from": "form",
+            "origin": "form",
+            "role": "input",
+            "default": "",
+            "description": "The id of the form that owns this answer, when it is not an ancestor form."
           }
         ],
         "Switch": [
@@ -3069,6 +3564,42 @@
             "role": "input",
             "default": false,
             "description": "Cannot be toggled, but remains focusable and readable. Distinct from disabled, which removes it from the focus order entirely."
+          },
+          {
+            "name": "name",
+            "type": "string",
+            "from": "name",
+            "origin": "form",
+            "role": "input",
+            "default": "",
+            "description": "Name of the submitted answer. An empty name contributes nothing."
+          },
+          {
+            "name": "required",
+            "type": "boolean",
+            "from": "required",
+            "origin": "form",
+            "role": "input",
+            "default": false,
+            "description": "Whether an answer is required for form validation."
+          },
+          {
+            "name": "form",
+            "type": "string",
+            "from": "form",
+            "origin": "form",
+            "role": "input",
+            "default": "",
+            "description": "The id of the form that owns this answer, when it is not an ancestor form."
+          },
+          {
+            "name": "value",
+            "type": "string",
+            "from": "value",
+            "origin": "form",
+            "role": "input",
+            "default": "on",
+            "description": "Value submitted when checked."
           }
         ],
         "TabItem": [
@@ -3169,6 +3700,33 @@
             "role": "axis",
             "default": "m",
             "description": "A contiguous subset of the canon's ladder."
+          },
+          {
+            "name": "name",
+            "type": "string",
+            "from": "name",
+            "origin": "form",
+            "role": "input",
+            "default": "",
+            "description": "Name of the submitted answer. An empty name contributes nothing."
+          },
+          {
+            "name": "required",
+            "type": "boolean",
+            "from": "required",
+            "origin": "form",
+            "role": "input",
+            "default": false,
+            "description": "Whether an answer is required for form validation."
+          },
+          {
+            "name": "form",
+            "type": "string",
+            "from": "form",
+            "origin": "form",
+            "role": "input",
+            "default": "",
+            "description": "The id of the form that owns this answer, when it is not an ancestor form."
           }
         ],
         "Tooltip": [
@@ -3214,13 +3772,13 @@
         "prose": "packages/contracts/components/README.md §2"
       },
       "componentCount": 15,
-      "propCount": 14,
+      "propCount": 17,
       "kindCounts": {
         "axis": 5,
         "enum": 1,
-        "boolean": 7,
+        "boolean": 8,
         "node": 0,
-        "local": 1
+        "local": 3
       },
       "conventions": {
         "propCase": "camelCase",
@@ -3477,6 +4035,46 @@
           ],
           "usedCount": 13
         },
+        "form": {
+          "kind": "local",
+          "axis": null,
+          "valueSets": [],
+          "typesOn": [
+            {
+              "type": "string",
+              "on": [
+                "Checkbox",
+                "RadioGroup",
+                "Slider",
+                "Switch",
+                "TextField"
+              ]
+            }
+          ],
+          "valuelessOn": [
+            {
+              "type": "string",
+              "on": [
+                "Checkbox",
+                "RadioGroup",
+                "Slider",
+                "Switch",
+                "TextField"
+              ]
+            }
+          ],
+          "types": [
+            "string"
+          ],
+          "usedOn": [
+            "Checkbox",
+            "RadioGroup",
+            "Slider",
+            "Switch",
+            "TextField"
+          ],
+          "usedCount": 5
+        },
         "hierarchy": {
           "kind": "axis",
           "axis": "hierarchy",
@@ -3570,6 +4168,46 @@
             "Button"
           ],
           "usedCount": 1
+        },
+        "name": {
+          "kind": "local",
+          "axis": null,
+          "valueSets": [],
+          "typesOn": [
+            {
+              "type": "string",
+              "on": [
+                "Checkbox",
+                "RadioGroup",
+                "Slider",
+                "Switch",
+                "TextField"
+              ]
+            }
+          ],
+          "valuelessOn": [
+            {
+              "type": "string",
+              "on": [
+                "Checkbox",
+                "RadioGroup",
+                "Slider",
+                "Switch",
+                "TextField"
+              ]
+            }
+          ],
+          "types": [
+            "string"
+          ],
+          "usedOn": [
+            "Checkbox",
+            "RadioGroup",
+            "Slider",
+            "Switch",
+            "TextField"
+          ],
+          "usedCount": 5
         },
         "open": {
           "kind": "boolean",
@@ -3703,6 +4341,46 @@
           ],
           "usedCount": 3
         },
+        "required": {
+          "kind": "boolean",
+          "axis": null,
+          "valueSets": [],
+          "typesOn": [
+            {
+              "type": "boolean",
+              "on": [
+                "Checkbox",
+                "RadioGroup",
+                "Slider",
+                "Switch",
+                "TextField"
+              ]
+            }
+          ],
+          "valuelessOn": [
+            {
+              "type": "boolean",
+              "on": [
+                "Checkbox",
+                "RadioGroup",
+                "Slider",
+                "Switch",
+                "TextField"
+              ]
+            }
+          ],
+          "types": [
+            "boolean"
+          ],
+          "usedOn": [
+            "Checkbox",
+            "RadioGroup",
+            "Slider",
+            "Switch",
+            "TextField"
+          ],
+          "usedCount": 5
+        },
         "size": {
           "kind": "axis",
           "axis": "size",
@@ -3784,8 +4462,10 @@
               "type": "string",
               "on": [
                 "AccordionItem",
+                "Checkbox",
                 "RadioGroup",
                 "RadioItem",
+                "Switch",
                 "TabItem",
                 "TabPanel",
                 "Tabs",
@@ -3809,7 +4489,9 @@
             {
               "type": "string",
               "on": [
+                "Checkbox",
                 "RadioGroup",
+                "Switch",
                 "Tabs",
                 "TextField"
               ]
@@ -3829,15 +4511,17 @@
           "usedOn": [
             "Accordion",
             "AccordionItem",
+            "Checkbox",
             "RadioGroup",
             "RadioItem",
             "Slider",
+            "Switch",
             "TabItem",
             "TabPanel",
             "Tabs",
             "TextField"
           ],
-          "usedCount": 9
+          "usedCount": 11
         },
         "variant": {
           "kind": "axis",
@@ -3886,7 +4570,7 @@
       "flagCount": 1,
       "extraction": {
         "componentsScanned": 15,
-        "propsResolved": 14,
+        "propsResolved": 17,
         "degraded": false,
         "warnings": []
       },
@@ -4016,6 +4700,42 @@
             "role": "input",
             "default": false,
             "description": "The answer failed validation — typically a required checkbox left unchecked."
+          },
+          {
+            "name": "name",
+            "type": "string",
+            "from": "name",
+            "origin": "form",
+            "role": "input",
+            "default": "",
+            "description": "Name of the submitted answer. An empty name contributes nothing."
+          },
+          {
+            "name": "required",
+            "type": "boolean",
+            "from": "required",
+            "origin": "form",
+            "role": "input",
+            "default": false,
+            "description": "Whether an answer is required for form validation."
+          },
+          {
+            "name": "form",
+            "type": "string",
+            "from": "form",
+            "origin": "form",
+            "role": "input",
+            "default": "",
+            "description": "The id of the form that owns this answer, when it is not an ancestor form."
+          },
+          {
+            "name": "value",
+            "type": "string",
+            "from": "value",
+            "origin": "form",
+            "role": "input",
+            "default": "on",
+            "description": "Value submitted when checked."
           }
         ],
         "Dialog": [
@@ -4108,6 +4828,33 @@
             "default": "",
             "event": "valueChange",
             "description": "The current selection, by member identity."
+          },
+          {
+            "name": "name",
+            "type": "string",
+            "from": "name",
+            "origin": "form",
+            "role": "input",
+            "default": "",
+            "description": "Name of the submitted answer. An empty name contributes nothing."
+          },
+          {
+            "name": "required",
+            "type": "boolean",
+            "from": "required",
+            "origin": "form",
+            "role": "input",
+            "default": false,
+            "description": "Whether an answer is required for form validation."
+          },
+          {
+            "name": "form",
+            "type": "string",
+            "from": "form",
+            "origin": "form",
+            "role": "input",
+            "default": "",
+            "description": "The id of the form that owns this answer, when it is not an ancestor form."
           }
         ],
         "RadioItem": [
@@ -4149,6 +4896,33 @@
             "role": "input",
             "default": false,
             "description": "The platform's own disabled state. Removed from the focus order and cannot be moved."
+          },
+          {
+            "name": "name",
+            "type": "string",
+            "from": "name",
+            "origin": "form",
+            "role": "input",
+            "default": "",
+            "description": "Name of the submitted answer. An empty name contributes nothing."
+          },
+          {
+            "name": "required",
+            "type": "boolean",
+            "from": "required",
+            "origin": "form",
+            "role": "input",
+            "default": false,
+            "description": "Whether an answer is required for form validation."
+          },
+          {
+            "name": "form",
+            "type": "string",
+            "from": "form",
+            "origin": "form",
+            "role": "input",
+            "default": "",
+            "description": "The id of the form that owns this answer, when it is not an ancestor form."
           }
         ],
         "Switch": [
@@ -4179,6 +4953,42 @@
             "role": "input",
             "default": false,
             "description": "Cannot be toggled, but remains focusable and readable. Distinct from disabled, which removes it from the focus order entirely."
+          },
+          {
+            "name": "name",
+            "type": "string",
+            "from": "name",
+            "origin": "form",
+            "role": "input",
+            "default": "",
+            "description": "Name of the submitted answer. An empty name contributes nothing."
+          },
+          {
+            "name": "required",
+            "type": "boolean",
+            "from": "required",
+            "origin": "form",
+            "role": "input",
+            "default": false,
+            "description": "Whether an answer is required for form validation."
+          },
+          {
+            "name": "form",
+            "type": "string",
+            "from": "form",
+            "origin": "form",
+            "role": "input",
+            "default": "",
+            "description": "The id of the form that owns this answer, when it is not an ancestor form."
+          },
+          {
+            "name": "value",
+            "type": "string",
+            "from": "value",
+            "origin": "form",
+            "role": "input",
+            "default": "on",
+            "description": "Value submitted when checked."
           }
         ],
         "TabItem": [
@@ -4279,6 +5089,33 @@
             "role": "axis",
             "default": "m",
             "description": "A contiguous subset of the canon's ladder."
+          },
+          {
+            "name": "name",
+            "type": "string",
+            "from": "name",
+            "origin": "form",
+            "role": "input",
+            "default": "",
+            "description": "Name of the submitted answer. An empty name contributes nothing."
+          },
+          {
+            "name": "required",
+            "type": "boolean",
+            "from": "required",
+            "origin": "form",
+            "role": "input",
+            "default": false,
+            "description": "Whether an answer is required for form validation."
+          },
+          {
+            "name": "form",
+            "type": "string",
+            "from": "form",
+            "origin": "form",
+            "role": "input",
+            "default": "",
+            "description": "The id of the form that owns this answer, when it is not an ancestor form."
           }
         ],
         "Tooltip": [

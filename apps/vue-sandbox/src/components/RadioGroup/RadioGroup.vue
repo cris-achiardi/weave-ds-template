@@ -15,6 +15,12 @@ export interface RadioGroupProps {
   disabled?: boolean;
   /** The selection cannot be changed, but the group stays readable and focusable. Distinct from disabled, which removes it from the focus order. */
   readOnly?: boolean;
+  /** Name of the submitted answer. An empty name contributes nothing. */
+  name?: string;
+  /** Whether an answer is required for form validation. */
+  required?: boolean;
+  /** The id of the form that owns this answer, when it is not an ancestor form. */
+  form?: string;
 }
 
 /** Published to every member through provide/inject. */
@@ -42,7 +48,7 @@ export const RadioGroupKey: InjectionKey<RadioGroupContextValue> = Symbol('Radio
 </script>
 
 <script setup lang="ts">
-import { computed, provide, useAttrs, useId } from 'vue';
+import { computed, onBeforeUnmount, onMounted, provide, ref, useAttrs, useId, watch } from 'vue';
 import { useLinearNavigation } from '@ds/vue/behavior';
 import type { NavigationOptions } from '@ds/vue/behavior';
 import './RadioGroup.structure.css';
@@ -53,6 +59,11 @@ import './RadioGroup.theme.css';
 defineOptions({ name: 'RadioGroup', inheritAttrs: false });
 
 const props = defineProps<RadioGroupProps>();
+
+// Effective disabled: the consumer's prop, or a disabled <fieldset> around the control.
+// Everything below reads this one; the prop itself is never written.
+const formDisabled = ref(false);
+const effectiveDisabled = computed(() => Boolean(props.disabled) || formDisabled.value);
 
 /** The current selection, by member identity. Two-way: `v-model:value`. */
 const value = defineModel<string>('value', { default: '' });
@@ -89,11 +100,137 @@ provide(RadioGroupKey, {
   selection: computed(() => value.value),
   toggle,
   baseId,
-  disabled: computed(() => Boolean(props.disabled)),
+  disabled: computed(() => effectiveDisabled.value),
   register: nav.register,
   unregister: nav.unregister,
   isTabStop: nav.isTabStop,
 });
+
+// One observer per DOCUMENT, shared by every generated control on it and refcounted, notifying
+// only the controls a record can affect. Generated from packages/emit-web/form-disabled.mjs.
+function watchFormDisabled(proxy: HTMLInputElement, sync: () => void): () => void {
+  type Watcher = { proxy: HTMLInputElement; sync: () => void };
+  type Registry = { observer: MutationObserver; watchers: Set<Watcher> };
+  const doc = proxy.ownerDocument;
+  const key = Symbol.for('ds.form-disabled');
+  const host = doc as unknown as Record<symbol, Registry | undefined>;
+  let registry = host[key];
+  if (!registry) {
+    const watchers = new Set<Watcher>();
+    // ONE pass over the records, each tested cheaply before any subscriber is: a record on a
+    // fieldset re-asks everything inside it, and an insertion elsewhere matters only if it holds
+    // an <input>, since every proxy is one. Unrelated mutations cost a tag check, not a walk.
+    const observer = new MutationObserver((records) => {
+      const due = new Set<Watcher>();
+      const collect = (root: Node) => {
+        for (const watcher of watchers) if (root.contains(watcher.proxy)) due.add(watcher);
+      };
+      for (const record of records) {
+        // A fieldset's own `disabled`, OR its children changing: which <legend> is first decides
+        // whether the controls inside that legend are exempt, so adding or removing a child of a
+        // fieldset can change the state of descendants that never moved.
+        if (record.target.nodeName === 'FIELDSET') collect(record.target);
+        if (record.type === 'attributes') continue;
+        const added = record.addedNodes;
+        for (let i = 0; i < added.length; i++) {
+          const node = added[i] as Element;
+          if (node.nodeType !== 1) continue;
+          if (node.nodeName !== 'INPUT') {
+            if (!node.firstElementChild || !node.getElementsByTagName('input').length) continue;
+          }
+          collect(node);
+        }
+      }
+      for (const watcher of due) watcher.sync();
+    });
+    observer.observe(doc.documentElement, {
+      attributes: true,
+      attributeFilter: ['disabled'],
+      childList: true,
+      subtree: true,
+    });
+    registry = { observer, watchers };
+    host[key] = registry;
+  }
+  const watcher: Watcher = { proxy, sync };
+  registry.watchers.add(watcher);
+  return () => {
+    const current = host[key];
+    if (!current) return;
+    current.watchers.delete(watcher);
+    if (current.watchers.size) return;
+    current.observer.disconnect();
+    delete host[key];
+  };
+}
+// ---- form contribution (contract.form). See packages/wc/forms.md.
+// The form proxy: in the form, out of sight, out of the pointer's and the tab order's reach.
+const FORM_PROXY_STYLE = {
+  position: 'absolute',
+  width: '1px',
+  height: '1px',
+  margin: '0',
+  padding: '0',
+  border: '0',
+  opacity: '0',
+  overflow: 'hidden',
+  clipPath: 'inset(50%)',
+  pointerEvents: 'none',
+} as const;
+const formProxy = ref<HTMLInputElement | null>(null);
+// The answer a reset restores: captured once, at setup, never re-captured from props.
+const formAnswer = value.value;
+// Driven imperatively: a native reset rewrites the proxy behind the renderer's back.
+function formWrite() {
+  const proxy = formProxy.value;
+  if (!proxy) return;
+  proxy.value = value.value;
+}
+watch(value, formWrite, { flush: 'post' });
+let formDocument: Document | undefined;
+let formUnwatch: (() => void) | undefined;
+let formTimer: ReturnType<typeof setTimeout> | undefined;
+// Matched against the CURRENT owner when it fires, so a `form` prop, an owner change or a
+// move needs no re-subscription.
+function onFormReset(event: Event) {
+  const proxy = formProxy.value;
+  if (!proxy || event.target !== proxy.form) return;
+  // A TASK, not a microtask: a reset button dispatches from native code, so a microtask
+  // would run before later listeners could cancel and before the platform resets.
+  clearTimeout(formTimer);
+  formTimer = setTimeout(() => {
+    if (event.defaultPrevented) return;
+    // The model hears only a real difference, and no DOM event is dispatched: this is
+    // lifecycle synchronisation, not a user edit.
+    if (value.value !== formAnswer) value.value = formAnswer;
+    // The platform has rewritten the proxy; put back what the model holds now.
+    formWrite();
+  });
+}
+onMounted(() => {
+  const proxy = formProxy.value;
+  if (!proxy) return;
+  formWrite();
+  formDocument = proxy.ownerDocument;
+  // A disabled <fieldset> fires no event. The shared document watcher calls back on a
+  // fieldset `disabled` change or a move that can affect this control; the proxy, which
+  // the platform disables with its fieldset, gives the answer.
+  const syncDisabled = () => {
+    formDisabled.value = proxy.matches(':disabled') && !proxy.disabled;
+  };
+  syncDisabled();
+  formUnwatch = watchFormDisabled(proxy, syncDisabled);
+  formDocument.addEventListener('reset', onFormReset, true);
+});
+onBeforeUnmount(() => {
+  formUnwatch?.();
+  formDocument?.removeEventListener('reset', onFormReset, true);
+  clearTimeout(formTimer);
+});
+function onFormProxyFocus(event: FocusEvent) {
+  const root = (event.currentTarget as HTMLElement).parentElement;
+  (root?.querySelector<HTMLElement>('[tabindex="0"]') ?? root)?.focus();
+}
 
 const attrs = useAttrs();
 // Everything a consumer passed that this component does not compose by hand. The
@@ -116,12 +253,26 @@ function onRootKeydown(event: KeyboardEvent) {
     v-bind="fallthrough"
     role="radiogroup"
     :id="baseId"
-    :aria-disabled="disabled || undefined"
+    :aria-disabled="effectiveDisabled || undefined"
     :aria-readonly="readOnly || undefined"
     data-ds-component="RadioGroup"
     data-ds-part="root"
     @keydown="onRootKeydown"
   >
     <slot />
+    <input
+      ref="formProxy"
+      type="text"
+      :name="name || undefined"
+      :form="form || undefined"
+      :required="required && !readOnly"
+      :readonly="readOnly"
+      :disabled="disabled"
+      aria-hidden="true"
+      tabindex="-1"
+      autocomplete="off"
+      :style="FORM_PROXY_STYLE"
+      @focus="onFormProxyFocus"
+    />
   </div>
 </template>

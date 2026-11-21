@@ -8,13 +8,15 @@
     ".": "./index.mjs",
     "./contract": "./contract.mjs",
     "./css": "./css.mjs",
-    "./validity": "./validity.mjs"
+    "./validity": "./validity.mjs",
+    "./form-disabled": "./form-disabled.mjs"
   },
   "files": [
     "index.mjs",
     "contract.mjs",
     "css.mjs",
-    "validity.mjs"
+    "validity.mjs",
+    "form-disabled.mjs"
   ],
   "dependencies": {
     "@ds/platform-web": "workspace:*"

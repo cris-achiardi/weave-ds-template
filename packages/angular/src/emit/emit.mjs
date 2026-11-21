@@ -63,7 +63,15 @@ import {
   suppliedRelations,
   formFor,
 } from '@ds/emit-web';
-import { FORM_IMPORTS, emitNativeFormField, emitNativeFormLifecycle } from './form.mjs';
+import {
+  CUSTOM_FORM_IMPORTS,
+  FORM_IMPORTS,
+  emitCustomFormFields,
+  emitCustomFormLifecycle,
+  emitFormProxy,
+  emitNativeFormField,
+  emitNativeFormLifecycle,
+} from './form.mjs';
 
 import { camel, pascal, selectorFor, slotsFrom, surfaceFrom } from './surface.mjs';
 
@@ -256,8 +264,27 @@ export function emitComponent(name, contract, binding, prefix) {
 
   const hasDisabled = inputs.some((p) => p.name === 'disabled');
   const hasReadOnly = inputs.some((p) => p.name === 'readOnly');
-  const disabledExpr = member ? 'isDisabled()' : hasDisabled ? 'disabled()' : null;
-  const disabledScript = member ? 'this.isDisabled()' : hasDisabled ? 'this.disabled()' : null;
+  // A custom control with a form answer contributes through a proxy input, and a disabled
+  // <fieldset> around it disables it too: everything reads `effectiveDisabled` instead.
+  const customForm =
+    !(editsOwnValue(el, WEB) && models.some((x) => x.name === 'value' && x.from !== 'selection')) &&
+    hasDisabled
+      ? formFor(contract)
+      : null;
+  const disabledExpr = member
+    ? 'isDisabled()'
+    : customForm
+      ? 'effectiveDisabled()'
+      : hasDisabled
+        ? 'disabled()'
+        : null;
+  const disabledScript = member
+    ? 'this.isDisabled()'
+    : customForm
+      ? 'this.effectiveDisabled()'
+      : hasDisabled
+        ? 'this.disabled()'
+        : null;
 
   const allParts = partsOf(root);
   const activator = allParts.find((p) => p.node.activates?.toggles);
@@ -464,7 +491,7 @@ export function emitComponent(name, contract, binding, prefix) {
     const asModel = models.find((m) => m.from === st);
     const asInput = inputs.find((p) => p.from === st);
     if (!asModel && !asInput) continue;
-    const expr = `${camel(st)}()`;
+    const expr = customForm && st === 'disabled' ? 'effectiveDisabled()' : `${camel(st)}()`;
     const decision = channelFor(
       {
         state: st,
@@ -558,12 +585,30 @@ export function emitComponent(name, contract, binding, prefix) {
     // are a visible choice, and the first draft chose the wrong one.
     host.push([`value`, commitEditing ? 'editingDraft()' : `${camel(valueState.from)}()`]);
     if (hasReadOnly) host.push([`attr.readonly`, orNull('readOnly()')]);
+    // The host IS the form control, so the form vocabulary lands on it directly.
+    if (nativeForm) {
+      host.push([`attr.name`, `name() || null`]);
+      host.push([`attr.required`, orNull('required()')]);
+      host.push([`attr.form`, `form() || null`]);
+    }
     if (commitEditing) {
       onEvent('input', 'handleDraft($event)');
       onEvent('blur', 'handleInput($event)');
     } else onEvent('input', 'handleInput($event)');
   }
 
+  // A custom control's host is NOT the form control: the proxy inside it is. Angular keeps a
+  // consumer's static attributes on the host as well as handing them to the inputs, so a static
+  // `name` or `form` would make the host a second, non-submitting entry in `form.elements`.
+  if (customForm) {
+    for (const attr of [
+      'name',
+      'form',
+      'required',
+      ...(customForm.encoding === 'checked' ? ['value'] : []),
+    ])
+      host.push([`attr.${attr}`, 'null']);
+  }
   const ranged = Object.entries(contract.states ?? {}).find(([, d]) => d.valueType === 'number');
   let announced = null;
   if (ranged && rootRole) {
@@ -659,6 +704,9 @@ export function emitComponent(name, contract, binding, prefix) {
   need(platformModal, 'DestroyRef', 'ElementRef', 'afterNextRender', 'effect', 'inject');
   need(range, 'viewChild', 'ElementRef');
   need(nativeForm, ...FORM_IMPORTS);
+  need(customForm, ...CUSTOM_FORM_IMPORTS);
+  // A form `required` input accepts the bare attribute, as on a native control.
+  need(contract.form, 'booleanAttribute');
   // The context interface a collection exports is typed with `Signal`, whether or not the
   // collection declares a keyboard model. A MEMBER references no Angular type at all.
   need(collection, 'Signal');
@@ -849,6 +897,17 @@ export function emitComponent(name, contract, binding, prefix) {
     // the outlet for sub-parts, so the root needs it here. Compare KEYS, not the root's `part` name —
     // a sub-part may be keyed the same as the root's styling name.
     if (takesChildren && (!childrenPart || childrenPart === ROOT_KEY)) t.push(`    <ng-content />`);
+    if (customForm) {
+      const answerState = contract.states?.[customForm.source];
+      t.push(
+        ...emitFormProxy({
+          form: customForm,
+          range: answerState?.valueType === 'number' ? answerState : null,
+          hasReadOnly,
+          answer: `${customForm.property}()`,
+        }),
+      );
+    }
     s.push(`  template: \``);
     for (const line of t) s.push(line);
     s.push(`  \`,`);
@@ -870,7 +929,11 @@ export function emitComponent(name, contract, binding, prefix) {
     s.push(
       `  /** ${d}${p.role === 'axis' && p.default ? ` Defaults to \`${p.default}\`.` : ''} */`,
     );
-    s.push(`  readonly ${p.name} = input<${p.type}>(${dflt});`);
+    if (p.origin === 'form' && p.type === 'boolean')
+      s.push(
+        `  readonly ${p.name} = input<boolean, unknown>(false, { transform: booleanAttribute });`,
+      );
+    else s.push(`  readonly ${p.name} = input<${p.type}>(${dflt});`);
   }
   if (namedPart) {
     s.push(
@@ -941,6 +1004,10 @@ export function emitComponent(name, contract, binding, prefix) {
     s.push(...emitNativeFormField('HTMLInputElement'));
     s.push(``);
   }
+  if (customForm) {
+    s.push(...emitCustomFormFields());
+    s.push(``);
+  }
 
   if (registers || platformModal || range) {
     if (registers || platformModal) {
@@ -976,7 +1043,7 @@ export function emitComponent(name, contract, binding, prefix) {
   if (selShared) {
     s.push(`  readonly selection = this.value.asReadonly();`);
     s.push(
-      `  readonly collectionDisabled = ${hasDisabled ? 'computed(() => Boolean(this.disabled()))' : 'signal(false).asReadonly()'};`,
+      `  readonly collectionDisabled = ${customForm ? 'computed(() => this.effectiveDisabled())' : hasDisabled ? 'computed(() => Boolean(this.disabled()))' : 'signal(false).asReadonly()'};`,
     );
     s.push(``);
     s.push(
@@ -1038,6 +1105,18 @@ export function emitComponent(name, contract, binding, prefix) {
   const ctor = [];
   if (commitEditing)
     ctor.push(`    effect(() => this.editingDraft.set(this.${camel(valueState.from)}()));`);
+  if (customForm) {
+    const m = models.find((x) => x.name === customForm.property);
+    ctor.push(
+      ...emitCustomFormLifecycle({
+        form: customForm,
+        model: customForm.property,
+        type: m.type,
+        hasInvalid: Boolean(contract.states?.invalid),
+        prefix,
+      }),
+    );
+  }
   if (nativeForm) {
     ctor.push(
       ...emitNativeFormLifecycle({

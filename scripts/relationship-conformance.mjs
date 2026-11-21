@@ -69,10 +69,41 @@ export function relationshipConformance(contract, backend) {
 }
 
 // Form lifecycle coverage, per backend. A pair moves here only together with the browser
-// evidence for it (tests/browser/forms.mjs for WC, tests/browser/framework-forms.mjs for the
-// framework backends) — ADR 0005: an unsupported claim is non-conforming, never silently skipped.
-const FRAMEWORK_TEXT_SCOPE = 'named answer, required/custom validation and reset lifecycle';
-const FRAMEWORK_NATIVE_FORM = new Set(['TextField']);
+// evidence for it (tests/browser/forms.mjs for WC; framework-forms.mjs and framework-controls.mjs
+// for React, Vue and Angular). ADR 0005: a known gap keeps the pair non-conforming, and it is
+// named rather than silently skipped.
+const FRAMEWORK_SCOPE = 'named answer, required/custom validation and reset lifecycle';
+const RESTORE_GAP =
+  'form state restoration (history/bfcache/autofill) has no framework lifecycle callback';
+// An already-mounted control moved into ANOTHER document (adoptNode, an iframe, Vue <Teleport> or a
+// React/Angular portal targeting another document) keeps the reset listener and fieldset observer of
+// the document it mounted in. Not migrated, deliberately: reported. Fresh mounts there work.
+const ADOPTION_GAP =
+  'an already-mounted control moved into another document (adoption into an iframe, or a Vue <Teleport> / portal targeting another document) keeps listening to the document it mounted in: reset and fieldset disabling there are not observed';
+const FRAMEWORK_GAPS = {
+  // Native <input>: the platform submits, the generated code syncs reset and validity.
+  TextField: {
+    gaps: ['state-restoration', 'commit-draft-submission', 'cross-document-adoption'],
+    detail: `${RESTORE_GAP}, so the native element may restore a value the framework model then overwrites; and in commit editing mode the native input submits its visible draft, not the last committed answer.`,
+  },
+  // Custom controls: a hidden, validatable proxy <input> inside the root contributes the answer.
+  Checkbox: {
+    gaps: ['state-restoration', 'invalid-html-content-model', 'cross-document-adoption'],
+    detail: `${RESTORE_GAP}; the proxy opts out with autocomplete="off". The proxy <input> sits inside the <button> root, which the HTML content model forbids: the generated markup is not valid HTML.`,
+  },
+  Switch: {
+    gaps: ['state-restoration', 'invalid-html-content-model', 'cross-document-adoption'],
+    detail: `${RESTORE_GAP}; the proxy opts out with autocomplete="off". The proxy <input> sits inside the <button> root, which the HTML content model forbids: the generated markup is not valid HTML.`,
+  },
+  Slider: {
+    gaps: ['state-restoration', 'cross-document-adoption'],
+    detail: `${RESTORE_GAP}; the proxy opts out with autocomplete="off".`,
+  },
+  RadioGroup: {
+    gaps: ['state-restoration', 'cross-document-adoption'],
+    detail: `${RESTORE_GAP}; the proxy opts out with autocomplete="off".`,
+  },
+};
 
 export function formConformance(contract, backend) {
   if (!contract.form) return { status: 'not-applicable' };
@@ -81,16 +112,16 @@ export function formConformance(contract, backend) {
       status: 'implemented',
       scope: 'named answer, required/custom validation, reset and restore lifecycle',
     };
-  if (FRAMEWORK_NATIVE_FORM.has(contract.component))
+  const known = FRAMEWORK_GAPS[contract.component];
+  if (known)
     return {
       status: 'non-conforming',
-      implemented: FRAMEWORK_TEXT_SCOPE,
-      gaps: ['state-restoration', 'commit-draft-submission'],
-      detail:
-        'Submission, required/authored-invalid validity and reset are implemented. Not implemented: form state restoration (history/bfcache/autofill) has no framework lifecycle callback, so the native element may restore a value the framework model then overwrites; and in commit editing mode the native input submits its visible draft, not the last committed answer.',
+      implemented: FRAMEWORK_SCOPE,
+      gaps: known.gaps,
+      detail: `Submission, required/authored-invalid validity and reset are implemented. Not implemented: ${known.detail} And ${ADOPTION_GAP}.`,
     };
   return {
     status: 'non-conforming',
-    detail: 'This backend does not emit a form contribution for this custom control.',
+    detail: 'This backend does not emit a form contribution for this component.',
   };
 }

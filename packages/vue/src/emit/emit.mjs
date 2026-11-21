@@ -64,7 +64,14 @@ import {
   suppliedRelations,
   formFor,
 } from '@ds/emit-web';
-import { FORM_IMPORTS, emitNativeFormLifecycle } from './form.mjs';
+import {
+  CUSTOM_FORM_IMPORTS,
+  FORM_IMPORTS,
+  emitCustomFormLifecycle,
+  emitEffectiveDisabled,
+  emitFormProxy,
+  emitNativeFormLifecycle,
+} from './form.mjs';
 
 import { camel, pascal, slotsFrom, surfaceFrom } from './surface.mjs';
 
@@ -256,8 +263,26 @@ export function emitSfc(name, contract, binding, prefix) {
   const hasReadOnly = inputs.some((p) => p.name === 'readOnly');
   // Every member gets a local `isDisabled`, because a member's disabled state is the union of its
   // own prop and its collection's, and the template may only read top-level bindings.
-  const disabledExpr = member ? 'isDisabled' : hasDisabled ? 'disabled' : null;
-  const disabledScript = member ? 'isDisabled.value' : hasDisabled ? 'props.disabled' : null;
+  // A custom control with a form answer contributes through a proxy input, and a disabled
+  // <fieldset> around it disables it too: everything reads `effectiveDisabled` instead.
+  const customForm =
+    !(editsOwnValue(el, WEB) && stateModels.some((x) => x.name === 'value')) && hasDisabled
+      ? formFor(contract)
+      : null;
+  const disabledExpr = member
+    ? 'isDisabled'
+    : customForm
+      ? 'effectiveDisabled'
+      : hasDisabled
+        ? 'disabled'
+        : null;
+  const disabledScript = member
+    ? 'isDisabled.value'
+    : customForm
+      ? 'effectiveDisabled.value'
+      : hasDisabled
+        ? 'props.disabled'
+        : null;
 
   const allParts = partsOf(root);
   const activator = allParts.find((p) => p.node.activates?.toggles);
@@ -498,6 +523,7 @@ export function emitSfc(name, contract, binding, prefix) {
   const vueImports = new Set(['computed', 'useAttrs']);
   if (commitEditing) for (const i of ['ref', 'watch']) vueImports.add(i);
   if (nativeForm) for (const i of FORM_IMPORTS) vueImports.add(i);
+  if (customForm) for (const i of CUSTOM_FORM_IMPORTS) vueImports.add(i);
   if (needsIds && !member) vueImports.add('useId');
   if (collection) vueImports.add('provide');
   if (member) vueImports.add('inject');
@@ -548,6 +574,7 @@ export function emitSfc(name, contract, binding, prefix) {
   // `noUnusedLocals` turns an unbound guess into a failed typecheck in either direction.
   const PROPS_DECL = '@@props-decl@@';
   if (declaredProps.length) s.push(PROPS_DECL);
+  if (customForm) s.push(``, ...emitEffectiveDisabled());
 
   // ---- the models. ONE declaration per shared state, where React needs three props.
   for (const m of models) {
@@ -806,7 +833,9 @@ export function emitSfc(name, contract, binding, prefix) {
     s.push(`  selection: computed(() => value.value),`);
     s.push(`  toggle,`);
     s.push(`  baseId,`);
-    s.push(`  disabled: computed(() => ${hasDisabled ? 'Boolean(props.disabled)' : 'false'}),`);
+    s.push(
+      `  disabled: computed(() => ${customForm ? 'effectiveDisabled.value' : hasDisabled ? 'Boolean(props.disabled)' : 'false'}),`,
+    );
     if (navigation) {
       s.push(`  register: nav.register,`);
       s.push(`  unregister: nav.unregister,`);
@@ -882,6 +911,17 @@ export function emitSfc(name, contract, binding, prefix) {
     }
   }
 
+  if (customForm) {
+    s.push(
+      ...emitCustomFormLifecycle({
+        form: customForm,
+        model: customForm.property,
+        hasInvalid: Boolean(contract.states?.invalid),
+        prefix,
+      }),
+    );
+  }
+
   // -------------------------------------------------------------------------------------
   // root attributes
   // -------------------------------------------------------------------------------------
@@ -898,7 +938,7 @@ export function emitSfc(name, contract, binding, prefix) {
     const asModel = models.find((m) => m.from === st);
     const asInput = inputs.find((p) => p.from === st);
     if (!asModel && !asInput) continue;
-    const expr = camel(st);
+    const expr = customForm && st === 'disabled' ? 'effectiveDisabled' : camel(st);
     const decision = channelFor(
       {
         state: st,
@@ -984,6 +1024,8 @@ export function emitSfc(name, contract, binding, prefix) {
   if (nativelyEdited) {
     rootAttrs.push(`:value="${commitEditing ? 'editingDraft' : camel(valueState.from)}"`);
     if (hasReadOnly) rootAttrs.push(`:readonly="readOnly"`);
+    // The element IS the form control, so the form vocabulary lands on it directly.
+    if (nativeForm) rootAttrs.push(`:name="name"`, `:required="required"`, `:form="form"`);
     if (commitEditing) {
       onEvent('input', 'handleDraft');
       onEvent('blur', 'handleInput');
@@ -1109,7 +1151,9 @@ export function emitSfc(name, contract, binding, prefix) {
 
   if (declaredProps.length) {
     const usesProps = s.some((l) => l !== PROPS_DECL && l.includes('props.'));
-    const defaults = axes.filter((a) => a.default).map((a) => `${a.name}: '${a.default}'`);
+    const defaults = [...axes, ...inputs.filter((p) => p.origin === 'form' && p.name === 'value')]
+      .filter((a) => a.default)
+      .map((a) => `${a.name}: '${a.default}'`);
     const lhs = usesProps ? 'const props = ' : '';
     const decl = defaults.length
       ? [
@@ -1152,6 +1196,18 @@ export function emitSfc(name, contract, binding, prefix) {
   // the outlet for sub-parts, so the root needs it here. Compare KEYS, not the root's `part` name —
   // a sub-part may be keyed the same as the root's styling name.
   if (takesChildren && (!childrenPart || childrenPart === ROOT_KEY)) t.push(`    <slot />`);
+  if (customForm) {
+    const answerState = contract.states?.[customForm.source];
+    t.push(
+      ...emitFormProxy({
+        form: customForm,
+        range: answerState?.valueType === 'number' ? answerState : null,
+        hasReadOnly,
+        answer: customForm.property,
+        indent: 4,
+      }),
+    );
+  }
   t.push(`  </${el}>`);
   t.push(`</template>`);
 

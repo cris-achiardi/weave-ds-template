@@ -128,6 +128,34 @@ export function surfaceFrom(contract) {
     });
   }
 
+  // A contract that declares a form answer gets the platform's form vocabulary. Same names and
+  // defaults as the WC host (packages/wc/src/emit/surface.mjs), plus `form`: a framework component
+  // is not itself the form-associated element, so the owner id is passed down to the one that is.
+  if (contract.form) {
+    for (const [name, type, dflt, description] of [
+      ['name', 'string', '', 'Name of the submitted answer. An empty name contributes nothing.'],
+      ['required', 'boolean', false, 'Whether an answer is required for form validation.'],
+      [
+        'form',
+        'string',
+        '',
+        'The id of the form that owns this answer, when it is not an ancestor form.',
+      ],
+      ...(contract.form.encoding === 'checked'
+        ? [['value', 'string', 'on', 'Value submitted when checked.']]
+        : []),
+    ])
+      props.push({
+        name,
+        type,
+        from: name,
+        origin: 'form',
+        role: 'input',
+        default: dflt,
+        description,
+      });
+  }
+
   return props;
 }
 
