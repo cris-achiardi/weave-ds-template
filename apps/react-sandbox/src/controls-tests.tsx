@@ -9,6 +9,16 @@ import { Switch } from './components/Switch';
 
 type Check = 'unchecked' | 'checked' | 'mixed';
 
+// A same-origin iframe with an empty form; a control is MOUNTED into it (not moved there).
+function frameMountPoint(): HTMLElement {
+  const frame = document.createElement('iframe');
+  frame.id = 'frame';
+  document.body.append(frame);
+  const doc = frame.contentDocument!;
+  doc.body.innerHTML = '<form id="frame-form"><fieldset id="frame-fields"></fieldset></form>';
+  return doc.getElementById('frame-fields')!;
+}
+
 // Form contribution fixture for the custom controls. tests/browser/framework-controls.mjs drives
 // the same page in every framework backend; keep labels, names and test ids identical.
 function Fixture() {
@@ -96,6 +106,11 @@ function Fixture() {
       {act('Toggle read-only setting', () => setSettingReadOnly(!settingReadOnly))}
       {act('Unmount controls', () => setShowFields(false))}
       {act('Name setting _charset_', () => setSettingName('_charset_'))}
+      {act('Mount in frame', () =>
+        createRoot(frameMountPoint()).render(
+          <Slider aria-label="Framed" name="framed" defaultValue={25} />,
+        ),
+      )}
     </>
   );
 }

@@ -162,6 +162,11 @@ export function buildRules(from, name, tags) {
     // ones. The same lookbehind keeps both out of `data-<prefix>-` and longer hyphenated names.
     [new RegExp(String.raw`(?<![\w-])${from}-(?=(?:[a-z0-9]+-)+change\b)`, 'g'), `${name}-`],
     [new RegExp(String.raw`(?<![\w-])${from}-(?=['"\x60])`, 'g'), `${name}-`],
+    // Dotted registry keys inside a string literal: the framework form controls share one fieldset
+    // observer per document under `Symbol.for('<prefix>.form-disabled')` (packages/emit-web/
+    // form-disabled.mjs), which carries no tag and no hyphen. Quoted on the left and followed by a
+    // lower-case key that closes the quote, so `'<prefix>.config.json'` and prose are left alone.
+    [new RegExp(String.raw`(?<=['"\x60])${from}\.(?=[a-z][a-z0-9-]*['"\x60])`, 'g'), `${name}.`],
   ];
 }
 

@@ -8,6 +8,16 @@ import Switch from './components/Switch/Switch.vue';
 
 type Check = 'unchecked' | 'checked' | 'mixed';
 
+// A same-origin iframe with an empty form; a control is MOUNTED into it (not moved there).
+function frameMountPoint(): HTMLElement {
+  const frame = document.createElement('iframe');
+  frame.id = 'frame';
+  document.body.append(frame);
+  const doc = frame.contentDocument!;
+  doc.body.innerHTML = '<form id="frame-form"><fieldset id="frame-fields"></fieldset></form>';
+  return doc.getElementById('frame-fields')!;
+}
+
 // Form contribution fixture for the custom controls. tests/browser/framework-controls.mjs drives
 // the same page in every framework backend; keep labels, names and test ids identical.
 createApp({
@@ -107,6 +117,11 @@ createApp({
       act('Toggle read-only setting', () => (settingReadOnly.value = !settingReadOnly.value)),
       act('Unmount controls', () => (showFields.value = false)),
       act('Name setting _charset_', () => (settingName.value = '_charset_')),
+      act('Mount in frame', () => {
+        createApp({
+          render: () => h(Slider, { 'aria-label': 'Framed', name: 'framed', value: 25 }),
+        }).mount(frameMountPoint());
+      }),
     ];
   },
 }).mount('#fixtures');

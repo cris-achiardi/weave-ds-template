@@ -149,19 +149,20 @@ export class Slider {
       let registry = host[key];
       if (!registry) {
         const watchers = new Set<Watcher>();
-        // ONE pass over the records, each tested cheaply before any subscriber is: a `disabled`
-        // change matters only on a fieldset, and an insertion only if it holds an <input>, since
-        // every proxy is one. Unrelated mutations cost a type check or a tag lookup, not a walk.
+        // ONE pass over the records, each tested cheaply before any subscriber is: a record on a
+        // fieldset re-asks everything inside it, and an insertion elsewhere matters only if it holds
+        // an <input>, since every proxy is one. Unrelated mutations cost a tag check, not a walk.
         const observer = new MutationObserver((records) => {
           const due = new Set<Watcher>();
           const collect = (root: Node) => {
             for (const watcher of watchers) if (root.contains(watcher.proxy)) due.add(watcher);
           };
           for (const record of records) {
-            if (record.type === 'attributes') {
-              if (record.target.nodeName === 'FIELDSET') collect(record.target);
-              continue;
-            }
+            // A fieldset's own `disabled`, OR its children changing: which <legend> is first decides
+            // whether the controls inside that legend are exempt, so adding or removing a child of a
+            // fieldset can change the state of descendants that never moved.
+            if (record.target.nodeName === 'FIELDSET') collect(record.target);
+            if (record.type === 'attributes') continue;
             const added = record.addedNodes;
             for (let i = 0; i < added.length; i++) {
               const node = added[i] as Element;

@@ -1,4 +1,12 @@
 import { expect, test } from '@playwright/test';
+import { readFileSync } from 'node:fs';
+import { formDisabledKey } from '../../packages/emit-web/form-disabled.mjs';
+
+// The shared observer's registry key, derived from the data prefix exactly as the emitters do, so
+// a branded repository (pnpm init-ds) tests its own key rather than the template's.
+const REGISTRY_KEY = formDisabledKey(
+  JSON.parse(readFileSync(new URL('../../ds.config.json', import.meta.url), 'utf8')).dataPrefix,
+);
 
 // Form contribution for the custom controls (Checkbox, Switch, Slider, RadioGroup) in the framework
 // backends. They render no native form control, so each contributes through a hidden, validatable
@@ -237,6 +245,87 @@ export function frameworkControlRegressions() {
     await expect.poll(() => entries(page)).toContainEqual(['amount', '26']);
   });
 
+  // The first <legend> of a disabled fieldset exempts its contents. Which legend is first can change
+  // without the control moving, so a child-list change on the fieldset itself must re-ask.
+  test('a legend prepended to a disabled fieldset disables the controls in the old first legend', async ({
+    page,
+  }) => {
+    await page.goto('/controls-tests.html');
+    await page.locator('#form').evaluate((form, usurped) => {
+      const fieldset = document.createElement('fieldset');
+      fieldset.id = 'legendary';
+      fieldset.disabled = true;
+      const holder = document.createElement('legend');
+      holder.id = 'holder';
+      fieldset.append(holder);
+      if (usurped) {
+        const first = document.createElement('legend');
+        first.id = 'usurper';
+        fieldset.prepend(first);
+      }
+      form.append(fieldset);
+    }, false);
+    await slider(page).evaluate((root) => document.querySelector('#holder').append(root));
+    await expect(slider(page)).not.toHaveAttribute('aria-disabled', 'true');
+    await page.locator('#legendary').evaluate((fieldset) => {
+      fieldset.prepend(document.createElement('legend'));
+    });
+    await expect(slider(page)).toHaveAttribute('aria-disabled', 'true');
+    await slider(page).dispatchEvent('keydown', { key: 'ArrowRight' });
+    await expect(slider(page)).toHaveAttribute('aria-valuenow', '25');
+  });
+
+  test('removing the first legend of a disabled fieldset re-enables the controls in the next one', async ({
+    page,
+  }) => {
+    await page.goto('/controls-tests.html');
+    await page.locator('#form').evaluate((form, usurped) => {
+      const fieldset = document.createElement('fieldset');
+      fieldset.id = 'legendary';
+      fieldset.disabled = true;
+      const holder = document.createElement('legend');
+      holder.id = 'holder';
+      fieldset.append(holder);
+      if (usurped) {
+        const first = document.createElement('legend');
+        first.id = 'usurper';
+        fieldset.prepend(first);
+      }
+      form.append(fieldset);
+    }, true);
+    await slider(page).evaluate((root) => document.querySelector('#holder').append(root));
+    await expect(slider(page)).toHaveAttribute('aria-disabled', 'true');
+    await page.locator('#usurper').evaluate((legend) => legend.remove());
+    await expect(slider(page)).not.toHaveAttribute('aria-disabled', 'true');
+    await slider(page).press('ArrowRight');
+    await expect(slider(page)).toHaveAttribute('aria-valuenow', '26');
+  });
+
+  // Supported: a control MOUNTED in another document binds to that document. (Moving an already
+  // mounted control there is the recorded cross-document-adoption gap, not tested as working.)
+  test("a control mounted in a same-origin iframe follows that document's fieldset", async ({
+    page,
+  }) => {
+    await page.goto('/controls-tests.html');
+    await act(page, 'Mount in frame');
+    const frame = page.frameLocator('#frame');
+    const framed = frame.getByRole('slider', { name: 'Framed' });
+    // Unstyled in the frame (no stylesheet there), so zero-sized: attached, not "visible".
+    await expect(framed).toBeAttached();
+    const frameEntries = () =>
+      frame.locator('#frame-form').evaluate((form) => [...new FormData(form).entries()]);
+    await expect.poll(frameEntries).toEqual([['framed', '25']]);
+    await frame.locator('#frame-fields').evaluate((fieldset) => {
+      fieldset.disabled = true;
+    });
+    await expect(framed).toHaveAttribute('aria-disabled', 'true');
+    expect(await frameEntries()).toEqual([]);
+    await frame.locator('#frame-fields').evaluate((fieldset) => {
+      fieldset.disabled = false;
+    });
+    await expect(framed).not.toHaveAttribute('aria-disabled', 'true');
+  });
+
   test('a read-only switch keeps submitting but is barred from validation', async ({ page }) => {
     await page.goto('/controls-tests.html');
     const form = page.locator('#form');
@@ -271,7 +360,7 @@ export function frameworkControlRegressions() {
     await page.goto('/controls-tests.html');
     // Five form controls: Consent, Setting, Amount, Choice, Remote — ONE shared observer.
     const watchers = () =>
-      page.evaluate(() => document[Symbol.for('ds.form-disabled')]?.watchers.size ?? 0);
+      page.evaluate((key) => document[Symbol.for(key)]?.watchers.size ?? 0, REGISTRY_KEY);
     await expect.poll(watchers).toBe(5);
     await expect.poll(async () => (await page.evaluate(() => window.__lifecycle())).resets).toBe(5);
     const mounted = await page.evaluate(() => window.__lifecycle());
@@ -294,6 +383,6 @@ export function frameworkControlRegressions() {
         observers: mounted.observers - 1,
         resets: 0,
       });
-    expect(await page.evaluate(() => Symbol.for('ds.form-disabled') in document)).toBe(false);
+    expect(await page.evaluate((key) => Symbol.for(key) in document, REGISTRY_KEY)).toBe(false);
   });
 }

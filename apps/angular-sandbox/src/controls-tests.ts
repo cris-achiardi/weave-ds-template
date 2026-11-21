@@ -1,4 +1,11 @@
-import { Component, signal } from '@angular/core';
+import {
+  ApplicationRef,
+  Component,
+  EnvironmentInjector,
+  createComponent,
+  inject,
+  signal,
+} from '@angular/core';
 import { bootstrapApplication } from '@angular/platform-browser';
 import { Button } from './components/Button';
 import { Checkbox } from './components/Checkbox';
@@ -8,6 +15,16 @@ import { Slider } from './components/Slider';
 import { Switch } from './components/Switch';
 
 type Check = 'unchecked' | 'checked' | 'mixed';
+
+// A same-origin iframe with an empty form; a control is MOUNTED into it (not moved there).
+function frameMountPoint(): HTMLElement {
+  const frame = document.createElement('iframe');
+  frame.id = 'frame';
+  document.body.append(frame);
+  const doc = frame.contentDocument!;
+  doc.body.innerHTML = '<form id="frame-form"><fieldset id="frame-fields"></fieldset></form>';
+  return doc.getElementById('frame-fields')!;
+}
 
 // Form contribution fixture for the custom controls. tests/browser/framework-controls.mjs drives
 // the same page in every framework backend; keep labels, names and test ids identical.
@@ -91,7 +108,8 @@ type Check = 'unchecked' | 'checked' | 'mixed';
     </button>
     <button (mousedown)="$event.preventDefault()" (click)="settingName.set('_charset_')">
       Name setting _charset_
-    </button>`,
+    </button>
+    <button (mousedown)="$event.preventDefault()" (click)="mountInFrame()">Mount in frame</button>`,
 })
 class ControlsFixture {
   readonly consent = signal<Check>('checked');
@@ -106,6 +124,21 @@ class ControlsFixture {
   readonly settingReadOnly = signal(false);
   readonly showFields = signal(true);
   readonly settingName = signal('setting');
+  private readonly environmentInjector = inject(EnvironmentInjector);
+  private readonly appRef = inject(ApplicationRef);
+  mountInFrame() {
+    const fields = frameMountPoint();
+    const host = fields.ownerDocument.createElement('div');
+    host.setAttribute('aria-label', 'Framed');
+    fields.append(host);
+    const ref = createComponent(Slider, {
+      environmentInjector: this.environmentInjector,
+      hostElement: host,
+    });
+    ref.setInput('name', 'framed');
+    ref.setInput('value', 25);
+    this.appRef.attachView(ref.hostView);
+  }
   changed(next: Check) {
     this.consent.set(next);
     this.count.update((n) => n + 1);
